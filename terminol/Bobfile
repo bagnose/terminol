@@ -1,0 +1,27 @@
+dist-exe query
+  :
+  query.cxx
+  ;
+
+static-lib common
+  :
+  common.hxx enums.hxx utf8.hxx tty.hxx buffer.hxx terminal.hxx
+  bit_sets.hxx char.hxx simple_buffer.hxx
+  :
+  common.cxx enums.cxx utf8.cxx tty.cxx buffer.cxx terminal.cxx
+  bit_sets.cxx char.cxx simple_buffer.cxx
+  ;
+
+test-exe test-utf8   : test_utf8.cxx;
+test-exe test-buffer : test_buffer.cxx;
+
+static-lib xlib
+  :
+  x_window.hxx x_font_set.hxx x_color_set.hxx x_window_interface.hxx
+  :
+  x_window.cxx x_font_set.cxx x_color_set.cxx
+  ;
+
+dist-exe terminal : x_main.cxx ;
+
+dist-exe web1 : web1.cxx ;
