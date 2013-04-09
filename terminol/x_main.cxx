@@ -85,14 +85,32 @@ protected:
                 case ButtonRelease:
                     mWindow.buttonRelease(event.xbutton);
                     break;
+                case MotionNotify:
+                    mWindow.motionNotify(event.xmotion);
+                    break;
+                case MapNotify:
+                    mWindow.mapNotify(event.xmap);
+                    break;
+                case UnmapNotify:
+                    mWindow.unmapNotify(event.xunmap);
+                    break;
                 case Expose:
                     mWindow.expose(event.xexpose);
                     break;
                 case ConfigureNotify:
                     mWindow.configure(event.xconfigure);
                     break;
+                case FocusIn:
+                    mWindow.focusIn(event.xfocus);
+                    break;
+                case FocusOut:
+                    mWindow.focusOut(event.xfocus);
+                    break;
+                case VisibilityNotify:
+                    mWindow.visibilityNotify(event.xvisibility);
+                    break;
                 default:
-                    //PRINT("Unrecognised event: " << event.type);
+                    PRINT("Unhandled event: " << event.type);
                     break;
             }
         }

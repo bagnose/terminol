@@ -475,7 +475,7 @@ void Tty::processEscapeStr(char c) {
 void Tty::processCsiEscape() {
     ENFORCE(_state == STATE_CSI_ESCAPE,);       // XXX here or outside?
     ASSERT(!_escapeCsi.seq.empty(),);
-    PRINT("CSI-esc: " << _escapeCsi.seq);
+    //PRINT("CSI-esc: " << _escapeCsi.seq);
 
     size_t i = 0;
     bool priv = false;
@@ -590,7 +590,7 @@ void Tty::processCsiEscape() {
 
 void Tty::processStrEscape() {
     ENFORCE(_state == STATE_STR_ESCAPE,);       // XXX here or outside?
-    PRINT("STR-esc: type=" << _escapeStr.type << ", seq=" << _escapeStr.seq);
+    //PRINT("STR-esc: type=" << _escapeStr.type << ", seq=" << _escapeStr.seq);
 
     std::vector<std::string> args;
 
@@ -781,12 +781,12 @@ void Tty::processModes(bool priv, bool set, const std::vector<int32_t> & args) {
                     _observer.ttySetMode(MODE_HIDE, !set);
                     break;
                 case 1000: // 1000,1002: enable xterm mouse report
-                    _observer.ttySetMode(MODE_MOUSEBTN, set);
+                    _observer.ttySetMode(MODE_MOUSEBTN,    set);
                     _observer.ttySetMode(MODE_MOUSEMOTION, false);
                     break;
                 case 1002:
                     _observer.ttySetMode(MODE_MOUSEMOTION, set);
-                    _observer.ttySetMode(MODE_MOUSEBTN, false);
+                    _observer.ttySetMode(MODE_MOUSEBTN,    false);
                     break;
                 case 1006:
                     _observer.ttySetMode(MODE_MOUSESGR, set);

@@ -55,7 +55,20 @@ X_Window::X_Window(Display            * display,
                            None, nullptr, 0, nullptr);
 
     XSelectInput(_display, _window,
-                 StructureNotifyMask | ExposureMask | ButtonPressMask | KeyPressMask);
+                 StructureNotifyMask |
+                 ExposureMask |
+                 ButtonPressMask |
+                 KeyPressMask |
+                 // exp:
+                 KeyReleaseMask |
+                 ButtonReleaseMask |
+                 EnterWindowMask |
+                 LeaveWindowMask |
+                 PointerMotionMask |        // both?
+                 PointerMotionHintMask |
+                 VisibilityChangeMask |
+                 FocusChangeMask
+                 );
 
     setTitle(DEFAULT_TITLE);
 
@@ -100,8 +113,10 @@ void X_Window::keyPress(XKeyEvent & event) {
         if (state & Mod3Mask)    maskStr << " MOD3";
         if (state & Mod4Mask)    maskStr << " WIN";
         if (state & Mod5Mask)    maskStr << " MOD5";
+        /*
         PRINT(<< "keycode=" << keycode << " mask=(" << maskStr.str() << ") " <<
               " str='" << str << "'" << " len=" << len);
+              */
     }
 
     if (!str.empty()) {
@@ -113,12 +128,27 @@ void X_Window::keyRelease(XKeyEvent & event) {
 }
 
 void X_Window::buttonPress(XButtonEvent & event) {
+    PRINT("Button press");
 }
 
 void X_Window::buttonRelease(XButtonEvent & event) {
+    PRINT("Button release");
+}
+
+void X_Window::motionNotify(XMotionEvent & event) {
+    PRINT("Motion");
+}
+
+void X_Window::mapNotify(XMapEvent & event) {
+    PRINT("Map");
+}
+
+void X_Window::unmapNotify(XUnmapEvent & event) {
+    PRINT("Unmap");
 }
 
 void X_Window::expose(XExposeEvent & event) {
+    PRINT("Expose");
     ASSERT(event.window == _window, "Which window?");
     /*
        PRINT("Expose: " <<
@@ -133,6 +163,7 @@ void X_Window::expose(XExposeEvent & event) {
 }
 
 void X_Window::configure(XConfigureEvent & event) {
+    PRINT("Configure");
     ASSERT(event.window == _window, "Which window?");
     /*
        PRINT("Configure notify: " <<
@@ -163,6 +194,22 @@ void X_Window::configure(XConfigureEvent & event) {
     _terminal->resize(rows, cols);
 
     draw(0, 0, _width, _height);
+}
+
+void X_Window::focusIn(XFocusChangeEvent & event) {
+    PRINT("Focus in: mode=" << event.mode << ", detail=" << event.detail);
+}
+
+void X_Window::focusOut(XFocusChangeEvent & event) {
+    PRINT("Focus out: mode=" << event.mode << ", detail=" << event.detail);
+}
+
+void X_Window::visibilityNotify(XVisibilityEvent & event) {
+    // state values:
+    // VisibilityUnobscured             0
+    // VisibilityPartiallyObscured      1
+    // VisibilityFullyObscured          2       (free pixmap)
+    PRINT("Visibility change: state=" << event.state);
 }
 
 void X_Window::rowCol2XY(uint16_t row, size_t col,

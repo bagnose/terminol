@@ -15,16 +15,19 @@ Terminal::Terminal(IObserver          & observer,
     _cursorCol(0),
     _bg(Tty::defaultBg()),
     _fg(Tty::defaultFg()),
+    _attributes(),
+    _modes(),
+    _tabs(_buffer.getCols()),
     _tty(*this,
          rows, cols,
          windowId,
          term,
          command)
 {
-    _tabs.resize(_buffer.getCols());
     for (size_t i = 0; i != _tabs.size(); ++i) {
         _tabs[i] = (i + 1) % Tty::defaultTab() == 0;
     }
+    _modes.set(MODE_WRAP);
 }
 
 Terminal::~Terminal() {

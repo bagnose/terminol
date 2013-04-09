@@ -17,8 +17,15 @@ public:
     virtual void keyRelease(XKeyEvent & event) = 0;
     virtual void buttonPress(XButtonEvent & event) = 0;
     virtual void buttonRelease(XButtonEvent & event) = 0;
+    virtual void motionNotify(XMotionEvent & event) = 0;
+    virtual void mapNotify(XMapEvent & event) = 0;
+    virtual void unmapNotify(XUnmapEvent & event) = 0;
     virtual void expose(XExposeEvent & event) = 0;
     virtual void configure(XConfigureEvent & event) = 0;
+    virtual void focusIn(XFocusChangeEvent & event) = 0;
+    virtual void focusOut(XFocusChangeEvent & event) = 0;
+    virtual void visibilityNotify(XVisibilityEvent & event) = 0;
+    // TODO selection
 
 protected:
     I_X_Window()          {}

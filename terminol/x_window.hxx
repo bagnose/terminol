@@ -58,8 +58,14 @@ public:
     void keyRelease(XKeyEvent & event);
     void buttonPress(XButtonEvent & event);
     void buttonRelease(XButtonEvent & event);
+    void motionNotify(XMotionEvent & event);
+    void mapNotify(XMapEvent & event);
+    void unmapNotify(XUnmapEvent & event);
     void expose(XExposeEvent & event);
     void configure(XConfigureEvent & event);
+    void focusIn(XFocusChangeEvent & event);
+    void focusOut(XFocusChangeEvent & event);
+    void visibilityNotify(XVisibilityEvent & event);
 
 protected:
     void rowCol2XY(uint16_t row, size_t col, uint16_t & x, uint16_t & y) const;
