@@ -3,6 +3,7 @@
 #include "terminol/common.hxx"
 #include "terminol/x_window.hxx"
 #include "terminol/x_color_set.hxx"
+#include "terminol/x_key_map.hxx"
 #include "terminol/x_font_set.hxx"
 
 #include <string>
@@ -168,8 +169,9 @@ int main(int argc, char * argv[]) {
     {
         // RAII objects.
         X_ColorSet      colorSet(display, visual, colormap);
+        X_KeyMap        keyMap;
         X_FontSet       fontSet(display, fontName);
-        X_Window        window(display, root, screen, colorSet, fontSet, command);
+        X_Window        window(display, root, screen, colorSet, keyMap, fontSet, command);
         SimpleEventLoop eventLoop(display, window);
     }
 

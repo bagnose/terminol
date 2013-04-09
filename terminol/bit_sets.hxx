@@ -19,6 +19,11 @@ public:
     void set(Attribute attribute)       { _bits |=  bit(attribute);      }
     void unset(Attribute attribute)     { _bits &= ~bit(attribute);      }
     bool get(Attribute attribute) const { return _bits & bit(attribute); }
+
+    void setTo(Attribute attribute, bool to) {
+        if (to) { set(attribute);   }
+        else    { unset(attribute); }
+    }
 };
 
 std::ostream & operator << (std::ostream & ost, AttributeSet attributeSet);
@@ -38,6 +43,11 @@ public:
     void set(Mode mode)       { _bits |=  bit(mode);      }
     void unset(Mode mode)     { _bits &= ~bit(mode);      }
     bool get(Mode mode) const { return _bits & bit(mode); }
+
+    void setTo(Mode mode, bool to) {
+        if (to) { set(mode);   }
+        else    { unset(mode); }
+    }
 };
 
 std::ostream & operator << (std::ostream & ost, ModeSet modeSet);

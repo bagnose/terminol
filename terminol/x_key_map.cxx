@@ -1,19 +1,20 @@
 // vi:noai:sw=4
 
 #include "terminol/x_key_map.hxx"
+#include "terminol/common.hxx"
 
-#include <limits>
 #include <cstring>
 
 #include <X11/Xutil.h>
 
-const uint16_t XK_NO_MOD     = 0;
-const uint16_t XK_ANY_MOD    = std::numeric_limits<uint16_t>::max();
-const uint16_t XK_SWITCH_MOD = 1 << 13;
+namespace {
+
+const uint8_t XK_NO_MOD  = 0;
+const uint8_t XK_ANY_MOD = ~XK_NO_MOD;
 
 struct Key {
     KeySym       k;
-    uint16_t     mask;
+    uint8_t      mask;
     const char * str;
     // three valued logic variables: 0 indifferent, 1 on, -1 off
     int8_t       appKey;     // application keypad
@@ -21,16 +22,16 @@ struct Key {
     int8_t       crlf;       // crlf mode
 };
 
-bool match(uint16_t mask, uint8_t state) {
-    state &= ~(XK_SWITCH_MOD);
-
-    if (mask == XK_NO_MOD && state)
-        return false;
-    if (mask != XK_ANY_MOD && mask != XK_NO_MOD && !state)
-        return false;
-    if ((state & mask) != state)
-        return false;
-    return true;
+bool match(uint8_t mask, uint8_t state) {
+    if (mask == XK_NO_MOD) {
+        return state == 0;
+    }
+    else if (mask == XK_ANY_MOD) {
+        return true;
+    }
+    else {
+        return state & mask == mask;
+    }
 }
 
 const Key keys[] = {                            //    appKey   appCursor
@@ -232,19 +233,32 @@ const Key keys[] = {                            //    appKey   appCursor
 
 const size_t numKeys = sizeof(keys) / sizeof(keys[0]);
 
-bool X_KeyMap::lookup(KeySym keySym, uint8_t state, bool appKey, bool appCursor,
-                      std::string & str) {
+} // namespace {anonymous}
+
+X_KeyMap::X_KeyMap() {}
+
+X_KeyMap::~X_KeyMap() {}
+
+bool X_KeyMap::lookup(KeySym keySym, uint8_t state,
+                      bool appKey, bool appCursor, bool crlf, bool numLock,
+                      std::string & str) const {
     for (size_t i = 0; i != numKeys; ++i) {
         const Key & key = keys[i];
 
         if (keySym != key.k) continue;
         if (!match(key.mask, state)) continue;
 
-        if      (key.appKey > 0) {}
-        else if (key.appKey < 0) {}
+        if (key.appKey > 0) {
+            if (!appKey) continue;
+            if (key.appKey == 2 && numLock) continue;
+        }
+        if (key.appKey < 0 && appKey) continue;
 
-        if      (key.appCursor < 0) {}
-        else if (key.appCursor < 0) {}
+        if (key.appCursor < 0 &&  appCursor) continue;
+        if (key.appCursor > 0 && !appCursor) continue;
+
+        if (key.crlf < 0 &&  crlf) continue;
+        if (key.crlf > 0 && !crlf) continue;
 
         str = key.str;
         return true;

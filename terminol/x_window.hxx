@@ -5,6 +5,7 @@
 
 #include "terminol/x_window_interface.hxx"
 #include "terminol/x_color_set.hxx"
+#include "terminol/x_key_map.hxx"
 #include "terminol/x_font_set.hxx"
 #include "terminol/terminal.hxx"
 
@@ -17,21 +18,23 @@ class X_Window :
     static const int         SCROLLBAR_WIDTH;
     static const std::string DEFAULT_TITLE;
 
-    Display    * _display;
-    Screen     * _screen;
-    X_ColorSet & _colorSet;
-    X_FontSet  & _fontSet;
-    bool         _damage;
-    Window       _window;
-    uint16_t     _width;     // px
-    uint16_t     _height;    // px
-    Terminal   * _terminal;
+    Display          * _display;
+    Screen           * _screen;
+    const X_ColorSet & _colorSet;
+    const X_KeyMap   & _keyMap;
+    X_FontSet        & _fontSet;
+    bool               _damage;
+    Window             _window;
+    uint16_t           _width;     // px
+    uint16_t           _height;    // px
+    Terminal         * _terminal;
 
 public:
     X_Window(Display            * display,
              Window               parent,
              Screen             * screen,
-             X_ColorSet         & colorSet,
+             const X_ColorSet   & colorSet,
+             const X_KeyMap     & keyMap,
              X_FontSet          & fontSet,
              const Tty::Command & command);
 

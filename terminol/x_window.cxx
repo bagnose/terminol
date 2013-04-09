@@ -1,7 +1,6 @@
 // vi:noai:sw=4
 
 #include "terminol/x_window.hxx"
-#include "terminol/x_key_map.hxx"
 #include "terminol/common.hxx"
 
 #include <sstream>
@@ -16,12 +15,14 @@ const std::string X_Window::DEFAULT_TITLE    = "terminol";
 X_Window::X_Window(Display            * display,
                    Window               parent,
                    Screen             * screen,
-                   X_ColorSet         & colorSet,
+                   const X_ColorSet   & colorSet,
+                   const X_KeyMap     & keyMap,
                    X_FontSet          & fontSet,
                    const Tty::Command & command) :
     _display(display),
     _screen(screen),
     _colorSet(colorSet),
+    _keyMap(keyMap),
     _fontSet(fontSet),
     _damage(false),
     _window(0),
@@ -80,24 +81,28 @@ void X_Window::keyPress(XKeyEvent & event) {
     int len = XLookupString(&event, buffer, sizeof buffer, &keySym, nullptr);
     std::string str = std::string(buffer, buffer + len);
 
-    X_KeyMap keyMap;
-    keyMap.lookup(keySym, state & ~Mod2Mask, false, false, str);
+    const ModeSet & modes = _terminal->getModes();
+    _keyMap.lookup(keySym, state & ~Mod2Mask,
+                   modes.get(MODE_APPKEYPAD),
+                   modes.get(MODE_APPCURSOR),
+                   modes.get(MODE_CRLF),
+                   false,
+                   str);
 
-    /*
     {
+        // Run xmodmap without any arguments to discover these.
         std::ostringstream maskStr;
         if (state & ShiftMask)   maskStr << " SHIFT";
         if (state & LockMask)    maskStr << " LOCK";
         if (state & ControlMask) maskStr << " CTRL";
         if (state & Mod1Mask)    maskStr << " ALT";
-        if (state & Mod2Mask)    maskStr << " MOD2";
+        if (state & Mod2Mask)    maskStr << " NUM";
         if (state & Mod3Mask)    maskStr << " MOD3";
         if (state & Mod4Mask)    maskStr << " WIN";
         if (state & Mod5Mask)    maskStr << " MOD5";
         PRINT(<< "keycode=" << keycode << " mask=(" << maskStr.str() << ") " <<
               " str='" << str << "'" << " len=" << len);
     }
-    */
 
     if (!str.empty()) {
         _terminal->enqueueWrite(str.data(), str.size());

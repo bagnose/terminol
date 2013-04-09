@@ -27,10 +27,8 @@ public:
         virtual void ttySetFg(uint8_t fg) throw () = 0;
         virtual void ttySetBg(uint8_t bg) throw () = 0;
         virtual void ttyClearAttributes() throw () = 0;
-        virtual void ttyEnableAttribute(Attribute attribute) throw () = 0;
-        virtual void ttyDisableAttribute(Attribute attribute) throw () = 0;
-        virtual void ttyEnableMode(Mode mode) throw () = 0;
-        virtual void ttyDisableMode(Mode mode) throw () = 0;
+        virtual void ttySetAttribute(Attribute attribute, bool value) throw () = 0;
+        virtual void ttySetMode(Mode mode, bool value) throw () = 0;
         virtual void ttySetTabStop() throw () = 0;
         virtual void ttyReset() throw () = 0 ;
         virtual void ttyResetTitle() throw () = 0;
@@ -130,7 +128,7 @@ protected:
     void processCsiEscape();
     void processStrEscape();
     void processAttributes(const std::vector<int32_t> & args);
-    void processMode(bool priv, bool set, const std::vector<int32_t> & args);
+    void processModes(bool priv, bool set, const std::vector<int32_t> & args);
 
     bool pollReap(int & exitCode, int msec);
     void waitReap(int & exitCode);

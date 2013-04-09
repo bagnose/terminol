@@ -50,6 +50,7 @@ public:
 
     virtual ~Terminal();
 
+    const ModeSet      & getModes()  const { return _modes;     }
     const SimpleBuffer & buffer()    const { return _buffer;    }
     uint16_t             cursorRow() const { return _cursorRow; }
     uint16_t             cursorCol() const { return _cursorCol; }
@@ -76,10 +77,8 @@ protected:
     void ttySetFg(uint8_t fg) throw ();
     void ttySetBg(uint8_t bg) throw ();
     void ttyClearAttributes() throw ();
-    void ttyEnableAttribute(Attribute attribute) throw ();
-    void ttyDisableAttribute(Attribute attribute) throw ();
-    void ttyEnableMode(Mode mode) throw ();
-    void ttyDisableMode(Mode mode) throw ();
+    void ttySetAttribute(Attribute attribute, bool value) throw ();
+    void ttySetMode(Mode mode, bool value) throw ();
     void ttySetTabStop() throw ();
     void ttyReset() throw ();
     void ttyResetTitle() throw ();

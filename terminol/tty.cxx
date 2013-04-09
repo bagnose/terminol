@@ -383,9 +383,9 @@ void Tty::processEscape(char c) {
             _state = STATE_TEST_ESCAPE;
             break;
         case 'P':   // DCS
-        case '_':   // APC -- Application Program Command
-        case '^':   // PM  -- Privacy Message
-        case ']':   // OSC -- Operating System Command
+        case '_':   // APC - Application Program Command
+        case '^':   // PM  - Privacy Message
+        case ']':   // OSC - Operating System Command
         case 'k':   // old title set compatibility
             _escapeStr.type = c;
             _state = STATE_STR_ESCAPE;
@@ -414,7 +414,7 @@ void Tty::processEscape(char c) {
             FATAL("NYI st.c:2185");
             _state = STATE_NORMAL;
             break;
-        case 'Z':   // DECID -- Identify Terminal
+        case 'Z':   // DECID - Identify Terminal
             FATAL("NYI st.c:2194");
             //ttywrite(VT102ID, sizeof(VT102ID) - 1);
             _state = STATE_NORMAL;
@@ -425,11 +425,11 @@ void Tty::processEscape(char c) {
             _state = STATE_NORMAL;
             break;
         case '=':   // DECPAM - Application keypad
-            _observer.ttyEnableMode(MODE_APPKEYPAD);
+            _observer.ttySetMode(MODE_APPKEYPAD, true);
             _state = STATE_NORMAL;
             break;
         case '>':   // DECPNM - Normal keypad
-            _observer.ttyDisableMode(MODE_APPKEYPAD);
+            _observer.ttySetMode(MODE_APPKEYPAD, false);
             _state = STATE_NORMAL;
             break;
         case '7':   // DECSC - Save Cursor
@@ -442,7 +442,7 @@ void Tty::processEscape(char c) {
             //tcursor(CURSOR_LOAD);
             _state = STATE_NORMAL;
             break;
-        case '\\': // ST -- Stop
+        case '\\': // ST - Stop
             if (_state == STATE_STR_ESCAPE) {
                 processStrEscape();
                 _escapeStr.seq.clear();
@@ -527,11 +527,11 @@ void Tty::processCsiEscape() {
         switch (mode) {
             case 'h':
                 //PRINT(<<"CSI: Set terminal mode: " << strArgs(args));
-                processMode(priv, true, args);
+                processModes(priv, true, args);
                 break;
             case 'l':
                 //PRINT(<<"CSI: Reset terminal mode: " << strArgs(args));
-                processMode(priv, false, args);
+                processModes(priv, false, args);
                 break;
             case 'K':   // EL - Clear line
                 switch (nthArg(args, 0)) {
@@ -647,37 +647,37 @@ void Tty::processAttributes(const std::vector<int32_t> & args) {
                 _observer.ttyClearAttributes();
                 break;
             case 1:
-                _observer.ttyEnableAttribute(ATTRIBUTE_BOLD);
+                _observer.ttySetAttribute(ATTRIBUTE_BOLD, true);
                 break;
             case 3:
-                _observer.ttyEnableAttribute(ATTRIBUTE_ITALIC);
+                _observer.ttySetAttribute(ATTRIBUTE_ITALIC, true);
                 break;
             case 4:
-                _observer.ttyEnableAttribute(ATTRIBUTE_UNDERLINE);
+                _observer.ttySetAttribute(ATTRIBUTE_UNDERLINE, true);
                 break;
             case 5: // slow blink
             case 6: // rapid blink
-                _observer.ttyEnableAttribute(ATTRIBUTE_BLINK);
+                _observer.ttySetAttribute(ATTRIBUTE_BLINK, true);
                 break;
             case 7:
-                _observer.ttyEnableAttribute(ATTRIBUTE_REVERSE);
+                _observer.ttySetAttribute(ATTRIBUTE_REVERSE, true);
                 break;
             case 21:
             case 22:
-                _observer.ttyDisableAttribute(ATTRIBUTE_BOLD);
+                _observer.ttySetAttribute(ATTRIBUTE_BOLD, false);
                 break;
             case 23:
-                _observer.ttyDisableAttribute(ATTRIBUTE_ITALIC);
+                _observer.ttySetAttribute(ATTRIBUTE_ITALIC, false);
                 break;
             case 24:
-                _observer.ttyDisableAttribute(ATTRIBUTE_UNDERLINE);
+                _observer.ttySetAttribute(ATTRIBUTE_UNDERLINE, false);
                 break;
             case 25:
             case 26:
-                _observer.ttyDisableAttribute(ATTRIBUTE_BLINK);
+                _observer.ttySetAttribute(ATTRIBUTE_BLINK, false);
                 break;
             case 27:
-                _observer.ttyDisableAttribute(ATTRIBUTE_REVERSE);
+                _observer.ttySetAttribute(ATTRIBUTE_REVERSE, false);
                 break;
             case 38:
                 if (i + 2 < args.size() && args[i + 1] == 5) {
@@ -739,9 +739,98 @@ void Tty::processAttributes(const std::vector<int32_t> & args) {
     }
 }
 
-void Tty::processMode(bool priv, bool set, const std::vector<int32_t> & args) {
-    PRINT("NYI: processMode: priv=" << priv << ", set=" <<
+void Tty::processModes(bool priv, bool set, const std::vector<int32_t> & args) {
+    PRINT("processModes: priv=" << priv << ", set=" <<
           set << ", args=" << strArgs(args));
+
+    for (auto a : args) {
+        if (priv) {
+            switch (a) {
+                case 1: // DECCKM - Cursor key
+                    _observer.ttySetMode(MODE_APPCURSOR, set);
+                    break;
+                case 5: // DECSCNM - Reverse video
+                    /*
+                       mode = term.mode;
+                       MODBIT(term.mode, set, MODE_REVERSE);
+                       if(mode != term.mode) {
+                       redraw(REDRAW_TIMEOUT);
+                       }
+                       */
+                    break;
+                case 6: // DECOM - Origin
+                    /*
+                       MODBIT(term.c.state, set, CURSOR_ORIGIN);
+                       tmoveato(0, 0);
+                       */
+                    break;
+                case 7: // DECAWM - Auto wrap
+                    _observer.ttySetMode(MODE_WRAP, set);
+                    break;
+                case 0:  // Error (IGNORED) */
+                case 2:  // DECANM - ANSI/VT52 (IGNORED)
+                case 3:  // DECCOLM - Column  (IGNORED)
+                case 4:  // DECSCLM - Scroll (IGNORED)
+                case 8:  // DECARM - Auto repeat (IGNORED)
+                case 18: // DECPFF - Printer feed (IGNORED)
+                case 19: // DECPEX - Printer extent (IGNORED)
+                case 42: // DECNRCM - National characters (IGNORED)
+                case 12: // att610 - Start blinking cursor (IGNORED)
+                    break;
+                case 25: // DECTCEM - Text Cursor Enable Mode
+                    _observer.ttySetMode(MODE_HIDE, !set);
+                    break;
+                case 1000: // 1000,1002: enable xterm mouse report
+                    _observer.ttySetMode(MODE_MOUSEBTN, set);
+                    _observer.ttySetMode(MODE_MOUSEMOTION, false);
+                    break;
+                case 1002:
+                    _observer.ttySetMode(MODE_MOUSEMOTION, set);
+                    _observer.ttySetMode(MODE_MOUSEBTN, false);
+                    break;
+                case 1006:
+                    _observer.ttySetMode(MODE_MOUSESGR, set);
+                    break;
+                case 1049: // = 1047 and 1048 */
+                case 47:
+                case 1047:
+                    _observer.ttySetMode(MODE_ALTSCREEN, set);
+                    if(a != 1049) {
+                        break;
+                    }
+                    // Deliberate fall through
+                case 1048:
+                    /*
+                       tcursor((set) ? CURSOR_SAVE : CURSOR_LOAD);
+                       */
+                    break;
+                default:
+                    ERROR("erresc: unknown private set/reset mode : " << a);
+                    break;
+            }
+        }
+        else {
+            switch(a) {
+                case 0:  // Error (IGNORED)
+                    break;
+                case 2:  // KAM - keyboard action
+                    _observer.ttySetMode(MODE_KBDLOCK, set);
+                    break;
+                case 4:  // IRM - Insertion-replacement
+                    _observer.ttySetMode(MODE_INSERT, set);
+                    break;
+                case 12: // SRM - Send/Receive
+                    _observer.ttySetMode(MODE_ECHO, !set);
+                    break;
+                case 20: // LNM - Linefeed/new line
+                    _observer.ttySetMode(MODE_CRLF, set);
+                    break;
+                default:
+                    ERROR("erresc: unknown set/reset mode: " <<  a);
+                    break;
+            }
+        }
+    }
 }
 
 bool Tty::pollReap(int & exitCode, int msec) {

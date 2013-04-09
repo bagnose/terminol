@@ -59,8 +59,8 @@ XftFont * X_FontSet::load(FcPattern * pattern, bool master) {
     XftFont * font = XftFontOpenPattern(_display, match);
     ENFORCE(font,);
 
-    _width  = std::max(_width, static_cast<uint16_t>(font->max_advance_width));
-    _height = std::max(_width, static_cast<uint16_t>(font->height));
+    _width  = std::max(_width,  static_cast<uint16_t>(font->max_advance_width));
+    _height = std::max(_height, static_cast<uint16_t>(font->height));
 
     if (master) {
         _ascent = font->ascent;

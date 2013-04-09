@@ -156,24 +156,14 @@ void Terminal::ttyClearAttributes() throw () {
     _attributes.clear();
 }
 
-void Terminal::ttyEnableAttribute(Attribute attribute) throw () {
-    //PRINT("Enabling attribute: " << attribute);
-    _attributes.set(attribute);
+void Terminal::ttySetAttribute(Attribute attribute, bool value) throw () {
+    PRINT("Setting attribute: " << attribute << " to: " << value);
+    _attributes.setTo(attribute, value);
 }
 
-void Terminal::ttyDisableAttribute(Attribute attribute) throw () {
-    //PRINT("Disabling attribute: " << attribute);
-    _attributes.unset(attribute);
-}
-
-void Terminal::ttyEnableMode(Mode mode) throw () {
-    PRINT("Enabling mode: " << mode);
-    _modes.set(mode);
-}
-
-void Terminal::ttyDisableMode(Mode mode) throw () {
-    PRINT("Disable mode: " << mode);
-    _modes.unset(mode);
+void Terminal::ttySetMode(Mode mode, bool value) throw () {
+    PRINT("Setting mode: " << mode << " to: " << value);
+    _modes.setTo(mode, value);
 }
 
 void Terminal::ttySetTabStop() throw () {
