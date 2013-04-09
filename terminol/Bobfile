@@ -18,10 +18,10 @@ test-exe test-buffer : test_buffer.cxx;
 static-lib xlib
   :
   x_window.hxx x_font_set.hxx x_color_set.hxx x_window_interface.hxx
+  x_key_map.hxx
   :
   x_window.cxx x_font_set.cxx x_color_set.cxx
+  x_key_map.cxx
   ;
 
-dist-exe terminal : x_main.cxx ;
-
-dist-exe web1 : web1.cxx ;
+dist-exe terminol : x_main.cxx ;

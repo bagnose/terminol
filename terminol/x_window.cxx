@@ -1,6 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/x_window.hxx"
+#include "terminol/x_key_map.hxx"
 #include "terminol/common.hxx"
 
 #include <sstream>
@@ -74,27 +75,32 @@ void X_Window::keyPress(XKeyEvent & event) {
     uint8_t  state   = event.state;
     uint16_t keycode = event.keycode;
 
-    std::ostringstream maskStr;
-    if (state & ShiftMask)   maskStr << " SHIFT";
-    if (state & LockMask)    maskStr << " LOCK";
-    if (state & ControlMask) maskStr << " CTRL";
-    if (state & Mod1Mask)    maskStr << " ALT";
-    if (state & Mod2Mask)    maskStr << " MOD2";
-    if (state & Mod3Mask)    maskStr << " MOD3";
-    if (state & Mod4Mask)    maskStr << " WIN";
-    if (state & Mod5Mask)    maskStr << " MOD5";
-
     char   buffer[16];
-    KeySym keysym;
+    KeySym keySym;
+    int len = XLookupString(&event, buffer, sizeof buffer, &keySym, nullptr);
+    std::string str = std::string(buffer, buffer + len);
 
-    int len = XLookupString(&event, buffer, sizeof buffer, &keysym, nullptr);
+    X_KeyMap keyMap;
+    keyMap.lookup(keySym, state & ~Mod2Mask, false, false, str);
+
     /*
-    PRINT(<< "keycode=" << keycode << " mask=(" << maskStr.str() << ") " <<
-          " str='" << std::string(buffer, buffer + len) << "'" << " len=" << len);
-          */
+    {
+        std::ostringstream maskStr;
+        if (state & ShiftMask)   maskStr << " SHIFT";
+        if (state & LockMask)    maskStr << " LOCK";
+        if (state & ControlMask) maskStr << " CTRL";
+        if (state & Mod1Mask)    maskStr << " ALT";
+        if (state & Mod2Mask)    maskStr << " MOD2";
+        if (state & Mod3Mask)    maskStr << " MOD3";
+        if (state & Mod4Mask)    maskStr << " WIN";
+        if (state & Mod5Mask)    maskStr << " MOD5";
+        PRINT(<< "keycode=" << keycode << " mask=(" << maskStr.str() << ") " <<
+              " str='" << str << "'" << " len=" << len);
+    }
+    */
 
-    if (len > 0) {
-        _terminal->enqueueWrite(buffer, len);
+    if (!str.empty()) {
+        _terminal->enqueueWrite(str.data(), str.size());
     }
 }
 

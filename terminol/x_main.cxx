@@ -49,7 +49,7 @@ protected:
             // Handle _one_ I/O.
 
             if (selectOnWrite && FD_ISSET(mWindow.getFd(), &writeFds)) {
-                PRINT("window write event");
+                //PRINT("window write event");
                 mWindow.write();
             }
             else if (FD_ISSET(XConnectionNumber(mDisplay), &readFds)) {
