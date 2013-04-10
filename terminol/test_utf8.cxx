@@ -15,7 +15,7 @@ const uint8_t B7 = 1 << 7;
 using namespace utf8;
 
 char nibbleToHex(uint8_t nibble) {
-    ASSERT(nibble < 0x10,);
+    ASSERT(nibble < 0x10, "");
     if (nibble < 0xA) return '0' +  nibble;
     else              return 'A' + (nibble - 10);
 }
@@ -111,20 +111,20 @@ void forwardReverse(CodePoint cp) {
     showCodePointBytes(std::cout, cp2) << std::endl;
     showCodePointBits(std::cout, cp2) << std::endl << std::endl;
 
-    ENFORCE(cp == cp2, << cp << " = " << cp2);
+    ENFORCE(cp == cp2, cp << " = " << cp2);
 }
 
 int main() {
-    ENFORCE(leadLength(B1) == L1,);
-    ENFORCE(leadLength(B1 | B2) == L1,);
-    ENFORCE(leadLength(~B7) == L1,);
-    ENFORCE(leadLength('a') == L1,);
-    ENFORCE(leadLength('z') == L1,);
-    ENFORCE(leadLength('\x7F') == L1,);
+    ENFORCE(leadLength(B1) == L1, "");
+    ENFORCE(leadLength(B1 | B2) == L1, "");
+    ENFORCE(leadLength(~B7) == L1, "");
+    ENFORCE(leadLength('a') == L1, "");
+    ENFORCE(leadLength('z') == L1, "");
+    ENFORCE(leadLength('\x7F') == L1, "");
 
-    ENFORCE(leadLength(B7 | B6) == L2,);
-    ENFORCE(leadLength(B7 | B6 | B5) == L3,);
-    ENFORCE(leadLength(B7 | B6 | B5 | B4) == L4,);
+    ENFORCE(leadLength(B7 | B6) == L2, "");
+    ENFORCE(leadLength(B7 | B6 | B5) == L3, "");
+    ENFORCE(leadLength(B7 | B6 | B5 | B4) == L4, "");
 
     forwardReverse(0x50);
     forwardReverse(0x7F);

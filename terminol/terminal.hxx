@@ -59,10 +59,10 @@ public:
 
     bool isOpen() const { return _tty.isOpen(); }
     int  getFd() { return _tty.getFd(); }
-    void read() { ASSERT(!_dispatch,); _tty.read(); }
-    void enqueueWrite(const char * data, size_t size) { ASSERT(!_dispatch,); _tty.enqueueWrite(data, size); }
-    bool isWritePending() const { ASSERT(!_dispatch,); return _tty.isWritePending(); }
-    void write() { ASSERT(!_dispatch,); _tty.write(); }
+    void read() { ASSERT(!_dispatch, ""); _tty.read(); }
+    void enqueueWrite(const char * data, size_t size) { ASSERT(!_dispatch, ""); _tty.enqueueWrite(data, size); }
+    bool isWritePending() const { ASSERT(!_dispatch, ""); return _tty.isWritePending(); }
+    void write() { ASSERT(!_dispatch, ""); _tty.write(); }
     void resize(uint16_t rows, uint16_t cols);
 
 protected:

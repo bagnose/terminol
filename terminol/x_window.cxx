@@ -189,7 +189,7 @@ void X_Window::configure(XConfigureEvent & event) {
         rows = cols = 1;
     }
 
-    ASSERT(rows > 0 && cols > 0,);
+    ASSERT(rows > 0 && cols > 0, "");
 
     _terminal->resize(rows, cols);
 

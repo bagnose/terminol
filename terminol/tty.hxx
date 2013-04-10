@@ -124,7 +124,6 @@ protected:
     void processChar(const char * s, utf8::Length len);
     void processControl(char c);
     void processEscape(char c);
-    void processEscapeStr(char c);
     void processCsiEscape();
     void processStrEscape();
     void processAttributes(const std::vector<int32_t> & args);

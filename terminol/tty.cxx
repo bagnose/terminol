@@ -1,6 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/tty.hxx"
+#include "terminol/ascii.hxx"
 
 #include <sstream>
 
@@ -55,25 +56,25 @@ Tty::Tty(IObserver         & observer,
 
 
 Tty::~Tty() {
-    ASSERT(!_dispatch,);
+    ASSERT(!_dispatch, "");
     if (isOpen()) {
         close();
     }
 }
 
 bool Tty::isOpen() const {
-    ASSERT(!_dispatch,);
+    ASSERT(!_dispatch, "");
     return _fd != -1;
 }
 
 int Tty::getFd() {
-    ASSERT(!_dispatch,);
+    ASSERT(!_dispatch, "");
     ASSERT(isOpen(), "Not open.");
     return _fd;
 }
 
 void Tty::read() {
-    ASSERT(!_dispatch,);
+    ASSERT(!_dispatch, "");
     ASSERT(isOpen(), "Not open.");
     char buffer[4096];
 
@@ -88,7 +89,7 @@ void Tty::read() {
         ASSERT(false, "Expected -1 from ::read(), not EOF for child termination.");
     }
     else {
-        ASSERT(rval > 0,);
+        ASSERT(rval > 0, "");
         auto oldSize = _readBuffer.size();
         _readBuffer.resize(oldSize + rval);
         std::copy(buffer, buffer + rval, &_readBuffer[oldSize]);
@@ -100,7 +101,7 @@ void Tty::read() {
 }
 
 void Tty::enqueueWrite(const char * data, size_t size) {
-    ASSERT(!_dispatch,);
+    ASSERT(!_dispatch, "");
     ASSERT(isOpen(), "Not open.");
 
     if (!_dumpWrites) {
@@ -111,13 +112,13 @@ void Tty::enqueueWrite(const char * data, size_t size) {
 }
 
 bool Tty::isWritePending() const {
-    ASSERT(!_dispatch,);
+    ASSERT(!_dispatch, "");
     ASSERT(isOpen(), "Not open.");
     return !_writeBuffer.empty();
 }
 
 void Tty::write() {
-    ASSERT(!_dispatch,);
+    ASSERT(!_dispatch, "");
     ASSERT(isOpen(), "Not open.");
     ASSERT(isWritePending(), "No writes queued.");
     ASSERT(!_dumpWrites, "Dump writes is set.");
@@ -140,12 +141,12 @@ void Tty::write() {
 }
 
 void Tty::resize(uint16_t rows, uint16_t cols) {
-    ASSERT(!_dispatch,);
+    ASSERT(!_dispatch, "");
     ASSERT(isOpen(), "Not open.");
 
     struct winsize winsize = { rows, cols, 0, 0 };
 
-    ENFORCE(::ioctl(_fd, TIOCSWINSZ, &winsize) != -1,);
+    ENFORCE(::ioctl(_fd, TIOCSWINSZ, &winsize) != -1, "");
 }
 
 void Tty::openPty(uint16_t            rows,
@@ -156,7 +157,7 @@ void Tty::openPty(uint16_t            rows,
     int master, slave;
     struct winsize winsize = { rows, cols, 0, 0 };
 
-    ENFORCE_SYS(::openpty(&master, &slave, nullptr, nullptr, &winsize) != -1,);
+    ENFORCE_SYS(::openpty(&master, &slave, nullptr, nullptr, &winsize) != -1, "");
 
     _pid = ::fork();
     ENFORCE_SYS(_pid != -1, "::fork() failed.");
@@ -164,7 +165,7 @@ void Tty::openPty(uint16_t            rows,
     if (_pid != 0) {
         // Parent code-path.
 
-        ENFORCE_SYS(::close(slave) != -1,);
+        ENFORCE_SYS(::close(slave) != -1, "");
         _fd  = master;
     }
     else {
@@ -173,12 +174,12 @@ void Tty::openPty(uint16_t            rows,
         // Create a new process group.
         ENFORCE_SYS(::setsid() != -1, "");
         // Hook stdin/out/err up to the PTY.
-        ENFORCE_SYS(::dup2(slave, STDIN_FILENO)  != -1,);
-        ENFORCE_SYS(::dup2(slave, STDOUT_FILENO) != -1,);
-        ENFORCE_SYS(::dup2(slave, STDERR_FILENO) != -1,);
-        ENFORCE_SYS(::ioctl(slave, TIOCSCTTY, nullptr) != -1,);
+        ENFORCE_SYS(::dup2(slave, STDIN_FILENO)  != -1, "");
+        ENFORCE_SYS(::dup2(slave, STDOUT_FILENO) != -1, "");
+        ENFORCE_SYS(::dup2(slave, STDERR_FILENO) != -1, "");
+        ENFORCE_SYS(::ioctl(slave, TIOCSCTTY, nullptr) != -1, "");
         ENFORCE_SYS(::close(slave) != -1, "");
-        ENFORCE_SYS(::close(master) != -1,);
+        ENFORCE_SYS(::close(master) != -1, "");
         execShell(windowId, term, command);
     }
 }
@@ -232,7 +233,7 @@ void Tty::execShell(const std::string & windowId,
 }
 
 void Tty::processBuffer() {
-    ASSERT(!_readBuffer.empty(),);
+    ASSERT(!_readBuffer.empty(), "");
 
     _observer.ttyBegin();
 
@@ -261,10 +262,10 @@ void Tty::processChar(const char * s, utf8::Length length) {
 
         if (_state == STATE_STR_ESCAPE) {
             switch (ascii) {
-                case '\x1B':
+                case ESC:
                     _state = STATE_ESCAPE_START_STR;
                     break;
-                case '\a':      // xterm backwards compatibility
+                case BEL:      // xterm backwards compatibility
                     processStrEscape();
                     _state = STATE_NORMAL;
                     _escapeStr.seq.clear();
@@ -276,19 +277,24 @@ void Tty::processChar(const char * s, utf8::Length length) {
             }
         }
         else if (_state == STATE_ESCAPE_START_STR) {
-            if (ascii == '\\') {
+            if (ascii == '\\') {    // ST
                 processStrEscape();
+            }
+            else {
+                // ???
             }
             _state = STATE_NORMAL;
             _escapeStr.seq.clear();
         }
         else {
-            if (ascii == '\x1B') {
-                ASSERT(_state == STATE_NORMAL,);
+            if (ascii == ESC) {
+                ASSERT(_state == STATE_NORMAL, "");
                 _state = STATE_ESCAPE_START;
             }
-            else if (ascii < '\x20' || ascii == '\x7F') {
-                ASSERT(_state == STATE_NORMAL,);
+            else if (ascii < SPACE || ascii == DEL) {
+                ASSERT(_state == STATE_NORMAL, "");
+                // XXX Can be in the middle of an escape sequence
+                // SUB/CAN could be used to terminate it.
                 processControl(ascii);
             }
             else {
@@ -302,7 +308,7 @@ void Tty::processChar(const char * s, utf8::Length length) {
                     case STATE_CSI_ESCAPE:
                         _escapeCsi.seq.push_back(ascii);
 
-                        if (ascii >= '\x40' && ascii < '\x7F') {
+                        if (ascii >= '@' && ascii < DEL) {
                             processCsiEscape();
                             _state = STATE_NORMAL;
                             _escapeCsi.seq.clear();
@@ -331,38 +337,38 @@ void Tty::processChar(const char * s, utf8::Length length) {
 }
 
 void Tty::processControl(char c) {
-    ASSERT(_state == STATE_NORMAL,);
+    ASSERT(_state == STATE_NORMAL, "");
 
     switch (c) {
-        case '\a':      // BEL
+        case BEL:
             _observer.ttyControl(CONTROL_BEL);
             break;
-        case '\t':      // HT
+        case HT:
             _observer.ttyControl(CONTROL_HT);
             break;
-        case '\b':      // BS
+        case BS:
             _observer.ttyControl(CONTROL_BS);
             break;
-        case '\r':      // CR
+        case CR:
             _observer.ttyControl(CONTROL_CR);
             break;
-        case '\f':      // FF
-        case '\v':      // VT
-        case '\n':      // LF
+        case FF:
+        case VT:
+        case LF:
             _observer.ttyControl(CONTROL_LF);
             break;
-        case '\x0E':    // SO
-        case '\x0F':    // SI
+        case SO:
+        case SI:
             // Ignore
             break;
-        case '\x1A':    // SUB
-        case '\x18':    // CAN
-            // TODO reset escape states - assertion prevents this
+        case CAN:
+        case SUB:
+            // XXX reset escape states - assertion prevents this
             break;
-        case '\x05':    // ENQ
-        case '\0':      // NUL
-        case '\x11':    // DC1/XON
-        case '\x13':    // DC3/XOFF
+        case ENQ:
+        case NUL:
+        case DC1:    // DC1/XON
+        case DC3:    // DC3/XOFF
             break;
         default:
             PRINT("Ignored control char: " << int(c));
@@ -371,7 +377,7 @@ void Tty::processControl(char c) {
 }
 
 void Tty::processEscape(char c) {
-    ASSERT(_state == STATE_ESCAPE_START,);
+    ASSERT(_state == STATE_ESCAPE_START, "");
 
     switch (c) {
         case '[':
@@ -442,13 +448,6 @@ void Tty::processEscape(char c) {
             //tcursor(CURSOR_LOAD);
             _state = STATE_NORMAL;
             break;
-        case '\\': // ST - Stop
-            if (_state == STATE_STR_ESCAPE) {
-                processStrEscape();
-                _escapeStr.seq.clear();
-            }
-            _state = STATE_NORMAL;
-            break;
         case 'm':
             break;
         default:
@@ -458,23 +457,9 @@ void Tty::processEscape(char c) {
     }
 }
 
-void Tty::processEscapeStr(char c) {
-    ASSERT(_state == STATE_ESCAPE_START_STR,);
-
-    switch (c) {
-        case '\\':
-            processStrEscape();
-            break;
-        default:
-            break;
-    }
-
-    _state = STATE_NORMAL;
-}
-
 void Tty::processCsiEscape() {
-    ENFORCE(_state == STATE_CSI_ESCAPE,);       // XXX here or outside?
-    ASSERT(!_escapeCsi.seq.empty(),);
+    ENFORCE(_state == STATE_CSI_ESCAPE, "");       // XXX here or outside?
+    ASSERT(!_escapeCsi.seq.empty(), "");
     //PRINT("CSI-esc: " << _escapeCsi.seq);
 
     size_t i = 0;
@@ -519,6 +504,8 @@ void Tty::processCsiEscape() {
     // Handle the sequence.
     //
 
+    ASSERT(i == _escapeCsi.seq.size() - 1, "");        // XXX replaces following conditional
+
     if (i == _escapeCsi.seq.size()) {
         ERROR("Bad CSI: " << _escapeCsi.seq);
     }
@@ -526,14 +513,14 @@ void Tty::processCsiEscape() {
         char mode = _escapeCsi.seq[i];
         switch (mode) {
             case 'h':
-                //PRINT(<<"CSI: Set terminal mode: " << strArgs(args));
+                //PRINT("CSI: Set terminal mode: " << strArgs(args));
                 processModes(priv, true, args);
                 break;
             case 'l':
-                //PRINT(<<"CSI: Reset terminal mode: " << strArgs(args));
+                //PRINT("CSI: Reset terminal mode: " << strArgs(args));
                 processModes(priv, false, args);
                 break;
-            case 'K':   // EL - Clear line
+            case 'K':   // EL - Erase line
                 switch (nthArg(args, 0)) {
                     case 0: // right
                         _observer.ttyClearLine(CLEAR_LINE_RIGHT);
@@ -547,10 +534,10 @@ void Tty::processCsiEscape() {
                 }
                 break;
             case 'g':
-                PRINT(<<"CSI: Tabulation clear");
+                PRINT("CSI: Tabulation clear");
                 break;
-            case 'H':
-            case 'f': {
+            case 'H':       // CUP - Cursor Position
+            case 'f': {     // HVP - Horizontal and Vertical Position
                 uint16_t row = nthArg(args, 0, 1) - 1;
                 uint16_t col = nthArg(args, 1, 1) - 1;
                 //PRINT("CSI: Move cursor: row=" << row << ", col=" << col);
@@ -559,7 +546,7 @@ void Tty::processCsiEscape() {
                 break;
             //case '!':
                 //break;
-            case 'J':
+            case 'J': // ED - Erase Data
                 // Clear screen.
                 switch (nthArg(args, 0)) {
                     case 0:
@@ -573,6 +560,7 @@ void Tty::processCsiEscape() {
                     case 2:
                         // all
                         _observer.ttyClearScreen(CLEAR_SCREEN_ALL);
+                        _observer.ttyMoveCursor(0, 0);
                         break;
                     default:
                         FATAL("");
@@ -582,14 +570,14 @@ void Tty::processCsiEscape() {
                 processAttributes(args);
                 break;
             default:
-                PRINT(<<"CSI: UNKNOWN: mode=" << mode << ", priv=" << priv << ", args: " << strArgs(args));
+                PRINT("CSI: UNKNOWN: mode=" << mode << ", priv=" << priv << ", args: " << strArgs(args));
                 break;
         }
     }
 }
 
 void Tty::processStrEscape() {
-    ENFORCE(_state == STATE_STR_ESCAPE,);       // XXX here or outside?
+    ENFORCE(_state == STATE_STR_ESCAPE, "");       // XXX here or outside?
     //PRINT("STR-esc: type=" << _escapeStr.type << ", seq=" << _escapeStr.seq);
 
     std::vector<std::string> args;
@@ -616,7 +604,7 @@ void Tty::processStrEscape() {
                 case 0:
                 case 1:
                 case 2:
-                    if (args.size() > 1) {
+                    if (args.size() > 1) {      // XXX need if? we have fallback
                         _observer.ttySetTitle(nthArg(args, 1));
                     }
                     break;
@@ -641,45 +629,80 @@ void Tty::processAttributes(const std::vector<int32_t> & args) {
         int32_t v = args[i];
 
         switch (v) {
-            case 0:
+            case 0: // Reset/Normal
                 _observer.ttySetBg(defaultBg());
                 _observer.ttySetFg(defaultFg());
                 _observer.ttyClearAttributes();
                 break;
-            case 1:
+            case 1: // Bold
                 _observer.ttySetAttribute(ATTRIBUTE_BOLD, true);
                 break;
-            case 3:
+            case 2: // Faint (decreased intensity)
+                NYI("Faint");
+                break;
+            case 3: // Italic: on
                 _observer.ttySetAttribute(ATTRIBUTE_ITALIC, true);
                 break;
-            case 4:
+            case 4: // Underline: Single
                 _observer.ttySetAttribute(ATTRIBUTE_UNDERLINE, true);
                 break;
-            case 5: // slow blink
-            case 6: // rapid blink
+            case 5: // Blink: slow
+            case 6: // Blink: rapid
                 _observer.ttySetAttribute(ATTRIBUTE_BLINK, true);
                 break;
-            case 7:
+            case 7: // Image: Negative
                 _observer.ttySetAttribute(ATTRIBUTE_REVERSE, true);
                 break;
+            case 8: // Conceal (not widely supported)
+                NYI("Conceal");
+                break;
+            case 9: // Crossed-out (not widely supported)
+                NYI("Crossed-out");
+                break;
+            case 10: // Primary (default) font
+                NYI("Primary (default) font");
+                break;
+            case 11: // 1st alternative font
+            case 12:
+            case 13:
+            case 14:
+            case 15:
+            case 16:
+            case 17:
+            case 18:
+            case 19: // 9th alternative font
+                NYI(nthStr(v - 10) << " alternative font");
+                break;
+            case 20: // Fraktur (hardly ever supported)
+                NYI("Fraktur");
+                break;
             case 21:
-            case 22:
+                // Bold: off or Underline: Double (bold off not widely supported,
+                //                                 double underline hardly ever)
+            case 22: // Normal color or intensity (neither bold nor faint)
                 _observer.ttySetAttribute(ATTRIBUTE_BOLD, false);
                 break;
-            case 23:
+            case 23: // Not italic, not Fraktur
                 _observer.ttySetAttribute(ATTRIBUTE_ITALIC, false);
                 break;
-            case 24:
+            case 24: // Underline: None (not singly or doubly underlined)
                 _observer.ttySetAttribute(ATTRIBUTE_UNDERLINE, false);
                 break;
-            case 25:
-            case 26:
+            case 25: // Blink: off
+            case 26: // Reserved
                 _observer.ttySetAttribute(ATTRIBUTE_BLINK, false);
                 break;
-            case 27:
+            case 27: // Image: Positive
                 _observer.ttySetAttribute(ATTRIBUTE_REVERSE, false);
                 break;
-            case 38:
+            case 28: // Reveal (conceal off - not widely supported)
+                NYI("Reveal");
+                break;
+            case 29: // Not crossed-out (not widely supported)
+                NYI("Crossed-out");
+                break;
+                // 30..37 (set foreground colour - handled separately)
+            case 38: // Set xterm-256 text color (wikipedia: dubious???)
                 if (i + 2 < args.size() && args[i + 1] == 5) {
                     i += 2;
                     int32_t v2 = args[i];
@@ -697,6 +720,7 @@ void Tty::processAttributes(const std::vector<int32_t> & args) {
             case 39:
                 _observer.ttySetFg(defaultFg());
                 break;
+                // 40..47 (set background colour - handled separately)
             case 48:
                 if (i + 2 < args.size() && args[i + 1] == 5) {
                     i += 2;
@@ -715,6 +739,26 @@ void Tty::processAttributes(const std::vector<int32_t> & args) {
             case 49:
                 _observer.ttySetBg(defaultBg());
                 break;
+                // 50 Reserved
+            case 51: // Framed
+                NYI("Framed");
+                break;
+            case 52: // Encircled
+                NYI("Encircled");
+                break;
+            case 53: // Overlined
+                NYI("Overlined");
+                break;
+            case 54: // Not framed or encircled
+                NYI("Not framed or encircled");
+                break;
+            case 55: // Not overlined
+                NYI("Not overlined");
+                break;
+                // 56..59 Reserved
+                // 60..64 (ideogram stuff - hardly ever supported)
+                // 90..99 Set foreground colour high intensity - handled separately
+                // 100..109 Set background colour high intensity - handled separately
             default:
                 if (v >= 30 && v < 38) {
                     // normal fg
@@ -733,7 +777,7 @@ void Tty::processAttributes(const std::vector<int32_t> & args) {
                     _observer.ttySetBg(v - 100 + 8);
                 }
                 else {
-                    ERROR("Unhandled Blah");
+                    ERROR("Unhandled attribute: " << v);
                 }
         }
     }
@@ -834,14 +878,14 @@ void Tty::processModes(bool priv, bool set, const std::vector<int32_t> & args) {
 }
 
 bool Tty::pollReap(int & exitCode, int msec) {
-    ASSERT(_pid != 0,);
+    ASSERT(_pid != 0, "");
 
     for (int i = 0; i != msec; ++i) {
         int stat;
         int rval = ::waitpid(_pid, &stat, WNOHANG);
         ENFORCE_SYS(rval != -1, "::waitpid() failed.");
         if (rval != 0) {
-            ENFORCE(rval == _pid,);
+            ENFORCE(rval == _pid, "");
             _pid = 0;
             exitCode = WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
             return true;
@@ -853,18 +897,18 @@ bool Tty::pollReap(int & exitCode, int msec) {
 }
 
 void Tty::waitReap(int & exitCode) {
-    ASSERT(_pid != 0,);
+    ASSERT(_pid != 0, "");
 
     int stat;
-    ENFORCE_SYS(::waitpid(_pid, &stat, 0) == _pid,);
+    ENFORCE_SYS(::waitpid(_pid, &stat, 0) == _pid, "");
     _pid = 0;
     exitCode = WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
 }
 
 int Tty::close() {
-    ASSERT(isOpen(),);
+    ASSERT(isOpen(), "");
 
-    ENFORCE_SYS(::close(_fd) != -1,);
+    ENFORCE_SYS(::close(_fd) != -1, "");
     _fd = -1;
 
     ::kill(_pid, SIGCONT);

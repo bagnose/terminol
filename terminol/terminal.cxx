@@ -31,11 +31,11 @@ Terminal::Terminal(IObserver          & observer,
 }
 
 Terminal::~Terminal() {
-    ASSERT(!_dispatch,);
+    ASSERT(!_dispatch, "");
 }
 
 void Terminal::resize(uint16_t rows, uint16_t cols) {
-    ASSERT(!_dispatch,);
+    ASSERT(!_dispatch, "");
     _buffer.resize(rows, cols);
     _tty.resize(rows, cols);
     _tabs.resize(cols);
@@ -137,7 +137,6 @@ void Terminal::ttyClearScreen(ClearScreen clear) throw () {
             break;
         case CLEAR_SCREEN_ALL:
             _buffer.clearAll();
-            _cursorCol = _cursorRow = 0;
             break;
     }
 

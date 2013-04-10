@@ -16,7 +16,7 @@ X_FontSet::X_FontSet(Display           * display,
     FcPattern * pattern;
 
     pattern = FcNameParse(reinterpret_cast<const FcChar8 *>(fontName.c_str()));
-    ENFORCE(pattern,);
+    ENFORCE(pattern, "");
 
     FcConfigSubstitute(nullptr, pattern, FcMatchPattern);
     FcDefaultSubstitute(pattern);
@@ -53,11 +53,11 @@ X_FontSet::~X_FontSet() {
 XftFont * X_FontSet::load(FcPattern * pattern, bool master) {
     FcResult result;
     FcPattern * match = FcFontMatch(nullptr, pattern, &result);
-    ENFORCE(match,);
+    ENFORCE(match, "");
 
     // Note, the match will be free'd when the font is closed.
     XftFont * font = XftFontOpenPattern(_display, match);
-    ENFORCE(font,);
+    ENFORCE(font, "");
 
     _width  = std::max(_width,  static_cast<uint16_t>(font->max_advance_width));
     _height = std::max(_height, static_cast<uint16_t>(font->height));

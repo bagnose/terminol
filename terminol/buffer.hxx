@@ -18,7 +18,7 @@ class RawBuffer : protected Uncopyable {
         size_t size() const { return chars.size(); }
 
         void insert(const Char & ch, size_t col) {
-            ASSERT(!(col > size()),);
+            ASSERT(!(col > size()), "");
             chars.insert(chars.begin() + col, ch);
         }
     };
@@ -31,19 +31,19 @@ public:
         _lines(size, Line()),
         _sizeLimit(sizeLimit)
     {
-        ASSERT(!(sizeLimit < size),);
+        ASSERT(!(sizeLimit < size), "");
     }
 
     size_t getSize() const { return _lines.size(); }
 
     uint16_t getWidth(size_t row) const {
-        ASSERT(row < _lines.size(),);
+        ASSERT(row < _lines.size(), "");
         const Line & line = _lines[row];
         return line.size();
     }
 
     const Char & getChar(size_t row, uint16_t col) const {
-        ASSERT(row < _lines.size(),);
+        ASSERT(row < _lines.size(), "");
         const Line & line = _lines[row];
         return line.chars[col];
     }
@@ -56,16 +56,16 @@ public:
     }
 
     void insertChar(const Char & ch, size_t row, uint16_t col) {
-        ASSERT(row < _lines.size(),);
+        ASSERT(row < _lines.size(), "");
         Line & line = _lines[row];
-        ASSERT(!(col > line.chars.size()),);
+        ASSERT(!(col > line.chars.size()), "");
         line.chars.insert(line.chars.begin() + col, ch);
     }
 
     void eraseChar(size_t row, uint16_t col) {
-        ASSERT(row < _lines.size(),);
+        ASSERT(row < _lines.size(), "");
         Line & line = _lines[row];
-        ASSERT(col < line.chars.size(),);
+        ASSERT(col < line.chars.size(), "");
         line.chars.erase(line.chars.begin() + col);
     }
 
@@ -115,7 +115,7 @@ public:
         _offset(0),
         _wrapCol(wrapCol)
     {
-        ASSERT(!(sizeLimit < size),);
+        ASSERT(!(sizeLimit < size), "");
 
         for (size_t i = 0; i != size; ++i) {
             _lines.push_back(Line(i, 0, 0));
@@ -127,7 +127,7 @@ public:
     uint16_t getWrapCol() const { return _wrapCol; }
 
     uint16_t getWidth(size_t row) const {
-        ASSERT(row < _lines.size(),);
+        ASSERT(row < _lines.size(), "");
         const Line & line = _lines[row];
         return line.getWidth();
     }
@@ -159,7 +159,7 @@ public:
         bool grew = _raw.addLine();
 
         if (!grew) {
-            ASSERT(!_lines.empty(),);
+            ASSERT(!_lines.empty(), "");
             size_t row = _lines.front().row;
             do {
                 _lines.pop_front();
@@ -171,18 +171,18 @@ public:
     }
 
     void insertChar(const Char & ch, size_t row, uint16_t col) {
-        ASSERT(row < _lines.size(),);
+        ASSERT(row < _lines.size(), "");
         Line & line = _lines[row];
-        ASSERT(!(col > line.colEnd),);
+        ASSERT(!(col > line.colEnd), "");
         _raw.insertChar(ch, line.row - _offset, line.colBegin + col);
         ++line.colEnd;
         // TODO deal with wrapping
     }
 
     void eraseChar(size_t row, uint16_t col) {
-        ASSERT(row < _lines.size(),);
+        ASSERT(row < _lines.size(), "");
         Line & line = _lines[row];
-        ASSERT(col < line.colEnd,);
+        ASSERT(col < line.colEnd, "");
         _raw.eraseChar(line.row - _offset, line.colBegin + col);
         --line.colEnd;
         // TODO deal with unwrapping

@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <sstream>
+#include <string>
 #include <cstring>
 
 #define LIKELY(x)   __builtin_expect(!!(x), 1)
@@ -14,7 +15,7 @@
     do { \
         std::cout \
             << __FILE__ << ":" << __LINE__ << " " \
-            << "" output \
+            << output \
             << std::endl; \
     } while (false)
 
@@ -22,7 +23,7 @@
     do { \
         std::cerr \
             << __FILE__ << ":" << __LINE__ << " " \
-            << "" output  \
+            << output  \
             << std::endl; \
     } while (false)
 
@@ -30,7 +31,7 @@
     do { \
         std::cerr \
             << __FILE__ << ":" << __LINE__ << " " \
-            << "" output  \
+            << output  \
             << std::endl; \
     } while (false)
 
@@ -38,9 +39,17 @@
     do { \
         std::cerr \
             << __FILE__ << ":" << __LINE__ << " " \
-            << "" output  \
+            << output  \
             << std::endl; \
         std::terminate(); \
+    } while (false)
+
+#define NYI(output) \
+    do { \
+        std::cerr \
+            << __FILE__ << ":" << __LINE__ << " " \
+            << output  \
+            << std::endl; \
     } while (false)
 
 // ENFORCE (and its variants) never get compiled out.
@@ -49,7 +58,7 @@
         if (!LIKELY(condition)) { \
             std::cerr \
                 << __FILE__ << ":" << __LINE__ << " " \
-                << "" output  \
+                << output  \
                 << "  (("#condition"))" \
                 << std::endl; \
             std::terminate(); \
@@ -57,7 +66,7 @@
     } while (false)
 
 #define ENFORCE_SYS(condition, output) \
-    ENFORCE(condition, "" output << " (" << ::strerror(errno) << ")")
+    ENFORCE(condition, output << " (" << ::strerror(errno) << ")")
 
 // ASSERT (and its variants) may be compiled out.
 #if 1
@@ -66,7 +75,7 @@
         if (!LIKELY(condition)) { \
             std::cerr \
                 << __FILE__ << ":" << __LINE__ << " " \
-                << "" output  \
+                << output  \
                 << "  (("#condition"))" \
                 << std::endl; \
             std::terminate(); \
@@ -74,7 +83,7 @@
     } while (false)
 
 #  define ASSERT_SYS(condition, output) \
-    ASSERT(condition, "" output << " (" << ::strerror(errno) << ")")
+    ASSERT(condition, output << " (" << ::strerror(errno) << ")")
 #else
 #  define ASSERT(condition, output) \
     do { } while (false)
@@ -94,6 +103,29 @@ template <typename T> T unstringify(const std::string & str) {
     ist >> t;
     if (ist.good()) { return t; }
     else { FATAL("Failed to convert: " << str); }
+}
+
+template <typename T> std::string nthStr(T t) {
+    std::ostringstream ost;
+    ost << t;
+    switch (t) {
+        case 0:
+            ost << "th";
+            break;
+        case 1:
+            ost << "st";
+            break;
+        case 2:
+            ost << "nd";
+            break;
+        case 3:
+            ost << "rd";
+            break;
+        default:
+            ost << "th";
+            break;
+    }
+    return ost.str();
 }
 
 // Inherit from this to be uncopyable.

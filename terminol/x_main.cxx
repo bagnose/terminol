@@ -45,7 +45,7 @@ protected:
             }
 
             ENFORCE_SYS(::select(fdMax + 1, &readFds, &writeFds, nullptr,
-                                 nullptr) != -1,);
+                                 nullptr) != -1, "");
 
             // Handle _one_ I/O.
 
@@ -178,9 +178,9 @@ int main(int argc, char * argv[]) {
     Display * display  = XOpenDisplay(nullptr);
     ENFORCE(display, "Failed to open display.");
     Screen  * screen   = XDefaultScreenOfDisplay(display);
-    ASSERT(screen,);
+    ASSERT(screen, "");
     Visual  * visual   = XDefaultVisualOfScreen(screen);
-    ASSERT(visual,);
+    ASSERT(visual, "");
     Colormap  colormap = XDefaultColormapOfScreen(screen);
     Window    root     = XRootWindowOfScreen(screen);
 

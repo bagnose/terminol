@@ -17,7 +17,7 @@ std::ostream & operator << (std::ostream & ost, Control control) {
             return ost << "LF";
     }
 
-    FATAL(<< static_cast<int>(control));
+    FATAL(static_cast<int>(control));
 }
 
 std::ostream & operator << (std::ostream & ost, ClearScreen clear) {
@@ -30,7 +30,7 @@ std::ostream & operator << (std::ostream & ost, ClearScreen clear) {
             return ost << "ALL";
     }
 
-    FATAL(<< static_cast<int>(clear));
+    FATAL(static_cast<int>(clear));
 }
 
 std::ostream & operator << (std::ostream & ost, ClearLine clear) {
@@ -43,7 +43,7 @@ std::ostream & operator << (std::ostream & ost, ClearLine clear) {
             return ost << "ALL";
     }
 
-    FATAL(<< static_cast<int>(clear));
+    FATAL(static_cast<int>(clear));
 }
 
 std::ostream & operator << (std::ostream & ost, Mode mode) {
@@ -91,5 +91,5 @@ std::ostream & operator << (std::ostream & ost, Attribute attribute) {
             return ost << "REVERSE";
     }
 
-    FATAL(<<static_cast<int>(attribute));
+    FATAL(static_cast<int>(attribute));
 }
