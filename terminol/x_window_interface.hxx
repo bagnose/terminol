@@ -20,10 +20,13 @@ public:
     virtual void motionNotify(XMotionEvent & event) = 0;
     virtual void mapNotify(XMapEvent & event) = 0;
     virtual void unmapNotify(XUnmapEvent & event) = 0;
+    virtual void reparentNotify(XReparentEvent & event) = 0;
     virtual void expose(XExposeEvent & event) = 0;
     virtual void configure(XConfigureEvent & event) = 0;
     virtual void focusIn(XFocusChangeEvent & event) = 0;
     virtual void focusOut(XFocusChangeEvent & event) = 0;
+    virtual void enterNotify(XCrossingEvent & event) = 0;
+    virtual void leaveNotify(XCrossingEvent & event) = 0;
     virtual void visibilityNotify(XVisibilityEvent & event) = 0;
     // TODO selection
 

@@ -22,6 +22,7 @@ public:
         virtual void ttyControl(Control control) throw () = 0;
         // escapes
         virtual void ttyMoveCursor(uint16_t row, uint16_t col) throw () = 0;
+        virtual void ttyRelMoveCursor(int16_t dRow, int16_t dCol) throw () = 0;
         virtual void ttyClearLine(ClearLine clear) throw () = 0;
         virtual void ttyClearScreen(ClearScreen clear) throw () = 0;
         virtual void ttySetFg(uint8_t fg) throw () = 0;
@@ -37,6 +38,8 @@ public:
         virtual void ttyUtf8(const char * s, utf8::Length length) throw () = 0;
         // end
         virtual void ttyEnd() throw () = 0;
+
+        virtual void ttyGetCursorPos(uint16_t & row, uint16_t & col) const throw () = 0;
 
         virtual void ttyChildExited(int exitCode) throw () = 0;
 

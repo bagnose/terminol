@@ -18,6 +18,7 @@ X_Window::X_Window(Display            * display,
                    const X_ColorSet   & colorSet,
                    const X_KeyMap     & keyMap,
                    X_FontSet          & fontSet,
+                   const std::string  & term,
                    const Tty::Command & command) :
     _display(display),
     _screen(screen),
@@ -28,7 +29,8 @@ X_Window::X_Window(Display            * display,
     _window(0),
     _width(0),
     _height(0),
-    _terminal(nullptr)
+    _terminal(nullptr),
+    _hadConfigure(false)
 {
     XSetWindowAttributes attributes;
     attributes.background_pixel = XBlackPixelOfScreen(_screen);
@@ -76,10 +78,14 @@ X_Window::X_Window(Display            * display,
 
     XFlush(_display);
 
-    _terminal = new Terminal(*this, rows, cols, stringify(_window), "xterm", command);
+    _terminal = new Terminal(*this, rows, cols, stringify(_window), term, command);
 }
 
 X_Window::~X_Window() {
+    if (_hadConfigure) {
+        XFreePixmap(_display, _pixmap);
+    }
+
     delete _terminal;
 
     XDestroyWindow(_display, _window);
@@ -147,6 +153,10 @@ void X_Window::unmapNotify(XUnmapEvent & event) {
     PRINT("Unmap");
 }
 
+void X_Window::reparentNotify(XReparentEvent & event) {
+    PRINT("Reparent");
+}
+
 void X_Window::expose(XExposeEvent & event) {
     PRINT("Expose");
     ASSERT(event.window == _window, "Which window?");
@@ -163,16 +173,24 @@ void X_Window::expose(XExposeEvent & event) {
 }
 
 void X_Window::configure(XConfigureEvent & event) {
-    PRINT("Configure");
+    PRINT("Configure: " <<
+          event.width << "x" << event.height << expSignStr(event.x) << expSignStr(event.y));
     ASSERT(event.window == _window, "Which window?");
-    /*
-       PRINT("Configure notify: " <<
-       event.x << " " << event.y << " " <<
-       event.width << " " << event.height);
-       */
+    ASSERT(event.width != 0 && event.height != 0, "Zero size?");
+
+    // We are only interested in size changes.
+    if (_width == event.width && _height == event.height) return;
+
+    if (_hadConfigure) {
+        //XFreePixmap(_display, _pixmap);
+    }
+    else {
+        _hadConfigure = true;
+    }
 
     _width  = event.width;
     _height = event.height;
+    //_pixmap = XCreatePixmap(_display, _window, _width, _height, CopyFromParent);
 
     uint16_t rows, cols;
 
@@ -197,11 +215,19 @@ void X_Window::configure(XConfigureEvent & event) {
 }
 
 void X_Window::focusIn(XFocusChangeEvent & event) {
-    PRINT("Focus in: mode=" << event.mode << ", detail=" << event.detail);
+    //PRINT("Focus in: mode=" << event.mode << ", detail=" << event.detail);
 }
 
 void X_Window::focusOut(XFocusChangeEvent & event) {
-    PRINT("Focus out: mode=" << event.mode << ", detail=" << event.detail);
+    //PRINT("Focus out: mode=" << event.mode << ", detail=" << event.detail);
+}
+
+void X_Window::enterNotify(XCrossingEvent & event) {
+    //PRINT("Enter notify");
+}
+
+void X_Window::leaveNotify(XCrossingEvent & event) {
+    //PRINT("Leave notify");
 }
 
 void X_Window::visibilityNotify(XVisibilityEvent & event) {
@@ -290,6 +316,10 @@ void X_Window::setTitle(const std::string & title) {
 void X_Window::terminalBegin() throw () {
 }
 
+void X_Window::terminalDamageChars(uint16_t row, uint16_t col0, uint16_t col1) throw () {
+    _damage = true;
+}
+
 void X_Window::terminalDamageAll() throw () {
     _damage = true;
 }
@@ -299,7 +329,7 @@ void X_Window::terminalResetTitle() throw () {
 }
 
 void X_Window::terminalSetTitle(const std::string & title) throw () {
-    PRINT("Set title: " << title);
+    //PRINT("Set title: " << title);
     setTitle(title);
 }
 

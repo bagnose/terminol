@@ -19,11 +19,13 @@ class SimpleBuffer {
         uint16_t getCols() const { return static_cast<uint16_t>(_chars.size()); }
         const Char & getChar(uint16_t col) const { return _chars[col]; }
 
+        /*
         void insert(const Char & ch, uint16_t col) {
             ASSERT(col < getCols(), "");
             _chars.insert(_chars.begin() + col, ch);
             _chars.pop_back();
         }
+        */
 
         void overwrite(const Char & ch, uint16_t col) {
             ASSERT(col < getCols(), "");
@@ -36,7 +38,7 @@ class SimpleBuffer {
             _chars.push_back(Char::ascii(' '));
         }
 
-        void clearAll() {
+        void clear() {
             std::fill(_chars.begin(), _chars.end(), Char::null());
         }
     };
@@ -60,11 +62,13 @@ public:
         return _lines[row].getChar(col);
     }
 
+    /*
     void insertChar(const Char & ch, uint16_t row, uint16_t col) {
         ASSERT(row < getRows(), "");
         ASSERT(col < getCols(), "");
         _lines[row].insert(ch, col);
     }
+    */
 
     void eraseChar(uint16_t row, uint16_t col) {
         ASSERT(row < getRows(), "");
@@ -90,12 +94,12 @@ public:
 
     void clearLine(uint16_t row) {
         ASSERT(row < getRows(), "");
-        _lines[row].clearAll();
+        _lines[row].clear();
     }
 
     void clearAll() {
         for (auto & line : _lines) {
-            line.clearAll();
+            line.clear();
         }
     }
 };

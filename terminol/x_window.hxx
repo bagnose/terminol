@@ -28,6 +28,8 @@ class X_Window :
     uint16_t           _width;     // px
     uint16_t           _height;    // px
     Terminal         * _terminal;
+    bool               _hadConfigure;
+    Pixmap             _pixmap;
 
 public:
     X_Window(Display            * display,
@@ -36,6 +38,7 @@ public:
              const X_ColorSet   & colorSet,
              const X_KeyMap     & keyMap,
              X_FontSet          & fontSet,
+             const std::string  & term,
              const Tty::Command & command);
 
     ~X_Window();
@@ -61,10 +64,13 @@ public:
     void motionNotify(XMotionEvent & event);
     void mapNotify(XMapEvent & event);
     void unmapNotify(XUnmapEvent & event);
+    void reparentNotify(XReparentEvent & event);
     void expose(XExposeEvent & event);
     void configure(XConfigureEvent & event);
     void focusIn(XFocusChangeEvent & event);
     void focusOut(XFocusChangeEvent & event);
+    void enterNotify(XCrossingEvent & event);
+    void leaveNotify(XCrossingEvent & event);
     void visibilityNotify(XVisibilityEvent & event);
 
 protected:
@@ -76,6 +82,7 @@ protected:
     // Terminal::IObserver implementation:
 
     void terminalBegin() throw ();
+    void terminalDamageChars(uint16_t row, uint16_t col0, uint16_t col1) throw ();
     void terminalDamageAll() throw ();
     void terminalResetTitle() throw ();
     void terminalSetTitle(const std::string & title) throw ();

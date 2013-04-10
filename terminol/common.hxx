@@ -48,7 +48,7 @@
     do { \
         std::cerr \
             << __FILE__ << ":" << __LINE__ << " " \
-            << output  \
+            << "NYI: " << output  \
             << std::endl; \
     } while (false)
 
@@ -91,6 +91,12 @@
     do { } while (false)
 #endif
 
+template <typename T> T clamp(T t, T min, T max) {
+    if      (t < min) { return min; }
+    else if (t > max) { return max; }
+    else              { return t;   }
+}
+
 template <typename T> std::string stringify(const T & t) {
     std::ostringstream ost;
     ost << t;
@@ -103,6 +109,14 @@ template <typename T> T unstringify(const std::string & str) {
     ist >> t;
     if (ist.good()) { return t; }
     else { FATAL("Failed to convert: " << str); }
+}
+
+// Explicit Sign
+template <typename T> std::string expSignStr(T t) {
+    std::ostringstream ost;
+    if (t < 0) { ost <<  t; }
+    else       { ost << '+' << t; }
+    return ost.str();
 }
 
 template <typename T> std::string nthStr(T t) {

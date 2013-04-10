@@ -101,8 +101,17 @@ void Terminal::ttyControl(Control control) throw () {
 }
 
 void Terminal::ttyMoveCursor(uint16_t row, uint16_t col) throw () {
-    _cursorRow = row;
-    _cursorCol = col;
+    _observer.terminalDamageChars(_cursorRow, _cursorCol, _cursorCol + 1);
+    _cursorRow = clamp<uint16_t>(row, 0, _buffer.getRows() - 1);
+    _cursorCol = clamp<uint16_t>(col, 0, _buffer.getCols() - 1);
+    _observer.terminalDamageChars(_cursorRow, _cursorCol, _cursorCol + 1);
+}
+
+void Terminal::ttyRelMoveCursor(int16_t dRow, int16_t dCol) throw () {
+    _observer.terminalDamageChars(_cursorRow, _cursorCol, _cursorCol + 1);
+    _cursorRow = clamp<uint16_t>(_cursorRow + dRow, 0, _buffer.getRows() - 1);
+    _cursorCol = clamp<uint16_t>(_cursorCol + dCol, 0, _buffer.getCols() - 1);
+    _observer.terminalDamageChars(_cursorRow, _cursorCol, _cursorCol + 1);
 }
 
 void Terminal::ttyClearLine(ClearLine clear) throw () {
@@ -159,12 +168,12 @@ void Terminal::ttyClearAttributes() throw () {
 }
 
 void Terminal::ttySetAttribute(Attribute attribute, bool value) throw () {
-    PRINT("Setting attribute: " << attribute << " to: " << value);
+    //PRINT("Setting attribute: " << attribute << " to: " << value);
     _attributes.setTo(attribute, value);
 }
 
 void Terminal::ttySetMode(Mode mode, bool value) throw () {
-    PRINT("Setting mode: " << mode << " to: " << value);
+    //PRINT("Setting mode: " << mode << " to: " << value);
     _modes.setTo(mode, value);
 }
 
@@ -225,6 +234,11 @@ void Terminal::ttyEnd() throw () {
     _dispatch = true;
     _observer.terminalEnd();
     _dispatch = false;
+}
+
+void Terminal::ttyGetCursorPos(uint16_t & row, uint16_t & col) const throw () {
+    row = _cursorRow;
+    col = _cursorCol;
 }
 
 void Terminal::ttyChildExited(int exitStatus) throw () {

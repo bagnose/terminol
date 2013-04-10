@@ -94,11 +94,20 @@ protected:
                 case UnmapNotify:
                     mWindow.unmapNotify(event.xunmap);
                     break;
+                case ReparentNotify:
+                    mWindow.reparentNotify(event.xreparent);
+                    break;
                 case Expose:
                     mWindow.expose(event.xexpose);
                     break;
                 case ConfigureNotify:
                     mWindow.configure(event.xconfigure);
+                    break;
+                case EnterNotify:
+                    mWindow.enterNotify(event.xcrossing);
+                    break;
+                case LeaveNotify:
+                    mWindow.leaveNotify(event.xcrossing);
                     break;
                 case FocusIn:
                     mWindow.focusIn(event.xfocus);
@@ -147,7 +156,8 @@ int main(int argc, char * argv[]) {
     // -   master write
 
     std::string fontName = "inconsolata:pixelsize=16";
-    std::string  geometryStr;
+    std::string geometryStr;
+    std::string term = "ansi";
     Tty::Command command;
     bool         accumulateCommand = false;
 
@@ -156,6 +166,7 @@ int main(int argc, char * argv[]) {
         if      (accumulateCommand)                      { command.push_back(arg);   }
         else if (arg == "--execute")                     { accumulateCommand = true; }
         else if (argMatch(arg, "font", fontName))        {}
+        else if (argMatch(arg, "term", term))        {}
         else if (argMatch(arg, "geometry", geometryStr)) {}
         else { FATAL("Unrecognised argument: " << arg); }
     }
@@ -189,7 +200,7 @@ int main(int argc, char * argv[]) {
         X_ColorSet      colorSet(display, visual, colormap);
         X_KeyMap        keyMap;
         X_FontSet       fontSet(display, fontName);
-        X_Window        window(display, root, screen, colorSet, keyMap, fontSet, command);
+        X_Window        window(display, root, screen, colorSet, keyMap, fontSet, term, command);
         SimpleEventLoop eventLoop(display, window);
     }
 

@@ -512,6 +512,25 @@ void Tty::processCsiEscape() {
     else {
         char mode = _escapeCsi.seq[i];
         switch (mode) {
+            case 'A': // CUU - Cursor Up
+                _observer.ttyRelMoveCursor(-nthArg(args, 0, 1) , 0);
+                break;
+            case 'B': // CUD - Cursor Down
+                _observer.ttyRelMoveCursor(nthArg(args, 0, 1) , 0);
+                break;
+            case 'C': // CUF - Cursor Forward
+                _observer.ttyRelMoveCursor(0, nthArg(args, 0, 1));
+                break;
+            case 'D': // CUB - Cursor Backward
+                _observer.ttyRelMoveCursor(0, -nthArg(args, 0, 1));
+                break;
+            case 'E': // CNL - Cursor Next Line
+                break;
+            case 'F': // CPL - Cursor Previous Line
+                break;
+            case 'G': // CHA - Cursor Horizontal Absolute
+                break;
+
             case 'h':
                 //PRINT("CSI: Set terminal mode: " << strArgs(args));
                 processModes(priv, true, args);
@@ -566,9 +585,23 @@ void Tty::processCsiEscape() {
                         FATAL("");
                 }
                 break;
-            case 'm':
+            case 'm': // SGR - Select Graphic Rendition
                 processAttributes(args);
                 break;
+            case 'n': // DSR - Device Status Report
+                if (nthArg(args, 0) == 6) {
+                    uint16_t row, col;
+                    _observer.ttyGetCursorPos(row, col);
+                    std::ostringstream ost;
+                    ost << ESC << '[' << row << ';' << col << 'R';
+                    std::string str = ost.str();
+                    _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
+                }
+                else {
+                    goto Default;
+                }
+                break;
+Default:
             default:
                 PRINT("CSI: UNKNOWN: mode=" << mode << ", priv=" << priv << ", args: " << strArgs(args));
                 break;
@@ -703,7 +736,12 @@ void Tty::processAttributes(const std::vector<int32_t> & args) {
                 break;
                 // 30..37 (set foreground colour - handled separately)
             case 38: // Set xterm-256 text color (wikipedia: dubious???)
-                if (i + 2 < args.size() && args[i + 1] == 5) {
+                if (i + 4 < args.size() && args[i + 1] == 2) {
+                    // 24-bit foreground support
+                    // ESC[ … 38;2;<r>;<g>;<b> … m Select RGB foreground color
+                    NYI("24-bit foreground");
+                }
+                else if (i + 2 < args.size() && args[i + 1] == 5) {
                     i += 2;
                     int32_t v2 = args[i];
                     if (v2 >= 0 && v2 < 256) {
@@ -714,7 +752,7 @@ void Tty::processAttributes(const std::vector<int32_t> & args) {
                     }
                 }
                 else {
-                    ERROR("XXX");
+                    ERROR("Unrecognised foreground attributes");
                 }
                 break;
             case 39:
@@ -722,7 +760,12 @@ void Tty::processAttributes(const std::vector<int32_t> & args) {
                 break;
                 // 40..47 (set background colour - handled separately)
             case 48:
-                if (i + 2 < args.size() && args[i + 1] == 5) {
+                if (i + 4 < args.size() && args[i + 1] == 2) {
+                    // 24-bit background support
+                    // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB foreground color
+                    NYI("24-bit background");
+                }
+                else if (i + 2 < args.size() && args[i + 1] == 5) {
                     i += 2;
                     int32_t v2 = args[i];
                     if (v2 >= 0 && v2 < 256) {
@@ -733,7 +776,7 @@ void Tty::processAttributes(const std::vector<int32_t> & args) {
                     }
                 }
                 else {
-                    ERROR("XXX");
+                    ERROR("Unrecognised background attributes");
                 }
                 break;
             case 49:

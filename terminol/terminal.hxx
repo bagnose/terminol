@@ -13,9 +13,13 @@ class Terminal : protected Tty::IObserver {
 public:
     class IObserver {
     public:
-        virtual void terminalBegin() throw () = 0;
+        //virtual void terminalDamageRows(uint16_t row, uint16_t col, uint16_t len) = 0;
         //virtual void terminalDamage(uint16_t row, uint16_t col) throw () = 0;
         //virtual void terminalDamageRange(uint16_t row, uint16_t col) throw () = 0;
+
+        virtual void terminalBegin() throw () = 0;
+        virtual void terminalDamageChars(uint16_t row,
+                                         uint16_t col0, uint16_t col1) throw () = 0;
         virtual void terminalDamageAll() throw () = 0;
         virtual void terminalResetTitle() throw () = 0;
         virtual void terminalSetTitle(const std::string & title) throw () = 0;
@@ -72,6 +76,7 @@ protected:
     void ttyBegin() throw ();
     void ttyControl(Control control) throw ();
     void ttyMoveCursor(uint16_t row, uint16_t col) throw ();
+    void ttyRelMoveCursor(int16_t dRow, int16_t dCol) throw ();
     void ttyClearLine(ClearLine clear) throw ();
     void ttyClearScreen(ClearScreen clear) throw ();
     void ttySetFg(uint8_t fg) throw ();
@@ -85,6 +90,7 @@ protected:
     void ttySetTitle(const std::string & title) throw ();
     void ttyUtf8(const char * s, utf8::Length length) throw ();
     void ttyEnd() throw ();
+    void ttyGetCursorPos(uint16_t & row, uint16_t & col) const throw ();
 
     void ttyChildExited(int exitCode) throw ();
 };
