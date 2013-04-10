@@ -154,6 +154,22 @@ void Terminal::ttyClearScreen(ClearScreen clear) throw () {
     _dispatch = false;
 }
 
+void Terminal::ttyInsertLines(uint16_t num) throw () {
+    //PRINT("Got insert " << num << " lines with cursor at row: " << _cursorRow);
+    _buffer.insertLines(_cursorRow + 1, num);
+    _dispatch = true;
+    _observer.terminalDamageAll();
+    _dispatch = false;
+}
+
+void Terminal::ttyDeleteLines(uint16_t num) throw () {
+    //PRINT("Got delete " << num << " lines with cursor at row: " << _cursorRow);
+    _buffer.eraseLines(_cursorRow, num);
+    _dispatch = true;
+    _observer.terminalDamageAll();
+    _dispatch = false;
+}
+
 void Terminal::ttySetFg(uint8_t fg) throw () {
     _fg = fg;
 }

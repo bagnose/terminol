@@ -531,6 +531,18 @@ void Tty::processCsiEscape() {
             case 'G': // CHA - Cursor Horizontal Absolute
                 break;
 
+            case 'L': // IL - Insert Lines
+                _observer.ttyInsertLines(nthArg(args, 0, 1));
+                break;
+            case 'M': // DL - Delete Lines
+                _observer.ttyDeleteLines(nthArg(args, 0, 1));
+                break;
+
+            //case 'S': // SU - Scroll Up
+                //break;
+            //case 'T': // SD - Scroll Down
+                //break;
+
             case 'h':
                 //PRINT("CSI: Set terminal mode: " << strArgs(args));
                 processModes(priv, true, args);

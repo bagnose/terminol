@@ -79,6 +79,8 @@ protected:
     void ttyRelMoveCursor(int16_t dRow, int16_t dCol) throw ();
     void ttyClearLine(ClearLine clear) throw ();
     void ttyClearScreen(ClearScreen clear) throw ();
+    void ttyInsertLines(uint16_t num) throw ();
+    void ttyDeleteLines(uint16_t num) throw ();
     void ttySetFg(uint8_t fg) throw ();
     void ttySetBg(uint8_t bg) throw ();
     void ttyClearAttributes() throw ();

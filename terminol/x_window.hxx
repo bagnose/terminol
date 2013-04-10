@@ -25,6 +25,7 @@ class X_Window :
     X_FontSet        & _fontSet;
     bool               _damage;
     Window             _window;
+    GC                 _gc;
     uint16_t           _width;     // px
     uint16_t           _height;    // px
     Terminal         * _terminal;

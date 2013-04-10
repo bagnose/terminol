@@ -25,6 +25,8 @@ public:
         virtual void ttyRelMoveCursor(int16_t dRow, int16_t dCol) throw () = 0;
         virtual void ttyClearLine(ClearLine clear) throw () = 0;
         virtual void ttyClearScreen(ClearScreen clear) throw () = 0;
+        virtual void ttyInsertLines(uint16_t num) throw () = 0;
+        virtual void ttyDeleteLines(uint16_t num) throw () = 0;
         virtual void ttySetFg(uint8_t fg) throw () = 0;
         virtual void ttySetBg(uint8_t bg) throw () = 0;
         virtual void ttyClearAttributes() throw () = 0;

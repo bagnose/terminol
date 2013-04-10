@@ -92,6 +92,22 @@ public:
         _lines.pop_front();
     }
 
+    void insertLines(uint16_t beforeRow, uint16_t count) {
+        for (uint16_t i = 0; i != count; ++i) {
+            _lines.insert(_lines.begin() + beforeRow, Line(getCols()));
+        }
+        for (uint16_t i = 0; i != count; ++i) {
+            _lines.pop_front();
+        }
+    }
+
+    void eraseLines(uint16_t row, uint16_t count) {
+        _lines.erase(_lines.begin() + row, _lines.begin() + row + count);
+        for (uint16_t i = 0; i != count; ++i) {
+            _lines.push_front(Line(getCols()));
+        }
+    }
+
     void clearLine(uint16_t row) {
         ASSERT(row < getRows(), "");
         _lines[row].clear();

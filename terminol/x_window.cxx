@@ -76,6 +76,10 @@ X_Window::X_Window(Display            * display,
 
     XMapWindow(_display, _window);
 
+    XGCValues gcValues;
+    gcValues.graphics_exposures = False;
+    _gc = XCreateGC(_display, _window, GCGraphicsExposures, &gcValues);
+
     XFlush(_display);
 
     _terminal = new Terminal(*this, rows, cols, stringify(_window), term, command);
@@ -88,6 +92,7 @@ X_Window::~X_Window() {
 
     delete _terminal;
 
+    XFreeGC(_display, _gc);
     XDestroyWindow(_display, _window);
 }
 
@@ -182,7 +187,7 @@ void X_Window::configure(XConfigureEvent & event) {
     if (_width == event.width && _height == event.height) return;
 
     if (_hadConfigure) {
-        //XFreePixmap(_display, _pixmap);
+        XFreePixmap(_display, _pixmap);
     }
     else {
         _hadConfigure = true;
@@ -190,7 +195,9 @@ void X_Window::configure(XConfigureEvent & event) {
 
     _width  = event.width;
     _height = event.height;
-    //_pixmap = XCreatePixmap(_display, _window, _width, _height, CopyFromParent);
+    _pixmap = XCreatePixmap(_display, _window, _width, _height,
+                            XDefaultDepthOfScreen(_screen));
+    XFillRectangle(_display, _pixmap, _gc, 0, 0, _width, _height);
 
     uint16_t rows, cols;
 
@@ -245,9 +252,13 @@ void X_Window::rowCol2XY(uint16_t row, size_t col,
 }
 
 void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
-    XClearWindow(_display, _window);
+    //XClearWindow(_display, _window);
 
-    XftDraw * xftDraw = XftDrawCreate(_display, _window,
+    ASSERT(_hadConfigure, "");
+
+    // TODO only draw the damaged chars.
+
+    XftDraw * xftDraw = XftDrawCreate(_display, _pixmap,//_window,
                                       XDefaultVisualOfScreen(_screen),
                                       XDefaultColormapOfScreen(_screen));
 
@@ -255,7 +266,7 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
         for (size_t c = 0; c != _terminal->buffer().getCols(); ++c) {
             const Char & ch = _terminal->buffer().getChar(r, c);
 
-            if (!ch.isNull()) {
+            if (true /*!ch.isNull()*/) {    // XXX drawing all characters ATM :(
                 // PRINT(<<ch);
                 uint16_t x, y;
                 rowCol2XY(r, c, x, y);
@@ -300,6 +311,9 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
     }
 
     XftDrawDestroy(xftDraw);
+
+    XCopyArea(_display, _pixmap, _window, _gc,
+              0, 0, _width, _height, 0, 0);
 
     XFlush(_display);
 }
