@@ -325,7 +325,7 @@ void X_Window::setTitle(const std::string & title) {
     XSetWMName(_display, _window, &prop);
 }
 
-// Terminal::IObserver implementation:
+// Terminal::I_Observer implementation:
 
 void X_Window::terminalBegin() throw () {
 }

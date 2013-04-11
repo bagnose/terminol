@@ -11,7 +11,7 @@
 
 class X_Window :
     public    I_X_Window,
-    protected Terminal::IObserver,
+    protected Terminal::I_Observer,
     protected Uncopyable
 {
     static const int         BORDER_THICKNESS;
@@ -80,7 +80,7 @@ protected:
     void draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih);
     void setTitle(const std::string & title);
 
-    // Terminal::IObserver implementation:
+    // Terminal::I_Observer implementation:
 
     void terminalBegin() throw ();
     void terminalDamageChars(uint16_t row, uint16_t col0, uint16_t col1) throw ();

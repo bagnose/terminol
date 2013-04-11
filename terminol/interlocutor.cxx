@@ -38,12 +38,12 @@ T nthArg(const std::vector<T> & args, size_t n, const T & fallback = T()) {
 
 } // namespace {anonymous}
 
-Interlocutor::Interlocutor(IObserver         & observer,
-                           uint16_t            rows,
-                           uint16_t            cols,
-                           const std::string & windowId,
-                           const std::string & term,
-                           const Command     & command) :
+Interlocutor::Interlocutor(I_Observer         & observer,
+                           uint16_t             rows,
+                           uint16_t             cols,
+                           const std::string  & windowId,
+                           const std::string  & term,
+                           const Command      & command) :
     _observer(observer),
     _dispatch(false),
     _fd(-1),

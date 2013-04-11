@@ -9,9 +9,9 @@
 
 #include <vector>
 
-class Terminal : protected Interlocutor::IObserver {
+class Terminal : protected Interlocutor::I_Observer {
 public:
-    class IObserver {
+    class I_Observer {
     public:
         //virtual void terminalDamageRows(uint16_t row, uint16_t col, uint16_t len) = 0;
         //virtual void terminalDamage(uint16_t row, uint16_t col) throw () = 0;
@@ -27,12 +27,12 @@ public:
         virtual void terminalChildExited(int exitStatus) throw () = 0;
 
     protected:
-        IObserver() {}
-        virtual ~IObserver() {}
+        I_Observer() {}
+        virtual ~I_Observer() {}
     };
 
 private:
-    IObserver         & _observer;
+    I_Observer         & _observer;
     bool                _dispatch;
     SimpleBuffer        _buffer;
     uint16_t            _cursorRow;
@@ -45,7 +45,7 @@ private:
     Interlocutor        _tty;
 
 public:
-    Terminal(IObserver          & observer,
+    Terminal(I_Observer          & observer,
              uint16_t             rows,
              uint16_t             cols,
              const std::string  & windowId,
@@ -71,7 +71,7 @@ public:
 
 protected:
 
-    // Tty::IObserver implementation:
+    // Tty::I_Observer implementation:
 
     void interBegin() throw ();
     void interControl(Control control) throw ();

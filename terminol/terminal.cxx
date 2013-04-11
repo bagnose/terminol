@@ -2,11 +2,11 @@
 
 #include "terminol/terminal.hxx"
 
-Terminal::Terminal(IObserver          & observer,
-                   uint16_t             rows,
-                   uint16_t             cols,
-                   const std::string  & windowId,
-                   const std::string  & term,
+Terminal::Terminal(I_Observer          & observer,
+                   uint16_t              rows,
+                   uint16_t              cols,
+                   const std::string   & windowId,
+                   const std::string   & term,
                    const Interlocutor::Command & command) :
     _observer(observer),
     _dispatch(false),
@@ -44,7 +44,7 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     }
 }
 
-// Interlocutor::IObserver implementation:
+// Interlocutor::I_Observer implementation:
 
 void Terminal::interBegin() throw () {
     _dispatch = true;

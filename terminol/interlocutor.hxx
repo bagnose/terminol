@@ -14,7 +14,7 @@ class Interlocutor : protected Uncopyable {
 public:
     typedef std::vector<std::string> Command;
 
-    class IObserver {
+    class I_Observer {
     public:
         // begin
         virtual void interBegin() throw () = 0;
@@ -46,8 +46,8 @@ public:
         virtual void interChildExited(int exitCode) throw () = 0;
 
     protected:
-        IObserver() throw () {}
-        ~IObserver() throw () {}
+        I_Observer() throw () {}
+        ~I_Observer() throw () {}
     };
 
 private:
@@ -60,7 +60,7 @@ private:
         STATE_TEST_ESCAPE
     };
 
-    IObserver         & _observer;
+    I_Observer         & _observer;
     bool                _dispatch;
     int                 _fd;
     pid_t               _pid;
@@ -84,12 +84,12 @@ public:
     static uint8_t  defaultFg()  { return 7; }
     static uint16_t defaultTab() { return 8; }
 
-    Interlocutor(IObserver         & observer,
-                 uint16_t            rows,
-                 uint16_t            cols,
-                 const std::string & windowId,
-                 const std::string & term,
-                 const Command     & command);
+    Interlocutor(I_Observer         & observer,
+                 uint16_t             rows,
+                 uint16_t             cols,
+                 const std::string  & windowId,
+                 const std::string  & term,
+                 const Command      & command);
 
     ~Interlocutor();
 
