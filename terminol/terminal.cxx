@@ -2,12 +2,10 @@
 
 #include "terminol/terminal.hxx"
 
-Terminal::Terminal(I_Observer          & observer,
-                   uint16_t              rows,
-                   uint16_t              cols,
-                   const std::string   & windowId,
-                   const std::string   & term,
-                   const Interlocutor::Command & command) :
+Terminal::Terminal(I_Observer & observer,
+                   I_Tty      & tty,
+                   uint16_t     rows,
+                   uint16_t     cols) :
     _observer(observer),
     _dispatch(false),
     _buffer(rows, cols),
@@ -18,11 +16,7 @@ Terminal::Terminal(I_Observer          & observer,
     _attributes(),
     _modes(),
     _tabs(_buffer.getCols()),
-    _tty(*this,
-         rows, cols,
-         windowId,
-         term,
-         command)
+    _inter(*this, tty)
 {
     for (size_t i = 0; i != _tabs.size(); ++i) {
         _tabs[i] = (i + 1) % Interlocutor::defaultTab() == 0;
@@ -37,7 +31,6 @@ Terminal::~Terminal() {
 void Terminal::resize(uint16_t rows, uint16_t cols) {
     ASSERT(!_dispatch, "");
     _buffer.resize(rows, cols);
-    _tty.resize(rows, cols);
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {
         _tabs[i] = (i + 1) % Interlocutor::defaultTab() == 0;

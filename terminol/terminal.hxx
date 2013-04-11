@@ -28,7 +28,7 @@ public:
 
     protected:
         I_Observer() {}
-        virtual ~I_Observer() {}
+        ~I_Observer() {}
     };
 
 private:
@@ -42,16 +42,13 @@ private:
     AttributeSet        _attributes;
     ModeSet             _modes;
     std::vector<bool>   _tabs;
-    Interlocutor        _tty;
+    Interlocutor        _inter;
 
 public:
-    Terminal(I_Observer          & observer,
-             uint16_t             rows,
-             uint16_t             cols,
-             const std::string  & windowId,
-             const std::string  & term,
-             const Interlocutor::Command & command);
-
+    Terminal(I_Observer & observer,
+             I_Tty      & tty,
+             uint16_t     rows,
+             uint16_t     cols);
     virtual ~Terminal();
 
     const ModeSet      & getModes()  const { return _modes;     }
@@ -59,15 +56,14 @@ public:
     uint16_t             cursorRow() const { return _cursorRow; }
     uint16_t             cursorCol() const { return _cursorCol; }
 
+    void resize(uint16_t rows, uint16_t cols);
+
     // TODO buffer access through scroll state.
 
-    bool isOpen() const { return _tty.isOpen(); }
-    int  getFd() { return _tty.getFd(); }
-    void read() { ASSERT(!_dispatch, ""); _tty.read(); }
-    void enqueueWrite(const char * data, size_t size) { ASSERT(!_dispatch, ""); _tty.enqueueWrite(data, size); }
-    bool isWritePending() const { ASSERT(!_dispatch, ""); return _tty.isWritePending(); }
-    void write() { ASSERT(!_dispatch, ""); _tty.write(); }
-    void resize(uint16_t rows, uint16_t cols);
+    void read() { ASSERT(!_dispatch, ""); _inter.read(); }
+    void enqueueWrite(const char * data, size_t size) { ASSERT(!_dispatch, ""); _inter.enqueueWrite(data, size); }
+    bool isWritePending() const { ASSERT(!_dispatch, ""); return _inter.isWritePending(); }
+    void write() { ASSERT(!_dispatch, ""); _inter.write(); }
 
 protected:
 

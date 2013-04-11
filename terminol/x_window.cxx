@@ -29,7 +29,9 @@ X_Window::X_Window(Display            * display,
     _window(0),
     _width(0),
     _height(0),
+    _tty(0),
     _terminal(nullptr),
+    _isOpen(false),
     _hadConfigure(false)
 {
     XSetWindowAttributes attributes;
@@ -82,7 +84,9 @@ X_Window::X_Window(Display            * display,
 
     XFlush(_display);
 
-    _terminal = new Terminal(*this, rows, cols, stringify(_window), term, command);
+    _tty = new Tty(rows, cols, stringify(_window), term, command);
+    _terminal = new Terminal(*this, *_tty, rows, cols);
+    _isOpen = true;
 }
 
 X_Window::~X_Window() {
@@ -90,6 +94,7 @@ X_Window::~X_Window() {
         XFreePixmap(_display, _pixmap);
     }
 
+    delete _tty;
     delete _terminal;
 
     XFreeGC(_display, _gc);
@@ -216,6 +221,7 @@ void X_Window::configure(XConfigureEvent & event) {
 
     ASSERT(rows > 0 && cols > 0, "");
 
+    _tty->resize(rows, cols);
     _terminal->resize(rows, cols);
 
     draw(0, 0, _width, _height);
@@ -356,4 +362,5 @@ void X_Window::terminalEnd() throw () {
 
 void X_Window::terminalChildExited(int exitStatus) throw () {
     PRINT("Child exited: " << exitStatus);
+    _isOpen = false;
 }

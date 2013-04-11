@@ -24,6 +24,12 @@ Tty::~Tty() {
     }
 }
 
+void Tty::resize(uint16_t rows, uint16_t cols) {
+    ASSERT(_fd != -1, "");
+    struct winsize winsize = { rows, cols, 0, 0 };
+    ENFORCE(::ioctl(_fd, TIOCSWINSZ, &winsize) != -1, "");
+}
+
 size_t Tty::read(char * buffer, size_t length) throw (Exited) {
     ASSERT(_fd != -1, "");
 

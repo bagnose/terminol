@@ -3,6 +3,7 @@
 #ifndef INTERLOCUTOR__HXX
 #define INTERLOCUTOR__HXX
 
+#include "terminol/tty_interface.hxx"
 #include "terminol/enums.hxx"
 #include "terminol/utf8.hxx"
 #include "terminol/common.hxx"
@@ -47,7 +48,7 @@ public:
 
     protected:
         I_Observer() throw () {}
-        ~I_Observer() throw () {}
+        virtual ~I_Observer() throw () {}
     };
 
 private:
@@ -61,42 +62,39 @@ private:
     };
 
     I_Observer         & _observer;
-    bool                _dispatch;
-    int                 _fd;
-    pid_t               _pid;
-    bool                _dumpWrites;
-    State               _state;
+    bool                 _dispatch;
+    I_Tty              & _tty;
+    bool                 _dumpWrites;
+    State                _state;
 
     struct {
         std::string seq;
-    }                   _escapeCsi;
+    }                    _escapeCsi;
 
     struct {
         char        type;
         std::string seq;
-    }                   _escapeStr;
+    }                    _escapeStr;
 
-    std::vector<char>   _readBuffer;
-    std::vector<char>   _writeBuffer;
+    std::vector<char>    _readBuffer;
+    std::vector<char>    _writeBuffer;
 
 public:
     static uint8_t  defaultBg()  { return 0; }
     static uint8_t  defaultFg()  { return 7; }
     static uint16_t defaultTab() { return 8; }
 
-    Interlocutor(I_Observer         & observer,
-                 uint16_t             rows,
-                 uint16_t             cols,
-                 const std::string  & windowId,
-                 const std::string  & term,
-                 const Command      & command);
+    Interlocutor(I_Observer & observer,
+                 I_Tty      & tty);
 
     ~Interlocutor();
 
+#if 0
     bool isOpen() const;
 
     // Only use the descriptor for select() - do not read/write().
     int  getFd();
+#endif
 
     // Call when will not block (after select()).
     void read();
@@ -110,21 +108,7 @@ public:
     // Call when will not block (after select()).
     void write();
 
-    // Number of rows or columns may have changed.
-    void resize(uint16_t rows, uint16_t cols);
-
 protected:
-    void openPty(uint16_t            rows,
-                 uint16_t            cols,
-                 const std::string & windowId,
-                 const std::string & term,
-                 const Command     & command);
-
-    // Called from the fork child.
-    static void execShell(const std::string & windowId,
-                          const std::string & term,
-                          const Command     & command);
-
     void processBuffer();
     void processChar(const char * s, utf8::Length len);
     void processControl(char c);
@@ -133,12 +117,6 @@ protected:
     void processStrEscape();
     void processAttributes(const std::vector<int32_t> & args);
     void processModes(bool priv, bool set, const std::vector<int32_t> & args);
-
-    bool pollReap(int & exitCode, int msec);
-    void waitReap(int & exitCode);
-
-    // Returns exit-code.
-    int  close();
 };
 
 #endif // INTERLOCUTOR__HXX

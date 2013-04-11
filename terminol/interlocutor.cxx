@@ -38,58 +38,25 @@ T nthArg(const std::vector<T> & args, size_t n, const T & fallback = T()) {
 
 } // namespace {anonymous}
 
-Interlocutor::Interlocutor(I_Observer         & observer,
-                           uint16_t             rows,
-                           uint16_t             cols,
-                           const std::string  & windowId,
-                           const std::string  & term,
-                           const Command      & command) :
+Interlocutor::Interlocutor(I_Observer & observer,
+                           I_Tty      & tty) :
     _observer(observer),
     _dispatch(false),
-    _fd(-1),
-    _pid(0),
+    _tty(tty),
     _dumpWrites(false),
-    _state(STATE_NORMAL)
-{
-    openPty(rows, cols, windowId, term, command);
-}
-
+    _state(STATE_NORMAL) {}
 
 Interlocutor::~Interlocutor() {
     ASSERT(!_dispatch, "");
-    if (isOpen()) {
-        close();
-    }
-}
-
-bool Interlocutor::isOpen() const {
-    ASSERT(!_dispatch, "");
-    return _fd != -1;
-}
-
-int Interlocutor::getFd() {
-    ASSERT(!_dispatch, "");
-    ASSERT(isOpen(), "Not open.");
-    return _fd;
 }
 
 void Interlocutor::read() {
     ASSERT(!_dispatch, "");
-    ASSERT(isOpen(), "Not open.");
-    char buffer[4096];
 
-    ssize_t rval = ::read(_fd, static_cast<void *>(buffer), sizeof buffer);
-    //PRINT("::read()=" << rval);
+    try {
+        char buffer[4096];
+        size_t rval = _tty.read(buffer, sizeof buffer);
 
-    if (rval == -1) {
-        _observer.interChildExited(close());
-
-    }
-    else if (rval == 0) {
-        ASSERT(false, "Expected -1 from ::read(), not EOF for child termination.");
-    }
-    else {
-        ASSERT(rval > 0, "");
         auto oldSize = _readBuffer.size();
         _readBuffer.resize(oldSize + rval);
         std::copy(buffer, buffer + rval, &_readBuffer[oldSize]);
@@ -98,11 +65,13 @@ void Interlocutor::read() {
         processBuffer();
         _dispatch = false;
     }
+    catch (I_Tty::Exited & ex) {
+        _observer.interChildExited(ex.exitCode);
+    }
 }
 
 void Interlocutor::enqueueWrite(const char * data, size_t size) {
     ASSERT(!_dispatch, "");
-    ASSERT(isOpen(), "Not open.");
 
     if (!_dumpWrites) {
         auto oldSize = _writeBuffer.size();
@@ -113,123 +82,22 @@ void Interlocutor::enqueueWrite(const char * data, size_t size) {
 
 bool Interlocutor::isWritePending() const {
     ASSERT(!_dispatch, "");
-    ASSERT(isOpen(), "Not open.");
     return !_writeBuffer.empty();
 }
 
 void Interlocutor::write() {
     ASSERT(!_dispatch, "");
-    ASSERT(isOpen(), "Not open.");
     ASSERT(isWritePending(), "No writes queued.");
     ASSERT(!_dumpWrites, "Dump writes is set.");
 
-    ssize_t rval = ::write(_fd, static_cast<const void *>(&_writeBuffer.front()),
-                           _writeBuffer.size());
-    //PRINT("::write()=" << rval);
-
-    if (rval == -1) {
-        // The child has gone. Don't write any more data.
+    try {
+        size_t rval = _tty.write(&_writeBuffer.front(), _writeBuffer.size());
+        _writeBuffer.erase(_writeBuffer.begin(), _writeBuffer.begin() + rval);
+    }
+    catch (I_Tty::Error & ex) {
         _dumpWrites = true;
         _writeBuffer.clear();
     }
-    else if (rval == 0) {
-        ASSERT(false, "::write() zero bytes!");
-    }
-    else {
-        _writeBuffer.erase(_writeBuffer.begin(), _writeBuffer.begin() + rval);
-    }
-}
-
-void Interlocutor::resize(uint16_t rows, uint16_t cols) {
-    ASSERT(!_dispatch, "");
-    ASSERT(isOpen(), "Not open.");
-
-    struct winsize winsize = { rows, cols, 0, 0 };
-
-    ENFORCE(::ioctl(_fd, TIOCSWINSZ, &winsize) != -1, "");
-}
-
-void Interlocutor::openPty(uint16_t            rows,
-                           uint16_t            cols,
-                           const std::string & windowId,
-                           const std::string & term,
-                           const Command     & command) {
-    int master, slave;
-    struct winsize winsize = { rows, cols, 0, 0 };
-
-    ENFORCE_SYS(::openpty(&master, &slave, nullptr, nullptr, &winsize) != -1, "");
-
-    _pid = ::fork();
-    ENFORCE_SYS(_pid != -1, "::fork() failed.");
-
-    if (_pid != 0) {
-        // Parent code-path.
-
-        ENFORCE_SYS(::close(slave) != -1, "");
-        _fd  = master;
-    }
-    else {
-        // Child code-path.
-
-        // Create a new process group.
-        ENFORCE_SYS(::setsid() != -1, "");
-        // Hook stdin/out/err up to the PTY.
-        ENFORCE_SYS(::dup2(slave, STDIN_FILENO)  != -1, "");
-        ENFORCE_SYS(::dup2(slave, STDOUT_FILENO) != -1, "");
-        ENFORCE_SYS(::dup2(slave, STDERR_FILENO) != -1, "");
-        ENFORCE_SYS(::ioctl(slave, TIOCSCTTY, nullptr) != -1, "");
-        ENFORCE_SYS(::close(slave) != -1, "");
-        ENFORCE_SYS(::close(master) != -1, "");
-        execShell(windowId, term, command);
-    }
-}
-
-void Interlocutor::execShell(const std::string & windowId,
-                             const std::string & term,
-                             const Command     & command) {
-    ::unsetenv("COLUMNS");
-    ::unsetenv("LINES");
-    ::unsetenv("TERMCAP");
-
-    const struct passwd * passwd = ::getpwuid(::getuid());
-    if (passwd) {
-        ::setenv("LOGNAME", passwd->pw_name,  1);
-        ::setenv("USER",    passwd->pw_name,  1);
-        ::setenv("SHELL",   passwd->pw_shell, 0);
-        ::setenv("HOME",    passwd->pw_dir,   0);
-    }
-
-    ::setenv("WINDOWID", windowId.c_str(), 1);
-    ::setenv("TERM", term.c_str(), 1);
-
-    ::signal(SIGCHLD, SIG_DFL);
-    ::signal(SIGHUP,  SIG_DFL);
-    ::signal(SIGINT,  SIG_DFL);
-    ::signal(SIGQUIT, SIG_DFL);
-    ::signal(SIGTERM, SIG_DFL);
-    ::signal(SIGALRM, SIG_DFL);
-
-    std::vector<const char *> args;
-
-    if (command.empty()) {
-        const char * shell = std::getenv("SHELL");
-        if (!shell) {
-            shell = "/bin/sh";
-            WARNING("Could not determine shell, falling back to: " << shell);
-        }
-        //shell = "/bin/sh"; // XXX use sh to avoid colour, etc. (remove this line)
-        args.push_back(shell);
-        args.push_back("-i");
-    }
-    else {
-        for (const auto & a : command) {
-            args.push_back(a.c_str());
-        }
-    }
-
-    args.push_back(nullptr);
-    ::execvp(args[0], const_cast<char * const *>(&args.front()));
-    std::exit(127); // Same as ::system() for failed commands.
 }
 
 void Interlocutor::processBuffer() {
@@ -930,57 +798,4 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
             }
         }
     }
-}
-
-bool Interlocutor::pollReap(int & exitCode, int msec) {
-    ASSERT(_pid != 0, "");
-
-    for (int i = 0; i != msec; ++i) {
-        int stat;
-        int rval = ::waitpid(_pid, &stat, WNOHANG);
-        ENFORCE_SYS(rval != -1, "::waitpid() failed.");
-        if (rval != 0) {
-            ENFORCE(rval == _pid, "");
-            _pid = 0;
-            exitCode = WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
-            return true;
-        }
-        ::usleep(1000);     // 1ms
-    }
-
-    return false;
-}
-
-void Interlocutor::waitReap(int & exitCode) {
-    ASSERT(_pid != 0, "");
-
-    int stat;
-    ENFORCE_SYS(::waitpid(_pid, &stat, 0) == _pid, "");
-    _pid = 0;
-    exitCode = WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
-}
-
-int Interlocutor::close() {
-    ASSERT(isOpen(), "");
-
-    ENFORCE_SYS(::close(_fd) != -1, "");
-    _fd = -1;
-
-    ::kill(_pid, SIGCONT);
-    ::kill(_pid, SIGPIPE);
-
-    int exitCode;
-    if (pollReap(exitCode, 100)) { return exitCode; }
-    PRINT("Sending SIGINT.");
-    ::kill(_pid, SIGINT);
-    if (pollReap(exitCode, 100)) { return exitCode; }
-    PRINT("Sending SIGTERM.");
-    ::kill(_pid, SIGTERM);
-    if (pollReap(exitCode, 100)) { return exitCode; }
-    PRINT("Sending SIGQUIT.");
-    ::kill(_pid, SIGQUIT);
-    if (pollReap(exitCode, 100)) { return exitCode; }
-    PRINT("Sending SIGKILL.");
-    ::kill(_pid, SIGKILL);
-    waitReap(exitCode);
 }

@@ -7,6 +7,7 @@
 #include "terminol/x_color_set.hxx"
 #include "terminol/x_key_map.hxx"
 #include "terminol/x_font_set.hxx"
+#include "terminol/tty.hxx"
 #include "terminol/terminal.hxx"
 
 class X_Window :
@@ -28,7 +29,9 @@ class X_Window :
     GC                 _gc;
     uint16_t           _width;     // px
     uint16_t           _height;    // px
+    Tty              * _tty;
     Terminal         * _terminal;
+    bool               _isOpen;
     bool               _hadConfigure;
     Pixmap             _pixmap;
 
@@ -48,10 +51,13 @@ public:
     // I_X_Window implementation:
     //
 
+    // We handle these:
+
+    bool isOpen() const { return _isOpen; }
+    int  getFd() { return _tty->getFd(); }
+
     // The following calls are forwarded to the Terminal.
 
-    bool isOpen() const { return _terminal->isOpen(); }
-    int  getFd() { return _terminal->getFd(); }
     void read()  { _terminal->read(); }
     bool isWritePending() const { return _terminal->isWritePending(); }
     void write() { _terminal->write(); }

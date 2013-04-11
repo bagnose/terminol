@@ -23,6 +23,7 @@ public:
     ~Tty();
 
     int getFd() { return _fd; }
+    void resize(uint16_t rows, uint16_t cols);
 
     // I_Tty implementation:
 
@@ -35,9 +36,9 @@ protected:
                  const std::string & windowId,
                  const std::string & term,
                  const Command     & command);
-    void execShell(const std::string & windowId,
-                   const std::string & term,
-                   const Command     & command);
+    static void execShell(const std::string & windowId,
+                          const std::string & term,
+                          const Command     & command);
 
     int  close();   // protected XXX ??
     bool pollReap(int & exitCode, int msec);
