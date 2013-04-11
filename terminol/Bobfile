@@ -5,11 +5,12 @@ dist-exe query
 
 static-lib common
   :
-  common.hxx enums.hxx utf8.hxx tty.hxx buffer.hxx terminal.hxx
-  bit_sets.hxx char.hxx simple_buffer.hxx ascii.hxx
+  common.hxx enums.hxx utf8.hxx interlocutor.hxx buffer.hxx terminal.hxx
+  bit_sets.hxx char.hxx simple_buffer.hxx ascii.hxx tty.hxx
+  tty_interface.hxx
   :
-  common.cxx enums.cxx utf8.cxx tty.cxx buffer.cxx terminal.cxx
-  bit_sets.cxx char.cxx simple_buffer.cxx ascii.cxx
+  common.cxx enums.cxx utf8.cxx interlocutor.cxx buffer.cxx terminal.cxx
+  bit_sets.cxx char.cxx simple_buffer.cxx ascii.cxx tty.cxx
   ;
 
 test-exe test-utf8   : test_utf8.cxx;
@@ -17,11 +18,10 @@ test-exe test-buffer : test_buffer.cxx;
 
 static-lib xlib
   :
-  x_window.hxx x_font_set.hxx x_color_set.hxx x_window_interface.hxx
-  x_key_map.hxx
+  x_window.hxx x_font_set.hxx x_color_set.hxx x_key_map.hxx
+  x_window_interface.hxx
   :
-  x_window.cxx x_font_set.cxx x_color_set.cxx
-  x_key_map.cxx
+  x_window.cxx x_font_set.cxx x_color_set.cxx x_key_map.cxx
   ;
 
 dist-exe terminol : x_main.cxx ;

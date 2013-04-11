@@ -40,7 +40,7 @@ public:
              const X_KeyMap     & keyMap,
              X_FontSet          & fontSet,
              const std::string  & term,
-             const Tty::Command & command);
+             const Interlocutor::Command & command);
 
     ~X_Window();
 

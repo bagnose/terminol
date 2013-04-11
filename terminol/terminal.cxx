@@ -7,14 +7,14 @@ Terminal::Terminal(IObserver          & observer,
                    uint16_t             cols,
                    const std::string  & windowId,
                    const std::string  & term,
-                   const Tty::Command & command) :
+                   const Interlocutor::Command & command) :
     _observer(observer),
     _dispatch(false),
     _buffer(rows, cols),
     _cursorRow(0),
     _cursorCol(0),
-    _bg(Tty::defaultBg()),
-    _fg(Tty::defaultFg()),
+    _bg(Interlocutor::defaultBg()),
+    _fg(Interlocutor::defaultFg()),
     _attributes(),
     _modes(),
     _tabs(_buffer.getCols()),
@@ -25,7 +25,7 @@ Terminal::Terminal(IObserver          & observer,
          command)
 {
     for (size_t i = 0; i != _tabs.size(); ++i) {
-        _tabs[i] = (i + 1) % Tty::defaultTab() == 0;
+        _tabs[i] = (i + 1) % Interlocutor::defaultTab() == 0;
     }
     _modes.set(MODE_WRAP);
 }
@@ -40,11 +40,11 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     _tty.resize(rows, cols);
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {
-        _tabs[i] = (i + 1) % Tty::defaultTab() == 0;
+        _tabs[i] = (i + 1) % Interlocutor::defaultTab() == 0;
     }
 }
 
-// Tty::IObserver implementation:
+// Interlocutor::IObserver implementation:
 
 void Terminal::ttyBegin() throw () {
     _dispatch = true;
@@ -206,15 +206,15 @@ void Terminal::ttyReset() throw () {
     _cursorRow = 0;
     _cursorCol = 0;
 
-    _bg = Tty::defaultBg();
-    _fg = Tty::defaultFg();
+    _bg = Interlocutor::defaultBg();
+    _fg = Interlocutor::defaultFg();
 
     _modes.clear();
     _attributes.clear();
 
     _tabs.resize(_buffer.getCols());
     for (size_t i = 0; i != _tabs.size(); ++i) {
-        _tabs[i] = (i + 1) % Tty::defaultTab() == 0;
+        _tabs[i] = (i + 1) % Interlocutor::defaultTab() == 0;
     }
 }
 

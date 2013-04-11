@@ -155,10 +155,10 @@ int main(int argc, char * argv[]) {
     // -   master read
     // -   master write
 
-    std::string fontName = "inconsolata:pixelsize=16";
+    std::string fontName = "inconsolata:pixelsize=22";
     std::string geometryStr;
     std::string term = "ansi";
-    Tty::Command command;
+    Interlocutor::Command command;
     bool         accumulateCommand = false;
 
     for (int i = 1; i != argc; ++i) {

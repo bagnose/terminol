@@ -3,13 +3,13 @@
 #ifndef TERMINAL__HXX
 #define TERMINAL__HXX
 
-#include "terminol/tty.hxx"
+#include "terminol/interlocutor.hxx"
 #include "terminol/bit_sets.hxx"
 #include "terminol/simple_buffer.hxx"
 
 #include <vector>
 
-class Terminal : protected Tty::IObserver {
+class Terminal : protected Interlocutor::IObserver {
 public:
     class IObserver {
     public:
@@ -42,7 +42,7 @@ private:
     AttributeSet        _attributes;
     ModeSet             _modes;
     std::vector<bool>   _tabs;
-    Tty                 _tty;
+    Interlocutor        _tty;
 
 public:
     Terminal(IObserver          & observer,
@@ -50,7 +50,7 @@ public:
              uint16_t             cols,
              const std::string  & windowId,
              const std::string  & term,
-             const Tty::Command & command);
+             const Interlocutor::Command & command);
 
     virtual ~Terminal();
 
