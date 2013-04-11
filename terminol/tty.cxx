@@ -40,13 +40,13 @@ size_t Tty::read(char * buffer, size_t length) throw (Exited) {
     }
 }
 
-size_t Tty::write(const char * buffer, size_t length) throw (Exited) {
+size_t Tty::write(const char * buffer, size_t length) throw (Error) {
     ASSERT(_fd != -1, "");
 
     ssize_t rval = ::write(_fd, static_cast<const void *>(buffer), length);
 
     if (rval == -1) {
-        throw Exited(close());
+        throw Error();
     }
     else if (rval == 0) {
         FATAL("!!");
@@ -55,7 +55,6 @@ size_t Tty::write(const char * buffer, size_t length) throw (Exited) {
         return rval;
     }
 }
-
 
 void Tty::openPty(uint16_t            rows,
                   uint16_t            cols,

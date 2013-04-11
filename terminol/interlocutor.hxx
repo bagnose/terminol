@@ -17,33 +17,33 @@ public:
     class IObserver {
     public:
         // begin
-        virtual void ttyBegin() throw () = 0;
+        virtual void interBegin() throw () = 0;
         // control
-        virtual void ttyControl(Control control) throw () = 0;
+        virtual void interControl(Control control) throw () = 0;
         // escapes
-        virtual void ttyMoveCursor(uint16_t row, uint16_t col) throw () = 0;
-        virtual void ttyRelMoveCursor(int16_t dRow, int16_t dCol) throw () = 0;
-        virtual void ttyClearLine(ClearLine clear) throw () = 0;
-        virtual void ttyClearScreen(ClearScreen clear) throw () = 0;
-        virtual void ttyInsertLines(uint16_t num) throw () = 0;
-        virtual void ttyDeleteLines(uint16_t num) throw () = 0;
-        virtual void ttySetFg(uint8_t fg) throw () = 0;
-        virtual void ttySetBg(uint8_t bg) throw () = 0;
-        virtual void ttyClearAttributes() throw () = 0;
-        virtual void ttySetAttribute(Attribute attribute, bool value) throw () = 0;
-        virtual void ttySetMode(Mode mode, bool value) throw () = 0;
-        virtual void ttySetTabStop() throw () = 0;
-        virtual void ttyReset() throw () = 0 ;
-        virtual void ttyResetTitle() throw () = 0;
-        virtual void ttySetTitle(const std::string & title) throw () = 0;
+        virtual void interMoveCursor(uint16_t row, uint16_t col) throw () = 0;
+        virtual void interRelMoveCursor(int16_t dRow, int16_t dCol) throw () = 0;
+        virtual void interClearLine(ClearLine clear) throw () = 0;
+        virtual void interClearScreen(ClearScreen clear) throw () = 0;
+        virtual void interInsertLines(uint16_t num) throw () = 0;
+        virtual void interDeleteLines(uint16_t num) throw () = 0;
+        virtual void interSetFg(uint8_t fg) throw () = 0;
+        virtual void interSetBg(uint8_t bg) throw () = 0;
+        virtual void interClearAttributes() throw () = 0;
+        virtual void interSetAttribute(Attribute attribute, bool value) throw () = 0;
+        virtual void interSetMode(Mode mode, bool value) throw () = 0;
+        virtual void interSetTabStop() throw () = 0;
+        virtual void interReset() throw () = 0 ;
+        virtual void interResetTitle() throw () = 0;
+        virtual void interSetTitle(const std::string & title) throw () = 0;
         // UTF-8
-        virtual void ttyUtf8(const char * s, utf8::Length length) throw () = 0;
+        virtual void interUtf8(const char * s, utf8::Length length) throw () = 0;
         // end
-        virtual void ttyEnd() throw () = 0;
+        virtual void interEnd() throw () = 0;
 
-        virtual void ttyGetCursorPos(uint16_t & row, uint16_t & col) const throw () = 0;
+        virtual void interGetCursorPos(uint16_t & row, uint16_t & col) const throw () = 0;
 
-        virtual void ttyChildExited(int exitCode) throw () = 0;
+        virtual void interChildExited(int exitCode) throw () = 0;
 
     protected:
         IObserver() throw () {}

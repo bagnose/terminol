@@ -46,13 +46,13 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
 
 // Interlocutor::IObserver implementation:
 
-void Terminal::ttyBegin() throw () {
+void Terminal::interBegin() throw () {
     _dispatch = true;
     _observer.terminalBegin();
     _dispatch = false;
 }
 
-void Terminal::ttyControl(Control control) throw () {
+void Terminal::interControl(Control control) throw () {
     //PRINT("Control: " << control);
     switch (control) {
         case CONTROL_BEL:
@@ -100,21 +100,21 @@ void Terminal::ttyControl(Control control) throw () {
     _dispatch = false;
 }
 
-void Terminal::ttyMoveCursor(uint16_t row, uint16_t col) throw () {
+void Terminal::interMoveCursor(uint16_t row, uint16_t col) throw () {
     _observer.terminalDamageChars(_cursorRow, _cursorCol, _cursorCol + 1);
     _cursorRow = clamp<uint16_t>(row, 0, _buffer.getRows() - 1);
     _cursorCol = clamp<uint16_t>(col, 0, _buffer.getCols() - 1);
     _observer.terminalDamageChars(_cursorRow, _cursorCol, _cursorCol + 1);
 }
 
-void Terminal::ttyRelMoveCursor(int16_t dRow, int16_t dCol) throw () {
+void Terminal::interRelMoveCursor(int16_t dRow, int16_t dCol) throw () {
     _observer.terminalDamageChars(_cursorRow, _cursorCol, _cursorCol + 1);
     _cursorRow = clamp<uint16_t>(_cursorRow + dRow, 0, _buffer.getRows() - 1);
     _cursorCol = clamp<uint16_t>(_cursorCol + dCol, 0, _buffer.getCols() - 1);
     _observer.terminalDamageChars(_cursorRow, _cursorCol, _cursorCol + 1);
 }
 
-void Terminal::ttyClearLine(ClearLine clear) throw () {
+void Terminal::interClearLine(ClearLine clear) throw () {
     switch (clear) {
         case CLEAR_LINE_RIGHT:
             for (uint16_t c = _cursorCol + 1; c != _buffer.getCols(); ++c) {
@@ -132,7 +132,7 @@ void Terminal::ttyClearLine(ClearLine clear) throw () {
     }
 }
 
-void Terminal::ttyClearScreen(ClearScreen clear) throw () {
+void Terminal::interClearScreen(ClearScreen clear) throw () {
     switch (clear) {
         case CLEAR_SCREEN_BELOW:
             for (uint16_t r = _cursorRow + 1; r != _buffer.getRows(); ++r) {
@@ -154,7 +154,7 @@ void Terminal::ttyClearScreen(ClearScreen clear) throw () {
     _dispatch = false;
 }
 
-void Terminal::ttyInsertLines(uint16_t num) throw () {
+void Terminal::interInsertLines(uint16_t num) throw () {
     //PRINT("Got insert " << num << " lines with cursor at row: " << _cursorRow);
     _buffer.insertLines(_cursorRow + 1, num);
     _dispatch = true;
@@ -162,7 +162,7 @@ void Terminal::ttyInsertLines(uint16_t num) throw () {
     _dispatch = false;
 }
 
-void Terminal::ttyDeleteLines(uint16_t num) throw () {
+void Terminal::interDeleteLines(uint16_t num) throw () {
     //PRINT("Got delete " << num << " lines with cursor at row: " << _cursorRow);
     _buffer.eraseLines(_cursorRow, num);
     _dispatch = true;
@@ -170,35 +170,35 @@ void Terminal::ttyDeleteLines(uint16_t num) throw () {
     _dispatch = false;
 }
 
-void Terminal::ttySetFg(uint8_t fg) throw () {
+void Terminal::interSetFg(uint8_t fg) throw () {
     _fg = fg;
 }
 
-void Terminal::ttySetBg(uint8_t bg) throw () {
+void Terminal::interSetBg(uint8_t bg) throw () {
     _bg = bg;
 }
 
-void Terminal::ttyClearAttributes() throw () {
+void Terminal::interClearAttributes() throw () {
     //PRINT("Clearing attributes");
     _attributes.clear();
 }
 
-void Terminal::ttySetAttribute(Attribute attribute, bool value) throw () {
+void Terminal::interSetAttribute(Attribute attribute, bool value) throw () {
     //PRINT("Setting attribute: " << attribute << " to: " << value);
     _attributes.setTo(attribute, value);
 }
 
-void Terminal::ttySetMode(Mode mode, bool value) throw () {
+void Terminal::interSetMode(Mode mode, bool value) throw () {
     //PRINT("Setting mode: " << mode << " to: " << value);
     _modes.setTo(mode, value);
 }
 
-void Terminal::ttySetTabStop() throw () {
+void Terminal::interSetTabStop() throw () {
     PRINT("Setting tab stop at: " << _cursorCol);
     _tabs[_cursorCol] = true;
 }
 
-void Terminal::ttyReset() throw () {
+void Terminal::interReset() throw () {
     // TODO consolidate
 
     _buffer.clearAll();
@@ -218,15 +218,15 @@ void Terminal::ttyReset() throw () {
     }
 }
 
-void Terminal::ttyResetTitle() throw () {
+void Terminal::interResetTitle() throw () {
     _observer.terminalResetTitle();
 }
 
-void Terminal::ttySetTitle(const std::string & title) throw () {
+void Terminal::interSetTitle(const std::string & title) throw () {
     _observer.terminalSetTitle(title);
 }
 
-void Terminal::ttyUtf8(const char * s, utf8::Length length) throw () {
+void Terminal::interUtf8(const char * s, utf8::Length length) throw () {
     //PRINT("UTF-8: '" << std::string(s, s + length) << "'");
     _buffer.overwriteChar(Char::utf8(s, length, _attributes, 0, _fg, _bg),
                           _cursorRow, _cursorCol);
@@ -246,18 +246,18 @@ void Terminal::ttyUtf8(const char * s, utf8::Length length) throw () {
     _dispatch = false;
 }
 
-void Terminal::ttyEnd() throw () {
+void Terminal::interEnd() throw () {
     _dispatch = true;
     _observer.terminalEnd();
     _dispatch = false;
 }
 
-void Terminal::ttyGetCursorPos(uint16_t & row, uint16_t & col) const throw () {
+void Terminal::interGetCursorPos(uint16_t & row, uint16_t & col) const throw () {
     row = _cursorRow;
     col = _cursorCol;
 }
 
-void Terminal::ttyChildExited(int exitStatus) throw () {
+void Terminal::interChildExited(int exitStatus) throw () {
     _dispatch = true;
     _observer.terminalChildExited(exitStatus);
     _dispatch = false;

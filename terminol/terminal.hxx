@@ -73,28 +73,28 @@ protected:
 
     // Tty::IObserver implementation:
 
-    void ttyBegin() throw ();
-    void ttyControl(Control control) throw ();
-    void ttyMoveCursor(uint16_t row, uint16_t col) throw ();
-    void ttyRelMoveCursor(int16_t dRow, int16_t dCol) throw ();
-    void ttyClearLine(ClearLine clear) throw ();
-    void ttyClearScreen(ClearScreen clear) throw ();
-    void ttyInsertLines(uint16_t num) throw ();
-    void ttyDeleteLines(uint16_t num) throw ();
-    void ttySetFg(uint8_t fg) throw ();
-    void ttySetBg(uint8_t bg) throw ();
-    void ttyClearAttributes() throw ();
-    void ttySetAttribute(Attribute attribute, bool value) throw ();
-    void ttySetMode(Mode mode, bool value) throw ();
-    void ttySetTabStop() throw ();
-    void ttyReset() throw ();
-    void ttyResetTitle() throw ();
-    void ttySetTitle(const std::string & title) throw ();
-    void ttyUtf8(const char * s, utf8::Length length) throw ();
-    void ttyEnd() throw ();
-    void ttyGetCursorPos(uint16_t & row, uint16_t & col) const throw ();
+    void interBegin() throw ();
+    void interControl(Control control) throw ();
+    void interMoveCursor(uint16_t row, uint16_t col) throw ();
+    void interRelMoveCursor(int16_t dRow, int16_t dCol) throw ();
+    void interClearLine(ClearLine clear) throw ();
+    void interClearScreen(ClearScreen clear) throw ();
+    void interInsertLines(uint16_t num) throw ();
+    void interDeleteLines(uint16_t num) throw ();
+    void interSetFg(uint8_t fg) throw ();
+    void interSetBg(uint8_t bg) throw ();
+    void interClearAttributes() throw ();
+    void interSetAttribute(Attribute attribute, bool value) throw ();
+    void interSetMode(Mode mode, bool value) throw ();
+    void interSetTabStop() throw ();
+    void interReset() throw ();
+    void interResetTitle() throw ();
+    void interSetTitle(const std::string & title) throw ();
+    void interUtf8(const char * s, utf8::Length length) throw ();
+    void interEnd() throw ();
+    void interGetCursorPos(uint16_t & row, uint16_t & col) const throw ();
 
-    void ttyChildExited(int exitCode) throw ();
+    void interChildExited(int exitCode) throw ();
 };
 
 #endif // TERMINAL__HXX

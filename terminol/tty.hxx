@@ -22,10 +22,12 @@ public:
 
     ~Tty();
 
+    int getFd() { return _fd; }
+
     // I_Tty implementation:
 
     size_t read(char * buffer, size_t length) throw (Exited);
-    size_t write(const char * buffer, size_t length) throw (Exited);
+    size_t write(const char * buffer, size_t length) throw (Error);
 
 protected:
     void openPty(uint16_t rows,

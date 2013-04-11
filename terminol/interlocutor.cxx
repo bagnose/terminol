@@ -82,7 +82,7 @@ void Interlocutor::read() {
     //PRINT("::read()=" << rval);
 
     if (rval == -1) {
-        _observer.ttyChildExited(close());
+        _observer.interChildExited(close());
 
     }
     else if (rval == 0) {
@@ -235,7 +235,7 @@ void Interlocutor::execShell(const std::string & windowId,
 void Interlocutor::processBuffer() {
     ASSERT(!_readBuffer.empty(), "");
 
-    _observer.ttyBegin();
+    _observer.interBegin();
 
     size_t i = 0;
 
@@ -253,7 +253,7 @@ void Interlocutor::processBuffer() {
 
     _readBuffer.erase(_readBuffer.begin(), _readBuffer.begin() + i);
 
-    _observer.ttyEnd();
+    _observer.interEnd();
 }
 
 void Interlocutor::processChar(const char * s, utf8::Length length) {
@@ -300,7 +300,7 @@ void Interlocutor::processChar(const char * s, utf8::Length length) {
             else {
                 switch (_state) {
                     case STATE_NORMAL:
-                        _observer.ttyUtf8(&ascii, utf8::L1);
+                        _observer.interUtf8(&ascii, utf8::L1);
                         break;
                     case STATE_ESCAPE_START:
                         processEscape(ascii);
@@ -332,7 +332,7 @@ void Interlocutor::processChar(const char * s, utf8::Length length) {
             ERROR("Got UTF-8 whilst in state: " << _state);
         }
 
-        _observer.ttyUtf8(s, length);
+        _observer.interUtf8(s, length);
     }
 }
 
@@ -341,21 +341,21 @@ void Interlocutor::processControl(char c) {
 
     switch (c) {
         case BEL:
-            _observer.ttyControl(CONTROL_BEL);
+            _observer.interControl(CONTROL_BEL);
             break;
         case HT:
-            _observer.ttyControl(CONTROL_HT);
+            _observer.interControl(CONTROL_HT);
             break;
         case BS:
-            _observer.ttyControl(CONTROL_BS);
+            _observer.interControl(CONTROL_BS);
             break;
         case CR:
-            _observer.ttyControl(CONTROL_CR);
+            _observer.interControl(CONTROL_CR);
             break;
         case FF:
         case VT:
         case LF:
-            _observer.ttyControl(CONTROL_LF);
+            _observer.interControl(CONTROL_LF);
             break;
         case SO:
         case SI:
@@ -413,7 +413,7 @@ void Interlocutor::processEscape(char c) {
             _state = STATE_NORMAL;
             break;
         case 'H':   // HTS - Horizontal tab stop.
-            _observer.ttySetTabStop();
+            _observer.interSetTabStop();
             _state = STATE_NORMAL;
             break;
         case 'M':   // RI - Reverse index.
@@ -426,16 +426,16 @@ void Interlocutor::processEscape(char c) {
             _state = STATE_NORMAL;
             break;
         case 'c':   // RIS - Reset to initial state
-            _observer.ttyReset();
-            _observer.ttyResetTitle();
+            _observer.interReset();
+            _observer.interResetTitle();
             _state = STATE_NORMAL;
             break;
         case '=':   // DECPAM - Application keypad
-            _observer.ttySetMode(MODE_APPKEYPAD, true);
+            _observer.interSetMode(MODE_APPKEYPAD, true);
             _state = STATE_NORMAL;
             break;
         case '>':   // DECPNM - Normal keypad
-            _observer.ttySetMode(MODE_APPKEYPAD, false);
+            _observer.interSetMode(MODE_APPKEYPAD, false);
             _state = STATE_NORMAL;
             break;
         case '7':   // DECSC - Save Cursor
@@ -513,16 +513,16 @@ void Interlocutor::processCsiEscape() {
         char mode = _escapeCsi.seq[i];
         switch (mode) {
             case 'A': // CUU - Cursor Up
-                _observer.ttyRelMoveCursor(-nthArg(args, 0, 1) , 0);
+                _observer.interRelMoveCursor(-nthArg(args, 0, 1) , 0);
                 break;
             case 'B': // CUD - Cursor Down
-                _observer.ttyRelMoveCursor(nthArg(args, 0, 1) , 0);
+                _observer.interRelMoveCursor(nthArg(args, 0, 1) , 0);
                 break;
             case 'C': // CUF - Cursor Forward
-                _observer.ttyRelMoveCursor(0, nthArg(args, 0, 1));
+                _observer.interRelMoveCursor(0, nthArg(args, 0, 1));
                 break;
             case 'D': // CUB - Cursor Backward
-                _observer.ttyRelMoveCursor(0, -nthArg(args, 0, 1));
+                _observer.interRelMoveCursor(0, -nthArg(args, 0, 1));
                 break;
             case 'E': // CNL - Cursor Next Line
                 break;
@@ -532,10 +532,10 @@ void Interlocutor::processCsiEscape() {
                 break;
 
             case 'L': // IL - Insert Lines
-                _observer.ttyInsertLines(nthArg(args, 0, 1));
+                _observer.interInsertLines(nthArg(args, 0, 1));
                 break;
             case 'M': // DL - Delete Lines
-                _observer.ttyDeleteLines(nthArg(args, 0, 1));
+                _observer.interDeleteLines(nthArg(args, 0, 1));
                 break;
 
                 //case 'S': // SU - Scroll Up
@@ -554,13 +554,13 @@ void Interlocutor::processCsiEscape() {
             case 'K':   // EL - Erase line
                 switch (nthArg(args, 0)) {
                     case 0: // right
-                        _observer.ttyClearLine(CLEAR_LINE_RIGHT);
+                        _observer.interClearLine(CLEAR_LINE_RIGHT);
                         break;
                     case 1: // left
-                        _observer.ttyClearLine(CLEAR_LINE_LEFT);
+                        _observer.interClearLine(CLEAR_LINE_LEFT);
                         break;
                     case 2: // all
-                        _observer.ttyClearLine(CLEAR_LINE_ALL);
+                        _observer.interClearLine(CLEAR_LINE_ALL);
                         break;
                 }
                 break;
@@ -572,7 +572,7 @@ void Interlocutor::processCsiEscape() {
                 uint16_t row = nthArg(args, 0, 1) - 1;
                 uint16_t col = nthArg(args, 1, 1) - 1;
                 //PRINT("CSI: Move cursor: row=" << row << ", col=" << col);
-                _observer.ttyMoveCursor(row, col);
+                _observer.interMoveCursor(row, col);
             }
                 break;
                 //case '!':
@@ -582,16 +582,16 @@ void Interlocutor::processCsiEscape() {
                 switch (nthArg(args, 0)) {
                     case 0:
                         // below
-                        _observer.ttyClearScreen(CLEAR_SCREEN_BELOW);
+                        _observer.interClearScreen(CLEAR_SCREEN_BELOW);
                         break;
                     case 1:
                         // above
-                        _observer.ttyClearScreen(CLEAR_SCREEN_ABOVE);
+                        _observer.interClearScreen(CLEAR_SCREEN_ABOVE);
                         break;
                     case 2:
                         // all
-                        _observer.ttyClearScreen(CLEAR_SCREEN_ALL);
-                        _observer.ttyMoveCursor(0, 0);
+                        _observer.interClearScreen(CLEAR_SCREEN_ALL);
+                        _observer.interMoveCursor(0, 0);
                         break;
                     default:
                         FATAL("");
@@ -603,7 +603,7 @@ void Interlocutor::processCsiEscape() {
             case 'n': // DSR - Device Status Report
                 if (nthArg(args, 0) == 6) {
                     uint16_t row, col;
-                    _observer.ttyGetCursorPos(row, col);
+                    _observer.interGetCursorPos(row, col);
                     std::ostringstream ost;
                     ost << ESC << '[' << row << ';' << col << 'R';
                     std::string str = ost.str();
@@ -650,7 +650,7 @@ void Interlocutor::processStrEscape() {
                 case 1:
                 case 2:
                     if (args.size() > 1) {      // XXX need if? we have fallback
-                        _observer.ttySetTitle(nthArg(args, 1));
+                        _observer.interSetTitle(nthArg(args, 1));
                     }
                     break;
                 default:
@@ -658,7 +658,7 @@ void Interlocutor::processStrEscape() {
             }
             break;
         case 'k':
-            _observer.ttySetTitle(nthArg(args, 0));
+            _observer.interSetTitle(nthArg(args, 0));
             break;
         case 'P':   // DSC - Device Control String
         case '_':   // APC - Application Program Command
@@ -675,28 +675,28 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
 
         switch (v) {
             case 0: // Reset/Normal
-                _observer.ttySetBg(defaultBg());
-                _observer.ttySetFg(defaultFg());
-                _observer.ttyClearAttributes();
+                _observer.interSetBg(defaultBg());
+                _observer.interSetFg(defaultFg());
+                _observer.interClearAttributes();
                 break;
             case 1: // Bold
-                _observer.ttySetAttribute(ATTRIBUTE_BOLD, true);
+                _observer.interSetAttribute(ATTRIBUTE_BOLD, true);
                 break;
             case 2: // Faint (decreased intensity)
                 NYI("Faint");
                 break;
             case 3: // Italic: on
-                _observer.ttySetAttribute(ATTRIBUTE_ITALIC, true);
+                _observer.interSetAttribute(ATTRIBUTE_ITALIC, true);
                 break;
             case 4: // Underline: Single
-                _observer.ttySetAttribute(ATTRIBUTE_UNDERLINE, true);
+                _observer.interSetAttribute(ATTRIBUTE_UNDERLINE, true);
                 break;
             case 5: // Blink: slow
             case 6: // Blink: rapid
-                _observer.ttySetAttribute(ATTRIBUTE_BLINK, true);
+                _observer.interSetAttribute(ATTRIBUTE_BLINK, true);
                 break;
             case 7: // Image: Negative
-                _observer.ttySetAttribute(ATTRIBUTE_REVERSE, true);
+                _observer.interSetAttribute(ATTRIBUTE_REVERSE, true);
                 break;
             case 8: // Conceal (not widely supported)
                 NYI("Conceal");
@@ -725,20 +725,20 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
                 // Bold: off or Underline: Double (bold off not widely supported,
                 //                                 double underline hardly ever)
             case 22: // Normal color or intensity (neither bold nor faint)
-                _observer.ttySetAttribute(ATTRIBUTE_BOLD, false);
+                _observer.interSetAttribute(ATTRIBUTE_BOLD, false);
                 break;
             case 23: // Not italic, not Fraktur
-                _observer.ttySetAttribute(ATTRIBUTE_ITALIC, false);
+                _observer.interSetAttribute(ATTRIBUTE_ITALIC, false);
                 break;
             case 24: // Underline: None (not singly or doubly underlined)
-                _observer.ttySetAttribute(ATTRIBUTE_UNDERLINE, false);
+                _observer.interSetAttribute(ATTRIBUTE_UNDERLINE, false);
                 break;
             case 25: // Blink: off
             case 26: // Reserved
-                _observer.ttySetAttribute(ATTRIBUTE_BLINK, false);
+                _observer.interSetAttribute(ATTRIBUTE_BLINK, false);
                 break;
             case 27: // Image: Positive
-                _observer.ttySetAttribute(ATTRIBUTE_REVERSE, false);
+                _observer.interSetAttribute(ATTRIBUTE_REVERSE, false);
                 break;
             case 28: // Reveal (conceal off - not widely supported)
                 NYI("Reveal");
@@ -757,7 +757,7 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
                     i += 2;
                     int32_t v2 = args[i];
                     if (v2 >= 0 && v2 < 256) {
-                        _observer.ttySetFg(v2);
+                        _observer.interSetFg(v2);
                     }
                     else {
                         ERROR("Colour out of range: " << v2);
@@ -768,7 +768,7 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
                 }
                 break;
             case 39:
-                _observer.ttySetFg(defaultFg());
+                _observer.interSetFg(defaultFg());
                 break;
                 // 40..47 (set background colour - handled separately)
             case 48:
@@ -781,7 +781,7 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
                     i += 2;
                     int32_t v2 = args[i];
                     if (v2 >= 0 && v2 < 256) {
-                        _observer.ttySetBg(v2);
+                        _observer.interSetBg(v2);
                     }
                     else {
                         ERROR("Colour out of range: " << v2);
@@ -792,7 +792,7 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
                 }
                 break;
             case 49:
-                _observer.ttySetBg(defaultBg());
+                _observer.interSetBg(defaultBg());
                 break;
                 // 50 Reserved
             case 51: // Framed
@@ -817,19 +817,19 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
             default:
                 if (v >= 30 && v < 38) {
                     // normal fg
-                    _observer.ttySetFg(v - 30);
+                    _observer.interSetFg(v - 30);
                 }
                 else if (v >= 40 && v < 48) {
                     // bright fg
-                    _observer.ttySetBg(v - 40);
+                    _observer.interSetBg(v - 40);
                 }
                 else if (v >= 90 && v < 98) {
                     // normal bg
-                    _observer.ttySetFg(v - 90 + 8);
+                    _observer.interSetFg(v - 90 + 8);
                 }
                 else if (v >= 100 && v < 108) {
                     // bright bg
-                    _observer.ttySetBg(v - 100 + 8);
+                    _observer.interSetBg(v - 100 + 8);
                 }
                 else {
                     ERROR("Unhandled attribute: " << v);
@@ -846,7 +846,7 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
         if (priv) {
             switch (a) {
                 case 1: // DECCKM - Cursor key
-                    _observer.ttySetMode(MODE_APPCURSOR, set);
+                    _observer.interSetMode(MODE_APPCURSOR, set);
                     break;
                 case 5: // DECSCNM - Reverse video
                     /*
@@ -864,7 +864,7 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                        */
                     break;
                 case 7: // DECAWM - Auto wrap
-                    _observer.ttySetMode(MODE_WRAP, set);
+                    _observer.interSetMode(MODE_WRAP, set);
                     break;
                 case 0:  // Error (IGNORED) */
                 case 2:  // DECANM - ANSI/VT52 (IGNORED)
@@ -877,23 +877,23 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                 case 12: // att610 - Start blinking cursor (IGNORED)
                     break;
                 case 25: // DECTCEM - Text Cursor Enable Mode
-                    _observer.ttySetMode(MODE_HIDE, !set);
+                    _observer.interSetMode(MODE_HIDE, !set);
                     break;
                 case 1000: // 1000,1002: enable xterm mouse report
-                    _observer.ttySetMode(MODE_MOUSEBTN,    set);
-                    _observer.ttySetMode(MODE_MOUSEMOTION, false);
+                    _observer.interSetMode(MODE_MOUSEBTN,    set);
+                    _observer.interSetMode(MODE_MOUSEMOTION, false);
                     break;
                 case 1002:
-                    _observer.ttySetMode(MODE_MOUSEMOTION, set);
-                    _observer.ttySetMode(MODE_MOUSEBTN,    false);
+                    _observer.interSetMode(MODE_MOUSEMOTION, set);
+                    _observer.interSetMode(MODE_MOUSEBTN,    false);
                     break;
                 case 1006:
-                    _observer.ttySetMode(MODE_MOUSESGR, set);
+                    _observer.interSetMode(MODE_MOUSESGR, set);
                     break;
                 case 1049: // = 1047 and 1048 */
                 case 47:
                 case 1047:
-                    _observer.ttySetMode(MODE_ALTSCREEN, set);
+                    _observer.interSetMode(MODE_ALTSCREEN, set);
                     if(a != 1049) {
                         break;
                     }
@@ -913,16 +913,16 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                 case 0:  // Error (IGNORED)
                     break;
                 case 2:  // KAM - keyboard action
-                    _observer.ttySetMode(MODE_KBDLOCK, set);
+                    _observer.interSetMode(MODE_KBDLOCK, set);
                     break;
                 case 4:  // IRM - Insertion-replacement
-                    _observer.ttySetMode(MODE_INSERT, set);
+                    _observer.interSetMode(MODE_INSERT, set);
                     break;
                 case 12: // SRM - Send/Receive
-                    _observer.ttySetMode(MODE_ECHO, !set);
+                    _observer.interSetMode(MODE_ECHO, !set);
                     break;
                 case 20: // LNM - Linefeed/new line
-                    _observer.ttySetMode(MODE_CRLF, set);
+                    _observer.interSetMode(MODE_CRLF, set);
                     break;
                 default:
                     ERROR("erresc: unknown set/reset mode: " <<  a);
