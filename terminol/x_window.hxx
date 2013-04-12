@@ -84,6 +84,8 @@ protected:
     void rowCol2XY(size_t row, uint16_t col, uint16_t & x, uint16_t & y) const;
 
     void drawAll();
+    void drawBuffer(XftDraw * xftDraw);
+    void drawCursor(XftDraw * xftDraw);
     void drawUtf8(XftDraw * xftDraw,
                   uint16_t row, uint16_t col,
                   uint8_t fg, uint8_t bg,

@@ -264,11 +264,7 @@ void X_Window::rowCol2XY(size_t row, uint16_t col,
 void X_Window::drawAll() {
     ASSERT(_hadConfigure, "");
 
-    static int i = 0;
-    PRINT("draw: " << ++i);
-
-    XDrawRectangle(_display, _pixmap, _gc, 0, 0, _width, _height);
-    XClearWindow(_display, _window);
+    XFillRectangle(_display, _pixmap, _gc, 0, 0, _width, _height);
 
     // TODO only draw the damaged chars.
 
@@ -276,6 +272,20 @@ void X_Window::drawAll() {
                                       XDefaultVisualOfScreen(_screen),
                                       XDefaultColormapOfScreen(_screen));
 
+    drawBuffer(xftDraw);
+    drawCursor(xftDraw);
+
+
+
+    XftDrawDestroy(xftDraw);
+
+    XCopyArea(_display, _pixmap, _window, _gc,
+              0, 0, _width, _height, 0, 0);
+
+    XFlush(_display);
+}
+
+void X_Window::drawBuffer(XftDraw * xftDraw) {
     for (uint16_t r = 0; r != _terminal->buffer().getRows(); ++r) {
         uint16_t          cc = 0;
         uint8_t           fg = 0, bg = 0;
@@ -322,29 +332,31 @@ void X_Window::drawAll() {
             buffer.clear();
         }
     }
+}
 
-#if 1
-    {
-        // Draw the cursor
-        PRINT(_terminal->cursorRow() << " " << _terminal->cursorCol());
-        uint16_t x, y;
-        rowCol2XY(_terminal->cursorRow(), _terminal->cursorCol(), x, y);
-        XftDrawStringUtf8(xftDraw,
-                          _colorSet.getCursorColor(),
-                          _fontSet.getNormal(),
-                          x,
-                          y + _fontSet.getAscent(),
-                          (const FcChar8 *)"X", 1); 
-                          //(const FcChar8 *)"█", 3); 
-    }
+void X_Window::drawCursor(XftDraw * xftDraw) {
+    // Draw the cursor
+    PRINT("Cursor: " << _terminal->cursorRow() << " " << _terminal->cursorCol());
+
+    uint16_t r = _terminal->cursorRow();
+    uint16_t c = _terminal->cursorCol();
+    uint16_t x, y;
+    rowCol2XY(r, c, x, y);
+#if 0
+    XftDrawRect(xftDraw,
+                _colorSet.getCursorColor(),
+                x, y,
+                _fontSet.getWidth(),
+                _fontSet.getHeight());
+#else
+    const Char & ch = _terminal->buffer().getChar(r, c);
+
+    drawUtf8(xftDraw,
+             r, c,
+             ch.bg(), ch.fg(),      // Swap fg/bg for cursor.
+             ch.attributes(),
+             ch.bytes(), 1, utf8::leadLength(ch.leadByte()));
 #endif
-
-    XftDrawDestroy(xftDraw);
-
-    XCopyArea(_display, _pixmap, _window, _gc,
-              0, 0, _width, _height, 0, 0);
-
-    XFlush(_display);
 }
 
 void X_Window::drawUtf8(XftDraw    * xftDraw,
@@ -356,7 +368,7 @@ void X_Window::drawUtf8(XftDraw    * xftDraw,
                         const char * str,
                         size_t       count,
                         size_t       size) {
-    PRINT(count << ": <<" << std::string(str, str + size) << ">>");
+    //PRINT(count << ": <<" << std::string(str, str + size) << ">>");
 
     uint16_t x, y;
     rowCol2XY(row, col, x, y);
