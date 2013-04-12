@@ -214,19 +214,26 @@ void Terminal::interSetTitle(const std::string & title) throw () {
     _observer.terminalSetTitle(title);
 }
 
-void Terminal::interUtf8(const char * s, utf8::Length length) throw () {
-    //PRINT("UTF-8: '" << std::string(s, s + length) << "'");
-    _buffer.overwriteChar(Char::utf8(s, length, _attributes, 0, _fg, _bg),
-                          _cursorRow, _cursorCol);
-    ++_cursorCol;
+void Terminal::interUtf8(const char * s, size_t count, size_t UNUSED(size)) throw () {
+    for (size_t i = 0; i != count; ++i) {
+        utf8::Length length = utf8::leadLength(*s);
 
-    if (_cursorCol == _buffer.getCols()) {
-        ++_cursorRow;
-        if (_cursorRow == _buffer.getRows()) {
-            _buffer.addLine();
-            --_cursorRow;
+        _buffer.overwriteChar(Char::utf8(s, length, _attributes, 0, _fg, _bg),
+                              _cursorRow, _cursorCol);
+
+        ++_cursorCol;
+
+        if (_cursorCol == _buffer.getCols()) {
+            if (_cursorRow == _buffer.getRows()) {
+                _buffer.addLine();
+            }
+            else {
+                ++_cursorRow;
+            }
+            _cursorCol = 0;
         }
-        _cursorCol = 0;
+
+        s += length;
     }
 
     _observer.terminalDamageAll();

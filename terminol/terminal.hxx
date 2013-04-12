@@ -86,7 +86,7 @@ protected:
     void interReset() throw ();
     void interResetTitle() throw ();
     void interSetTitle(const std::string & title) throw ();
-    void interUtf8(const char * s, utf8::Length length) throw ();
+    void interUtf8(const char * s, size_t count, size_t size) throw ();
     void interEnd() throw ();
     void interGetCursorPos(uint16_t & row, uint16_t & col) const throw ();
 

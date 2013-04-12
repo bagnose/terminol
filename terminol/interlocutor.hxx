@@ -38,7 +38,7 @@ public:
         virtual void interResetTitle() throw () = 0;
         virtual void interSetTitle(const std::string & title) throw () = 0;
         // UTF-8
-        virtual void interUtf8(const char * s, utf8::Length length) throw () = 0;
+        virtual void interUtf8(const char * s, size_t count, size_t size) throw () = 0;
         // end
         virtual void interEnd() throw () = 0;
 

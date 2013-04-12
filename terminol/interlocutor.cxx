@@ -128,17 +128,7 @@ void Interlocutor::processBuffer() {
         }
         else {
             if (utf8Accum) {
-#if 1
-                while (utf8Index != i) {
-                    const char * p = &_readBuffer[utf8Index];
-                    utf8::Length l = utf8::leadLength(*p);
-                    _observer.interUtf8(p, l);
-                    utf8Index += l;
-                }
-#else
-                _observer.interUtf8_2(_readBuffer[utf8Index], utf8Count, i - utf8Index);
-#endif
-
+                _observer.interUtf8(&_readBuffer[utf8Index], utf8Count, i - utf8Index);
                 utf8Accum = false;
             }
 
@@ -150,16 +140,7 @@ void Interlocutor::processBuffer() {
     }
 
     if (utf8Accum) {
-#if 1
-        while (utf8Index != i) {
-            const char * p = &_readBuffer[utf8Index];
-            utf8::Length l = utf8::leadLength(*p);
-            _observer.interUtf8(p, l);
-            utf8Index += l;
-        }
-#else
-        _observer.interUtf8_2(_readBuffer[utf8Index], utf8Count, i - utf8Index);
-#endif
+        _observer.interUtf8(&_readBuffer[utf8Index], utf8Count, i - utf8Index);
     }
 
     _readBuffer.erase(_readBuffer.begin(), _readBuffer.begin() + i);
@@ -219,7 +200,8 @@ void Interlocutor::processChar(const char * s, utf8::Length length) {
             else {
                 switch (_state) {
                     case STATE_NORMAL:
-                        _observer.interUtf8(&ascii, utf8::L1);
+                        FATAL("Unreachable now");
+                        //_observer.interUtf8(&ascii, utf8::L1);
                         break;
                     case STATE_ESCAPE_START:
                         processEscape(ascii);
@@ -251,7 +233,8 @@ void Interlocutor::processChar(const char * s, utf8::Length length) {
             ERROR("Got UTF-8 whilst in state: " << _state);
         }
 
-        _observer.interUtf8(s, length);
+        FATAL("Unreachable now.");
+        //_observer.interUtf8(s, length);
     }
 }
 
