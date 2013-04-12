@@ -45,7 +45,7 @@ public:
              const std::string  & term,
              const Interlocutor::Command & command);
 
-    ~X_Window();
+    virtual ~X_Window();
 
     //
     // I_X_Window implementation:
@@ -81,7 +81,7 @@ public:
     void visibilityNotify(XVisibilityEvent & event);
 
 protected:
-    void rowCol2XY(uint16_t row, size_t col, uint16_t & x, uint16_t & y) const;
+    void rowCol2XY(size_t row, uint16_t col, uint16_t & x, uint16_t & y) const;
 
     void draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih);
     void setTitle(const std::string & title);

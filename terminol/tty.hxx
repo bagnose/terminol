@@ -20,7 +20,7 @@ public:
         const std::string & term,
         const Command     & command);
 
-    ~Tty();
+    virtual ~Tty();
 
     int getFd() { return _fd; }
     void resize(uint16_t rows, uint16_t cols);

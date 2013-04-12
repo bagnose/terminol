@@ -48,7 +48,7 @@ public:
 
     protected:
         I_Observer() throw () {}
-        virtual ~I_Observer() throw () {}
+        ~I_Observer() throw () {}
     };
 
 private:

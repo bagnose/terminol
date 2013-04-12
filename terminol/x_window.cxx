@@ -251,7 +251,7 @@ void X_Window::visibilityNotify(XVisibilityEvent & event) {
     PRINT("Visibility change: state=" << event.state);
 }
 
-void X_Window::rowCol2XY(uint16_t row, size_t col,
+void X_Window::rowCol2XY(size_t row, uint16_t col,
                          uint16_t & x, uint16_t & y) const {
     x = BORDER_THICKNESS + col * _fontSet.getWidth();
     y = BORDER_THICKNESS + row * _fontSet.getHeight();
@@ -269,8 +269,7 @@ void X_Window::draw(uint16_t UNUSED(ix), uint16_t UNUSED(iy),
                                       XDefaultVisualOfScreen(_screen),
                                       XDefaultColormapOfScreen(_screen));
 
-    for (size_t r = 0; r != _terminal->buffer().getRows(); ++r) {
-        for (size_t c = 0; c != _terminal->buffer().getCols(); ++c) {
+        for (uint16_t c = 0; c != _terminal->buffer().getCols(); ++c) {
             const Char & ch = _terminal->buffer().getChar(r, c);
 
             if (true /*!ch.isNull()*/) {    // XXX drawing all characters ATM :(

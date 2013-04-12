@@ -32,7 +32,7 @@ public:
 
 protected:
     I_X_Window()          {}
-    virtual ~I_X_Window() {}
+    ~I_X_Window() {}
 };
 
 #endif // X_WINDOW_INTERFACE__HXX

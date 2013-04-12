@@ -30,7 +30,7 @@ public:
 
 protected:
     I_Tty() {}
-    virtual ~I_Tty() {}
+    ~I_Tty() {}
 };
 
 #endif // TTY_INTERFACE__H
