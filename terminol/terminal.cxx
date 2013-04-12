@@ -146,6 +146,12 @@ void Terminal::interClearScreen(ClearScreen clear) throw () {
     _observer.terminalDamageAll();
 }
 
+void Terminal::interInsertChars(uint16_t num) throw () {
+    PRINT("Got insert " << num << " chars with cursor at row: " << _cursorRow << ", col: " << _cursorCol);
+    _buffer.insertChars(_cursorRow, _cursorCol, num);
+    _observer.terminalDamageAll();
+}
+
 void Terminal::interInsertLines(uint16_t num) throw () {
     PRINT("Got insert " << num << " lines with cursor at row: " << _cursorRow);
     _buffer.insertLines(_cursorRow + 1, num);

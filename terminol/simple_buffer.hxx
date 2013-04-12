@@ -27,6 +27,14 @@ class SimpleBuffer {
         }
         */
 
+        void insert(uint16_t beforeCol, uint16_t count) {
+            std::copy_backward(
+                    &_chars[beforeCol],
+                    &_chars[_chars.size() - count],
+                    &_chars[_chars.size()]);
+            std::fill(&_chars[beforeCol], &_chars[beforeCol + count], Char::null());
+        }
+
         void overwrite(const Char & ch, uint16_t col) {
             ASSERT(col < getCols(), "");
             _chars[col] = ch;
@@ -70,6 +78,12 @@ public:
     }
     */
 
+    void insertChars(uint16_t row, uint16_t beforeCol, uint16_t count) {
+        ASSERT(row < getRows(), "");
+        ASSERT(beforeCol <= getCols(), "");
+        _lines[row].insert(beforeCol, count);
+    }
+
     void eraseChar(uint16_t row, uint16_t col) {
         ASSERT(row < getRows(), "");
         ASSERT(col < getCols(), "");
@@ -93,6 +107,7 @@ public:
     }
 
     void insertLines(uint16_t beforeRow, uint16_t count) {
+        ASSERT(beforeRow <= getRows(), "");
         for (uint16_t i = 0; i != count; ++i) {
             _lines.insert(_lines.begin() + beforeRow, Line(getCols()));
         }

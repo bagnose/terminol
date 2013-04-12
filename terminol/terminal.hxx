@@ -75,6 +75,7 @@ protected:
     void interRelMoveCursor(int16_t dRow, int16_t dCol) throw ();
     void interClearLine(ClearLine clear) throw ();
     void interClearScreen(ClearScreen clear) throw ();
+    void interInsertChars(uint16_t num) throw ();
     void interInsertLines(uint16_t num) throw ();
     void interDeleteLines(uint16_t num) throw ();
     void interSetFg(uint8_t fg) throw ();

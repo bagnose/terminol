@@ -26,6 +26,7 @@ public:
         virtual void interRelMoveCursor(int16_t dRow, int16_t dCol) throw () = 0;
         virtual void interClearLine(ClearLine clear) throw () = 0;
         virtual void interClearScreen(ClearScreen clear) throw () = 0;
+        virtual void interInsertChars(uint16_t num) throw () = 0;
         virtual void interInsertLines(uint16_t num) throw () = 0;
         virtual void interDeleteLines(uint16_t num) throw () = 0;
         virtual void interSetFg(uint8_t fg) throw () = 0;

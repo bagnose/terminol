@@ -415,6 +415,9 @@ void Interlocutor::processCsiEscape() {
     else {
         char mode = _escapeCsi.seq[i];
         switch (mode) {
+            case '@': // ICH - Insert Character
+                _observer.interInsertChars(nthArg(args, 0, 1));
+                break;
             case 'A': // CUU - Cursor Up
                 _observer.interRelMoveCursor(-nthArg(args, 0, 1) , 0);
                 break;
