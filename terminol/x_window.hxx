@@ -83,7 +83,12 @@ public:
 protected:
     void rowCol2XY(size_t row, uint16_t col, uint16_t & x, uint16_t & y) const;
 
-    void draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih);
+    void drawAll();
+    void drawUtf8(XftDraw * xftDraw,
+                  uint16_t row, uint16_t col,
+                  uint8_t fg, uint8_t bg,
+                  AttributeSet attributes,
+                  const char * str, size_t count, size_t size);
     void setTitle(const std::string & title);
 
     // Terminal::I_Observer implementation:

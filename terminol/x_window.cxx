@@ -78,6 +78,8 @@ X_Window::X_Window(Display            * display,
 
     XMapWindow(_display, _window);
 
+    //
+
     XGCValues gcValues;
     gcValues.graphics_exposures = False;
     _gc = XCreateGC(_display, _window, GCGraphicsExposures, &gcValues);
@@ -118,6 +120,7 @@ void X_Window::keyPress(XKeyEvent & event) {
                    false,
                    str);
 
+        /*
     {
         // Run xmodmap without any arguments to discover these.
         std::ostringstream maskStr;
@@ -129,11 +132,10 @@ void X_Window::keyPress(XKeyEvent & event) {
         if (state & Mod3Mask)    maskStr << " MOD3";
         if (state & Mod4Mask)    maskStr << " WIN";
         if (state & Mod5Mask)    maskStr << " MOD5";
-        /*
         PRINT(<< "keycode=" << keycode << " mask=(" << maskStr.str() << ") " <<
               " str='" << str << "'" << " len=" << len);
-              */
     }
+              */
 
     if (!str.empty()) {
         _terminal->enqueueWrite(str.data(), str.size());
@@ -177,8 +179,10 @@ void X_Window::expose(XExposeEvent & event) {
        */
 
     if (event.count == 0) {
+        // TODO copy pixmap to window (if we are the last user...)
         //draw(event.x, event.y, event.width, event.height);
-        draw(0, 0, _width, _height);
+        ASSERT(_hadConfigure, "");
+        drawAll();
     }
 }
 
@@ -224,7 +228,7 @@ void X_Window::configure(XConfigureEvent & event) {
     _tty->resize(rows, cols);
     _terminal->resize(rows, cols);
 
-    draw(0, 0, _width, _height);
+    drawAll();
 }
 
 void X_Window::focusIn(XFocusChangeEvent & UNUSED(event)) {
@@ -257,54 +261,72 @@ void X_Window::rowCol2XY(size_t row, uint16_t col,
     y = BORDER_THICKNESS + row * _fontSet.getHeight();
 }
 
-void X_Window::draw(uint16_t UNUSED(ix), uint16_t UNUSED(iy),
-                    uint16_t UNUSED(iw), uint16_t UNUSED(ih)) {
-    //XClearWindow(_display, _window);
-
+void X_Window::drawAll() {
     ASSERT(_hadConfigure, "");
+
+    static int i = 0;
+    PRINT("draw: " << ++i);
+
+    XDrawRectangle(_display, _pixmap, _gc, 0, 0, _width, _height);
+    XClearWindow(_display, _window);
 
     // TODO only draw the damaged chars.
 
-    XftDraw * xftDraw = XftDrawCreate(_display, _pixmap,//_window,
+    XftDraw * xftDraw = XftDrawCreate(_display, _pixmap,
                                       XDefaultVisualOfScreen(_screen),
                                       XDefaultColormapOfScreen(_screen));
+
+    for (uint16_t r = 0; r != _terminal->buffer().getRows(); ++r) {
+        uint16_t          cc = 0;
+        uint8_t           fg = 0, bg = 0;
+        AttributeSet      at;
+        std::vector<char> buffer;
 
         for (uint16_t c = 0; c != _terminal->buffer().getCols(); ++c) {
             const Char & ch = _terminal->buffer().getChar(r, c);
 
             if (true /*!ch.isNull()*/) {    // XXX drawing all characters ATM :(
-                // PRINT(<<ch);
-                uint16_t x, y;
-                rowCol2XY(r, c, x, y);
+                if (buffer.empty()) {
+                    cc = c;
+                    fg = ch.fg();
+                    bg = ch.bg();
+                    at = ch.attributes();
 
-                const XftColor * fgColor = _colorSet.getIndexedColor(ch.fg());
-                const XftColor * bgColor = _colorSet.getIndexedColor(ch.bg());
-
-                if (ch.attributes().get(ATTRIBUTE_REVERSE)) {
-                    std::swap(fgColor, bgColor);
+                    utf8::Length len = utf8::leadLength(ch.leadByte());
+                    buffer.resize(len);
+                    std::copy(ch.bytes(), ch.bytes() + len, &buffer.front());
                 }
-
-                XftFont * font = _fontSet.get(ch.attributes().get(ATTRIBUTE_BOLD),
-                                              ch.attributes().get(ATTRIBUTE_ITALIC));
-
-                XftDrawRect(xftDraw,
-                            bgColor,
-                            x, y,
-                            _fontSet.getWidth(),
-                            _fontSet.getHeight());
-
-                XftDrawStringUtf8(xftDraw,
-                                  fgColor,
-                                  font,
-                                  x,
-                                  y + _fontSet.getAscent(),
-                                  reinterpret_cast<const FcChar8 *>(ch.bytes()),
-                                  utf8::leadLength(ch.bytes()[0]));
+                else {
+                    if (fg != ch.fg() || bg != ch.bg() || at != ch.attributes()) {
+                        // flush buffer
+                        drawUtf8(xftDraw, r, cc, fg, bg, at,
+                                 &buffer.front(), c - cc, buffer.size());
+                        buffer.clear();
+                    }
+                    else {
+                        size_t oldSize = buffer.size();
+                        utf8::Length len = utf8::leadLength(ch.leadByte());
+                        buffer.resize(buffer.size() + len);
+                        std::copy(ch.bytes(), ch.bytes() + len, &buffer[oldSize]);
+                    }
+                }
             }
+        }
+
+        if (!buffer.empty()) {
+            // flush buffer
+            drawUtf8(xftDraw, r, cc, fg, bg, at,
+                     &buffer.front(),
+                     _terminal->buffer().getCols() - cc,
+                     buffer.size());
+            buffer.clear();
         }
     }
 
+#if 1
     {
+        // Draw the cursor
+        PRINT(_terminal->cursorRow() << " " << _terminal->cursorCol());
         uint16_t x, y;
         rowCol2XY(_terminal->cursorRow(), _terminal->cursorCol(), x, y);
         XftDrawStringUtf8(xftDraw,
@@ -312,9 +334,10 @@ void X_Window::draw(uint16_t UNUSED(ix), uint16_t UNUSED(iy),
                           _fontSet.getNormal(),
                           x,
                           y + _fontSet.getAscent(),
-                          (const FcChar8 *)"¶", 2); 
+                          (const FcChar8 *)"X", 1); 
                           //(const FcChar8 *)"█", 3); 
     }
+#endif
 
     XftDrawDestroy(xftDraw);
 
@@ -322,6 +345,45 @@ void X_Window::draw(uint16_t UNUSED(ix), uint16_t UNUSED(iy),
               0, 0, _width, _height, 0, 0);
 
     XFlush(_display);
+}
+
+void X_Window::drawUtf8(XftDraw    * xftDraw,
+                        uint16_t     row,
+                        uint16_t     col,
+                        uint8_t      fg,
+                        uint8_t      bg,
+                        AttributeSet attributes,
+                        const char * str,
+                        size_t       count,
+                        size_t       size) {
+    PRINT(count << ": <<" << std::string(str, str + size) << ">>");
+
+    uint16_t x, y;
+    rowCol2XY(row, col, x, y);
+
+    const XftColor * fgColor = _colorSet.getIndexedColor(fg);
+    const XftColor * bgColor = _colorSet.getIndexedColor(bg);
+
+    if (attributes.get(ATTRIBUTE_REVERSE)) {
+        std::swap(fgColor, bgColor);
+    }
+
+    XftFont * font = _fontSet.get(attributes.get(ATTRIBUTE_BOLD),
+                                  attributes.get(ATTRIBUTE_ITALIC));
+
+    XftDrawRect(xftDraw,
+                bgColor,
+                x, y,
+                count * _fontSet.getWidth(),
+                _fontSet.getHeight());
+
+    XftDrawStringUtf8(xftDraw,
+                      fgColor,
+                      font,
+                      x,
+                      y + _fontSet.getAscent(),
+                      reinterpret_cast<const FcChar8 *>(str),
+                      size);
 }
 
 void X_Window::setTitle(const std::string & title) {
@@ -354,8 +416,8 @@ void X_Window::terminalSetTitle(const std::string & title) throw () {
 }
 
 void X_Window::terminalEnd() throw () {
-    if (_damage) {
-        draw(0, 0, _width, _height);
+    if (_damage && _hadConfigure) {
+        drawAll();
         _damage = false;
     }
 }

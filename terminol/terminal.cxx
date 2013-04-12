@@ -70,7 +70,7 @@ void Terminal::interControl(Control control) throw () {
             }
             break;
         case CONTROL_BS:
-            _buffer.overwriteChar(Char::null(), _cursorRow, --_cursorCol);
+            _buffer.overwriteChar(Char::null(), _cursorRow, _cursorCol--);
             break;
         case CONTROL_CR:
             _cursorCol = 0;

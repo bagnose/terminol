@@ -24,9 +24,19 @@ public:
         if (to) { set(attribute);   }
         else    { unset(attribute); }
     }
+
+    friend inline bool operator == (AttributeSet lhs, AttributeSet rhs);
 };
 
 std::ostream & operator << (std::ostream & ost, AttributeSet attributeSet);
+
+inline bool operator == (AttributeSet lhs, AttributeSet rhs) {
+    return lhs._bits == rhs._bits;
+}
+
+inline bool operator != (AttributeSet lhs, AttributeSet rhs) {
+    return !(lhs == rhs);
+}
 
 //
 //

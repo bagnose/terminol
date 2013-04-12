@@ -135,7 +135,6 @@ void Interlocutor::processBuffer() {
             processChar(&_readBuffer[i], length);
         }
 
-
         i += length;
     }
 

@@ -5,6 +5,7 @@
 
 #include "terminol/bit_sets.hxx"
 #include "terminol/utf8.hxx"
+#include "terminol/ascii.hxx"
 
 #include <algorithm>
 
@@ -29,9 +30,11 @@ class Char {
         std::copy(bytes, bytes + length, _bytes);
     }
 
+    static const char NULL_CHAR = SPACE;    // NUL/SPACE
+
 public:
     static Char null() {
-        return ascii('\0');
+        return ascii(NULL_CHAR);
     }
 
     static Char ascii(char c) {
@@ -48,13 +51,14 @@ public:
         return Char(s, length, attributes, state, fg, bg);
     }
 
+    char         leadByte()   const { return _bytes[0]; }
     const char * bytes()      const { return _bytes; }
     AttributeSet attributes() const { return _attributes; }
     uint8_t      state()      const { return _state; }
     uint8_t      fg()         const { return _fg; }
     uint8_t      bg()         const { return _bg; }
 
-    bool isNull() const { return _bytes[0] == '\0'; }
+    bool isNull() const { return _bytes[0] == NULL_CHAR; }
 };
 
 std::ostream & operator << (std::ostream & ost, const Char & ch);
