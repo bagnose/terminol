@@ -106,16 +106,60 @@ void Interlocutor::processBuffer() {
 
     size_t i = 0;
 
+    size_t utf8Index = 0;
+    size_t utf8Count = 0;
+    bool   utf8Accum = false;
+
     while (i != _readBuffer.size()) {
         utf8::Length length = utf8::leadLength(_readBuffer[i]);
 
         if (_readBuffer.size() < i + length) {
+            // Incomplete UTF-8 sequence.
             break;
         }
 
-        processChar(&_readBuffer[i], length);
+        if (_state == STATE_NORMAL && !isControl(_readBuffer[i])) {
+            if (!utf8Accum) {
+                utf8Index = i;
+                utf8Count = 0;
+                utf8Accum = true;
+            }
+            ++utf8Count;
+        }
+        else {
+            if (utf8Accum) {
+#if 1
+                while (utf8Index != i) {
+                    const char * p = &_readBuffer[utf8Index];
+                    utf8::Length l = utf8::leadLength(*p);
+                    _observer.interUtf8(p, l);
+                    utf8Index += l;
+                }
+#else
+                _observer.interUtf8_2(_readBuffer[utf8Index], utf8Count, i - utf8Index);
+#endif
+
+                utf8Accum = false;
+            }
+
+            processChar(&_readBuffer[i], length);
+        }
+
 
         i += length;
+    }
+
+    if (utf8Accum) {
+#if 1
+        while (utf8Index != i) {
+            const char * p = &_readBuffer[utf8Index];
+            utf8::Length l = utf8::leadLength(*p);
+            _observer.interUtf8(p, l);
+            utf8Index += l;
+        }
+#else
+        _observer.interUtf8_2(_readBuffer[utf8Index], utf8Count, i - utf8Index);
+#endif
     }
 
     _readBuffer.erase(_readBuffer.begin(), _readBuffer.begin() + i);
@@ -125,6 +169,13 @@ void Interlocutor::processBuffer() {
 }
 
 void Interlocutor::processChar(const char * s, utf8::Length length) {
+    // Can be:
+    // 7-bit:
+    //  - control char
+    //  - non-control char
+    // 8-bit:
+    //  - utf8
+
     if (length == utf8::L1) {
         char ascii = s[0];
 

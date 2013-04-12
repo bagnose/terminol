@@ -44,4 +44,8 @@ const char SPACE = '\x20';
 
 const char DEL   = '\x7F';
 
+inline bool isControl(char c) {
+    return (c >= NUL && c < SPACE) || c == DEL;
+}
+
 #endif // ASCII__HXX
