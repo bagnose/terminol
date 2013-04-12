@@ -30,11 +30,11 @@ bool match(uint8_t mask, uint8_t state) {
         return true;
     }
     else {
-        return state & mask == mask;
+        return (state & mask) == mask;
     }
 }
 
-const Key keys[] = {                            //    appKey   appCursor
+const Key keys[] = {                            //    appKey  appCursor
     // keySym              mask           string      keypad   cursor   crlf
     { XK_KP_Home,       ShiftMask,      "\033[1;2H",     0,      0,      0 },
     { XK_KP_Home,       XK_ANY_MOD,     "\033[H",        0,     -1,      0 },

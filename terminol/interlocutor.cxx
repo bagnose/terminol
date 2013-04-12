@@ -61,9 +61,7 @@ void Interlocutor::read() {
         _readBuffer.resize(oldSize + rval);
         std::copy(buffer, buffer + rval, &_readBuffer[oldSize]);
 
-        _dispatch = true;
         processBuffer();
-        _dispatch = false;
     }
     catch (I_Tty::Exited & ex) {
         _observer.interChildExited(ex.exitCode);
@@ -103,6 +101,7 @@ void Interlocutor::write() {
 void Interlocutor::processBuffer() {
     ASSERT(!_readBuffer.empty(), "");
 
+    _dispatch = true;
     _observer.interBegin();
 
     size_t i = 0;
@@ -122,6 +121,7 @@ void Interlocutor::processBuffer() {
     _readBuffer.erase(_readBuffer.begin(), _readBuffer.begin() + i);
 
     _observer.interEnd();
+    _dispatch = false;
 }
 
 void Interlocutor::processChar(const char * s, utf8::Length length) {
@@ -254,6 +254,7 @@ void Interlocutor::processEscape(char c) {
             break;
         case '#':
             // test
+            NYI("test escape");
             _state = STATE_TEST_ESCAPE;
             break;
         case 'P':   // DCS
@@ -268,16 +269,17 @@ void Interlocutor::processEscape(char c) {
             //_altCharSet = true;           XXX
             break;
         case ')':   // Set secondary charset G1
-        case '*':   // Set secondary charset G1
-        case '+':   // Set secondary charset G1
+        case '*':   // Set secondary charset G2
+        case '+':   // Set secondary charset G3
+            NYI("charset");
             _state = STATE_NORMAL;
             break;
         case 'D':   // IND - linefeed
-            FATAL("NYI st.c:2169");
+            NYI("st.c:2169");
             _state = STATE_NORMAL;
             break;
         case 'E':   // NEL - next line
-            FATAL("NYI st.c:2177");
+            NYI("st.c:2177");
             _state = STATE_NORMAL;
             break;
         case 'H':   // HTS - Horizontal tab stop.
@@ -285,11 +287,11 @@ void Interlocutor::processEscape(char c) {
             _state = STATE_NORMAL;
             break;
         case 'M':   // RI - Reverse index.
-            FATAL("NYI st.c:2185");
+            NYI("st.c:2185");
             _state = STATE_NORMAL;
             break;
         case 'Z':   // DECID - Identify Terminal
-            FATAL("NYI st.c:2194");
+            NYI("st.c:2194");
             //ttywrite(VT102ID, sizeof(VT102ID) - 1);
             _state = STATE_NORMAL;
             break;
@@ -307,17 +309,17 @@ void Interlocutor::processEscape(char c) {
             _state = STATE_NORMAL;
             break;
         case '7':   // DECSC - Save Cursor
-            FATAL("NYI st.c:2210");
+            NYI("st.c:2210");
             //tcursor(CURSOR_SAVE);
             _state = STATE_NORMAL;
             break;
         case '8':   // DECRC - Restore Cursor
-            FATAL("NYI st.c:2214");
+            NYI("st.c:2214");
             //tcursor(CURSOR_LOAD);
             _state = STATE_NORMAL;
             break;
-        case 'm':
-            break;
+        //case 'm':
+            //break;
         default:
             ERROR("Unknown escape sequence: " << c);
             _state = STATE_NORMAL;
@@ -328,7 +330,7 @@ void Interlocutor::processEscape(char c) {
 void Interlocutor::processCsiEscape() {
     ENFORCE(_state == STATE_CSI_ESCAPE, "");       // XXX here or outside?
     ASSERT(!_escapeCsi.seq.empty(), "");
-    //PRINT("CSI-esc: " << _escapeCsi.seq);
+    PRINT("CSI-esc: " << _escapeCsi.seq);
 
     size_t i = 0;
     bool priv = false;
@@ -393,10 +395,13 @@ void Interlocutor::processCsiEscape() {
                 _observer.interRelMoveCursor(0, -nthArg(args, 0, 1));
                 break;
             case 'E': // CNL - Cursor Next Line
+                NYI('E');
                 break;
             case 'F': // CPL - Cursor Previous Line
+                NYI('F');
                 break;
             case 'G': // CHA - Cursor Horizontal Absolute
+                NYI('G');
                 break;
 
             case 'L': // IL - Insert Lines
@@ -491,7 +496,7 @@ Default:
 
 void Interlocutor::processStrEscape() {
     ENFORCE(_state == STATE_STR_ESCAPE, "");       // XXX here or outside?
-    //PRINT("STR-esc: type=" << _escapeStr.type << ", seq=" << _escapeStr.seq);
+    PRINT("STR-esc: type=" << _escapeStr.type << ", seq=" << _escapeStr.seq);
 
     std::vector<std::string> args;
 

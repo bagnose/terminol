@@ -168,6 +168,7 @@ int Tty::close() {
     PRINT("Sending SIGKILL.");
     ::kill(_pid, SIGKILL);
     waitReap(exitCode);
+    return exitCode;
 }
 
 bool Tty::pollReap(int & exitCode, int msec) {

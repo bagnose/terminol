@@ -42,11 +42,10 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
 void Terminal::interBegin() throw () {
     _dispatch = true;
     _observer.terminalBegin();
-    _dispatch = false;
 }
 
 void Terminal::interControl(Control control) throw () {
-    //PRINT("Control: " << control);
+    PRINT("Control: " << control);
     switch (control) {
         case CONTROL_BEL:
             PRINT("BEL!!");
@@ -71,7 +70,7 @@ void Terminal::interControl(Control control) throw () {
             }
             break;
         case CONTROL_BS:
-            _buffer.eraseChar(_cursorRow, --_cursorCol);
+            _buffer.overwriteChar(Char::null(), _cursorRow, --_cursorCol);
             break;
         case CONTROL_CR:
             _cursorCol = 0;
@@ -88,12 +87,11 @@ void Terminal::interControl(Control control) throw () {
             break;
     }
 
-    _dispatch = true;
     _observer.terminalDamageAll();
-    _dispatch = false;
 }
 
 void Terminal::interMoveCursor(uint16_t row, uint16_t col) throw () {
+    PRINT("Move cursor: " << row << " " << col);
     _observer.terminalDamageChars(_cursorRow, _cursorCol, _cursorCol + 1);
     _cursorRow = clamp<uint16_t>(row, 0, _buffer.getRows() - 1);
     _cursorCol = clamp<uint16_t>(col, 0, _buffer.getCols() - 1);
@@ -101,6 +99,7 @@ void Terminal::interMoveCursor(uint16_t row, uint16_t col) throw () {
 }
 
 void Terminal::interRelMoveCursor(int16_t dRow, int16_t dCol) throw () {
+    PRINT("Rel-move cursor: " << dRow << " " << dCol);
     _observer.terminalDamageChars(_cursorRow, _cursorCol, _cursorCol + 1);
     _cursorRow = clamp<uint16_t>(_cursorRow + dRow, 0, _buffer.getRows() - 1);
     _cursorCol = clamp<uint16_t>(_cursorCol + dCol, 0, _buffer.getCols() - 1);
@@ -108,6 +107,7 @@ void Terminal::interRelMoveCursor(int16_t dRow, int16_t dCol) throw () {
 }
 
 void Terminal::interClearLine(ClearLine clear) throw () {
+    PRINT("Clear line: " << clear << " row=" << _cursorRow << ", col=" << _cursorCol);
     switch (clear) {
         case CLEAR_LINE_RIGHT:
             for (uint16_t c = _cursorCol + 1; c != _buffer.getCols(); ++c) {
@@ -126,6 +126,7 @@ void Terminal::interClearLine(ClearLine clear) throw () {
 }
 
 void Terminal::interClearScreen(ClearScreen clear) throw () {
+    PRINT("Clear screen: " << clear << " row=" << _cursorRow);
     switch (clear) {
         case CLEAR_SCREEN_BELOW:
             for (uint16_t r = _cursorRow + 1; r != _buffer.getRows(); ++r) {
@@ -142,25 +143,19 @@ void Terminal::interClearScreen(ClearScreen clear) throw () {
             break;
     }
 
-    _dispatch = true;
     _observer.terminalDamageAll();
-    _dispatch = false;
 }
 
 void Terminal::interInsertLines(uint16_t num) throw () {
-    //PRINT("Got insert " << num << " lines with cursor at row: " << _cursorRow);
+    PRINT("Got insert " << num << " lines with cursor at row: " << _cursorRow);
     _buffer.insertLines(_cursorRow + 1, num);
-    _dispatch = true;
     _observer.terminalDamageAll();
-    _dispatch = false;
 }
 
 void Terminal::interDeleteLines(uint16_t num) throw () {
-    //PRINT("Got delete " << num << " lines with cursor at row: " << _cursorRow);
+    PRINT("Got delete " << num << " lines with cursor at row: " << _cursorRow);
     _buffer.eraseLines(_cursorRow, num);
-    _dispatch = true;
     _observer.terminalDamageAll();
-    _dispatch = false;
 }
 
 void Terminal::interSetFg(uint8_t fg) throw () {
@@ -234,13 +229,10 @@ void Terminal::interUtf8(const char * s, utf8::Length length) throw () {
         _cursorCol = 0;
     }
 
-    _dispatch = true;
     _observer.terminalDamageAll();
-    _dispatch = false;
 }
 
 void Terminal::interEnd() throw () {
-    _dispatch = true;
     _observer.terminalEnd();
     _dispatch = false;
 }
@@ -251,7 +243,5 @@ void Terminal::interGetCursorPos(uint16_t & row, uint16_t & col) const throw () 
 }
 
 void Terminal::interChildExited(int exitStatus) throw () {
-    _dispatch = true;
     _observer.terminalChildExited(exitStatus);
-    _dispatch = false;
 }

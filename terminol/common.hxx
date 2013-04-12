@@ -11,6 +11,8 @@
 #define LIKELY(x)   __builtin_expect(!!(x), 1)
 #define UNLIKELY(x) __builtin_expect(!!(x), 0)
 
+#define UNUSED(x) UNUSED_ ## x __attribute__((unused))
+
 #define PRINT(output) \
     do { \
         std::cout \
@@ -140,6 +142,29 @@ template <typename T> std::string nthStr(T t) {
             break;
     }
     return ost.str();
+}
+
+inline char nibbleToHex(uint8_t nibble) {
+    ASSERT(nibble < 0x10, "");
+    if (nibble < 0xA) return '0' +  nibble;
+    else              return 'A' + (nibble - 10);
+}
+
+template <typename T> std::string toHex(T t) {
+    std::string str;
+    for (size_t i = 0; i < sizeof(T); ++i) {
+        str.push_back(nibbleToHex(t >> (8 * (sizeof(T) - i - 1) + 4) & 0x0F));
+        str.push_back(nibbleToHex(t >> (8 * (sizeof(T) - i - 1))     & 0x0F));
+    }
+    return str;
+}
+
+template <typename T> std::string toBinary(T t) {
+    std::string str;
+    for (size_t i = 0; i < 8 * sizeof(T); ++i) {
+        str.push_back(((t >> (8 * sizeof(T) - i - 1)) & 0x1) ? '1' : '0');
+    }
+    return str;
 }
 
 // Inherit from this to be uncopyable.

@@ -103,7 +103,7 @@ X_Window::~X_Window() {
 
 void X_Window::keyPress(XKeyEvent & event) {
     uint8_t  state   = event.state;
-    uint16_t keycode = event.keycode;
+    //uint16_t keycode = event.keycode;
 
     char   buffer[16];
     KeySym keySym;
@@ -140,30 +140,30 @@ void X_Window::keyPress(XKeyEvent & event) {
     }
 }
 
-void X_Window::keyRelease(XKeyEvent & event) {
+void X_Window::keyRelease(XKeyEvent & UNUSED(event)) {
 }
 
-void X_Window::buttonPress(XButtonEvent & event) {
+void X_Window::buttonPress(XButtonEvent & UNUSED(event)) {
     PRINT("Button press");
 }
 
-void X_Window::buttonRelease(XButtonEvent & event) {
+void X_Window::buttonRelease(XButtonEvent & UNUSED(event)) {
     PRINT("Button release");
 }
 
-void X_Window::motionNotify(XMotionEvent & event) {
+void X_Window::motionNotify(XMotionEvent & UNUSED(event)) {
     PRINT("Motion");
 }
 
-void X_Window::mapNotify(XMapEvent & event) {
+void X_Window::mapNotify(XMapEvent & UNUSED(event)) {
     PRINT("Map");
 }
 
-void X_Window::unmapNotify(XUnmapEvent & event) {
+void X_Window::unmapNotify(XUnmapEvent & UNUSED(event)) {
     PRINT("Unmap");
 }
 
-void X_Window::reparentNotify(XReparentEvent & event) {
+void X_Window::reparentNotify(XReparentEvent & UNUSED(event)) {
     PRINT("Reparent");
 }
 
@@ -227,19 +227,19 @@ void X_Window::configure(XConfigureEvent & event) {
     draw(0, 0, _width, _height);
 }
 
-void X_Window::focusIn(XFocusChangeEvent & event) {
+void X_Window::focusIn(XFocusChangeEvent & UNUSED(event)) {
     //PRINT("Focus in: mode=" << event.mode << ", detail=" << event.detail);
 }
 
-void X_Window::focusOut(XFocusChangeEvent & event) {
+void X_Window::focusOut(XFocusChangeEvent & UNUSED(event)) {
     //PRINT("Focus out: mode=" << event.mode << ", detail=" << event.detail);
 }
 
-void X_Window::enterNotify(XCrossingEvent & event) {
+void X_Window::enterNotify(XCrossingEvent & UNUSED(event)) {
     //PRINT("Enter notify");
 }
 
-void X_Window::leaveNotify(XCrossingEvent & event) {
+void X_Window::leaveNotify(XCrossingEvent & UNUSED(event)) {
     //PRINT("Leave notify");
 }
 
@@ -257,7 +257,8 @@ void X_Window::rowCol2XY(uint16_t row, size_t col,
     y = BORDER_THICKNESS + row * _fontSet.getHeight();
 }
 
-void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
+void X_Window::draw(uint16_t UNUSED(ix), uint16_t UNUSED(iy),
+                    uint16_t UNUSED(iw), uint16_t UNUSED(ih)) {
     //XClearWindow(_display, _window);
 
     ASSERT(_hadConfigure, "");
@@ -336,7 +337,7 @@ void X_Window::setTitle(const std::string & title) {
 void X_Window::terminalBegin() throw () {
 }
 
-void X_Window::terminalDamageChars(uint16_t row, uint16_t col0, uint16_t col1) throw () {
+void X_Window::terminalDamageChars(uint16_t UNUSED(row), uint16_t UNUSED(col0), uint16_t UNUSED(col1)) throw () {
     _damage = true;
 }
 

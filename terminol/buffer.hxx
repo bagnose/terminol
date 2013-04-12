@@ -168,6 +168,8 @@ public:
         }
 
         _lines.push_back(Line(_raw.getSize() - 1, 0, 0));
+
+        return grew;    // XXX who uses this return value?
     }
 
     void insertChar(const Char & ch, size_t row, uint16_t col) {
