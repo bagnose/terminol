@@ -15,6 +15,7 @@ const std::string X_Window::DEFAULT_TITLE    = "terminol";
 X_Window::X_Window(Display            * display,
                    Window               parent,
                    Screen             * screen,
+                   XIM                  xim,
                    const X_ColorSet   & colorSet,
                    const X_KeyMap     & keyMap,
                    X_FontSet          & fontSet,
@@ -27,9 +28,10 @@ X_Window::X_Window(Display            * display,
     _fontSet(fontSet),
     _damage(false),
     _window(0),
+    _xic(nullptr),
     _width(0),
     _height(0),
-    _tty(0),
+    _tty(nullptr),
     _terminal(nullptr),
     _isOpen(false),
     _hadConfigure(false)
@@ -76,7 +78,10 @@ X_Window::X_Window(Display            * display,
 
     setTitle(DEFAULT_TITLE);
 
-    XMapWindow(_display, _window);
+    //
+
+    _xic = XCreateIC(xim, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, XNClientWindow, _window, nullptr);
+    ENFORCE(_xic, "XCreateIC failed.");
 
     //
 
@@ -84,6 +89,7 @@ X_Window::X_Window(Display            * display,
     gcValues.graphics_exposures = False;
     _gc = XCreateGC(_display, _window, GCGraphicsExposures, &gcValues);
 
+    XMapWindow(_display, _window);
     XFlush(_display);
 
     _tty = new Tty(rows, cols, stringify(_window), term, command);
@@ -99,17 +105,53 @@ X_Window::~X_Window() {
     delete _tty;
     delete _terminal;
 
+    XDestroyIC(_xic);
+
     XFreeGC(_display, _gc);
     XDestroyWindow(_display, _window);
 }
 
 void X_Window::keyPress(XKeyEvent & event) {
+    PRINT(std::endl);
     uint8_t  state   = event.state;
     //uint16_t keycode = event.keycode;
 
     char   buffer[16];
-    KeySym keySym;
+    KeySym keySym = 0;
+
+#if 1
     int len = XLookupString(&event, buffer, sizeof buffer, &keySym, nullptr);
+#else
+    Status status;
+    int len = XmbLookupString(_xic, &event, buffer, sizeof buffer, &keySym, &status);
+
+    switch (status) {
+        case XBufferOverflow:
+            // Couldn't fit it in buffer.
+            FATAL("Buffer overflow.");
+            break;
+        case XLookupNone:
+            ASSERT(len == 0, "");
+            FATAL("XLookupNone");
+            break;
+        case XLookupChars:
+            // Use buffer - keySym is not valid.
+            PRINT("Chars");
+            break;
+        case XLookupKeySym:
+            // Use keySym - buffer is not valid.
+            ASSERT(len == 0, "");
+            PRINT("Keysym");
+            break;
+        case XLookupBoth:
+            PRINT("Both");
+            break;
+        default:
+            FATAL("WTF");
+            break;
+    }
+#endif
+
     std::string str = std::string(buffer, buffer + len);
 
     const ModeSet & modes = _terminal->getModes();
@@ -231,12 +273,23 @@ void X_Window::configure(XConfigureEvent & event) {
     drawAll();
 }
 
-void X_Window::focusIn(XFocusChangeEvent & UNUSED(event)) {
+void X_Window::focusIn(XFocusChangeEvent & event) {
     //PRINT("Focus in: mode=" << event.mode << ", detail=" << event.detail);
+
+    if (event.mode == NotifyGrab) {
+        return;
+    }
+
+    XSetICFocus(_xic);
 }
 
-void X_Window::focusOut(XFocusChangeEvent & UNUSED(event)) {
+void X_Window::focusOut(XFocusChangeEvent & event) {
     //PRINT("Focus out: mode=" << event.mode << ", detail=" << event.detail);
+    if (event.mode == NotifyGrab) {
+        return;
+    }
+
+    XUnsetICFocus(_xic);
 }
 
 void X_Window::enterNotify(XCrossingEvent & UNUSED(event)) {

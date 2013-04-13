@@ -26,6 +26,7 @@ class X_Window :
     X_FontSet        & _fontSet;
     bool               _damage;
     Window             _window;
+    XIC                _xic;
     GC                 _gc;
     uint16_t           _width;     // px
     uint16_t           _height;    // px
@@ -39,6 +40,7 @@ public:
     X_Window(Display            * display,
              Window               parent,
              Screen             * screen,
+             XIM                  xim,
              const X_ColorSet   & colorSet,
              const X_KeyMap     & keyMap,
              X_FontSet          & fontSet,

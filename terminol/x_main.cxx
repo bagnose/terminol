@@ -201,14 +201,27 @@ int main(int argc, char * argv[]) {
     Colormap  colormap = XDefaultColormapOfScreen(screen);
     Window    root     = XRootWindowOfScreen(screen);
 
+    XIM xim = XOpenIM(display, nullptr, nullptr, nullptr);
+    if (!xim) {
+        XSetLocaleModifiers("@im=local");
+        xim = XOpenIM(display, nullptr, nullptr, nullptr);
+        if (!xim) {
+            XSetLocaleModifiers("@im=");
+            xim = XOpenIM(display, nullptr, nullptr, nullptr);
+            ENFORCE(xim, "XOpenIM failed.");
+        }
+    }
+
     {
         // RAII objects.
         X_ColorSet      colorSet(display, visual, colormap);
         X_KeyMap        keyMap;
         X_FontSet       fontSet(display, fontName);
-        X_Window        window(display, root, screen, colorSet, keyMap, fontSet, term, command);
+        X_Window        window(display, root, screen, xim, colorSet, keyMap, fontSet, term, command);
         SimpleEventLoop eventLoop(display, window);
     }
+
+    XCloseIM(xim);
 
     XCloseDisplay(display);
 
