@@ -286,40 +286,42 @@ void X_Window::drawAll() {
 }
 
 void X_Window::drawBuffer(XftDraw * xftDraw) {
+    // Declare buffer at the outer scope (rather than for each row) to
+    // minimise alloc/free.
+    std::vector<char> buffer;
+    // Reserve the largest amount of memory we could require.
+    buffer.reserve(_terminal->buffer().getCols() * utf8::LMAX);
+
     for (uint16_t r = 0; r != _terminal->buffer().getRows(); ++r) {
         uint16_t          cc = 0;
         uint8_t           fg = 0, bg = 0;
         AttributeSet      at;
-        std::vector<char> buffer;
 
         for (uint16_t c = 0; c != _terminal->buffer().getCols(); ++c) {
             const Char & ch = _terminal->buffer().getChar(r, c);
 
-            if (true /*!ch.isNull()*/) {    // XXX drawing all characters ATM :(
-                if (buffer.empty()) {
-                    cc = c;
-                    fg = ch.fg();
-                    bg = ch.bg();
-                    at = ch.attributes();
+            if (buffer.empty() || fg != ch.fg() || bg != ch.bg() || at != ch.attributes()) {
+                if (!buffer.empty()) {
+                    // flush buffer
+                    drawUtf8(xftDraw, r, cc, fg, bg, at,
+                             &buffer.front(), c - cc, buffer.size());
+                    buffer.clear();
+                }
 
-                    utf8::Length len = utf8::leadLength(ch.leadByte());
-                    buffer.resize(len);
-                    std::copy(ch.bytes(), ch.bytes() + len, &buffer.front());
-                }
-                else {
-                    if (fg != ch.fg() || bg != ch.bg() || at != ch.attributes()) {
-                        // flush buffer
-                        drawUtf8(xftDraw, r, cc, fg, bg, at,
-                                 &buffer.front(), c - cc, buffer.size());
-                        buffer.clear();
-                    }
-                    else {
-                        size_t oldSize = buffer.size();
-                        utf8::Length len = utf8::leadLength(ch.leadByte());
-                        buffer.resize(buffer.size() + len);
-                        std::copy(ch.bytes(), ch.bytes() + len, &buffer[oldSize]);
-                    }
-                }
+                cc = c;
+                fg = ch.fg();
+                bg = ch.bg();
+                at = ch.attributes();
+
+                utf8::Length len = utf8::leadLength(ch.leadByte());
+                buffer.resize(len);
+                std::copy(ch.bytes(), ch.bytes() + len, &buffer.front());
+            }
+            else {
+                size_t oldSize = buffer.size();
+                utf8::Length len = utf8::leadLength(ch.leadByte());
+                buffer.resize(buffer.size() + len);
+                std::copy(ch.bytes(), ch.bytes() + len, &buffer[oldSize]);
             }
         }
 
@@ -336,19 +338,13 @@ void X_Window::drawBuffer(XftDraw * xftDraw) {
 
 void X_Window::drawCursor(XftDraw * xftDraw) {
     // Draw the cursor
-    PRINT("Cursor: " << _terminal->cursorRow() << " " << _terminal->cursorCol());
+    //PRINT("Cursor: " << _terminal->cursorRow() << " " << _terminal->cursorCol());
 
     uint16_t r = _terminal->cursorRow();
     uint16_t c = _terminal->cursorCol();
     uint16_t x, y;
     rowCol2XY(r, c, x, y);
-#if 0
-    XftDrawRect(xftDraw,
-                _colorSet.getCursorColor(),
-                x, y,
-                _fontSet.getWidth(),
-                _fontSet.getHeight());
-#else
+
     const Char & ch = _terminal->buffer().getChar(r, c);
 
     drawUtf8(xftDraw,
@@ -356,7 +352,6 @@ void X_Window::drawCursor(XftDraw * xftDraw) {
              ch.bg(), ch.fg(),      // Swap fg/bg for cursor.
              ch.attributes(),
              ch.bytes(), 1, utf8::leadLength(ch.leadByte()));
-#endif
 }
 
 void X_Window::drawUtf8(XftDraw    * xftDraw,

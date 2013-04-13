@@ -30,7 +30,7 @@ class Char {
         std::copy(bytes, bytes + length, _bytes);
     }
 
-    static const char NULL_CHAR = SPACE;    // NUL/SPACE
+    static const char NULL_CHAR = NUL;    // NUL/SPACE
 
 public:
     static uint8_t  defaultFg()  { return 7; }
