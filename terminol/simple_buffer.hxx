@@ -107,8 +107,9 @@ public:
     }
 
     void insertLines(uint16_t beforeRow, uint16_t count) {
-        ASSERT(beforeRow <= getRows(), "");
+        ASSERT(beforeRow < getRows() + 1, "");
         for (uint16_t i = 0; i != count; ++i) {
+            //PRINT("Inserting line before row: " << beforeRow);
             _lines.insert(_lines.begin() + beforeRow, Line(getCols()));
         }
         for (uint16_t i = 0; i != count; ++i) {
@@ -117,9 +118,10 @@ public:
     }
 
     void eraseLines(uint16_t row, uint16_t count) {
+        ASSERT(row + count < getRows(), "");
         _lines.erase(_lines.begin() + row, _lines.begin() + row + count);
         for (uint16_t i = 0; i != count; ++i) {
-            _lines.push_front(Line(getCols()));
+            _lines.push_back(Line(getCols()));
         }
     }
 
@@ -134,5 +136,7 @@ public:
         }
     }
 };
+
+void dump(std::ostream & ost, const SimpleBuffer & buffer);
 
 #endif // SIMPLE_BUFFER__HXX

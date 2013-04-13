@@ -40,6 +40,8 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
 // Interlocutor::I_Observer implementation:
 
 void Terminal::interBegin() throw () {
+    static int seq = 0;
+    PRINT("<<<<<<<<< BEGIN: " << seq++);
     _dispatch = true;
     _observer.terminalBegin();
 }
@@ -58,29 +60,36 @@ void Terminal::interControl(Control control) throw () {
                 }
             }
 
+            // Back up the cursor if we went past the end.
             if (_cursorCol == _buffer.getCols()) {
-                // XXX is this right? CR/LF
-                _cursorCol = 0;
-                if (_cursorRow == _buffer.getRows() - 1) {
-                    _buffer.addLine();
-                }
-                else {
-                    ++_cursorRow;
-                }
+                --_cursorCol;
             }
             break;
         case CONTROL_BS:
-            _buffer.overwriteChar(Char::null(), _cursorRow, _cursorCol--);
+            if (_cursorCol != 0) {
+                --_cursorCol;
+            }
             break;
         case CONTROL_CR:
             _cursorCol = 0;
             break;
         case CONTROL_LF:
+            /*
             if (_cursorRow == _buffer.getRows() - 1) {
                 _buffer.addLine();
             }
             else {
                 ++_cursorRow;
+            }
+            */
+            // FIXME temp hack to make vim work, but stuffs up
+            // new line in bash.
+            if (_cursorRow != _buffer.getRows() - 1) {
+                ++_cursorRow;
+            }
+
+            if (_modes.get(MODE_CRLF)) {
+                _cursorCol = 0;
             }
             break;
         default:
@@ -110,7 +119,8 @@ void Terminal::interClearLine(ClearLine clear) throw () {
     PRINT("Clear line: " << clear << " row=" << _cursorRow << ", col=" << _cursorCol);
     switch (clear) {
         case CLEAR_LINE_RIGHT:
-            for (uint16_t c = _cursorCol + 1; c != _buffer.getCols(); ++c) {
+            // XXX is this right?
+            for (uint16_t c = _cursorCol; c != _buffer.getCols(); ++c) {
                 _buffer.overwriteChar(Char::null(), _cursorRow, c);
             }
             break;
@@ -181,17 +191,17 @@ void Terminal::interSetBg(uint8_t bg) throw () {
 }
 
 void Terminal::interClearAttributes() throw () {
-    //PRINT("Clearing attributes");
+    PRINT("Clearing attributes");
     _attributes.clear();
 }
 
 void Terminal::interSetAttribute(Attribute attribute, bool value) throw () {
-    //PRINT("Setting attribute: " << attribute << " to: " << value);
+    PRINT("Setting attribute: " << attribute << " to: " << value);
     _attributes.setTo(attribute, value);
 }
 
 void Terminal::interSetMode(Mode mode, bool value) throw () {
-    //PRINT("Setting mode: " << mode << " to: " << value);
+    PRINT("Setting mode: " << mode << " to: " << value);
     _modes.setTo(mode, value);
 }
 
@@ -200,7 +210,17 @@ void Terminal::interSetTabStop() throw () {
     _tabs[_cursorCol] = true;
 }
 
+void Terminal::interSetScrollTopBottom(uint16_t row0, uint16_t row1) {
+    FATAL("interSetScrollTopBottom: rows=" << _buffer.getRows() <<
+          ", top=" << row0 << ", bottom=" << row1);
+}
+
+void Terminal::interSetScrollTop(uint16_t row) {
+    FATAL("interSetScrollTop: rows=" << _buffer.getRows() << ", top=" << row);
+}
+
 void Terminal::interResetAll() throw () {
+    PRINT("Resetting all");
     // TODO consolidate
 
     _buffer.clearAll();
@@ -214,7 +234,6 @@ void Terminal::interResetAll() throw () {
     _modes.clear();
     _attributes.clear();
 
-    _tabs.resize(_buffer.getCols());
     for (size_t i = 0; i != _tabs.size(); ++i) {
         _tabs[i] = (i + 1) % defaultTab() == 0;
     }
@@ -223,16 +242,19 @@ void Terminal::interResetAll() throw () {
 }
 
 void Terminal::interSetTitle(const std::string & title) throw () {
+    PRINT("Setting title to: " << title);
     _observer.terminalSetTitle(title);
 }
 
-void Terminal::interUtf8(const char * s, size_t count, size_t UNUSED(size)) throw () {
+void Terminal::interUtf8(const char * s, size_t count, size_t size) throw () {
+    PRINT("Got UTF-8: " << std::string(s, s + size));
     for (size_t i = 0; i != count; ++i) {
         utf8::Length length = utf8::leadLength(*s);
 
         _buffer.overwriteChar(Char::utf8(s, length, _attributes, 0, _fg, _bg),
                               _cursorRow, _cursorCol);
 
+#if 0
         ++_cursorCol;
 
         if (_cursorCol == _buffer.getCols()) {
@@ -244,6 +266,9 @@ void Terminal::interUtf8(const char * s, size_t count, size_t UNUSED(size)) thro
             }
             _cursorCol = 0;
         }
+#else
+        _cursorCol = std::min(_buffer.getCols() - 1, _cursorCol + 1);
+#endif
 
         s += length;
     }
@@ -252,6 +277,7 @@ void Terminal::interUtf8(const char * s, size_t count, size_t UNUSED(size)) thro
 }
 
 void Terminal::interEnd() throw () {
+    PRINT(">>>>>>>>> END");
     _observer.terminalEnd();
     _dispatch = false;
 }

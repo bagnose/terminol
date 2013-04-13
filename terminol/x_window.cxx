@@ -275,14 +275,14 @@ void X_Window::drawAll() {
     drawBuffer(xftDraw);
     drawCursor(xftDraw);
 
-
-
     XftDrawDestroy(xftDraw);
 
     XCopyArea(_display, _pixmap, _window, _gc,
               0, 0, _width, _height, 0, 0);
 
     XFlush(_display);
+
+    //dump(std::cout, _terminal->buffer());
 }
 
 void X_Window::drawBuffer(XftDraw * xftDraw) {

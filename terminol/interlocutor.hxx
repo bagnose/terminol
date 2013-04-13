@@ -37,6 +37,8 @@ public:
         virtual void interSetAttribute(Attribute attribute, bool value) throw () = 0;
         virtual void interSetMode(Mode mode, bool value) throw () = 0;
         virtual void interSetTabStop() throw () = 0;
+        virtual void interSetScrollTopBottom(uint16_t row0, uint16_t row1) = 0;
+        virtual void interSetScrollTop(uint16_t row) = 0;
         virtual void interResetAll() throw () = 0 ;
         virtual void interSetTitle(const std::string & title) throw () = 0;
         // UTF-8

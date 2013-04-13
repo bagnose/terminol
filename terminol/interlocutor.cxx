@@ -362,7 +362,7 @@ void Interlocutor::processEscape(char c) {
 void Interlocutor::processCsiEscape() {
     ENFORCE(_state == STATE_CSI_ESCAPE, "");       // XXX here or outside?
     ASSERT(!_escapeCsi.seq.empty(), "");
-    PRINT("CSI-esc: " << _escapeCsi.seq);
+    //PRINT("CSI-esc: " << _escapeCsi.seq);
 
     size_t i = 0;
     bool priv = false;
@@ -406,7 +406,7 @@ void Interlocutor::processCsiEscape() {
     // Handle the sequence.
     //
 
-    ASSERT(i == _escapeCsi.seq.size() - 1, "");        // XXX replaces following conditional
+    ASSERT(i == _escapeCsi.seq.size() - 1, "Seq: " << _escapeCsi.seq);        // XXX replaces following conditional
 
     if (i == _escapeCsi.seq.size()) {
         ERROR("Bad CSI: " << _escapeCsi.seq);
@@ -470,10 +470,12 @@ void Interlocutor::processCsiEscape() {
                     case 2: // all
                         _observer.interClearLine(CLEAR_LINE_ALL);
                         break;
+                    default:
+                        ERROR("!");
                 }
                 break;
             case 'g':
-                PRINT("CSI: Tabulation clear");
+                NYI("CSI: Tabulation clear");
                 break;
             case 'H':       // CUP - Cursor Position
             case 'f': {     // HVP - Horizontal and Vertical Position
@@ -502,14 +504,46 @@ void Interlocutor::processCsiEscape() {
                         _observer.interMoveCursor(0, 0);
                         break;
                     default:
-                        FATAL("");
+                        ERROR("!");
                 }
                 break;
             case 'm': // SGR - Select Graphic Rendition
                 processAttributes(args);
                 break;
+            case 'r': // DECSTBM - Set Top and Bottom Margins (scrolling)
+                if (priv) {
+                    goto Default;
+                }
+                else {
+                    // http://www.vt100.net/docs/vt510-rm/DECSTBM
+                    uint16_t top = nthArg(args, 0, 1);
+                    uint16_t bottom = nthArg(args, 1, 1);
+                    if (bottom > top) {
+                        _observer.interSetScrollTopBottom(top - 1, bottom - 1);
+                    }
+                    else {
+                        _observer.interSetScrollTop(top - 1);
+                    }
+                    _observer.interMoveCursor(0, 0);
+                }
+                break;
             case 'n': // DSR - Device Status Report
-                if (nthArg(args, 0) == 6) {
+                if (args.empty()) {
+                    // QDC - Query Device Code
+                    // RDC - Report Device Code: <ESC>[{code}0c
+                    NYI("What code should I send?");
+                }
+                else if (nthArg(args, 0) == 5) {
+                    // QDS - Query Device Status
+                    // RDO - Report Device OK: <ESC>[0n
+                    std::ostringstream ost;
+                    ost << ESC << "[0n";
+                    std::string str = ost.str();
+                    _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
+                }
+                else if (nthArg(args, 0) == 6) {
+                    // QCP - Query Cursor Position
+                    // RCP - Report Cursor Position
                     uint16_t row, col;
                     _observer.interGetCursorPos(row, col);
                     std::ostringstream ost;
@@ -523,7 +557,7 @@ void Interlocutor::processCsiEscape() {
                 break;
 Default:
             default:
-                PRINT("CSI: UNKNOWN: mode=" << mode << ", priv=" << priv << ", args: " << strArgs(args));
+                PRINT("CSI: UNKNOWN: mode=" << mode << ", priv=" << priv << ", args: " << strArgs(args) << ", seq=" << _escapeCsi.seq);
                 break;
         }
     }
@@ -531,7 +565,7 @@ Default:
 
 void Interlocutor::processStrEscape() {
     ENFORCE(_state == STATE_STR_ESCAPE, "");       // XXX here or outside?
-    PRINT("STR-esc: type=" << _escapeStr.type << ", seq=" << _escapeStr.seq);
+    //PRINT("STR-esc: type=" << _escapeStr.type << ", seq=" << _escapeStr.seq);
 
     std::vector<std::string> args;
 
@@ -572,7 +606,7 @@ void Interlocutor::processStrEscape() {
         case '_':   // APC - Application Program Command
         case '^':   // PM Privacy Message
         default:
-            PRINT("Unandled: " << _escapeStr.seq);
+            PRINT("STR: UNKNOWN: type=" << _escapeStr.type << ", seq=" << _escapeStr.seq);
             break;
     }
 }
@@ -747,8 +781,7 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
 }
 
 void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> & args) {
-    PRINT("processModes: priv=" << priv << ", set=" <<
-          set << ", args=" << strArgs(args));
+    //PRINT("processModes: priv=" << priv << ", set=" << set << ", args=" << strArgs(args));
 
     for (auto a : args) {
         if (priv) {
@@ -757,6 +790,7 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                     _observer.interSetMode(MODE_APPCURSOR, set);
                     break;
                 case 5: // DECSCNM - Reverse video
+                    NYI("Reverse video");
                     /*
                        mode = term.mode;
                        MODBIT(term.mode, set, MODE_REVERSE);
@@ -766,6 +800,7 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                        */
                     break;
                 case 6: // DECOM - Origin
+                    NYI("DECOM: origin");
                     /*
                        MODBIT(term.c.state, set, CURSOR_ORIGIN);
                        tmoveato(0, 0);
@@ -783,6 +818,7 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                 case 19: // DECPEX - Printer extent (IGNORED)
                 case 42: // DECNRCM - National characters (IGNORED)
                 case 12: // att610 - Start blinking cursor (IGNORED)
+                    NYI("Ignored: "  << a);
                     break;
                 case 25: // DECTCEM - Text Cursor Enable Mode
                     _observer.interSetMode(MODE_HIDE, !set);
@@ -798,7 +834,7 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                 case 1006:
                     _observer.interSetMode(MODE_MOUSESGR, set);
                     break;
-                case 1049: // = 1047 and 1048 */
+                case 1049: // = 1047 and 1048 XXX suspicious
                 case 47:
                 case 1047:
                     _observer.interSetMode(MODE_ALTSCREEN, set);
@@ -807,6 +843,7 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                     }
                     // Deliberate fall through
                 case 1048:
+                    NYI("Ignored: "  << a);
                     /*
                        tcursor((set) ? CURSOR_SAVE : CURSOR_LOAD);
                        */

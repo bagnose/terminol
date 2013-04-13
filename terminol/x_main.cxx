@@ -155,7 +155,7 @@ int main(int argc, char * argv[]) {
     // -   master read
     // -   master write
 
-    std::string fontName = "inconsolata:pixelsize=22";
+    std::string fontName = "inconsolata:pixelsize=42";
     std::string geometryStr;
     std::string term = "ansi";
     Interlocutor::Command command;
@@ -168,7 +168,13 @@ int main(int argc, char * argv[]) {
         else if (argMatch(arg, "font", fontName))        {}
         else if (argMatch(arg, "term", term))        {}
         else if (argMatch(arg, "geometry", geometryStr)) {}
-        else { FATAL("Unrecognised argument: " << arg); }
+        else {
+            std::cerr
+                << "Unrecognised argument '" << arg << "'" << std::endl
+                << "Try: --font=FONT --term=TERM --geometry=GEOMETRY --execute ARG0 ARG1..."
+                << std::endl;
+            return 2;
+        }
     }
 
     if (!geometryStr.empty()) {

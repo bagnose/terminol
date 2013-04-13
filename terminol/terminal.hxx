@@ -88,6 +88,8 @@ protected:
     void interSetAttribute(Attribute attribute, bool value) throw ();
     void interSetMode(Mode mode, bool value) throw ();
     void interSetTabStop() throw ();
+    void interSetScrollTopBottom(uint16_t row0, uint16_t row1);
+    void interSetScrollTop(uint16_t row);
     void interResetAll() throw ();
     void interSetTitle(const std::string & title) throw ();
     void interUtf8(const char * s, size_t count, size_t size) throw ();

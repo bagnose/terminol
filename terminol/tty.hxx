@@ -31,7 +31,7 @@ public:
     size_t write(const char * buffer, size_t length) throw (Error);
 
 protected:
-    void openPty(uint16_t rows,
+    void openPty(uint16_t            rows,
                  uint16_t            cols,
                  const std::string & windowId,
                  const std::string & term,
