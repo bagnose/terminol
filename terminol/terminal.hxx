@@ -45,6 +45,8 @@ private:
     Interlocutor        _inter;
 
 public:
+    static uint16_t defaultTab() { return 8; }        // Useful as public?
+
     Terminal(I_Observer & observer,
              I_Tty      & tty,
              uint16_t     rows,
@@ -78,14 +80,15 @@ protected:
     void interInsertChars(uint16_t num) throw ();
     void interInsertLines(uint16_t num) throw ();
     void interDeleteLines(uint16_t num) throw ();
+    void interResetFg() throw ();
+    void interResetBg() throw ();
     void interSetFg(uint8_t fg) throw ();
     void interSetBg(uint8_t bg) throw ();
     void interClearAttributes() throw ();
     void interSetAttribute(Attribute attribute, bool value) throw ();
     void interSetMode(Mode mode, bool value) throw ();
     void interSetTabStop() throw ();
-    void interReset() throw ();
-    void interResetTitle() throw ();
+    void interResetAll() throw ();
     void interSetTitle(const std::string & title) throw ();
     void interUtf8(const char * s, size_t count, size_t size) throw ();
     void interEnd() throw ();

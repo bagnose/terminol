@@ -11,15 +11,15 @@ Terminal::Terminal(I_Observer & observer,
     _buffer(rows, cols),
     _cursorRow(0),
     _cursorCol(0),
-    _bg(Interlocutor::defaultBg()),
-    _fg(Interlocutor::defaultFg()),
+    _bg(Char::defaultBg()),
+    _fg(Char::defaultFg()),
     _attributes(),
     _modes(),
     _tabs(_buffer.getCols()),
     _inter(*this, tty)
 {
     for (size_t i = 0; i != _tabs.size(); ++i) {
-        _tabs[i] = (i + 1) % Interlocutor::defaultTab() == 0;
+        _tabs[i] = (i + 1) % defaultTab() == 0;
     }
     _modes.set(MODE_WRAP);
 }
@@ -33,7 +33,7 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     _buffer.resize(rows, cols);
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {
-        _tabs[i] = (i + 1) % Interlocutor::defaultTab() == 0;
+        _tabs[i] = (i + 1) % defaultTab() == 0;
     }
 }
 
@@ -164,6 +164,14 @@ void Terminal::interDeleteLines(uint16_t num) throw () {
     _observer.terminalDamageAll();
 }
 
+void Terminal::interResetFg() throw () {
+    _fg = Char::defaultFg();
+}
+
+void Terminal::interResetBg() throw () {
+    _bg = Char::defaultBg();
+}
+
 void Terminal::interSetFg(uint8_t fg) throw () {
     _fg = fg;
 }
@@ -192,7 +200,7 @@ void Terminal::interSetTabStop() throw () {
     _tabs[_cursorCol] = true;
 }
 
-void Terminal::interReset() throw () {
+void Terminal::interResetAll() throw () {
     // TODO consolidate
 
     _buffer.clearAll();
@@ -200,19 +208,17 @@ void Terminal::interReset() throw () {
     _cursorRow = 0;
     _cursorCol = 0;
 
-    _bg = Interlocutor::defaultBg();
-    _fg = Interlocutor::defaultFg();
+    _bg = Char::defaultBg();
+    _fg = Char::defaultFg();
 
     _modes.clear();
     _attributes.clear();
 
     _tabs.resize(_buffer.getCols());
     for (size_t i = 0; i != _tabs.size(); ++i) {
-        _tabs[i] = (i + 1) % Interlocutor::defaultTab() == 0;
+        _tabs[i] = (i + 1) % defaultTab() == 0;
     }
-}
 
-void Terminal::interResetTitle() throw () {
     _observer.terminalResetTitle();
 }
 

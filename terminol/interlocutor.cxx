@@ -329,8 +329,7 @@ void Interlocutor::processEscape(char c) {
             _state = STATE_NORMAL;
             break;
         case 'c':   // RIS - Reset to initial state
-            _observer.interReset();
-            _observer.interResetTitle();
+            _observer.interResetAll();
             _state = STATE_NORMAL;
             break;
         case '=':   // DECPAM - Application keypad
@@ -584,8 +583,8 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
 
         switch (v) {
             case 0: // Reset/Normal
-                _observer.interSetBg(defaultBg());
-                _observer.interSetFg(defaultFg());
+                _observer.interResetBg();
+                _observer.interResetFg();
                 _observer.interClearAttributes();
                 break;
             case 1: // Bold
@@ -677,7 +676,7 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
                 }
                 break;
             case 39:
-                _observer.interSetFg(defaultFg());
+                _observer.interResetFg();
                 break;
                 // 40..47 (set background colour - handled separately)
             case 48:
@@ -701,7 +700,7 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
                 }
                 break;
             case 49:
-                _observer.interSetBg(defaultBg());
+                _observer.interResetBg();
                 break;
                 // 50 Reserved
             case 51: // Framed

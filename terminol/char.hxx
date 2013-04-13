@@ -12,7 +12,7 @@
 class Char {
     char         _bytes[utf8::LMAX];
     AttributeSet _attributes;
-    uint8_t      _state;
+    uint8_t      _state;        // XXX what is this again??
     uint8_t      _fg;
     uint8_t      _bg;
 
@@ -33,12 +33,15 @@ class Char {
     static const char NULL_CHAR = SPACE;    // NUL/SPACE
 
 public:
+    static uint8_t  defaultFg()  { return 7; }
+    static uint8_t  defaultBg()  { return 0; }
+
     static Char null() {
         return ascii(NULL_CHAR);
     }
 
     static Char ascii(char c) {
-        return Char(&c, utf8::L1, AttributeSet(), 0, 0, 0);
+        return Char(&c, utf8::L1, AttributeSet(), 0, defaultFg(), defaultBg());
     }
 
     static Char utf8(const char   * s,

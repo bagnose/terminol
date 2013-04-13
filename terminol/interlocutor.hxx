@@ -29,14 +29,15 @@ public:
         virtual void interInsertChars(uint16_t num) throw () = 0;
         virtual void interInsertLines(uint16_t num) throw () = 0;
         virtual void interDeleteLines(uint16_t num) throw () = 0;
+        virtual void interResetFg() throw () = 0;
+        virtual void interResetBg() throw () = 0;
         virtual void interSetFg(uint8_t fg) throw () = 0;
         virtual void interSetBg(uint8_t bg) throw () = 0;
         virtual void interClearAttributes() throw () = 0;
         virtual void interSetAttribute(Attribute attribute, bool value) throw () = 0;
         virtual void interSetMode(Mode mode, bool value) throw () = 0;
         virtual void interSetTabStop() throw () = 0;
-        virtual void interReset() throw () = 0 ;
-        virtual void interResetTitle() throw () = 0;
+        virtual void interResetAll() throw () = 0 ;
         virtual void interSetTitle(const std::string & title) throw () = 0;
         // UTF-8
         virtual void interUtf8(const char * s, size_t count, size_t size) throw () = 0;
@@ -81,10 +82,6 @@ private:
     std::vector<char>    _writeBuffer;
 
 public:
-    static uint8_t  defaultBg()  { return 0; }
-    static uint8_t  defaultFg()  { return 7; }
-    static uint16_t defaultTab() { return 8; }
-
     Interlocutor(I_Observer & observer,
                  I_Tty      & tty);
 
