@@ -44,8 +44,10 @@ protected:
                 fdMax = std::max(fdMax, _window.getFd());
             }
 
+            //PRINT("Calling select");
             ENFORCE_SYS(TEMP_FAILURE_RETRY(
                 ::select(fdMax + 1, &readFds, &writeFds, nullptr, nullptr)) != -1, "");
+            //PRINT("SELECT returned");
 
             // Handle _one_ I/O.
 
@@ -101,7 +103,7 @@ protected:
                     _window.expose(event.xexpose);
                     break;
                 case ConfigureNotify:
-                    _window.configure(event.xconfigure);
+                    _window.configureNotify(event.xconfigure);
                     break;
                 case EnterNotify:
                     _window.enterNotify(event.xcrossing);
@@ -158,7 +160,7 @@ int main(int argc, char * argv[]) {
     // -   master read
     // -   master write
 
-    std::string fontName = "inconsolata:pixelsize=42";
+    std::string fontName = "inconsolata:pixelsize=24";
     std::string geometryStr;
     std::string term = "ansi";
     Interlocutor::Command command;

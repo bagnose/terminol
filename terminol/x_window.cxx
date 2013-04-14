@@ -35,13 +35,17 @@ X_Window::X_Window(Display            * display,
     _tty(nullptr),
     _terminal(nullptr),
     _isOpen(false),
-    _pixmap(0)
+    _pixmap(0),
+    _pointerRow(std::numeric_limits<uint16_t>::max()),
+    _pointerCol(std::numeric_limits<uint16_t>::min())
 {
     XSetWindowAttributes attributes;
     attributes.background_pixel = XBlackPixelOfScreen(_screen);
 
-    uint16_t rows = 25;
-    uint16_t cols = 80;
+    //uint16_t rows = 25;
+    //uint16_t cols = 80;
+    uint16_t rows = 6;
+    uint16_t cols = 14;
 
     _width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
     _height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
@@ -71,8 +75,9 @@ X_Window::X_Window(Display            * display,
                  ButtonReleaseMask |
                  EnterWindowMask |
                  LeaveWindowMask |
-                 PointerMotionMask |        // both?
+                 PointerMotionMask |
                  PointerMotionHintMask |
+                 ButtonMotionMask |
                  VisibilityChangeMask |
                  FocusChangeMask
                  );
@@ -199,8 +204,34 @@ void X_Window::buttonRelease(XButtonEvent & UNUSED(event)) {
     PRINT("Button release");
 }
 
-void X_Window::motionNotify(XMotionEvent & UNUSED(event)) {
-    PRINT("Motion");
+void X_Window::motionNotify(XMotionEvent & event) {
+    int x, y;
+    unsigned int state;
+
+    if (event.is_hint) {
+        Window root, child;
+        int root_x, root_y;
+        XQueryPointer(_display, _window, &root, &child,
+                      &root_x, &root_y,
+                      &x, &y,
+                      &state);
+    }
+    else {
+        x     = event.x;
+        y     = event.y;
+        state = event.state;
+    }
+
+    //PRINT("Motion x=" << x << ", y=" << y);
+
+    uint16_t row, col;
+    xy2RowCol(x, y, row, col);
+
+    if (row != _pointerRow || col != _pointerCol) {
+        _pointerRow = row;
+        _pointerCol = col;
+        PRINT("Motion row=" << _pointerRow << ", col=" << _pointerCol);
+    }
 }
 
 void X_Window::mapNotify(XMapEvent & UNUSED(event)) {
@@ -240,7 +271,7 @@ void X_Window::expose(XExposeEvent & event) {
     }
 }
 
-void X_Window::configure(XConfigureEvent & event) {
+void X_Window::configureNotify(XConfigureEvent & event) {
     PRINT("Configure: " <<
           event.width << "x" << event.height << expSignStr(event.x) << expSignStr(event.y));
     ASSERT(event.window == _window, "Which window?");
@@ -321,7 +352,21 @@ void X_Window::visibilityNotify(XVisibilityEvent & event) {
     // VisibilityUnobscured             0
     // VisibilityPartiallyObscured      1
     // VisibilityFullyObscured          2       (free pixmap)
-    PRINT("Visibility change: state=" << event.state);
+    std::string str;
+    switch (event.state) {
+        case VisibilityUnobscured:
+            str = "Unobscured";
+            break;
+        case VisibilityPartiallyObscured:
+            str = "Partially Obscured";
+            break;
+        case VisibilityFullyObscured:
+            str = "Fully Obscured";
+            break;
+        default:
+            FATAL("");
+    }
+    PRINT("Visibility change: " << str);
 }
 
 void X_Window::destroyNotify(XDestroyWindowEvent & event) {
@@ -332,10 +377,28 @@ void X_Window::destroyNotify(XDestroyWindowEvent & event) {
     _window = 0;
 }
 
-void X_Window::rowCol2XY(size_t row, uint16_t col,
-                         uint16_t & x, uint16_t & y) const {
+void X_Window::rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const {
     x = BORDER_THICKNESS + col * _fontSet.getWidth();
     y = BORDER_THICKNESS + row * _fontSet.getHeight();
+}
+
+bool X_Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
+    if (x < BORDER_THICKNESS || y < BORDER_THICKNESS) {
+        // Too left or up.
+        return false;
+    }
+    else if (x < _width - BORDER_THICKNESS && y < _height - BORDER_THICKNESS) {
+        // NYI
+        row = (y - BORDER_THICKNESS) / _fontSet.getHeight();
+        col = (x - BORDER_THICKNESS) / _fontSet.getWidth();
+        ASSERT(row < _terminal->buffer().getRows(), "");
+        ASSERT(col < _terminal->buffer().getCols(), "");
+        return true;
+    }
+    else {
+        // Too right or down.
+        return false;
+    }
 }
 
 void X_Window::drawAll() {
@@ -421,8 +484,6 @@ void X_Window::drawCursor(XftDraw * xftDraw) {
 
     uint16_t r = _terminal->cursorRow();
     uint16_t c = _terminal->cursorCol();
-    uint16_t x, y;
-    rowCol2XY(r, c, x, y);
 
     const Char & ch = _terminal->buffer().getChar(r, c);
 
@@ -444,7 +505,7 @@ void X_Window::drawUtf8(XftDraw    * xftDraw,
                         size_t       size) {
     //PRINT(count << ": <<" << std::string(str, str + size) << ">>");
 
-    uint16_t x, y;
+    int x, y;
     rowCol2XY(row, col, x, y);
 
     const XftColor * fgColor = _colorSet.getIndexedColor(fg);

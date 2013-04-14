@@ -34,6 +34,8 @@ class X_Window :
     Terminal         * _terminal;
     bool               _isOpen;
     Pixmap             _pixmap;
+    uint16_t           _pointerRow;
+    uint16_t           _pointerCol;
 
 public:
     X_Window(Display            * display,
@@ -70,7 +72,7 @@ public:
     void unmapNotify(XUnmapEvent & event);
     void reparentNotify(XReparentEvent & event);
     void expose(XExposeEvent & event);
-    void configure(XConfigureEvent & event);
+    void configureNotify(XConfigureEvent & event);
     void focusIn(XFocusChangeEvent & event);
     void focusOut(XFocusChangeEvent & event);
     void enterNotify(XCrossingEvent & event);
@@ -79,7 +81,8 @@ public:
     void destroyNotify(XDestroyWindowEvent & event);
 
 protected:
-    void rowCol2XY(size_t row, uint16_t col, uint16_t & x, uint16_t & y) const;
+    void rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const;
+    bool xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const;
 
     void drawAll();
     void drawBuffer(XftDraw * xftDraw);
