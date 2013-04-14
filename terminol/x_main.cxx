@@ -9,39 +9,38 @@
 #include <string>
 
 #include <fontconfig/fontconfig.h>
-
 #include <X11/Xlib.h>
 
-class SimpleEventLoop : protected Uncopyable {
-    Display    * mDisplay;
-    I_X_Window & mWindow;
+class EventLoop : protected Uncopyable {
+    Display    * _display;
+    I_X_Window & _window;
 
 public:
-    SimpleEventLoop(Display     * display,
-                    I_X_Window  & window) :
-        mDisplay(display),
-        mWindow(window)
+    EventLoop(Display    * display,
+              I_X_Window & window) :
+        _display(display),
+        _window(window)
     {
         loop();
     }
 
 protected:
     void loop() {
-        while (mWindow.isOpen()) {
+        while (_window.isOpen()) {
             int fdMax = 0;
             fd_set readFds, writeFds;
             FD_ZERO(&readFds); FD_ZERO(&writeFds);
 
-            FD_SET(XConnectionNumber(mDisplay), &readFds);
-            fdMax = std::max(fdMax, XConnectionNumber(mDisplay));
+            FD_SET(XConnectionNumber(_display), &readFds);
+            fdMax = std::max(fdMax, XConnectionNumber(_display));
 
-            FD_SET(mWindow.getFd(), &readFds);
-            fdMax = std::max(fdMax, mWindow.getFd());
+            FD_SET(_window.getFd(), &readFds);
+            fdMax = std::max(fdMax, _window.getFd());
 
-            bool selectOnWrite = mWindow.isWritePending();
+            bool selectOnWrite = _window.isWritePending();
             if (selectOnWrite) {
-                FD_SET(mWindow.getFd(), &writeFds);
-                fdMax = std::max(fdMax, mWindow.getFd());
+                FD_SET(_window.getFd(), &writeFds);
+                fdMax = std::max(fdMax, _window.getFd());
             }
 
             ENFORCE_SYS(::select(fdMax + 1, &readFds, &writeFds, nullptr,
@@ -49,17 +48,17 @@ protected:
 
             // Handle _one_ I/O.
 
-            if (selectOnWrite && FD_ISSET(mWindow.getFd(), &writeFds)) {
+            if (selectOnWrite && FD_ISSET(_window.getFd(), &writeFds)) {
                 //PRINT("window write event");
-                mWindow.write();
+                _window.write();
             }
-            else if (FD_ISSET(XConnectionNumber(mDisplay), &readFds)) {
+            else if (FD_ISSET(XConnectionNumber(_display), &readFds)) {
                 //PRINT("xevent");
                 xevent();
             }
-            else if (FD_ISSET(mWindow.getFd(), &readFds)) {
+            else if (FD_ISSET(_window.getFd(), &readFds)) {
                 //PRINT("window read event");
-                mWindow.read();
+                _window.read();
             }
             else {
                 FATAL("Unreachable");
@@ -68,55 +67,55 @@ protected:
     }
 
     void xevent() {
-        while (XPending(mDisplay) != 0) {
+        while (XPending(_display) != 0) {
             XEvent event;
-            XNextEvent(mDisplay, &event);
+            XNextEvent(_display, &event);
 
             switch (event.type) {
                 case KeyPress:
-                    mWindow.keyPress(event.xkey);
+                    _window.keyPress(event.xkey);
                     break;
                 case KeyRelease:
-                    mWindow.keyRelease(event.xkey);
+                    _window.keyRelease(event.xkey);
                     break;
                 case ButtonPress:
-                    mWindow.buttonPress(event.xbutton);
+                    _window.buttonPress(event.xbutton);
                     break;
                 case ButtonRelease:
-                    mWindow.buttonRelease(event.xbutton);
+                    _window.buttonRelease(event.xbutton);
                     break;
                 case MotionNotify:
-                    mWindow.motionNotify(event.xmotion);
+                    _window.motionNotify(event.xmotion);
                     break;
                 case MapNotify:
-                    mWindow.mapNotify(event.xmap);
+                    _window.mapNotify(event.xmap);
                     break;
                 case UnmapNotify:
-                    mWindow.unmapNotify(event.xunmap);
+                    _window.unmapNotify(event.xunmap);
                     break;
                 case ReparentNotify:
-                    mWindow.reparentNotify(event.xreparent);
+                    _window.reparentNotify(event.xreparent);
                     break;
                 case Expose:
-                    mWindow.expose(event.xexpose);
+                    _window.expose(event.xexpose);
                     break;
                 case ConfigureNotify:
-                    mWindow.configure(event.xconfigure);
+                    _window.configure(event.xconfigure);
                     break;
                 case EnterNotify:
-                    mWindow.enterNotify(event.xcrossing);
+                    _window.enterNotify(event.xcrossing);
                     break;
                 case LeaveNotify:
-                    mWindow.leaveNotify(event.xcrossing);
+                    _window.leaveNotify(event.xcrossing);
                     break;
                 case FocusIn:
-                    mWindow.focusIn(event.xfocus);
+                    _window.focusIn(event.xfocus);
                     break;
                 case FocusOut:
-                    mWindow.focusOut(event.xfocus);
+                    _window.focusOut(event.xfocus);
                     break;
                 case VisibilityNotify:
-                    mWindow.visibilityNotify(event.xvisibility);
+                    _window.visibilityNotify(event.xvisibility);
                     break;
                 default:
                     PRINT("Unhandled event: " << event.type);
@@ -166,7 +165,7 @@ int main(int argc, char * argv[]) {
         if      (accumulateCommand)                      { command.push_back(arg);   }
         else if (arg == "--execute")                     { accumulateCommand = true; }
         else if (argMatch(arg, "font", fontName))        {}
-        else if (argMatch(arg, "term", term))        {}
+        else if (argMatch(arg, "term", term))            {}
         else if (argMatch(arg, "geometry", geometryStr)) {}
         else {
             std::cerr
@@ -208,6 +207,7 @@ int main(int argc, char * argv[]) {
         if (!xim) {
             XSetLocaleModifiers("@im=");
             xim = XOpenIM(display, nullptr, nullptr, nullptr);
+            // Last chance.
             ENFORCE(xim, "XOpenIM failed.");
         }
     }
@@ -218,7 +218,7 @@ int main(int argc, char * argv[]) {
         X_KeyMap        keyMap;
         X_FontSet       fontSet(display, fontName);
         X_Window        window(display, root, screen, xim, colorSet, keyMap, fontSet, term, command);
-        SimpleEventLoop eventLoop(display, window);
+        EventLoop eventLoop(display, window);
     }
 
     XCloseIM(xim);
