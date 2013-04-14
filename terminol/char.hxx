@@ -16,18 +16,18 @@ class Char {
     uint8_t      _fg;
     uint8_t      _bg;
 
-    Char(const char   * bytes,
+    Char(const char   * bytes_,
          utf8::Length   length,
-         AttributeSet   attributes,
-         uint8_t        state,
-         uint8_t        fg,
-         uint8_t        bg) :
-        _attributes(attributes),
-        _state(state),
-        _fg(fg),
-        _bg(bg)
+         AttributeSet   attributes_,
+         uint8_t        state_,
+         uint8_t        fg_,
+         uint8_t        bg_) :
+        _attributes(attributes_),
+        _state(state_),
+        _fg(fg_),
+        _bg(bg_)
     {
-        std::copy(bytes, bytes + length, _bytes);
+        std::copy(bytes_, bytes_ + length, _bytes);
     }
 
     static const char NULL_CHAR = NUL;    // NUL/SPACE

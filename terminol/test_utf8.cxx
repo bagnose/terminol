@@ -10,35 +10,9 @@ const char B3 = 1 << 3;
 const char B4 = 1 << 4;
 const char B5 = 1 << 5;
 const char B6 = 1 << 6;
-const char B7 = 1 << 7;
+const char B7 = char(1 << 7);       // XXX
 
 using namespace utf8;
-
-/*
-std::ostream & showBits(std::ostream & ost, uint8_t byte) {
-    for (int i = 0; i != 8; ++i) {
-        ost << (((byte >> (7 - i)) & 0x01) ? '1' : '0');
-    }
-    return ost;
-}
-
-std::ostream & showCodePointBytes(std::ostream & ost, CodePoint cp) {
-    ost << "U+";
-
-    size_t s = sizeof cp;
-    bool active = false;
-
-    for (size_t i = 0; i != s; ++i) {
-        uint8_t byte = static_cast<uint8_t>(cp >> (8 * (3 - i)));
-        active = active || (byte != 0) || i == s - 1;
-        if (active) {
-            ost << nibbleToHex(byte >> s) << nibbleToHex(byte & 0x0F);
-        }
-    }
-
-    return ost;
-}
-*/
 
 std::ostream & showCodePointBits(std::ostream & ost, CodePoint cp) {
     size_t s     = sizeof cp;

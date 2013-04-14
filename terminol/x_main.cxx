@@ -8,8 +8,9 @@
 
 #include <string>
 
-#include <fontconfig/fontconfig.h>
+#include <unistd.h>
 #include <X11/Xlib.h>
+#include <fontconfig/fontconfig.h>
 
 class EventLoop : protected Uncopyable {
     Display    * _display;
@@ -43,8 +44,8 @@ protected:
                 fdMax = std::max(fdMax, _window.getFd());
             }
 
-            ENFORCE_SYS(::select(fdMax + 1, &readFds, &writeFds, nullptr,
-                                 nullptr) != -1, "");
+            ENFORCE_SYS(TEMP_FAILURE_RETRY(::select(fdMax + 1, &readFds, &writeFds, nullptr,
+                                 nullptr)) != -1, "");
 
             // Handle _one_ I/O.
 
@@ -181,12 +182,12 @@ int main(int argc, char * argv[]) {
         unsigned int w, h;
         int bits = XParseGeometry(geometryStr.c_str(), &x, &y, &w, &h);
 
-        if (bits & XValue) ;
-        if (bits & YValue) ;
-        if (bits & XNegative) ;
-        if (bits & YNegative) ;
-        if (bits & WidthValue) ;
-        if (bits & HeightValue) ;
+        if (bits & XValue) {}
+        if (bits & YValue) {}
+        if (bits & XNegative) {}
+        if (bits & YNegative) {}
+        if (bits & WidthValue) {}
+        if (bits & HeightValue) {}
     }
 
     FcInit();

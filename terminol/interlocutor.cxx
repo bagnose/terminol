@@ -876,3 +876,22 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
         }
     }
 }
+
+std::ostream & operator << (std::ostream & ost, Interlocutor::State state) {
+    switch (state) {
+        case Interlocutor::STATE_NORMAL:
+            return ost  << "NORMAL";
+        case Interlocutor::STATE_ESCAPE_START:
+            return ost  << "ESCAPE_START";
+        case Interlocutor::STATE_CSI_ESCAPE:
+            return ost  << "CSI_ESCAPE";
+        case Interlocutor::STATE_STR_ESCAPE:
+            return ost  << "STR_ESCAPE";
+        case Interlocutor::STATE_ESCAPE_START_STR:
+            return ost  << "START_STR";
+        case Interlocutor::STATE_TEST_ESCAPE:
+            return ost  << "TEST_ESCAPE";
+    }
+
+    FATAL("Invalid state: " << static_cast<int>(state));
+}

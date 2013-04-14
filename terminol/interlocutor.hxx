@@ -65,6 +65,8 @@ private:
         STATE_TEST_ESCAPE
     };
 
+    friend std::ostream & operator << (std::ostream & ost, State state);
+
     I_Observer         & _observer;
     bool                 _dispatch;
     I_Tty              & _tty;
@@ -118,5 +120,11 @@ protected:
     void processAttributes(const std::vector<int32_t> & args);
     void processModes(bool priv, bool set, const std::vector<int32_t> & args);
 };
+
+//
+//
+//
+
+std::ostream & operator << (std::ostream & ost, Interlocutor::State state);
 
 #endif // INTERLOCUTOR__HXX

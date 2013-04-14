@@ -12,7 +12,7 @@ const char B3 = 1 << 3;
 const char B4 = 1 << 4;
 const char B5 = 1 << 5;
 const char B6 = 1 << 6;
-const char B7 = 1 << 7;
+const char B7 = char(1 << 7);       // XXX
 
 // Just inspect the lead octect to determine the length.
 Length leadLength(char lead) throw (Error) {

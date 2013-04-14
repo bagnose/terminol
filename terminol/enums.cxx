@@ -75,6 +75,8 @@ std::ostream & operator << (std::ostream & ost, Mode mode) {
         case MODE_MOUSESGR:
             return ost << "MOUSESGR";
     }
+
+    FATAL("Invalid mode: " << static_cast<int>(mode));
 }
 
 std::ostream & operator << (std::ostream & ost, Attribute attribute) {
@@ -91,5 +93,5 @@ std::ostream & operator << (std::ostream & ost, Attribute attribute) {
             return ost << "REVERSE";
     }
 
-    FATAL(static_cast<int>(attribute));
+    FATAL("Invalid attribute: " << static_cast<int>(attribute));
 }
