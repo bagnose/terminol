@@ -19,7 +19,6 @@ test-exe test-buffer : test_buffer.cxx;
 static-lib xlib
   :
   x_window.hxx x_font_set.hxx x_color_set.hxx x_key_map.hxx
-  x_window_base.hxx
   :
   x_window.cxx x_font_set.cxx x_color_set.cxx x_key_map.cxx
   ;

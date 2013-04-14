@@ -3,7 +3,8 @@
 #ifndef X_WINDOW__HXX
 #define X_WINDOW__HXX
 
-#include "terminol/x_window_base.hxx"
+#include <X11/Xlib.h>
+
 #include "terminol/x_color_set.hxx"
 #include "terminol/x_key_map.hxx"
 #include "terminol/x_font_set.hxx"
@@ -11,7 +12,6 @@
 #include "terminol/terminal.hxx"
 
 class X_Window :
-    public    B_X_Window,
     protected Terminal::I_Observer,
     protected Uncopyable
 {
@@ -49,10 +49,6 @@ public:
 
     virtual ~X_Window();
 
-    //
-    // I_X_Window implementation:
-    //
-
     // We handle these:
 
     bool isOpen() const { return _isOpen; }
@@ -81,6 +77,7 @@ public:
     void enterNotify(XCrossingEvent & event);
     void leaveNotify(XCrossingEvent & event);
     void visibilityNotify(XVisibilityEvent & event);
+    void destroyNotify(XDestroyWindowEvent & event);
 
 protected:
     void rowCol2XY(size_t row, uint16_t col, uint16_t & x, uint16_t & y) const;

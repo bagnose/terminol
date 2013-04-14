@@ -12,13 +12,55 @@
 #include <X11/Xlib.h>
 #include <fontconfig/fontconfig.h>
 
+#if 0
+class I_Selectable {
+public:
+    virtual int  getFd() = 0;
+    virtual bool isOpen() const = 0;
+    virtual void read() = 0;
+    virtual bool isWritePending() const = 0;
+    virtual void write() = 0;
+
+protected:
+    I_Selectable() {}
+    ~I_Selectable() {}
+};
+
+//
+//
+//
+
+class X_Display : public I_Selectable {
+    std::map<Window, X_Window *> _windows;
+    Display * _display;
+public:
+    int  getFd()  { return XConnectionNumber(_display); }
+
+    bool isOpen() { return true; }
+
+    void read() {
+        xevent();
+    }
+
+    bool isWritePending() const { return false; }
+
+    void write() { FATAL(""); }
+
+protected:
+};
+
+//
+//
+//
+#endif
+
 class EventLoop : protected Uncopyable {
-    Display    * _display;
-    B_X_Window & _window;
+    Display  * _display;
+    X_Window & _window;
 
 public:
-    EventLoop(Display    * display,
-              B_X_Window & window) :
+    EventLoop(Display  * display,
+              X_Window & window) :
         _display(display),
         _window(window)
     {
@@ -44,8 +86,8 @@ protected:
                 fdMax = std::max(fdMax, _window.getFd());
             }
 
-            ENFORCE_SYS(TEMP_FAILURE_RETRY(::select(fdMax + 1, &readFds, &writeFds, nullptr,
-                                 nullptr)) != -1, "");
+            ENFORCE_SYS(TEMP_FAILURE_RETRY(
+                ::select(fdMax + 1, &readFds, &writeFds, nullptr, nullptr)) != -1, "");
 
             // Handle _one_ I/O.
 
@@ -117,6 +159,9 @@ protected:
                     break;
                 case VisibilityNotify:
                     _window.visibilityNotify(event.xvisibility);
+                    break;
+                case DestroyNotify:
+                    _window.destroyNotify(event.xdestroywindow);
                     break;
                 default:
                     PRINT("Unhandled event: " << event.type);

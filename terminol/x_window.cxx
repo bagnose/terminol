@@ -108,7 +108,9 @@ X_Window::~X_Window() {
     XDestroyIC(_xic);
 
     XFreeGC(_display, _gc);
-    XDestroyWindow(_display, _window);
+    if (_window != 0) {
+        XDestroyWindow(_display, _window);
+    }
 }
 
 void X_Window::keyPress(XKeyEvent & event) {
@@ -274,6 +276,7 @@ void X_Window::configure(XConfigureEvent & event) {
 }
 
 void X_Window::focusIn(XFocusChangeEvent & event) {
+    ASSERT(event.window == _window, "Which window?");
     //PRINT("Focus in: mode=" << event.mode << ", detail=" << event.detail);
 
     if (event.mode == NotifyGrab) {
@@ -284,6 +287,7 @@ void X_Window::focusIn(XFocusChangeEvent & event) {
 }
 
 void X_Window::focusOut(XFocusChangeEvent & event) {
+    ASSERT(event.window == _window, "Which window?");
     //PRINT("Focus out: mode=" << event.mode << ", detail=" << event.detail);
     if (event.mode == NotifyGrab) {
         return;
@@ -292,20 +296,31 @@ void X_Window::focusOut(XFocusChangeEvent & event) {
     XUnsetICFocus(_xic);
 }
 
-void X_Window::enterNotify(XCrossingEvent & UNUSED(event)) {
+void X_Window::enterNotify(XCrossingEvent & event) {
+    ASSERT(event.window == _window, "Which window?");
     //PRINT("Enter notify");
 }
 
-void X_Window::leaveNotify(XCrossingEvent & UNUSED(event)) {
+void X_Window::leaveNotify(XCrossingEvent & event) {
+    ASSERT(event.window == _window, "Which window?");
     //PRINT("Leave notify");
 }
 
 void X_Window::visibilityNotify(XVisibilityEvent & event) {
+    ASSERT(event.window == _window, "Which window?");
     // state values:
     // VisibilityUnobscured             0
     // VisibilityPartiallyObscured      1
     // VisibilityFullyObscured          2       (free pixmap)
     PRINT("Visibility change: state=" << event.state);
+}
+
+void X_Window::destroyNotify(XDestroyWindowEvent & event) {
+    PRINT("Destroy");
+    ASSERT(event.window == _window, "Which window?");
+    _tty->close();
+    _isOpen = false;
+    _window = 0;
 }
 
 void X_Window::rowCol2XY(size_t row, uint16_t col,
@@ -336,6 +351,8 @@ void X_Window::drawAll() {
     XFlush(_display);
 
     //dump(std::cout, _terminal->buffer());
+
+    _damage = false;
 }
 
 void X_Window::drawBuffer(XftDraw * xftDraw) {
@@ -478,7 +495,6 @@ void X_Window::terminalSetTitle(const std::string & title) throw () {
 void X_Window::terminalEnd() throw () {
     if (_damage && _hadConfigure) {
         drawAll();
-        _damage = false;
     }
 }
 

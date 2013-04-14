@@ -22,8 +22,9 @@ public:
 
     virtual ~Tty();
 
-    int getFd() { return _fd; }
+    int  getFd() { return _fd; }
     void resize(uint16_t rows, uint16_t cols);
+    int  close();
 
     // I_Tty implementation:
 
@@ -40,7 +41,6 @@ protected:
                           const std::string & term,
                           const Command     & command);
 
-    int  close();   // protected XXX ??
     bool pollReap(int & exitCode, int msec);
     void waitReap(int & exitCode);
 };
