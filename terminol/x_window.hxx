@@ -5,6 +5,7 @@
 
 #include <X11/Xlib.h>
 
+#include "terminol/x_basics.hxx"
 #include "terminol/x_color_set.hxx"
 #include "terminol/x_key_map.hxx"
 #include "terminol/x_font_set.hxx"

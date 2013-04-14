@@ -1,6 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/common.hxx"
+#include "terminol/x_basics.hxx"
 #include "terminol/x_window.hxx"
 #include "terminol/x_color_set.hxx"
 #include "terminol/x_key_map.hxx"
@@ -199,39 +200,16 @@ int main(int argc, char * argv[]) {
 
     FcInit();
 
-    Display * display  = XOpenDisplay(nullptr);
-    ENFORCE(display, "Failed to open display.");
-    Screen  * screen   = XDefaultScreenOfDisplay(display);
-    ASSERT(screen, "");
-    Visual  * visual   = XDefaultVisualOfScreen(screen);
-    ASSERT(visual, "");
-    Colormap  colormap = XDefaultColormapOfScreen(screen);
-    Window    root     = XRootWindowOfScreen(screen);
-
-    XIM xim = XOpenIM(display, nullptr, nullptr, nullptr);
-    if (!xim) {
-        XSetLocaleModifiers("@im=local");
-        xim = XOpenIM(display, nullptr, nullptr, nullptr);
-        if (!xim) {
-            XSetLocaleModifiers("@im=");
-            xim = XOpenIM(display, nullptr, nullptr, nullptr);
-            // Last chance.
-            ENFORCE(xim, "XOpenIM failed.");
-        }
-    }
-
     {
         // RAII objects.
-        X_ColorSet      colorSet(display, visual, colormap);
-        X_KeyMap        keyMap;
-        X_FontSet       fontSet(display, fontName);
-        X_Window        window(display, root, screen, xim, colorSet, keyMap, fontSet, term, command);
-        EventLoop eventLoop(display, window);
+        X_Basics   basics;
+        X_ColorSet colorSet(basics.display(), basics.visual(), basics.colormap());
+        X_KeyMap   keyMap;
+        X_FontSet  fontSet(basics.display(), fontName);
+        X_Window   window(basics.display(), basics.root(), basics.screen(), basics.xim(),
+                          colorSet, keyMap, fontSet, term, command);
+        EventLoop  eventLoop(basics.display(), window);
     }
-
-    XCloseIM(xim);
-
-    XCloseDisplay(display);
 
     FcFini();
 

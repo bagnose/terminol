@@ -12,7 +12,7 @@ public:
         int exitCode;
     };
 
-    struct Error { };
+    struct Error {};
 
     virtual size_t read(char * buffer, size_t length) throw (Exited) = 0;
     virtual size_t write(const char * buffer, size_t length) throw (Error) = 0;
