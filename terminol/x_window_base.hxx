@@ -1,12 +1,15 @@
 // vi:noai:sw=4
 
-#ifndef X_WINDOW_INTERFACE__HXX
-#define X_WINDOW_INTERFACE__HXX
+#ifndef X_WINDOW_BASE__H
+#define X_WINDOW_BASE__H
 
 #include <X11/Xlib.h>
 
-class I_X_Window {
+class B_X_Window {
 public:
+    B_X_Window()  {}
+    virtual ~B_X_Window() {}
+
     virtual bool isOpen() const = 0;
     virtual int  getFd() = 0;
     virtual void read()  = 0;
@@ -28,11 +31,6 @@ public:
     virtual void enterNotify(XCrossingEvent & event) = 0;
     virtual void leaveNotify(XCrossingEvent & event) = 0;
     virtual void visibilityNotify(XVisibilityEvent & event) = 0;
-    // TODO selection
-
-protected:
-    I_X_Window()          {}
-    ~I_X_Window() {}
 };
 
-#endif // X_WINDOW_INTERFACE__HXX
+#endif // X_WINDOW_BASE__H

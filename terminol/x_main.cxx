@@ -14,11 +14,11 @@
 
 class EventLoop : protected Uncopyable {
     Display    * _display;
-    I_X_Window & _window;
+    B_X_Window & _window;
 
 public:
     EventLoop(Display    * display,
-              I_X_Window & window) :
+              B_X_Window & window) :
         _display(display),
         _window(window)
     {

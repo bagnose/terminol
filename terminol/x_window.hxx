@@ -3,7 +3,7 @@
 #ifndef X_WINDOW__HXX
 #define X_WINDOW__HXX
 
-#include "terminol/x_window_interface.hxx"
+#include "terminol/x_window_base.hxx"
 #include "terminol/x_color_set.hxx"
 #include "terminol/x_key_map.hxx"
 #include "terminol/x_font_set.hxx"
@@ -11,7 +11,7 @@
 #include "terminol/terminal.hxx"
 
 class X_Window :
-    public    I_X_Window,
+    public    B_X_Window,
     protected Terminal::I_Observer,
     protected Uncopyable
 {
