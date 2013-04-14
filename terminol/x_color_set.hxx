@@ -18,9 +18,14 @@ class X_ColorSet : protected Uncopyable {
     XftColor   _cursorColor;
 
 public:
+    struct Error {
+        explicit Error(const std::string & message_) : message(message_) {}
+        std::string message;
+    };
+
     X_ColorSet(Display  * display,
                Visual   * visual,
-               Colormap   colormap);
+               Colormap   colormap) throw (Error);
 
     ~X_ColorSet();
 

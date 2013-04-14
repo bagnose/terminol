@@ -14,14 +14,23 @@
 #include <fontconfig/fontconfig.h>
 
 class EventLoop : protected Uncopyable {
-    Display  * _display;
-    X_Window & _window;
+    X_Basics   _basics;
+    X_ColorSet _colorSet;
+    X_KeyMap   _keyMap;
+    X_FontSet  _fontSet;
+    X_Window   _window;
 
 public:
-    EventLoop(Display  * display,
-              X_Window & window) :
-        _display(display),
-        _window(window)
+    EventLoop(const std::string           & fontName,
+              const std::string           & term,
+              const Interlocutor::Command & command)
+        throw (X_Basics::Error, X_ColorSet::Error) :
+        _basics(),
+        _colorSet(_basics.display(), _basics.visual(), _basics.colormap()),
+        _keyMap(),
+        _fontSet(_basics.display(), fontName),
+        _window(_basics.display(), _basics.root(), _basics.screen(), _basics.xim(),
+                _colorSet, _keyMap, _fontSet, term, command)
     {
         loop();
     }
@@ -33,8 +42,8 @@ protected:
             fd_set readFds, writeFds;
             FD_ZERO(&readFds); FD_ZERO(&writeFds);
 
-            FD_SET(XConnectionNumber(_display), &readFds);
-            fdMax = std::max(fdMax, XConnectionNumber(_display));
+            FD_SET(XConnectionNumber(_basics.display()), &readFds);
+            fdMax = std::max(fdMax, XConnectionNumber(_basics.display()));
 
             FD_SET(_window.getFd(), &readFds);
             fdMax = std::max(fdMax, _window.getFd());
@@ -56,7 +65,7 @@ protected:
                 //PRINT("window write event");
                 _window.write();
             }
-            else if (FD_ISSET(XConnectionNumber(_display), &readFds)) {
+            else if (FD_ISSET(XConnectionNumber(_basics.display()), &readFds)) {
                 //PRINT("xevent");
                 xevent();
             }
@@ -71,9 +80,9 @@ protected:
     }
 
     void xevent() {
-        while (XPending(_display) != 0) {
+        while (XPending(_basics.display()) != 0) {
             XEvent event;
-            XNextEvent(_display, &event);
+            XNextEvent(_basics.display(), &event);
 
             switch (event.type) {
                 case KeyPress:
@@ -200,15 +209,21 @@ int main(int argc, char * argv[]) {
 
     FcInit();
 
-    {
-        // RAII objects.
-        X_Basics   basics;
-        X_ColorSet colorSet(basics.display(), basics.visual(), basics.colormap());
-        X_KeyMap   keyMap;
-        X_FontSet  fontSet(basics.display(), fontName);
-        X_Window   window(basics.display(), basics.root(), basics.screen(), basics.xim(),
-                          colorSet, keyMap, fontSet, term, command);
-        EventLoop  eventLoop(basics.display(), window);
+    try {
+        // RAII.
+        EventLoop(fontName, term, command);
+    }
+    catch (X_Window::Error & ex) {
+        FATAL(ex.message);
+    }
+    catch (X_FontSet::Error & ex) {
+        FATAL(ex.message);
+    }
+    catch (X_ColorSet::Error & ex) {
+        FATAL(ex.message);
+    }
+    catch (X_Basics::Error & ex) {
+        FATAL(ex.message);
     }
 
     FcFini();

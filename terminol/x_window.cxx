@@ -20,7 +20,7 @@ X_Window::X_Window(Display            * display,
                    const X_KeyMap     & keyMap,
                    X_FontSet          & fontSet,
                    const std::string  & term,
-                   const Interlocutor::Command & command) :
+                   const Interlocutor::Command & command) throw (Error) :
     _display(display),
     _screen(screen),
     _colorSet(colorSet),
@@ -87,7 +87,9 @@ X_Window::X_Window(Display            * display,
     //
 
     _xic = XCreateIC(xim, XNInputStyle, XIMPreeditNothing | XIMStatusNothing, XNClientWindow, _window, nullptr);
-    ENFORCE(_xic, "XCreateIC failed.");
+    if (!_xic) {
+        throw Error("XCreateIC failed.");
+    }
 
     //
 

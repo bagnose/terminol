@@ -33,7 +33,7 @@ uint16_t sixd_to_16bit(int x) {
 
 X_ColorSet::X_ColorSet(Display  * display,
                        Visual   * visual,
-                       Colormap  colormap) :
+                       Colormap  colormap) throw (Error) :
     _display(display),
     _visual(visual),
     _colormap(colormap),
@@ -49,7 +49,9 @@ X_ColorSet::X_ColorSet(Display  * display,
 
     for (auto i = 0; i != 16; ++i) {
         const char * n = names[i];
-        XftColorAllocName(_display, _visual, _colormap, n, &_indexedColors[i]);
+        if (!XftColorAllocName(_display, _visual, _colormap, n, &_indexedColors[i])) {
+            throw Error(std::string("Failed to alloc named color: ") + n);
+        }
         ++index;
     }
 
@@ -61,11 +63,13 @@ X_ColorSet::X_ColorSet(Display  * display,
                 xrColor.green = sixd_to_16bit(g);
                 xrColor.blue  = sixd_to_16bit(b);
                 xrColor.alpha = 0xffff;
-                XftColorAllocValue(_display,
-                                   _visual,
-                                   _colormap,
-                                   &xrColor,
-                                   &_indexedColors[index]);
+                if (!XftColorAllocValue(_display,
+                                        _visual,
+                                        _colormap,
+                                        &xrColor,
+                                        &_indexedColors[index])) {
+                    throw Error("Failed to alloc color by value.");
+                }
             }
         }
         ++index;
@@ -75,11 +79,13 @@ X_ColorSet::X_ColorSet(Display  * display,
         XRenderColor  xrColor;
         xrColor.red = xrColor.green = xrColor.blue = 0x0808 + 0x0a0a * v;
         xrColor.alpha = 0xffff;
-        XftColorAllocValue(_display,
-                           _visual,
-                           _colormap,
-                           &xrColor,
-                           &_indexedColors[index]);
+        if (!XftColorAllocValue(_display,
+                                _visual,
+                                _colormap,
+                                &xrColor,
+                                &_indexedColors[index])) {
+            throw Error("Failed to alloc color by value.");
+        }
         ++index;
     }
 
@@ -93,16 +99,19 @@ X_ColorSet::X_ColorSet(Display  * display,
         xrColor.green = 0x0000;
         xrColor.blue  = 0xffff;
         xrColor.alpha = 0xffff;
-        XftColorAllocValue(_display,
-                           _visual,
-                           _colormap,
-                           &xrColor,
-                           &_cursorColor);
+        if (!XftColorAllocValue(_display,
+                                _visual,
+                                _colormap,
+                                &xrColor,
+                                &_cursorColor)) {
+            throw Error("Failed to alloc color by value.");
+        }
     }
 }
 
 X_ColorSet::~X_ColorSet() {
     for (auto xftColor : _indexedColors) {
+        // Returns void.
         XftColorFree(_display, _visual, _colormap, &xftColor);
     }
 }

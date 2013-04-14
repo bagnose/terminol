@@ -42,7 +42,7 @@ public:
                     XSetLocaleModifiers("@im=");
                     _xim = XOpenIM(_display, nullptr, nullptr, nullptr);
                     // Last chance.
-                    if (_xim) throw Error("Couldn't open Input Method.");
+                    if (!_xim) throw Error("Couldn't open Input Method.");
                 }
             }
         }
@@ -75,22 +75,17 @@ public:
     static std::string stateToStr(uint8_t state) {
         // Run xmodmap without any arguments to discover these.
         std::ostringstream maskStr;
-        if (state & ShiftMask)   maskStr << " SHIFT";
-        if (state & LockMask)    maskStr << " LOCK";
-        if (state & ControlMask) maskStr << " CTRL";
-        if (state & Mod1Mask)    maskStr << " ALT";
-        if (state & Mod2Mask)    maskStr << " NUM";
-        if (state & Mod3Mask)    maskStr << " MOD3";
-        if (state & Mod4Mask)    maskStr << " WIN";
-        if (state & Mod5Mask)    maskStr << " MOD5";
+        if (state & ShiftMask)   maskStr << "|SHIFT";
+        if (state & LockMask)    maskStr << "|LOCK";
+        if (state & ControlMask) maskStr << "|CTRL";
+        if (state & Mod1Mask)    maskStr << "|ALT";
+        if (state & Mod2Mask)    maskStr << "|NUM";
+        if (state & Mod3Mask)    maskStr << "|MOD3";
+        if (state & Mod4Mask)    maskStr << "|WIN";
+        if (state & Mod5Mask)    maskStr << "|MOD5";
         std::string result = maskStr.str();
 
-        if (result.empty()) {
-            return result;
-        }
-        else {
-            return result.substr(1);
-        }
+        return result.empty() ? result : result.substr(1);
     }
 };
 

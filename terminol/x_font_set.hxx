@@ -18,8 +18,13 @@ class X_FontSet : protected Uncopyable {
     uint16_t   _ascent;
 
 public:
+    struct Error {
+        explicit Error(const std::string & message_) : message(message_) {}
+        std::string message;
+    };
+
     X_FontSet(Display           * display,
-              const std::string & fontName);
+              const std::string & fontName) throw (Error);
 
     ~X_FontSet();
 
@@ -47,7 +52,7 @@ public:
     uint16_t getAscent() const { return _ascent; }
 
 protected:
-    XftFont * load(FcPattern * pattern, bool master);
+    XftFont * load(FcPattern * pattern, bool master) throw (Error);
     void      unload(XftFont * font);
 };
 

@@ -39,6 +39,11 @@ class X_Window :
     uint16_t           _pointerCol;
 
 public:
+    struct Error {
+        explicit Error(const std::string & message_) : message(message_) {}
+        std::string message;
+    };
+
     X_Window(Display            * display,
              Window               parent,
              Screen             * screen,
@@ -47,7 +52,7 @@ public:
              const X_KeyMap     & keyMap,
              X_FontSet          & fontSet,
              const std::string  & term,
-             const Interlocutor::Command & command);
+             const Interlocutor::Command & command) throw (Error);
 
     virtual ~X_Window();
 
