@@ -33,7 +33,6 @@ class X_Window :
     Tty              * _tty;
     Terminal         * _terminal;
     bool               _isOpen;
-    bool               _hadConfigure;
     Pixmap             _pixmap;
 
 public:

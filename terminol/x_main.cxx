@@ -12,48 +12,6 @@
 #include <X11/Xlib.h>
 #include <fontconfig/fontconfig.h>
 
-#if 0
-class I_Selectable {
-public:
-    virtual int  getFd() = 0;
-    virtual bool isOpen() const = 0;
-    virtual void read() = 0;
-    virtual bool isWritePending() const = 0;
-    virtual void write() = 0;
-
-protected:
-    I_Selectable() {}
-    ~I_Selectable() {}
-};
-
-//
-//
-//
-
-class X_Display : public I_Selectable {
-    std::map<Window, X_Window *> _windows;
-    Display * _display;
-public:
-    int  getFd()  { return XConnectionNumber(_display); }
-
-    bool isOpen() { return true; }
-
-    void read() {
-        xevent();
-    }
-
-    bool isWritePending() const { return false; }
-
-    void write() { FATAL(""); }
-
-protected:
-};
-
-//
-//
-//
-#endif
-
 class EventLoop : protected Uncopyable {
     Display  * _display;
     X_Window & _window;
@@ -222,6 +180,7 @@ int main(int argc, char * argv[]) {
         }
     }
 
+#if 0
     if (!geometryStr.empty()) {
         int          x, y;
         unsigned int w, h;
@@ -234,6 +193,7 @@ int main(int argc, char * argv[]) {
         if (bits & WidthValue) {}
         if (bits & HeightValue) {}
     }
+#endif
 
     FcInit();
 

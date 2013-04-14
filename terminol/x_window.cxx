@@ -29,12 +29,13 @@ X_Window::X_Window(Display            * display,
     _damage(false),
     _window(0),
     _xic(nullptr),
+    _gc(0),
     _width(0),
     _height(0),
     _tty(nullptr),
     _terminal(nullptr),
     _isOpen(false),
-    _hadConfigure(false)
+    _pixmap(0)
 {
     XSetWindowAttributes attributes;
     attributes.background_pixel = XBlackPixelOfScreen(_screen);
@@ -42,14 +43,14 @@ X_Window::X_Window(Display            * display,
     uint16_t rows = 25;
     uint16_t cols = 80;
 
-    uint16_t width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
-    uint16_t height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
+    _width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
+    _height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
 
     _window = XCreateWindow(_display,
                             parent,
-                            0, 0,          // x,y
-                            width, height, // w,h
-                            0,             // border width
+                            0, 0,               // x,y
+                            _width, _height,    // w,h
+                            0,                  // border width
                             CopyFromParent,
                             InputOutput,
                             CopyFromParent,
@@ -98,7 +99,7 @@ X_Window::X_Window(Display            * display,
 }
 
 X_Window::~X_Window() {
-    if (_hadConfigure) {
+    if (_pixmap) {
         XFreePixmap(_display, _pixmap);
     }
 
@@ -108,7 +109,8 @@ X_Window::~X_Window() {
     XDestroyIC(_xic);
 
     XFreeGC(_display, _gc);
-    if (_window != 0) {
+
+    if (_window) {
         XDestroyWindow(_display, _window);
     }
 }
@@ -121,7 +123,7 @@ void X_Window::keyPress(XKeyEvent & event) {
     char   buffer[16];
     KeySym keySym = 0;
 
-#if 1
+#if 0
     int len = XLookupString(&event, buffer, sizeof buffer, &keySym, nullptr);
 #else
     Status status;
@@ -203,10 +205,19 @@ void X_Window::motionNotify(XMotionEvent & UNUSED(event)) {
 
 void X_Window::mapNotify(XMapEvent & UNUSED(event)) {
     PRINT("Map");
+
+    ASSERT(!_pixmap, "");
+    _pixmap = XCreatePixmap(_display, _window, _width, _height,
+                            XDefaultDepthOfScreen(_screen));
+    XFillRectangle(_display, _pixmap, _gc, 0, 0, _width, _height);
 }
 
 void X_Window::unmapNotify(XUnmapEvent & UNUSED(event)) {
     PRINT("Unmap");
+
+    ASSERT(_pixmap, "");
+    XFreePixmap(_display, _pixmap);
+    _pixmap = 0;
 }
 
 void X_Window::reparentNotify(XReparentEvent & UNUSED(event)) {
@@ -225,7 +236,6 @@ void X_Window::expose(XExposeEvent & event) {
     if (event.count == 0) {
         // TODO copy pixmap to window (if we are the last user...)
         //draw(event.x, event.y, event.width, event.height);
-        ASSERT(_hadConfigure, "");
         drawAll();
     }
 }
@@ -239,18 +249,15 @@ void X_Window::configure(XConfigureEvent & event) {
     // We are only interested in size changes.
     if (_width == event.width && _height == event.height) return;
 
-    if (_hadConfigure) {
-        XFreePixmap(_display, _pixmap);
-    }
-    else {
-        _hadConfigure = true;
-    }
-
     _width  = event.width;
     _height = event.height;
-    _pixmap = XCreatePixmap(_display, _window, _width, _height,
-                            XDefaultDepthOfScreen(_screen));
-    XFillRectangle(_display, _pixmap, _gc, 0, 0, _width, _height);
+
+    if (_pixmap) {
+        XFreePixmap(_display, _pixmap);
+        _pixmap = XCreatePixmap(_display, _window, _width, _height,
+                                XDefaultDepthOfScreen(_screen));
+        XFillRectangle(_display, _pixmap, _gc, 0, 0, _width, _height);
+    }
 
     uint16_t rows, cols;
 
@@ -272,7 +279,9 @@ void X_Window::configure(XConfigureEvent & event) {
     _tty->resize(rows, cols);
     _terminal->resize(rows, cols);
 
-    drawAll();
+    if (_pixmap) {
+        drawAll();
+    }
 }
 
 void X_Window::focusIn(XFocusChangeEvent & event) {
@@ -330,7 +339,7 @@ void X_Window::rowCol2XY(size_t row, uint16_t col,
 }
 
 void X_Window::drawAll() {
-    ASSERT(_hadConfigure, "");
+    ASSERT(_pixmap, "");
 
     XFillRectangle(_display, _pixmap, _gc, 0, 0, _width, _height);
 
@@ -493,7 +502,7 @@ void X_Window::terminalSetTitle(const std::string & title) throw () {
 }
 
 void X_Window::terminalEnd() throw () {
-    if (_damage && _hadConfigure) {
+    if (_damage && _pixmap) {
         drawAll();
     }
 }
