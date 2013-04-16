@@ -47,7 +47,7 @@ void Terminal::interBegin() throw () {
 }
 
 void Terminal::interControl(Control control) throw () {
-    PRINT("Control: " << control);
+    //PRINT("Control: " << control);
     switch (control) {
         case CONTROL_BEL:
             PRINT("BEL!!");
@@ -260,8 +260,8 @@ void Terminal::interSetTitle(const std::string & title) throw () {
     _observer.terminalSetTitle(title);
 }
 
-void Terminal::interUtf8(const char * s, size_t count, size_t size) throw () {
-    PRINT("Got UTF-8: " << std::string(s, s + size));
+void Terminal::interUtf8(const char * s, size_t count, size_t UNUSED(size)) throw () {
+    //PRINT("Got UTF-8: " << std::string(s, s + size));
     for (size_t i = 0; i != count; ++i) {
         utf8::Length length = utf8::leadLength(*s);
 

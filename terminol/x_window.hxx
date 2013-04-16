@@ -64,8 +64,8 @@ public:
     // The following calls are forwarded to the Terminal.
 
     void read()  { _terminal->read(); }
-    bool isWritePending() const { return _terminal->isWritePending(); }
-    void write() { _terminal->write(); }
+    bool areWritesQueued() const { return _terminal->areWritesQueued(); }
+    void flush() { _terminal->flush(); }
 
     // Events:
 
@@ -107,8 +107,8 @@ protected:
     void terminalDamageAll() throw ();
     void terminalResetTitle() throw ();
     void terminalSetTitle(const std::string & title) throw ();
-    void terminalEnd() throw ();
     void terminalChildExited(int exitStatus) throw ();
+    void terminalEnd() throw ();
 };
 
 #endif // X_WINDOW__HXX

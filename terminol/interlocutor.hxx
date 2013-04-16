@@ -17,11 +17,8 @@ public:
 
     class I_Observer {
     public:
-        // begin
         virtual void interBegin() throw () = 0;
-        // control
         virtual void interControl(Control control) throw () = 0;
-        // escapes
         virtual void interMoveCursor(uint16_t row, uint16_t col) throw () = 0;
         virtual void interRelMoveCursor(int16_t dRow, int16_t dCol) throw () = 0;
         virtual void interClearLine(ClearLine clear) throw () = 0;
@@ -42,13 +39,9 @@ public:
         virtual void interSetScrollTop(uint16_t row) = 0;
         virtual void interResetAll() throw () = 0 ;
         virtual void interSetTitle(const std::string & title) throw () = 0;
-        // UTF-8
         virtual void interUtf8(const char * s, size_t count, size_t size) throw () = 0;
-        // queries
         virtual void interGetCursorPos(uint16_t & row, uint16_t & col) const throw () = 0;
-        // child exited
         virtual void interChildExited(int exitCode) throw () = 0;
-        // end
         virtual void interEnd() throw () = 0;
 
     protected:
@@ -94,24 +87,17 @@ public:
 
     ~Interlocutor();
 
-#if 0
-    bool isOpen() const;
-
-    // Only use the descriptor for select() - do not read/write().
-    int  getFd();
-#endif
-
     // Call when will not block (after select()).
     void read();
 
     // Queue data for write.
-    void enqueueWrite(const char * data, size_t size);
+    void write(const char * data, size_t size);
 
     // Is there data queued for write?
-    bool isWritePending() const;
+    bool areWritesQueued() const;
 
     // Call when will not block (after select()).
-    void write();
+    void flush();
 
 protected:
     void processBuffer();

@@ -61,7 +61,14 @@ size_t Tty::write(const char * buffer, size_t length) throw (Error) {
     ssize_t rval = ::write(_fd, static_cast<const void *>(buffer), length);
 
     if (rval == -1) {
-        throw Error();
+        switch (errno) {
+            case EAGAIN:
+                return 0;
+            case EIO:       // default: ??
+                throw Error();
+            default:
+                FATAL("Unexpected error: " << errno << " " << ::strerror(errno));
+        }
     }
     else if (rval == 0) {
         FATAL("!!");

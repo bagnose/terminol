@@ -71,13 +71,9 @@ Improvements:
   For example, it dispatches control chars as-is, but it interprets
   escape codes and translates them into higher level ops.
 
-- Use non-blocking I/O so that:
-
-  - write() can be done immediately, only using the queue if
-    it would block - don't unnecessarily involve select().
-
-  - read() can be looped until the input runs dry, without having
-    to involve select().
+- When reading from tty, don't read indefinitely. Need a scheme
+  based on maximum time or maximum data (UTF-8 or any?) before
+  we return so that a redraw is possible.
 
 - Separate horizontal cursor control from vertical cursor control?
   Sometimes it one is abs where the other is rel, for example LF.

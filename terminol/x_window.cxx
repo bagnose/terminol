@@ -191,7 +191,7 @@ void X_Window::keyPress(XKeyEvent & event) {
               */
 
     if (!str.empty()) {
-        _terminal->enqueueWrite(str.data(), str.size());
+        _terminal->write(str.data(), str.size());
     }
 }
 
@@ -564,13 +564,13 @@ void X_Window::terminalSetTitle(const std::string & title) throw () {
     setTitle(title);
 }
 
+void X_Window::terminalChildExited(int exitStatus) throw () {
+    PRINT("Child exited: " << exitStatus);
+    _isOpen = false;
+}
+
 void X_Window::terminalEnd() throw () {
     if (_damage && _pixmap) {
         drawAll();
     }
-}
-
-void X_Window::terminalChildExited(int exitStatus) throw () {
-    PRINT("Child exited: " << exitStatus);
-    _isOpen = false;
 }

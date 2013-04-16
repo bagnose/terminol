@@ -23,8 +23,8 @@ public:
         virtual void terminalDamageAll() throw () = 0;
         virtual void terminalResetTitle() throw () = 0;
         virtual void terminalSetTitle(const std::string & title) throw () = 0;
-        virtual void terminalEnd() throw () = 0;
         virtual void terminalChildExited(int exitStatus) throw () = 0;
+        virtual void terminalEnd() throw () = 0;
 
     protected:
         I_Observer() {}
@@ -63,9 +63,9 @@ public:
     // TODO buffer access through scroll state.
 
     void read() { ASSERT(!_dispatch, ""); _inter.read(); }
-    void enqueueWrite(const char * data, size_t size) { ASSERT(!_dispatch, ""); _inter.enqueueWrite(data, size); }
-    bool isWritePending() const { ASSERT(!_dispatch, ""); return _inter.isWritePending(); }
-    void write() { ASSERT(!_dispatch, ""); _inter.write(); }
+    void write(const char * data, size_t size) { ASSERT(!_dispatch, ""); _inter.write(data, size); }
+    bool areWritesQueued() const { ASSERT(!_dispatch, ""); return _inter.areWritesQueued(); }
+    void flush() { ASSERT(!_dispatch, ""); _inter.flush(); }
 
 protected:
 

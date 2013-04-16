@@ -48,7 +48,7 @@ protected:
             FD_SET(_window.getFd(), &readFds);
             fdMax = std::max(fdMax, _window.getFd());
 
-            bool selectOnWrite = _window.isWritePending();
+            bool selectOnWrite = _window.areWritesQueued();
             if (selectOnWrite) {
                 FD_SET(_window.getFd(), &writeFds);
                 fdMax = std::max(fdMax, _window.getFd());
@@ -59,11 +59,11 @@ protected:
                 ::select(fdMax + 1, &readFds, &writeFds, nullptr, nullptr)) != -1, "");
             //PRINT("SELECT returned");
 
-            // Handle _one_ I/O.
+            // Handle _one_ I/O. XXX this is sub-optimal
 
             if (selectOnWrite && FD_ISSET(_window.getFd(), &writeFds)) {
                 //PRINT("window write event");
-                _window.write();
+                _window.flush();
             }
             else if (FD_ISSET(XConnectionNumber(_basics.display()), &readFds)) {
                 //PRINT("xevent");

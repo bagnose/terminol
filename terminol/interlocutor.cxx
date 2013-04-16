@@ -77,29 +77,55 @@ void Interlocutor::read() {
     _dispatch = false;
 }
 
-void Interlocutor::enqueueWrite(const char * data, size_t size) {
+void Interlocutor::write(const char * data, size_t size) {
     ASSERT(!_dispatch, "");
 
-    if (!_dumpWrites) {
+    if (_dumpWrites) { return; }
+
+    if (_writeBuffer.empty()) {
+        // Try to write it now, queue what we can't write.
+        try {
+            while (size != 0) {
+                size_t rval = _tty.write(data, size);
+                if (rval == 0) { break; }
+                data += rval; size -= rval;
+            }
+
+            // Copy remaineder (if any) to queue
+            if (size != 0) {
+                auto oldSize = _writeBuffer.size();
+                _writeBuffer.resize(oldSize + size);
+                std::copy(data, data + size, &_writeBuffer[oldSize]);
+            }
+        }
+        catch (I_Tty::Error &) {
+            _dumpWrites = true;
+        }
+    }
+    else {
+        // Just copy it to the queue.
         auto oldSize = _writeBuffer.size();
         _writeBuffer.resize(oldSize + size);
         std::copy(data, data + size, &_writeBuffer[oldSize]);
     }
 }
 
-bool Interlocutor::isWritePending() const {
+bool Interlocutor::areWritesQueued() const {
     ASSERT(!_dispatch, "");
     return !_writeBuffer.empty();
 }
 
-void Interlocutor::write() {
+void Interlocutor::flush() {
     ASSERT(!_dispatch, "");
-    ASSERT(isWritePending(), "No writes queued.");
+    ASSERT(areWritesQueued(), "No writes queued.");
     ASSERT(!_dumpWrites, "Dump writes is set.");
 
     try {
-        size_t rval = _tty.write(&_writeBuffer.front(), _writeBuffer.size());
-        _writeBuffer.erase(_writeBuffer.begin(), _writeBuffer.begin() + rval);
+        while (!_writeBuffer.empty()) {
+            size_t rval = _tty.write(&_writeBuffer.front(), _writeBuffer.size());
+            if (rval == 0) { break; }
+            _writeBuffer.erase(_writeBuffer.begin(), _writeBuffer.begin() + rval);
+        }
     }
     catch (I_Tty::Error & ex) {
         _dumpWrites = true;
