@@ -83,6 +83,10 @@ protected:
         while (XPending(_basics.display()) != 0) {
             XEvent event;
             XNextEvent(_basics.display(), &event);
+            if (XFilterEvent(&event, None)) {
+                PRINT("Filtered!");
+                continue;
+            }
 
             switch (event.type) {
                 case KeyPress:
