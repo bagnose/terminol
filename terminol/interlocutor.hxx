@@ -44,12 +44,12 @@ public:
         virtual void interSetTitle(const std::string & title) throw () = 0;
         // UTF-8
         virtual void interUtf8(const char * s, size_t count, size_t size) throw () = 0;
+        // queries
+        virtual void interGetCursorPos(uint16_t & row, uint16_t & col) const throw () = 0;
+        // child exited
+        virtual void interChildExited(int exitCode) throw () = 0;
         // end
         virtual void interEnd() throw () = 0;
-
-        virtual void interGetCursorPos(uint16_t & row, uint16_t & col) const throw () = 0;
-
-        virtual void interChildExited(int exitCode) throw () = 0;
 
     protected:
         I_Observer() throw () {}

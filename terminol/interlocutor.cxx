@@ -53,19 +53,28 @@ Interlocutor::~Interlocutor() {
 void Interlocutor::read() {
     ASSERT(!_dispatch, "");
 
+    _dispatch = true;
+    _observer.interBegin();
+
     try {
         char buffer[4096];
-        size_t rval = _tty.read(buffer, sizeof buffer);
+        for (;;) {
+            size_t rval = _tty.read(buffer, sizeof buffer);
+            if (rval == 0) { break; }
 
-        auto oldSize = _readBuffer.size();
-        _readBuffer.resize(oldSize + rval);
-        std::copy(buffer, buffer + rval, &_readBuffer[oldSize]);
+            auto oldSize = _readBuffer.size();
+            _readBuffer.resize(oldSize + rval);
+            std::copy(buffer, buffer + rval, &_readBuffer[oldSize]);
 
-        processBuffer();
+            processBuffer();
+        }
     }
     catch (I_Tty::Exited & ex) {
         _observer.interChildExited(ex.exitCode);
     }
+
+    _observer.interEnd();
+    _dispatch = false;
 }
 
 void Interlocutor::enqueueWrite(const char * data, size_t size) {
@@ -100,9 +109,6 @@ void Interlocutor::write() {
 
 void Interlocutor::processBuffer() {
     ASSERT(!_readBuffer.empty(), "");
-
-    _dispatch = true;
-    _observer.interBegin();
 
     size_t i = 0;
 
@@ -143,9 +149,6 @@ void Interlocutor::processBuffer() {
     }
 
     _readBuffer.erase(_readBuffer.begin(), _readBuffer.begin() + i);
-
-    _observer.interEnd();
-    _dispatch = false;
 }
 
 void Interlocutor::processChar(const char * s, utf8::Length length) {

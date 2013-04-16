@@ -9,6 +9,7 @@
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
+#include <sys/fcntl.h>
 
 Tty::Tty(uint16_t            rows,
          uint16_t            cols,
@@ -33,10 +34,18 @@ void Tty::resize(uint16_t rows, uint16_t cols) {
 size_t Tty::read(char * buffer, size_t length) throw (Exited) {
     ASSERT(_fd != -1, "");
 
-    ssize_t rval = ::read(_fd, static_cast<void *>(buffer), length);
+    ssize_t rval =
+        TEMP_FAILURE_RETRY(::read(_fd, static_cast<void *>(buffer), length));
 
     if (rval == -1) {
-        throw Exited(close());
+        switch (errno) {
+            case EAGAIN:
+                return 0;
+            case EIO:
+                throw Exited(close());
+            default:
+                FATAL("Unexpected error: " << errno << " " << ::strerror(errno));
+        }
     }
     else if (rval == 0) {
         FATAL("!!");
@@ -79,6 +88,14 @@ void Tty::openPty(uint16_t            rows,
         // Parent code-path.
 
         ENFORCE_SYS(::close(slave) != -1, "");
+
+        // Set non-blocking.
+        int flags;
+        ENFORCE_SYS((flags = ::fcntl(master, F_GETFL)) != -1, "");
+        flags |= O_NONBLOCK;
+        ENFORCE_SYS(::fcntl(master, F_SETFL, flags) != -1, "");
+
+        // Stash the master descriptor.
         _fd  = master;
     }
     else {
