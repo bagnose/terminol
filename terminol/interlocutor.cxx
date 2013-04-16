@@ -362,7 +362,7 @@ void Interlocutor::processEscape(char c) {
 void Interlocutor::processCsiEscape() {
     ENFORCE(_state == STATE_CSI_ESCAPE, "");       // XXX here or outside?
     ASSERT(!_escapeCsi.seq.empty(), "");
-    //PRINT("CSI-esc: " << _escapeCsi.seq);
+    dumpCsiEscape();
 
     size_t i = 0;
     bool priv = false;
@@ -565,7 +565,7 @@ Default:
 
 void Interlocutor::processStrEscape() {
     ENFORCE(_state == STATE_STR_ESCAPE, "");       // XXX here or outside?
-    //PRINT("STR-esc: type=" << _escapeStr.type << ", seq=" << _escapeStr.seq);
+    dumpStrEscape();
 
     std::vector<std::string> args;
 
@@ -875,6 +875,22 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
             }
         }
     }
+}
+
+void Interlocutor::dumpCsiEscape() const {
+    std::cout << "ESC[";
+    for (auto c : _escapeCsi.seq) {
+        std::cout << c; // TODO escape
+    }
+    std::cout << std::endl;
+}
+
+void Interlocutor::dumpStrEscape() const {
+    std::cout << "ESC" << _escapeStr.type;
+    for (auto c : _escapeCsi.seq) {
+        std::cout << c; // TODO escape
+    }
+    std::cout << std::endl;
 }
 
 std::ostream & operator << (std::ostream & ost, Interlocutor::State state) {

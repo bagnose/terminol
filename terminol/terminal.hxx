@@ -39,7 +39,7 @@ private:
     uint16_t            _cursorCol;
     uint8_t             _bg;
     uint8_t             _fg;
-    AttributeSet        _attributes;
+    AttributeSet        _attrs;
     ModeSet             _modes;
     std::vector<bool>   _tabs;
     Interlocutor        _inter;

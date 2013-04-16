@@ -24,3 +24,5 @@ static-lib xlib
   ;
 
 dist-exe terminol : x_main.cxx ;
+
+dist-exe terminold : x_main_d.cxx ;

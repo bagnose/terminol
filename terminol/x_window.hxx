@@ -44,14 +44,14 @@ public:
         std::string message;
     };
 
-    X_Window(Display            * display,
-             Window               parent,
-             Screen             * screen,
-             XIM                  xim,
-             const X_ColorSet   & colorSet,
-             const X_KeyMap     & keyMap,
-             X_FontSet          & fontSet,
-             const std::string  & term,
+    X_Window(Display                     * display,
+             Window                        parent,
+             Screen                      * screen,
+             XIM                           xim,
+             const X_ColorSet            & colorSet,
+             const X_KeyMap              & keyMap,
+             X_FontSet                   & fontSet,
+             const std::string           & term,
              const Interlocutor::Command & command) throw (Error);
 
     virtual ~X_Window();
@@ -96,7 +96,7 @@ protected:
     void drawUtf8(XftDraw * xftDraw,
                   uint16_t row, uint16_t col,
                   uint8_t fg, uint8_t bg,
-                  AttributeSet attributes,
+                  AttributeSet attr,
                   const char * str, size_t count, size_t size);
     void setTitle(const std::string & title);
 

@@ -24,7 +24,7 @@ public:
     EventLoop(const std::string           & fontName,
               const std::string           & term,
               const Interlocutor::Command & command)
-        throw (X_Basics::Error, X_ColorSet::Error) :
+        throw (X_Basics::Error, X_ColorSet::Error, X_FontSet::Error, X_Window::Error) :
         _basics(),
         _colorSet(_basics.display(), _basics.visual(), _basics.colormap()),
         _keyMap(),

@@ -73,6 +73,8 @@ private:
     bool                 _dumpWrites;
     State                _state;
 
+    // TODO reconcile the storage for all escape sequence types.
+
     struct {
         std::string seq;
     }                    _escapeCsi;
@@ -119,6 +121,9 @@ protected:
     void processStrEscape();
     void processAttributes(const std::vector<int32_t> & args);
     void processModes(bool priv, bool set, const std::vector<int32_t> & args);
+
+    void dumpCsiEscape() const;
+    void dumpStrEscape() const;
 };
 
 //

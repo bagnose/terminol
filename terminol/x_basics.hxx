@@ -85,6 +85,7 @@ public:
         if (state & Mod5Mask)    maskStr << "|MOD5";
         std::string result = maskStr.str();
 
+        // Strip the leading '|', if present.
         return result.empty() ? result : result.substr(1);
     }
 };

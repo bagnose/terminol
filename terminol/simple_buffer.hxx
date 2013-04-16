@@ -14,42 +14,38 @@ class SimpleBuffer {
         std::vector<Char> _chars;
 
     public:
-        explicit Line(uint16_t cols) : _chars(cols, Char::null()) {}
+        explicit Line(uint16_t cols) : _chars(cols, Char::blank()) {}
 
         uint16_t getCols() const { return static_cast<uint16_t>(_chars.size()); }
         const Char & getChar(uint16_t col) const { return _chars[col]; }
 
-        /*
-        void insert(const Char & ch, uint16_t col) {
-            ASSERT(col < getCols(), "");
-            _chars.insert(_chars.begin() + col, ch);
-            _chars.pop_back();
-        }
-        */
-
-        void insert(uint16_t beforeCol, uint16_t count) {
+        void insert(uint16_t beforeCol, uint16_t n) {
             std::copy_backward(
                     &_chars[beforeCol],
-                    &_chars[_chars.size() - count],
+                    &_chars[_chars.size() - n],
                     &_chars[_chars.size()]);
-            std::fill(&_chars[beforeCol], &_chars[beforeCol + count], Char::null());
+            std::fill(&_chars[beforeCol], &_chars[beforeCol + n], Char::blank());
         }
 
-        void overwrite(const Char & ch, uint16_t col) {
+        void erase(uint16_t col, uint16_t n) {
+            ASSERT(col < getCols(), "");
+            std::copy(&_chars[col], &_chars[_chars.size()], &_chars[col] - n);
+            std::fill(&_chars[_chars.size()] - n, &_chars[_chars.size()], Char::blank());
+        }
+
+        void set(uint16_t col, const Char & ch) {
             ASSERT(col < getCols(), "");
             _chars[col] = ch;
         }
 
-        void erase(uint16_t col) {
-            ASSERT(col < getCols(), "");
-            _chars.erase(_chars.begin() + col);
-            _chars.push_back(Char::ascii(' '));
-        }
-
         void clear() {
-            std::fill(_chars.begin(), _chars.end(), Char::null());
+            std::fill(_chars.begin(), _chars.end(), Char::blank());
         }
     };
+
+    //
+    //
+    //
 
     std::deque<Line> _lines;
 
@@ -70,30 +66,22 @@ public:
         return _lines[row].getChar(col);
     }
 
-    /*
-    void insertChar(const Char & ch, uint16_t row, uint16_t col) {
-        ASSERT(row < getRows(), "");
-        ASSERT(col < getCols(), "");
-        _lines[row].insert(ch, col);
-    }
-    */
-
-    void insertChars(uint16_t row, uint16_t beforeCol, uint16_t count) {
+    void insertChars(uint16_t row, uint16_t beforeCol, uint16_t n) {
         ASSERT(row < getRows(), "");
         ASSERT(beforeCol <= getCols(), "");
-        _lines[row].insert(beforeCol, count);
+        _lines[row].insert(beforeCol, n);
     }
 
-    void eraseChar(uint16_t row, uint16_t col) {
+    void eraseChars(uint16_t row, uint16_t col, uint16_t n) {
         ASSERT(row < getRows(), "");
         ASSERT(col < getCols(), "");
-        _lines[row].erase(col);
+        _lines[row].erase(col, n);
     }
 
-    void overwriteChar(const Char & ch, uint16_t row, uint16_t col) {
+    void set(uint16_t row, uint16_t col, const Char & ch) {
         ASSERT(row < getRows(), "");
         ASSERT(col < getCols(), "");
-        _lines[row].overwrite(ch, col);
+        _lines[row].set(col, ch);
     }
 
     void resize(uint16_t rows, uint16_t cols) {
@@ -106,21 +94,20 @@ public:
         _lines.pop_front();
     }
 
-    void insertLines(uint16_t beforeRow, uint16_t count) {
+    void insertLines(uint16_t beforeRow, uint16_t n) {
         ASSERT(beforeRow < getRows() + 1, "");
-        for (uint16_t i = 0; i != count; ++i) {
-            //PRINT("Inserting line before row: " << beforeRow);
+        for (uint16_t i = 0; i != n; ++i) {
             _lines.insert(_lines.begin() + beforeRow, Line(getCols()));
         }
-        for (uint16_t i = 0; i != count; ++i) {
-            _lines.pop_front();
+        for (uint16_t i = 0; i != n; ++i) {
+            _lines.pop_front();     // Or back?
         }
     }
 
-    void eraseLines(uint16_t row, uint16_t count) {
-        ASSERT(row + count < getRows(), "");
-        _lines.erase(_lines.begin() + row, _lines.begin() + row + count);
-        for (uint16_t i = 0; i != count; ++i) {
+    void eraseLines(uint16_t row, uint16_t n) {
+        ASSERT(row + n < getRows(), "");
+        _lines.erase(_lines.begin() + row, _lines.begin() + row + n);
+        for (uint16_t i = 0; i != n; ++i) {
             _lines.push_back(Line(getCols()));
         }
     }

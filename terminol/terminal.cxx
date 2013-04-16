@@ -13,7 +13,7 @@ Terminal::Terminal(I_Observer & observer,
     _cursorCol(0),
     _bg(Char::defaultBg()),
     _fg(Char::defaultFg()),
-    _attributes(),
+    _attrs(),
     _modes(),
     _tabs(_buffer.getCols()),
     _inter(*this, tty)
@@ -74,19 +74,20 @@ void Terminal::interControl(Control control) throw () {
             _cursorCol = 0;
             break;
         case CONTROL_LF:
-            /*
+#if 1
             if (_cursorRow == _buffer.getRows() - 1) {
                 _buffer.addLine();
             }
             else {
                 ++_cursorRow;
             }
-            */
+#else
             // FIXME temp hack to make vim work, but stuffs up
             // new line in bash.
             if (_cursorRow != _buffer.getRows() - 1) {
                 ++_cursorRow;
             }
+#endif
 
             if (_modes.get(MODE_CRLF)) {
                 _cursorCol = 0;
@@ -121,12 +122,12 @@ void Terminal::interClearLine(ClearLine clear) throw () {
         case CLEAR_LINE_RIGHT:
             // XXX is this right?
             for (uint16_t c = _cursorCol; c != _buffer.getCols(); ++c) {
-                _buffer.overwriteChar(Char::null(), _cursorRow, c);
+                _buffer.set(_cursorRow, c, Char::blank());
             }
             break;
         case CLEAR_LINE_LEFT:
             for (uint16_t c = 0; c != _cursorCol; ++c) {
-                _buffer.overwriteChar(Char::null(), _cursorRow, c);
+                _buffer.set(_cursorRow, c, Char::blank());
             }
             break;
         case CLEAR_LINE_ALL:
@@ -192,12 +193,12 @@ void Terminal::interSetBg(uint8_t bg) throw () {
 
 void Terminal::interClearAttributes() throw () {
     PRINT("Clearing attributes");
-    _attributes.clear();
+    _attrs.clear();
 }
 
 void Terminal::interSetAttribute(Attribute attribute, bool value) throw () {
     PRINT("Setting attribute: " << attribute << " to: " << value);
-    _attributes.setTo(attribute, value);
+    _attrs.setTo(attribute, value);
 }
 
 void Terminal::interSetMode(Mode mode, bool value) throw () {
@@ -232,7 +233,7 @@ void Terminal::interResetAll() throw () {
     _fg = Char::defaultFg();
 
     _modes.clear();
-    _attributes.clear();
+    _attrs.clear();
 
     for (size_t i = 0; i != _tabs.size(); ++i) {
         _tabs[i] = (i + 1) % defaultTab() == 0;
@@ -251,8 +252,8 @@ void Terminal::interUtf8(const char * s, size_t count, size_t size) throw () {
     for (size_t i = 0; i != count; ++i) {
         utf8::Length length = utf8::leadLength(*s);
 
-        _buffer.overwriteChar(Char::utf8(s, length, _attributes, 0, _fg, _bg),
-                              _cursorRow, _cursorCol);
+        _buffer.set(_cursorRow, _cursorCol,
+                    Char::utf8(s, length, _attrs, _fg, _bg));
 
 #if 0
         ++_cursorCol;
