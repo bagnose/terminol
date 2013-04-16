@@ -8,21 +8,21 @@ void testRawBuffer() {
 
     RawBuffer buffer(size, 2 * size);
 
-    buffer.insertChar(Char::ascii('x'), 0, 0);
-    buffer.insertChar(Char::ascii('y'), 0, 1);
-    buffer.insertChar(Char::ascii('z'), 0, 2);
+    buffer.insertCell(Cell::ascii('x'), 0, 0);
+    buffer.insertCell(Cell::ascii('y'), 0, 1);
+    buffer.insertCell(Cell::ascii('z'), 0, 2);
 
-    buffer.insertChar(Char::ascii('a'), 2, 0);
-    buffer.insertChar(Char::ascii('b'), 2, 1);
-    buffer.insertChar(Char::ascii('c'), 2, 2);
-    buffer.insertChar(Char::ascii('d'), 2, 3);
+    buffer.insertCell(Cell::ascii('a'), 2, 0);
+    buffer.insertCell(Cell::ascii('b'), 2, 1);
+    buffer.insertCell(Cell::ascii('c'), 2, 2);
+    buffer.insertCell(Cell::ascii('d'), 2, 3);
 
-    buffer.insertChar(Char::ascii('l'), 3, 0);
-    buffer.insertChar(Char::ascii('s'), 3, 1);
-    buffer.insertChar(Char::ascii(' '), 3, 2);
-    buffer.insertChar(Char::ascii('-'), 3, 3);
-    buffer.insertChar(Char::ascii('a'), 3, 4);
-    buffer.insertChar(Char::ascii('l'), 3, 5);
+    buffer.insertCell(Cell::ascii('l'), 3, 0);
+    buffer.insertCell(Cell::ascii('s'), 3, 1);
+    buffer.insertCell(Cell::ascii(' '), 3, 2);
+    buffer.insertCell(Cell::ascii('-'), 3, 3);
+    buffer.insertCell(Cell::ascii('a'), 3, 4);
+    buffer.insertCell(Cell::ascii('l'), 3, 5);
 
     for (int i = 0; i < 8; ++i) {
         dumpRawBuffer(buffer);
@@ -36,21 +36,21 @@ void testWrappedBuffer() {
 
     WrappedBuffer buffer(80, size, 2 * size);
 
-    buffer.insertChar(Char::ascii('x'), 0, 0);
-    buffer.insertChar(Char::ascii('y'), 0, 1);
-    buffer.insertChar(Char::ascii('z'), 0, 2);
+    buffer.insertCell(Cell::ascii('x'), 0, 0);
+    buffer.insertCell(Cell::ascii('y'), 0, 1);
+    buffer.insertCell(Cell::ascii('z'), 0, 2);
 
-    buffer.insertChar(Char::ascii('a'), 2, 0);
-    buffer.insertChar(Char::ascii('b'), 2, 1);
-    buffer.insertChar(Char::ascii('c'), 2, 2);
-    buffer.insertChar(Char::ascii('d'), 2, 3);
+    buffer.insertCell(Cell::ascii('a'), 2, 0);
+    buffer.insertCell(Cell::ascii('b'), 2, 1);
+    buffer.insertCell(Cell::ascii('c'), 2, 2);
+    buffer.insertCell(Cell::ascii('d'), 2, 3);
 
-    buffer.insertChar(Char::ascii('l'), 3, 0);
-    buffer.insertChar(Char::ascii('s'), 3, 1);
-    buffer.insertChar(Char::ascii(' '), 3, 2);
-    buffer.insertChar(Char::ascii('-'), 3, 3);
-    buffer.insertChar(Char::ascii('a'), 3, 4);
-    buffer.insertChar(Char::ascii('l'), 3, 5);
+    buffer.insertCell(Cell::ascii('l'), 3, 0);
+    buffer.insertCell(Cell::ascii('s'), 3, 1);
+    buffer.insertCell(Cell::ascii(' '), 3, 2);
+    buffer.insertCell(Cell::ascii('-'), 3, 3);
+    buffer.insertCell(Cell::ascii('a'), 3, 4);
+    buffer.insertCell(Cell::ascii('l'), 3, 5);
 
     for (int i = 0; i < 8; ++i) {
         dumpWrappedBuffer(buffer);
@@ -59,10 +59,10 @@ void testWrappedBuffer() {
 #endif
     WrappedBuffer buffer(4, 1, 1);
 
-    buffer.insertChar(Char::ascii('a'), 0, 0);
-    buffer.insertChar(Char::ascii('b'), 0, 1);
-    buffer.insertChar(Char::ascii('c'), 0, 2);
-    buffer.insertChar(Char::ascii('d'), 0, 3);
+    buffer.insertCell(Cell::ascii('a'), 0, 0);
+    buffer.insertCell(Cell::ascii('b'), 0, 1);
+    buffer.insertCell(Cell::ascii('c'), 0, 2);
+    buffer.insertCell(Cell::ascii('d'), 0, 3);
 
     dumpWrappedBuffer(buffer);
     buffer.setWrapCol(2);

@@ -3,6 +3,8 @@
 #ifndef ASCII__HXX
 #define ASCII__HXX
 
+#include <iostream>
+
 const char NUL   = '\x00';  // '\0'
 const char SOH   = '\x01';
 const char STX   = '\x02';
@@ -30,7 +32,7 @@ const char ETB   = '\x17';
 const char CAN   = '\x18';
 const char EM    = '\x19';
 const char SUB   = '\x1A';
-const char ESC   = '\x1B';
+const char ESC   = '\x1B';  // '\E' ?
 const char FS    = '\x1C';
 const char GS    = '\x1D';
 const char RS    = '\x1E';
@@ -46,6 +48,35 @@ const char DEL   = '\x7F';
 
 inline bool isControl(char c) {
     return (c >= NUL && c < SPACE) || c == DEL;
+}
+
+// Streaming helper.
+struct Char {
+    explicit Char(char c_) : c(c_) {}
+    char c;
+};
+
+inline std::ostream & operator << (std::ostream & ost, Char ch) {
+    switch (ch.c) {
+        case BEL:
+            return ost << "\\a";
+        case BS:
+            return ost << "\\b";
+        case HT:
+            return ost << "\\t";
+        case LF:
+            return ost << "\\n";
+        case VT:
+            return ost << "\\v";
+        case FF:
+            return ost << "\\f";
+        case CR:
+            return ost << "\\r";
+        case ESC:
+            return ost << "\\E";
+        default:
+            return ost << ch.c;
+    }
 }
 
 #endif // ASCII__HXX

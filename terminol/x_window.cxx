@@ -147,7 +147,7 @@ void X_Window::keyPress(XKeyEvent & event) {
             break;
         case XLookupChars:
             // Use buffer - keySym is not valid.
-            PRINT("Chars");
+            PRINT("Cells");
             break;
         case XLookupKeySym:
             // Use keySym - buffer is not valid.
@@ -442,9 +442,9 @@ void X_Window::drawBuffer(XftDraw * xftDraw) {
         AttributeSet      attrs;
 
         for (uint16_t c = 0; c != _terminal->buffer().getCols(); ++c) {
-            const Char & ch = _terminal->buffer().getChar(r, c);
+            const Cell & cell = _terminal->buffer().getCell(r, c);
 
-            if (buffer.empty() || fg != ch.fg() || bg != ch.bg() || attrs != ch.attrs()) {
+            if (buffer.empty() || fg != cell.fg() || bg != cell.bg() || attrs != cell.attrs()) {
                 if (!buffer.empty()) {
                     // flush buffer
                     drawUtf8(xftDraw, r, cc, fg, bg, attrs,
@@ -453,19 +453,19 @@ void X_Window::drawBuffer(XftDraw * xftDraw) {
                 }
 
                 cc    = c;
-                fg    = ch.fg();
-                bg    = ch.bg();
-                attrs = ch.attrs();
+                fg    = cell.fg();
+                bg    = cell.bg();
+                attrs = cell.attrs();
 
-                utf8::Length len = utf8::leadLength(ch.lead());
+                utf8::Length len = utf8::leadLength(cell.lead());
                 buffer.resize(len);
-                std::copy(ch.bytes(), ch.bytes() + len, &buffer.front());
+                std::copy(cell.bytes(), cell.bytes() + len, &buffer.front());
             }
             else {
                 size_t oldSize = buffer.size();
-                utf8::Length len = utf8::leadLength(ch.lead());
+                utf8::Length len = utf8::leadLength(cell.lead());
                 buffer.resize(buffer.size() + len);
-                std::copy(ch.bytes(), ch.bytes() + len, &buffer[oldSize]);
+                std::copy(cell.bytes(), cell.bytes() + len, &buffer[oldSize]);
             }
         }
 
@@ -487,13 +487,13 @@ void X_Window::drawCursor(XftDraw * xftDraw) {
     uint16_t r = _terminal->cursorRow();
     uint16_t c = _terminal->cursorCol();
 
-    const Char & ch = _terminal->buffer().getChar(r, c);
+    const Cell & cell = _terminal->buffer().getCell(r, c);
 
     drawUtf8(xftDraw,
              r, c,
-             ch.bg(), ch.fg(),      // Swap fg/bg for cursor.
-             ch.attrs(),
-             ch.bytes(), 1, utf8::leadLength(ch.lead()));
+             cell.bg(), cell.fg(),      // Swap fg/bg for cursor.
+             cell.attrs(),
+             cell.bytes(), 1, utf8::leadLength(cell.lead()));
 }
 
 void X_Window::drawUtf8(XftDraw    * xftDraw,
@@ -547,7 +547,7 @@ void X_Window::setTitle(const std::string & title) {
 void X_Window::terminalBegin() throw () {
 }
 
-void X_Window::terminalDamageChars(uint16_t UNUSED(row), uint16_t UNUSED(col0), uint16_t UNUSED(col1)) throw () {
+void X_Window::terminalDamageCells(uint16_t UNUSED(row), uint16_t UNUSED(col0), uint16_t UNUSED(col1)) throw () {
     _damage = true;
 }
 

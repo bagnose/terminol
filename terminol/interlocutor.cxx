@@ -880,15 +880,15 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
 void Interlocutor::dumpCsiEscape() const {
     std::cout << "ESC[";
     for (auto c : _escapeCsi.seq) {
-        std::cout << c; // TODO escape
+        std::cout << Char(c);
     }
     std::cout << std::endl;
 }
 
 void Interlocutor::dumpStrEscape() const {
     std::cout << "ESC" << _escapeStr.type;
-    for (auto c : _escapeCsi.seq) {
-        std::cout << c; // TODO escape
+    for (auto c : _escapeStr.seq) {
+        std::cout << Char(c);
     }
     std::cout << std::endl;
 }

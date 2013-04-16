@@ -4,42 +4,42 @@
 #define SIMPLE_BUFFER__HXX
 
 #include "terminol/common.hxx"
-#include "terminol/char.hxx"
+#include "terminol/cell.hxx"
 
 #include <vector>
 #include <deque>
 
 class SimpleBuffer {
     class Line {
-        std::vector<Char> _chars;
+        std::vector<Cell> _cells;
 
     public:
-        explicit Line(uint16_t cols) : _chars(cols, Char::blank()) {}
+        explicit Line(uint16_t cols) : _cells(cols, Cell::blank()) {}
 
-        uint16_t getCols() const { return static_cast<uint16_t>(_chars.size()); }
-        const Char & getChar(uint16_t col) const { return _chars[col]; }
+        uint16_t getCols() const { return static_cast<uint16_t>(_cells.size()); }
+        const Cell & getCell(uint16_t col) const { return _cells[col]; }
 
         void insert(uint16_t beforeCol, uint16_t n) {
             std::copy_backward(
-                    &_chars[beforeCol],
-                    &_chars[_chars.size() - n],
-                    &_chars[_chars.size()]);
-            std::fill(&_chars[beforeCol], &_chars[beforeCol + n], Char::blank());
+                    &_cells[beforeCol],
+                    &_cells[_cells.size() - n],
+                    &_cells[_cells.size()]);
+            std::fill(&_cells[beforeCol], &_cells[beforeCol + n], Cell::blank());
         }
 
         void erase(uint16_t col, uint16_t n) {
             ASSERT(col < getCols(), "");
-            std::copy(&_chars[col], &_chars[_chars.size()], &_chars[col] - n);
-            std::fill(&_chars[_chars.size()] - n, &_chars[_chars.size()], Char::blank());
+            std::copy(&_cells[col], &_cells[_cells.size()], &_cells[col] - n);
+            std::fill(&_cells[_cells.size()] - n, &_cells[_cells.size()], Cell::blank());
         }
 
-        void set(uint16_t col, const Char & ch) {
+        void set(uint16_t col, const Cell & cell) {
             ASSERT(col < getCols(), "");
-            _chars[col] = ch;
+            _cells[col] = cell;
         }
 
         void clear() {
-            std::fill(_chars.begin(), _chars.end(), Char::blank());
+            std::fill(_cells.begin(), _cells.end(), Cell::blank());
         }
     };
 
@@ -60,28 +60,28 @@ public:
     uint16_t getRows() const { return _lines.size(); }
     uint16_t getCols() const { return _lines.front().getCols(); }
 
-    const Char & getChar(uint16_t row, uint16_t col) const {
+    const Cell & getCell(uint16_t row, uint16_t col) const {
         ASSERT(row < getRows(), "");
         ASSERT(col < getCols(), "");
-        return _lines[row].getChar(col);
+        return _lines[row].getCell(col);
     }
 
-    void insertChars(uint16_t row, uint16_t beforeCol, uint16_t n) {
+    void insertCells(uint16_t row, uint16_t beforeCol, uint16_t n) {
         ASSERT(row < getRows(), "");
         ASSERT(beforeCol <= getCols(), "");
         _lines[row].insert(beforeCol, n);
     }
 
-    void eraseChars(uint16_t row, uint16_t col, uint16_t n) {
+    void eraseCells(uint16_t row, uint16_t col, uint16_t n) {
         ASSERT(row < getRows(), "");
         ASSERT(col < getCols(), "");
         _lines[row].erase(col, n);
     }
 
-    void set(uint16_t row, uint16_t col, const Char & ch) {
+    void set(uint16_t row, uint16_t col, const Cell & cell) {
         ASSERT(row < getRows(), "");
         ASSERT(col < getCols(), "");
-        _lines[row].set(col, ch);
+        _lines[row].set(col, cell);
     }
 
     void resize(uint16_t rows, uint16_t cols) {

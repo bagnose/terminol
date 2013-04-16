@@ -18,7 +18,7 @@ public:
         //virtual void terminalDamageRange(uint16_t row, uint16_t col) throw () = 0;
 
         virtual void terminalBegin() throw () = 0;
-        virtual void terminalDamageChars(uint16_t row,
+        virtual void terminalDamageCells(uint16_t row,
                                          uint16_t col0, uint16_t col1) throw () = 0;
         virtual void terminalDamageAll() throw () = 0;
         virtual void terminalResetTitle() throw () = 0;

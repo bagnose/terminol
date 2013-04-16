@@ -4,7 +4,7 @@
 #define BUFFER__HXX
 
 #include "terminol/common.hxx"
-#include "terminol/char.hxx"
+#include "terminol/cell.hxx"
 
 #include <vector>
 #include <deque>
@@ -13,13 +13,13 @@
 
 class RawBuffer : protected Uncopyable {
     struct Line {
-        std::vector<Char> chars;
+        std::vector<Cell> chars;
 
         size_t size() const { return chars.size(); }
 
-        void insert(const Char & ch, size_t col) {
+        void insert(const Cell & cell, size_t col) {
             ASSERT(!(col > size()), "");
-            chars.insert(chars.begin() + col, ch);
+            chars.insert(chars.begin() + col, cell);
         }
     };
 
@@ -42,7 +42,7 @@ public:
         return line.size();
     }
 
-    const Char & getChar(size_t row, uint16_t col) const {
+    const Cell & getCell(size_t row, uint16_t col) const {
         ASSERT(row < _lines.size(), "");
         const Line & line = _lines[row];
         return line.chars[col];
@@ -55,14 +55,14 @@ public:
         return !full;
     }
 
-    void insertChar(const Char & ch, size_t row, uint16_t col) {
+    void insertCell(const Cell & cell, size_t row, uint16_t col) {
         ASSERT(row < _lines.size(), "");
         Line & line = _lines[row];
         ASSERT(!(col > line.chars.size()), "");
-        line.chars.insert(line.chars.begin() + col, ch);
+        line.chars.insert(line.chars.begin() + col, cell);
     }
 
-    void eraseChar(size_t row, uint16_t col) {
+    void eraseCell(size_t row, uint16_t col) {
         ASSERT(row < _lines.size(), "");
         Line & line = _lines[row];
         ASSERT(col < line.chars.size(), "");
@@ -81,7 +81,7 @@ inline void dumpRawBuffer(const RawBuffer & buffer) {
         size_t cols = buffer.getWidth(r);
         std::cout << r << " ";
         for (size_t c = 0; c != cols; ++c) {
-            std::cout << buffer.getChar(r, c);
+            std::cout << buffer.getCell(r, c);
         }
         std::cout << std::endl;
     }
@@ -132,9 +132,9 @@ public:
         return line.getWidth();
     }
 
-    const Char & getChar(size_t row, uint16_t col) const {
+    const Cell & getCell(size_t row, uint16_t col) const {
         const Line & line = _lines[row];
-        return _raw.getChar(line.row - _offset, line.colBegin + col);
+        return _raw.getCell(line.row - _offset, line.colBegin + col);
     }
 
     void setWrapCol(uint16_t wrapCol) {
@@ -172,20 +172,20 @@ public:
         return grew;    // XXX who uses this return value?
     }
 
-    void insertChar(const Char & ch, size_t row, uint16_t col) {
+    void insertCell(const Cell & cell, size_t row, uint16_t col) {
         ASSERT(row < _lines.size(), "");
         Line & line = _lines[row];
         ASSERT(!(col > line.colEnd), "");
-        _raw.insertChar(ch, line.row - _offset, line.colBegin + col);
+        _raw.insertCell(cell, line.row - _offset, line.colBegin + col);
         ++line.colEnd;
         // TODO deal with wrapping
     }
 
-    void eraseChar(size_t row, uint16_t col) {
+    void eraseCell(size_t row, uint16_t col) {
         ASSERT(row < _lines.size(), "");
         Line & line = _lines[row];
         ASSERT(col < line.colEnd, "");
-        _raw.eraseChar(line.row - _offset, line.colBegin + col);
+        _raw.eraseCell(line.row - _offset, line.colBegin + col);
         --line.colEnd;
         // TODO deal with unwrapping
     }
@@ -204,7 +204,7 @@ inline void dumpWrappedBuffer(const WrappedBuffer & buffer) {
         size_t cols = buffer.getWidth(r);
         std::cout << r << " ";
         for (size_t c = 0; c != cols; ++c) {
-            std::cout << buffer.getChar(r, c);
+            std::cout << buffer.getCell(r, c);
         }
         std::cout << std::endl;
     }

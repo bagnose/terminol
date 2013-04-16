@@ -103,7 +103,7 @@ protected:
     // Terminal::I_Observer implementation:
 
     void terminalBegin() throw ();
-    void terminalDamageChars(uint16_t row, uint16_t col0, uint16_t col1) throw ();
+    void terminalDamageCells(uint16_t row, uint16_t col0, uint16_t col1) throw ();
     void terminalDamageAll() throw ();
     void terminalResetTitle() throw ();
     void terminalSetTitle(const std::string & title) throw ();

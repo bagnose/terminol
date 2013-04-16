@@ -11,8 +11,8 @@ Terminal::Terminal(I_Observer & observer,
     _buffer(rows, cols),
     _cursorRow(0),
     _cursorCol(0),
-    _bg(Char::defaultBg()),
-    _fg(Char::defaultFg()),
+    _bg(Cell::defaultBg()),
+    _fg(Cell::defaultFg()),
     _attrs(),
     _modes(),
     _tabs(_buffer.getCols()),
@@ -102,18 +102,18 @@ void Terminal::interControl(Control control) throw () {
 
 void Terminal::interMoveCursor(uint16_t row, uint16_t col) throw () {
     PRINT("Move cursor: " << row << " " << col);
-    _observer.terminalDamageChars(_cursorRow, _cursorCol, _cursorCol + 1);
+    _observer.terminalDamageCells(_cursorRow, _cursorCol, _cursorCol + 1);
     _cursorRow = clamp<uint16_t>(row, 0, _buffer.getRows() - 1);
     _cursorCol = clamp<uint16_t>(col, 0, _buffer.getCols() - 1);
-    _observer.terminalDamageChars(_cursorRow, _cursorCol, _cursorCol + 1);
+    _observer.terminalDamageCells(_cursorRow, _cursorCol, _cursorCol + 1);
 }
 
 void Terminal::interRelMoveCursor(int16_t dRow, int16_t dCol) throw () {
     PRINT("Rel-move cursor: " << dRow << " " << dCol);
-    _observer.terminalDamageChars(_cursorRow, _cursorCol, _cursorCol + 1);
+    _observer.terminalDamageCells(_cursorRow, _cursorCol, _cursorCol + 1);
     _cursorRow = clamp<uint16_t>(_cursorRow + dRow, 0, _buffer.getRows() - 1);
     _cursorCol = clamp<uint16_t>(_cursorCol + dCol, 0, _buffer.getCols() - 1);
-    _observer.terminalDamageChars(_cursorRow, _cursorCol, _cursorCol + 1);
+    _observer.terminalDamageCells(_cursorRow, _cursorCol, _cursorCol + 1);
 }
 
 void Terminal::interClearLine(ClearLine clear) throw () {
@@ -122,12 +122,12 @@ void Terminal::interClearLine(ClearLine clear) throw () {
         case CLEAR_LINE_RIGHT:
             // XXX is this right?
             for (uint16_t c = _cursorCol; c != _buffer.getCols(); ++c) {
-                _buffer.set(_cursorRow, c, Char::blank());
+                _buffer.set(_cursorRow, c, Cell::blank());
             }
             break;
         case CLEAR_LINE_LEFT:
             for (uint16_t c = 0; c != _cursorCol; ++c) {
-                _buffer.set(_cursorRow, c, Char::blank());
+                _buffer.set(_cursorRow, c, Cell::blank());
             }
             break;
         case CLEAR_LINE_ALL:
@@ -159,7 +159,7 @@ void Terminal::interClearScreen(ClearScreen clear) throw () {
 
 void Terminal::interInsertChars(uint16_t num) throw () {
     PRINT("Got insert " << num << " chars with cursor at row: " << _cursorRow << ", col: " << _cursorCol);
-    _buffer.insertChars(_cursorRow, _cursorCol, num);
+    _buffer.insertCells(_cursorRow, _cursorCol, num);
     _observer.terminalDamageAll();
 }
 
@@ -176,11 +176,11 @@ void Terminal::interDeleteLines(uint16_t num) throw () {
 }
 
 void Terminal::interResetFg() throw () {
-    _fg = Char::defaultFg();
+    _fg = Cell::defaultFg();
 }
 
 void Terminal::interResetBg() throw () {
-    _bg = Char::defaultBg();
+    _bg = Cell::defaultBg();
 }
 
 void Terminal::interSetFg(uint8_t fg) throw () {
@@ -229,8 +229,8 @@ void Terminal::interResetAll() throw () {
     _cursorRow = 0;
     _cursorCol = 0;
 
-    _bg = Char::defaultBg();
-    _fg = Char::defaultFg();
+    _bg = Cell::defaultBg();
+    _fg = Cell::defaultFg();
 
     _modes.clear();
     _attrs.clear();
@@ -253,7 +253,7 @@ void Terminal::interUtf8(const char * s, size_t count, size_t size) throw () {
         utf8::Length length = utf8::leadLength(*s);
 
         _buffer.set(_cursorRow, _cursorCol,
-                    Char::utf8(s, length, _attrs, _fg, _bg));
+                    Cell::utf8(s, length, _attrs, _fg, _bg));
 
 #if 0
         ++_cursorCol;
