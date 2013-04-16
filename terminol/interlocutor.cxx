@@ -254,13 +254,19 @@ void Interlocutor::processControl(char c) {
             _observer.interControl(CONTROL_CR);
             break;
         case FF:
+            _observer.interControl(CONTROL_FF);
+            break;
         case VT:
+            _observer.interControl(CONTROL_VT);
+            break;
         case LF:
             _observer.interControl(CONTROL_LF);
             break;
         case SO:
+            _observer.interControl(CONTROL_SO);
+            break;
         case SI:
-            // Ignore
+            _observer.interControl(CONTROL_SI);
             break;
         case CAN:
         case SUB:
@@ -438,30 +444,37 @@ void Interlocutor::processCsiEscape() {
             case 'G': // CHA - Cursor Horizontal Absolute
                 NYI('G');
                 break;
-
-            case 'L': // IL - Insert Lines
-                _observer.interInsertLines(nthArg(args, 0, 1));
+            case 'f':       // HVP - Horizontal and Vertical Position
+            case 'H': {     // CUP - Cursor Position
+                uint16_t row = nthArg(args, 0, 1) - 1;
+                uint16_t col = nthArg(args, 1, 1) - 1;
+                //PRINT("CSI: Move cursor: row=" << row << ", col=" << col);
+                _observer.interMoveCursor(row, col);
+            }
                 break;
-            case 'M': // DL - Delete Lines
-                _observer.interDeleteLines(nthArg(args, 0, 1));
+            case 'I': // CHT - ??? Horizontal tab?
+                _observer.interAdvanceTab(nthArg(args, 0, 1));
                 break;
-
-                //case 'S': // SU - Scroll Up
-                //break;
-                //case 'T': // SD - Scroll Down
-                //break;
-
-            case 'h':
-                //PRINT("CSI: Set terminal mode: " << strArgs(args));
-                processModes(priv, true, args);
-                break;
-            case 'l':
-                //PRINT("CSI: Reset terminal mode: " << strArgs(args));
-                processModes(priv, false, args);
+            case 'J': // ED - Erase Data
+                // Clear screen.
+                switch (nthArg(args, 0)) {
+                    case 0: // below      FIXME or >2
+                        _observer.interClearScreen(CLEAR_SCREEN_BELOW);
+                        break;
+                    case 1: // above
+                        _observer.interClearScreen(CLEAR_SCREEN_ABOVE);
+                        break;
+                    case 2: // all
+                        _observer.interClearScreen(CLEAR_SCREEN_ALL);
+                        _observer.interMoveCursor(0, 0);
+                        break;
+                    default:
+                        ERROR("!");
+                }
                 break;
             case 'K':   // EL - Erase line
                 switch (nthArg(args, 0)) {
-                    case 0: // right
+                    case 0: // right      FIXME or >2
                         _observer.interClearLine(CLEAR_LINE_RIGHT);
                         break;
                     case 1: // left
@@ -474,58 +487,55 @@ void Interlocutor::processCsiEscape() {
                         ERROR("!");
                 }
                 break;
-            case 'g':
+            case 'L': // IL - Insert Lines
+                _observer.interInsertLines(nthArg(args, 0, 1));
+                break;
+            case 'M': // DL - Delete Lines
+                _observer.interDeleteLines(nthArg(args, 0, 1));
+                break;
+
+            case 'P': // DCH - ??? Delete Character???
+                NYI("DCH");
+                break;
+            case 'S': // SU - Scroll Up
+                NYI("SU");
+                break;
+            case 'T': // SD - Scroll Down
+                NYI("SD");
+                break;
+            case 'X': // ECH
+                NYI("ECH");
+                break;
+            case 'Z': // CBT
+                NYI("CBT");
+                break;
+            case '`': // HPA
+                NYI("HPA");
+                break;
+
+            case 'b': // REP
+                NYI("REP");
+                break;
+            case 'c': // Primary DA
+                NYI("Primary DA");
+                break;
+            case 'd': // VPA
+                NYI("VPA");
+                break;
+
+            case 'g': // TBC
                 NYI("CSI: Tabulation clear");
                 break;
-            case 'H':       // CUP - Cursor Position
-            case 'f': {     // HVP - Horizontal and Vertical Position
-                uint16_t row = nthArg(args, 0, 1) - 1;
-                uint16_t col = nthArg(args, 1, 1) - 1;
-                //PRINT("CSI: Move cursor: row=" << row << ", col=" << col);
-                _observer.interMoveCursor(row, col);
-            }
+            case 'h': // SM
+                //PRINT("CSI: Set terminal mode: " << strArgs(args));
+                processModes(priv, true, args);
                 break;
-                //case '!':
-                //break;
-            case 'J': // ED - Erase Data
-                // Clear screen.
-                switch (nthArg(args, 0)) {
-                    case 0:
-                        // below
-                        _observer.interClearScreen(CLEAR_SCREEN_BELOW);
-                        break;
-                    case 1:
-                        // above
-                        _observer.interClearScreen(CLEAR_SCREEN_ABOVE);
-                        break;
-                    case 2:
-                        // all
-                        _observer.interClearScreen(CLEAR_SCREEN_ALL);
-                        _observer.interMoveCursor(0, 0);
-                        break;
-                    default:
-                        ERROR("!");
-                }
+            case 'l': // RM
+                //PRINT("CSI: Reset terminal mode: " << strArgs(args));
+                processModes(priv, false, args);
                 break;
             case 'm': // SGR - Select Graphic Rendition
                 processAttributes(args);
-                break;
-            case 'r': // DECSTBM - Set Top and Bottom Margins (scrolling)
-                if (priv) {
-                    goto Default;
-                }
-                else {
-                    // http://www.vt100.net/docs/vt510-rm/DECSTBM
-                    uint16_t top = nthArg(args, 0, 1);
-                    uint16_t bottom = nthArg(args, 1, 1);
-                    if (bottom > top) {
-                        _observer.interSetScrollTopBottom(top - 1, bottom - 1);
-                    }
-                    else {
-                        _observer.interSetScrollTop(top - 1);
-                    }
-                    _observer.interMoveCursor(0, 0);
-                }
                 break;
             case 'n': // DSR - Device Status Report
                 if (args.empty()) {
@@ -552,10 +562,37 @@ void Interlocutor::processCsiEscape() {
                     _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
                 }
                 else {
-                    goto Default;
+                    ERROR("FIXME");
                 }
                 break;
-Default:
+            case 'r': // DECSTBM - Set Top and Bottom Margins (scrolling)
+                if (priv) {
+                    NYI("!!");      // reset margin and cursor to top-left?
+                }
+                else {
+                    // http://www.vt100.net/docs/vt510-rm/DECSTBM
+                    uint16_t top = nthArg(args, 0, 1);
+                    uint16_t bottom = nthArg(args, 1, 1);
+                    if (bottom > top) {
+                        _observer.interSetScrollTopBottom(top - 1, bottom - 1);
+                    }
+                    else {
+                        _observer.interSetScrollTop(top - 1);
+                    }
+                    _observer.interMoveCursor(0, 0);
+                }
+                break;
+            case 's': // restore cursor?
+                NYI("Restore cursor?");
+                break;
+            case 't': // window ops?
+                NYI("Window ops");
+                break;
+            case 'u': // Same as 's'??
+                NYI("'u'");
+                break;
+                //case '!':
+                //break;
             default:
                 PRINT("CSI: UNKNOWN: mode=" << mode << ", priv=" << priv << ", args: " << strArgs(args) << ", seq=" << _escapeCsi.seq);
                 break;
@@ -588,9 +625,9 @@ void Interlocutor::processStrEscape() {
     switch (_escapeStr.type) {
         case ']':   // OSC - Operating System Command
             switch (unstringify<int>(nthArg(args, 0))) {
-                case 0:
-                case 1:
-                case 2:
+                case 0: // Icon name and window title
+                case 1: // Icon label
+                case 2: // Window title
                     if (args.size() > 1) {      // XXX need if? we have fallback
                         _observer.interSetTitle(nthArg(args, 1));
                     }
@@ -773,9 +810,17 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
                     // bright bg
                     _observer.interSetBg(v - 100 + 8);
                 }
+                // FOLLOWING STUFF UNTESTED:
+                else if (v >= 256 && v < 512) {
+                    _observer.interSetFg(v - 256);
+                }
+                else if (v >= 512 && v < 768) {
+                    _observer.interSetBg(v - 512);
+                }
                 else {
                     ERROR("Unhandled attribute: " << v);
                 }
+                break;
         }
     }
 }
@@ -788,6 +833,21 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
             switch (a) {
                 case 1: // DECCKM - Cursor key
                     _observer.interSetMode(MODE_APPCURSOR, set);
+                    break;
+                case 2: // DECANM - ANSI/VT52
+                    NYI("DECANM");
+                    break;
+                case 3: // DECCOLM - Column
+                    if (set) {
+                        // resize 132x24
+                    }
+                    else {
+                        // resize 80x24
+                    }
+                    NYI("DECCOLM");
+                    break;
+                case 4:  // DECSCLM - Scroll (IGNORED)
+                    NYI("DECSLM");
                     break;
                 case 5: // DECSCNM - Reverse video
                     NYI("Reverse video");
@@ -809,19 +869,21 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                 case 7: // DECAWM - Auto wrap
                     _observer.interSetMode(MODE_WRAP, set);
                     break;
-                case 0:  // Error (IGNORED) */
-                case 2:  // DECANM - ANSI/VT52 (IGNORED)
-                case 3:  // DECCOLM - Column  (IGNORED)
-                case 4:  // DECSCLM - Scroll (IGNORED)
                 case 8:  // DECARM - Auto repeat (IGNORED)
+                    NYI("DECARM");
+                    break;
+                case 12: // CVVIS/att610 - Start blinking cursor (IGNORED)
+                    NYI("CVVIS/att610");
+                    break;
                 case 18: // DECPFF - Printer feed (IGNORED)
                 case 19: // DECPEX - Printer extent (IGNORED)
-                case 42: // DECNRCM - National characters (IGNORED)
-                case 12: // att610 - Start blinking cursor (IGNORED)
-                    NYI("Ignored: "  << a);
+                    NYI("DECPFF/DECPEX");
                     break;
                 case 25: // DECTCEM - Text Cursor Enable Mode
                     _observer.interSetMode(MODE_HIDE, !set);
+                    break;
+                case 42: // DECNRCM - National characters (IGNORED)
+                    NYI("Ignored: "  << a);
                     break;
                 case 1000: // 1000,1002: enable xterm mouse report
                     _observer.interSetMode(MODE_MOUSEBTN,    set);
@@ -834,8 +896,16 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                 case 1006:
                     _observer.interSetMode(MODE_MOUSESGR, set);
                     break;
-                case 1049: // = 1047 and 1048 XXX suspicious
-                case 47:
+                case 1034: // ssm/rrm, meta mode on/off
+                    NYI("1034");
+                    break;
+                case 1037: // deleteSendsDel
+                    NYI("1037");
+                    break;
+                case 1039: // altSendsEscape
+                    NYI("1039");
+                    break;
+                case 47:    // XXX ???
                 case 1047:
                     _observer.interSetMode(MODE_ALTSCREEN, set);
                     if(a != 1049) {
@@ -847,6 +917,9 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                     /*
                        tcursor((set) ? CURSOR_SAVE : CURSOR_LOAD);
                        */
+                    break;
+                case 1049: // rmcup/smcup, alternative screen
+                    NYI("1049 - alt screen");
                     break;
                 default:
                     ERROR("erresc: unknown private set/reset mode : " << a);
@@ -892,6 +965,10 @@ void Interlocutor::dumpStrEscape() const {
     }
     std::cout << std::endl;
 }
+
+//
+//
+//
 
 std::ostream & operator << (std::ostream & ost, Interlocutor::State state) {
     switch (state) {

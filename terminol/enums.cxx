@@ -7,14 +7,22 @@ std::ostream & operator << (std::ostream & ost, Control control) {
     switch (control) {
         case CONTROL_BEL:
             return ost << "BEL";
-        case CONTROL_HT:
-            return ost << "HT";
         case CONTROL_BS:
             return ost << "BS";
-        case CONTROL_CR:
-            return ost << "CR";
+        case CONTROL_HT:
+            return ost << "HT";
         case CONTROL_LF:
             return ost << "LF";
+        case CONTROL_VT:
+            return ost << "VT";
+        case CONTROL_FF:
+            return ost << "FF";
+        case CONTROL_CR:
+            return ost << "CR";
+        case CONTROL_SO:
+            return ost << "SO";
+        case CONTROL_SI:
+            return ost << "SI";
     }
 
     FATAL(static_cast<int>(control));

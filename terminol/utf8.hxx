@@ -23,7 +23,7 @@ typedef int32_t CodePoint;
 // Given a lead character, what is the length of the sequence?
 Length    leadLength(char lead) throw (Error);
 
-// Decode a sequence into a code point. Assumes sequence is valid and domplete.
+// Decode a sequence into a code point. Assumes sequence is valid and complete.
 CodePoint decode(const char * sequence) throw (Error);
 
 // Given a code point, what is the length of the sequence?

@@ -13,7 +13,7 @@ Terminal::Terminal(I_Observer & observer,
     _cursorCol(0),
     _bg(Cell::defaultBg()),
     _fg(Cell::defaultFg()),
-    _attrs(),
+    _attrs(Cell::defaultAttrs()),
     _modes(),
     _tabs(_buffer.getCols()),
     _inter(*this, tty)
@@ -52,8 +52,15 @@ void Terminal::interControl(Control control) throw () {
         case CONTROL_BEL:
             PRINT("BEL!!");
             break;
+        case CONTROL_BS:
+            // TODO handle auto-wrap
+            if (_cursorCol != 0) {
+                --_cursorCol;
+            }
+            break;
         case CONTROL_HT:
             // Advance to the next tab or the last column.
+            // FIXME convert the empty cells into spaces
             for (; _cursorCol != _buffer.getCols(); ++_cursorCol) {
                 if (_tabs[_cursorCol]) {
                     break;
@@ -65,15 +72,13 @@ void Terminal::interControl(Control control) throw () {
                 --_cursorCol;
             }
             break;
-        case CONTROL_BS:
-            if (_cursorCol != 0) {
-                --_cursorCol;
-            }
-            break;
-        case CONTROL_CR:
-            _cursorCol = 0;
-            break;
         case CONTROL_LF:
+            if (_modes.get(MODE_CRLF)) {
+                _cursorCol = 0;
+            }
+            // Fall-through
+        case CONTROL_VT:
+        case CONTROL_FF:
 #if 1
             if (_cursorRow == _buffer.getRows() - 1) {
                 _buffer.addLine();
@@ -89,11 +94,15 @@ void Terminal::interControl(Control control) throw () {
             }
 #endif
 
-            if (_modes.get(MODE_CRLF)) {
-                _cursorCol = 0;
-            }
             break;
-        default:
+        case CONTROL_CR:
+            _cursorCol = 0;
+            break;
+        case CONTROL_SO:
+            NYI("SO");
+            break;
+        case CONTROL_SI:
+            NYI("SI");
             break;
     }
 
@@ -193,7 +202,7 @@ void Terminal::interSetBg(uint8_t bg) throw () {
 
 void Terminal::interClearAttributes() throw () {
     PRINT("Clearing attributes");
-    _attrs.clear();
+    _attrs = Cell::defaultAttrs();
 }
 
 void Terminal::interSetAttribute(Attribute attribute, bool value) throw () {
@@ -209,6 +218,10 @@ void Terminal::interSetMode(Mode mode, bool value) throw () {
 void Terminal::interSetTabStop() throw () {
     PRINT("Setting tab stop at: " << _cursorCol);
     _tabs[_cursorCol] = true;
+}
+
+void Terminal::interAdvanceTab(uint16_t count) throw () {
+    NYI("interAdvanceTab: " << count);
 }
 
 void Terminal::interSetScrollTopBottom(uint16_t row0, uint16_t row1) {
@@ -229,11 +242,11 @@ void Terminal::interResetAll() throw () {
     _cursorRow = 0;
     _cursorCol = 0;
 
-    _bg = Cell::defaultBg();
-    _fg = Cell::defaultFg();
+    _bg    = Cell::defaultBg();
+    _fg    = Cell::defaultFg();
+    _attrs = Cell::defaultAttrs();
 
     _modes.clear();
-    _attrs.clear();
 
     for (size_t i = 0; i != _tabs.size(); ++i) {
         _tabs[i] = (i + 1) % defaultTab() == 0;

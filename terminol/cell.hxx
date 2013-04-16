@@ -30,15 +30,16 @@ class Cell {
     static const char BLANK = NUL;    // NUL/SPACE
 
 public:
-    static uint8_t  defaultFg()  { return 7; }
-    static uint8_t  defaultBg()  { return 0; }
+    static uint8_t      defaultFg()    { return 7; }
+    static uint8_t      defaultBg()    { return 0; }
+    static AttributeSet defaultAttrs() { return AttributeSet(); }
 
     static Cell blank() {
         return ascii(BLANK);
     }
 
     static Cell ascii(char c) {
-        return Cell(&c, utf8::L1, AttributeSet(), defaultFg(), defaultBg());
+        return Cell(&c, utf8::L1, defaultAttrs(), defaultFg(), defaultBg());
     }
 
     static Cell utf8(const char   * s,

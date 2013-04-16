@@ -59,3 +59,25 @@ Links:
 - http://rtfm.etla.org/xterm/ctlseq.html
 
 - http://www.vt100.net/docs/
+
+
+Improvements:
+
+- UTF-8 handling. Rejection of bad sequences and resynchronisation.
+  State machine approach?
+  Two states: stream/untrusted  --  trusted/verified.
+
+- Maybe interlocutor is doing too much in places and is inconsistent.
+  For example, it dispatches control chars as-is, but it interprets
+  escape codes and translates them into higher level ops.
+
+- Use non-blocking I/O so that:
+
+  - write() can be done immediately, only using the queue if
+    it would block - don't unnecessarily involve select().
+
+  - read() can be looped until the input runs dry, without having
+    to involve select().
+
+- Separate horizontal cursor control from vertical cursor control?
+  Sometimes it one is abs where the other is rel, for example LF.
