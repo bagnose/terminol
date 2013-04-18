@@ -26,7 +26,6 @@ X_Window::X_Window(Display            * display,
     _colorSet(colorSet),
     _keyMap(keyMap),
     _fontSet(fontSet),
-    _damage(false),
     _window(0),
     _xic(nullptr),
     _gc(0),
@@ -35,9 +34,10 @@ X_Window::X_Window(Display            * display,
     _tty(nullptr),
     _terminal(nullptr),
     _isOpen(false),
-    _pixmap(0),
     _pointerRow(std::numeric_limits<uint16_t>::max()),
-    _pointerCol(std::numeric_limits<uint16_t>::min())
+    _pointerCol(std::numeric_limits<uint16_t>::min()),
+    _damage(false),
+    _pixmap(0)
 {
     XSetWindowAttributes attributes;
     // NOTE: This is an important property because it determines

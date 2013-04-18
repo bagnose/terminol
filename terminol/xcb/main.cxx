@@ -19,13 +19,17 @@ class X_EventLoop : protected Uncopyable {
     X_Basics _basics;
     X_Window _window;
 public:
-    X_EventLoop(cairo_font_face_t * fontFace) throw (X_Basics::Error) :
+    X_EventLoop(cairo_font_face_t           * fontFace,
+                const std::string           & term,
+                const Interlocutor::Command & command) throw (X_Basics::Error) :
         _basics(),
         _window(_basics.connection(),
                 _basics.screen(),
                 _basics.keySymbols(),
                 _basics.visual(),
-                fontFace)
+                fontFace,
+                term,
+                command)
     {
         loop();
     }
@@ -111,7 +115,7 @@ protected:
                 break;
                 */
             case XCB_CONFIGURE_NOTIFY:
-                _window.configure(reinterpret_cast<xcb_configure_notify_event_t *>(event));
+                _window.configureNotify(reinterpret_cast<xcb_configure_notify_event_t *>(event));
                 break;
             default:
                 PRINT("Unrecognised event: " << static_cast<int>(response_type));
@@ -125,7 +129,42 @@ protected:
 //
 //
 
-int main() {
+bool argMatch(const std::string & arg, const std::string & opt, std::string & val) {
+    std::string optComposed = "--" + opt + "=";
+    if (arg.substr(0, optComposed.size()) ==  optComposed) {
+        val = arg.substr(optComposed.size());
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+int main(int argc, char * argv[]) {
+    // Command line
+
+    std::string fontName = "inconsolata:pixelsize=24";
+    std::string geometryStr;
+    std::string term = "ansi";
+    Interlocutor::Command command;
+    bool         accumulateCommand = false;
+
+    for (int i = 1; i != argc; ++i) {
+        std::string arg = argv[i];
+        if      (accumulateCommand)                      { command.push_back(arg);   }
+        else if (arg == "--execute")                     { accumulateCommand = true; }
+        else if (argMatch(arg, "font", fontName))        {}
+        else if (argMatch(arg, "term", term))            {}
+        else if (argMatch(arg, "geometry", geometryStr)) {}
+        else {
+            std::cerr
+                << "Unrecognised argument '" << arg << "'" << std::endl
+                << "Try: --font=FONT --term=TERM --geometry=GEOMETRY --execute ARG0 ARG1..."
+                << std::endl;
+            return 2;
+        }
+    }
+
     // Global initialisation
 
     FT_Library ft_library;
@@ -146,7 +185,7 @@ int main() {
 
     try {
         // RAII
-        X_EventLoop eventLoop(fontFace);
+        X_EventLoop eventLoop(fontFace, term, command);
     }
     catch (X_Basics::Error & ex) {
         FATAL(ex.message);

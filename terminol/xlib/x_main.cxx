@@ -161,18 +161,7 @@ bool argMatch(const std::string & arg, const std::string & opt, std::string & va
 }
 
 int main(int argc, char * argv[]) {
-    // Steps:
-    // - parse cmd-line args
-    // - convert font string to fc-pattern
-    // - open display
-    // - load font
-    // - open socket
-    // - event loop
-    // -   socket read
-    // -   socket write
-    // -   window
-    // -   master read
-    // -   master write
+    // Command line
 
     std::string fontName = "inconsolata:pixelsize=24";
     std::string geometryStr;

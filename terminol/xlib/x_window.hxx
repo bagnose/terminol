@@ -25,7 +25,6 @@ class X_Window :
     const X_ColorSet & _colorSet;
     const X_KeyMap   & _keyMap;
     X_FontSet        & _fontSet;
-    bool               _damage;
     Window             _window;
     XIC                _xic;
     GC                 _gc;
@@ -34,9 +33,10 @@ class X_Window :
     Tty              * _tty;
     Terminal         * _terminal;
     bool               _isOpen;
-    Pixmap             _pixmap;
     uint16_t           _pointerRow;
     uint16_t           _pointerCol;
+    bool               _damage;
+    Pixmap             _pixmap;
 
 public:
     struct Error {
