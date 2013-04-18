@@ -1,0 +1,10 @@
+refer terminol/common ;
+
+static-lib xcb
+  :
+  window.hxx basics.hxx
+  :
+  window.cxx basics.cxx
+  ;
+
+dist-exe xcb : main.cxx ;

@@ -13,7 +13,7 @@
 #include <X11/Xlib.h>
 #include <fontconfig/fontconfig.h>
 
-class EventLoop : protected Uncopyable {
+class X_EventLoop : protected Uncopyable {
     X_Basics   _basics;
     X_ColorSet _colorSet;
     X_KeyMap   _keyMap;
@@ -21,9 +21,9 @@ class EventLoop : protected Uncopyable {
     X_Window   _window;
 
 public:
-    EventLoop(const std::string           & fontName,
-              const std::string           & term,
-              const Interlocutor::Command & command)
+    X_EventLoop(const std::string           & fontName,
+                const std::string           & term,
+                const Interlocutor::Command & command)
         throw (X_Basics::Error, X_ColorSet::Error, X_FontSet::Error, X_Window::Error) :
         _basics(),
         _colorSet(_basics.display(), _basics.visual(), _basics.colormap()),
@@ -214,8 +214,8 @@ int main(int argc, char * argv[]) {
     FcInit();
 
     try {
-        // RAII.
-        EventLoop(fontName, term, command);
+        // RAII
+        X_EventLoop(fontName, term, command);
     }
     catch (X_Window::Error & ex) {
         FATAL(ex.message);

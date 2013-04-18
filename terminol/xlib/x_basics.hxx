@@ -8,7 +8,7 @@
 #include <X11/Xlib.h>
 #include <sstream>
 
-class X_Basics {
+class X_Basics : protected Uncopyable {
     Display  * _display;
     Screen   * _screen;
     Visual   * _visual;

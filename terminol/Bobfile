@@ -1,1 +1,1 @@
-contain common misc xlib ;
+contain common misc xlib xcb ;
