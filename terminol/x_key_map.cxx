@@ -1,6 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/x_key_map.hxx"
+#include "terminol/ascii.hxx"
 #include "terminol/common.hxx"
 
 #include <cstring>
@@ -251,7 +252,7 @@ bool X_KeyMap::lookup(KeySym keySym, uint8_t state,
     std::cerr
         << "keySym=" << keySym << ", state=" << int(state) << ", appKey=" << appKey
         << ", appCursor=" << appCursor << ", crlf=" << crlf << ", numLock=" << numLock
-        << ", str=" << str
+        << ", str=" << Str(str)
         << std::endl;
 
     for (size_t i = 0; i != numKeys; ++i) {
@@ -270,7 +271,7 @@ bool X_KeyMap::lookup(KeySym keySym, uint8_t state,
         if (key.crlf < 0 &&  crlf) continue;
         if (key.crlf > 0 && !crlf) continue;
 
-        PRINT("Replacing: '" << str << "' with: '" << key.str << "'");
+        PRINT("Replacing: '" << Str(str) << "' with: '" << Str(key.str) << "'");
         str = key.str;
         return true;
     }

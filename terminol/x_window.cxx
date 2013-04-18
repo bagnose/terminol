@@ -40,6 +40,9 @@ X_Window::X_Window(Display            * display,
     _pointerCol(std::numeric_limits<uint16_t>::min())
 {
     XSetWindowAttributes attributes;
+    // NOTE: This is an important property because it determines
+    // flicker when the window is exposed. Ideally background_pixel
+    // should be set to whatever the background of the terminal is.
     attributes.background_pixel = XBlackPixelOfScreen(_screen);
 
     //uint16_t rows = 25;
@@ -393,8 +396,10 @@ bool X_Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
         // NYI
         row = (y - BORDER_THICKNESS) / _fontSet.getHeight();
         col = (x - BORDER_THICKNESS) / _fontSet.getWidth();
-        ASSERT(row < _terminal->buffer().getRows(), "");
-        ASSERT(col < _terminal->buffer().getCols(), "");
+        ASSERT(row < _terminal->buffer().getRows(),
+               "row is: " << row << ", getRows() is: " << _terminal->buffer().getRows());
+        ASSERT(col < _terminal->buffer().getCols(),
+               "col is: " << col << ", getCols() is: " << _terminal->buffer().getCols());
         return true;
     }
     else {

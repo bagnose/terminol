@@ -79,4 +79,17 @@ inline std::ostream & operator << (std::ostream & ost, Char ch) {
     }
 }
 
+struct Str {
+    std::string s;
+    explicit Str(std::string s_) : s(s_) {}     // The C++11 way, right?
+};
+
+inline std::ostream & operator << (std::ostream & ost, const Str & str) {
+    for (auto c : str.s) {
+        ost << Char(c);
+    }
+
+    return ost;
+}
+
 #endif // ASCII__HXX

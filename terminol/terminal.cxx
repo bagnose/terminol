@@ -40,8 +40,8 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
 // Interlocutor::I_Observer implementation:
 
 void Terminal::interBegin() throw () {
-    static int seq = 0;
-    PRINT("<<<<<<<<< BEGIN: " << seq++);
+    //static int seq = 0;
+    //PRINT("<<<<<<<<< BEGIN: " << seq++);
     _dispatch = true;
     _observer.terminalBegin();
 }
@@ -291,7 +291,7 @@ void Terminal::interUtf8(const char * s, size_t count, size_t UNUSED(size)) thro
 }
 
 void Terminal::interEnd() throw () {
-    PRINT(">>>>>>>>> END");
+    //PRINT(">>>>>>>>> END");
     _observer.terminalEnd();
     _dispatch = false;
 }
