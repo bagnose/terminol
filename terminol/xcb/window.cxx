@@ -1,6 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/xcb/window.hxx"
+#include "terminol/xcb/pango.hxx"
 
 const int         X_Window::BORDER_THICKNESS = 1;
 const int         X_Window::SCROLLBAR_WIDTH  = 8;
@@ -28,6 +29,8 @@ X_Window::X_Window(xcb_connection_t            * connection,
     _damage(false),
     _surface(nullptr)
 {
+    //pangoPlay(); exit(0);
+
     uint32_t values[2];
     // NOTE: This is an important property because it determines
     // flicker when the window is exposed. Ideally background_pixel
@@ -259,7 +262,7 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
         cairo_set_source_rgba(cr, 0, 0, 0, 1);
         cairo_move_to(cr, 10, 40);
         cairo_set_font_face(cr, _fontFace);
-        cairo_set_font_size(cr, 12.5);
+        cairo_set_font_size(cr, 24.0);
 
         ASSERT(cairo_status(cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
@@ -275,6 +278,25 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
                ", max-x-adv=" << extents.max_x_advance <<
                ", max-y-adv=" << extents.max_y_advance);
                */
+        }
+
+        {
+            cairo_move_to(cr, 20, 20);
+            cairo_set_source_rgba(cr, 1, 1, 1, 1);
+            cairo_show_text(cr, "Hello");
+#if 0
+
+
+            //
+            //
+
+            cairo_select_font_face(cr, "inconsolata",
+                                   CAIRO_FONT_SLANT_NORMAL,
+                                   CAIRO_FONT_WEIGHT_NORMAL);
+            cairo_move_to(cr, 20, 70);
+            cairo_set_source_rgba(cr, 1, 1, 1, 1);
+            cairo_show_text(cr, "Hello");
+#endif
         }
 
         /*
