@@ -2,7 +2,7 @@ refer terminol/common ;
 
 static-lib xcb
   :
-  window.hxx basics.hxx pango.hxx
+  window.hxx basics.hxx
   :
   window.cxx basics.cxx
   ;

@@ -1,7 +1,6 @@
 // vi:noai:sw=4
 
 #include "terminol/xcb/window.hxx"
-#include "terminol/xcb/pango.hxx"
 
 const int         X_Window::BORDER_THICKNESS = 1;
 const int         X_Window::SCROLLBAR_WIDTH  = 8;
