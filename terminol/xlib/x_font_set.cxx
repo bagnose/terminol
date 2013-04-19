@@ -60,6 +60,7 @@ XftFont * X_FontSet::load(FcPattern * pattern, bool master) throw (Error) {
     // Note, the match will be free'd when the font is closed.
     XftFont * font = XftFontOpenPattern(_display, match);
     if (!font) {
+        FcPatternDel(match, FC_WEIGHT);
         throw Error("Failed to load font.");
     }
 

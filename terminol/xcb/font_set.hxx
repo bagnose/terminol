@@ -8,12 +8,12 @@
 #include "terminol/common/support.hxx"
 
 class X_FontSet : protected Uncopyable {
-    cairo_font_face_t * _normal;
-    cairo_font_face_t * _bold;
-    cairo_font_face_t * _italic;
-    cairo_font_face_t * _italicBold;
-    uint16_t            _width, _height;
-    uint16_t            _ascent;
+    cairo_scaled_font_t * _normal;
+    cairo_scaled_font_t * _bold;
+    cairo_scaled_font_t * _italic;
+    cairo_scaled_font_t * _italicBold;
+    uint16_t              _width, _height;
+    uint16_t              _ascent;
 
 public:
     struct Error {
@@ -26,7 +26,7 @@ public:
 
     // Font accessors:
 
-    cairo_font_face_t * get(bool bold, bool italic) {
+    cairo_scaled_font_t * get(bool bold, bool italic) {
         switch ((bold ? 1 : 0) + (italic ? 2 : 0)) {
             case 0: return getNormal();
             case 1: return getBold();
@@ -36,10 +36,10 @@ public:
         FATAL("Unreachable");
     }
 
-    cairo_font_face_t * getNormal()     { return _normal;     }
-    cairo_font_face_t * getBold()       { return _bold;       }
-    cairo_font_face_t * getItalic()     { return _italic;     }
-    cairo_font_face_t * getItalicBold() { return _italicBold; }
+    cairo_scaled_font_t * getNormal()     { return _normal;     }
+    cairo_scaled_font_t * getBold()       { return _bold;       }
+    cairo_scaled_font_t * getItalic()     { return _italic;     }
+    cairo_scaled_font_t * getItalicBold() { return _italicBold; }
 
     // Misc:
 
@@ -48,8 +48,8 @@ public:
     uint16_t getAscent() const { return _ascent; }
 
 protected:
-    cairo_font_face_t * load(FcPattern * pattern, bool master) throw (Error);
-    void                unload(cairo_font_face_t * font);
+    cairo_scaled_font_t * load(FcPattern * pattern, bool master) throw (Error);
+    void                  unload(cairo_scaled_font_t * font);
 };
 
 #endif // FONT_SET__HXX

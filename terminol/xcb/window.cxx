@@ -260,8 +260,8 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
                "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
         cairo_set_source_rgba(cr, 0, 0, 0, 1);
         cairo_move_to(cr, 10, 40);
-        cairo_set_font_face(cr, _fontSet.getNormal());
-        cairo_set_font_size(cr, 24.0);
+        cairo_set_scaled_font(cr, _fontSet.getNormal());
+        //cairo_set_font_size(cr, 24.0);
 
         ASSERT(cairo_status(cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
