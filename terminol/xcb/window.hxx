@@ -3,6 +3,7 @@
 #ifndef WINDOW__HXX
 #define WINDOW__HXX
 
+#include "terminol/xcb/font_set.hxx"
 #include "terminol/common/tty.hxx"
 #include "terminol/common/terminal.hxx"
 #include "terminol/common/support.hxx"
@@ -24,7 +25,7 @@ class X_Window :
     xcb_key_symbols_t * _keySymbols;
     xcb_visualtype_t  * _visual;
     xcb_window_t        _window;
-    cairo_font_face_t * _fontFace;
+    X_FontSet         & _fontSet;
     uint16_t            _width;
     uint16_t            _height;
     Tty               * _tty;
@@ -45,7 +46,7 @@ public:
              xcb_screen_t                * screen,
              xcb_key_symbols_t           * keySymbols,
              xcb_visualtype_t            * visual,
-             cairo_font_face_t           * fontFace,
+             X_FontSet                   & fontSet,
              const std::string           & term,
              const Interlocutor::Command & command) throw (Error);
 

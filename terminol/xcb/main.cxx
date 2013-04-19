@@ -1,6 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/xcb/window.hxx"
+#include "terminol/xcb/font_set.hxx"
 #include "terminol/xcb/basics.hxx"
 #include "terminol/common/support.hxx"
 
@@ -8,26 +9,27 @@
 #include <xcb/xcb_event.h>
 #include <cairo-ft.h>
 
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#include <freetype/freetype.h>
+#include <fontconfig/fontconfig.h>
 
 #include <unistd.h>
 #include <sys/select.h>
 
 class X_EventLoop : protected Uncopyable {
-    X_Basics _basics;
-    X_Window _window;
+    X_Basics  _basics;
+    X_FontSet _fontSet;
+    X_Window  _window;
 public:
-    X_EventLoop(cairo_font_face_t           * fontFace,
+    X_EventLoop(const std::string           & fontName,
                 const std::string           & term,
-                const Interlocutor::Command & command) throw (X_Basics::Error) :
+                const Interlocutor::Command & command)
+        throw (X_Basics::Error, X_FontSet::Error, X_Window::Error) :
         _basics(),
+        _fontSet(fontName),
         _window(_basics.connection(),
                 _basics.screen(),
                 _basics.keySymbols(),
                 _basics.visual(),
-                fontFace,
+                _fontSet,
                 term,
                 command)
     {
@@ -165,38 +167,22 @@ int main(int argc, char * argv[]) {
         }
     }
 
-    // Global initialisation
-
-    FT_Library ft_library;
-    if (FT_Init_FreeType(&ft_library) != 0) {
-        FATAL("Freetype init failed.");
-    }
-
-    FT_Face ft_face;
-    if (FT_New_Face(ft_library, "/usr/share/fonts/TTF/ttf-inconsolata.otf",
-                    0, &ft_face) != 0)
-    {
-        FATAL("FT_New_Face failed.");
-    }
-
-    cairo_font_face_t * fontFace =
-        cairo_ft_font_face_create_for_ft_face(ft_face, 0);
-    ASSERT(fontFace, "Couldn't load font.");
+    FcInit();
 
     try {
-        // RAII
-        X_EventLoop eventLoop(fontFace, term, command);
+        X_EventLoop eventLoop(fontName, term, command);
+    }
+    catch (X_Window::Error & ex) {
+        FATAL(ex.message);
+    }
+    catch (X_FontSet::Error & ex) {
+        FATAL(ex.message);
     }
     catch (X_Basics::Error & ex) {
         FATAL(ex.message);
     }
 
-    // Global finalisation.
-
-    cairo_font_face_destroy(fontFace);
-
-    FT_Done_Face(ft_face);
-    FT_Done_FreeType(ft_library);
+    FcFini();
 
     return 0;
 }

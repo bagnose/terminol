@@ -10,14 +10,14 @@ X_Window::X_Window(xcb_connection_t            * connection,
                    xcb_screen_t                * screen,
                    xcb_key_symbols_t           * keySymbols,
                    xcb_visualtype_t            * visual,
-                   cairo_font_face_t           * fontFace,
+                   X_FontSet                   & fontSet,
                    const std::string           & term,
                    const Interlocutor::Command & command) throw (Error) :
     _connection(connection),
     _keySymbols(keySymbols),
     _visual(visual),
     _window(0),
-    _fontFace(fontFace),
+    _fontSet(fontSet),
     _width(0),
     _height(0),
     _tty(nullptr),
@@ -260,7 +260,7 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
                "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
         cairo_set_source_rgba(cr, 0, 0, 0, 1);
         cairo_move_to(cr, 10, 40);
-        cairo_set_font_face(cr, _fontFace);
+        cairo_set_font_face(cr, _fontSet.getNormal());
         cairo_set_font_size(cr, 24.0);
 
         ASSERT(cairo_status(cr) == 0,
