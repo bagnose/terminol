@@ -43,16 +43,16 @@ private:
     std::vector<bool>   _tabs;
     Interlocutor        _inter;
 
-public:
-    static uint16_t defaultTab() { return 8; }        // Useful as public?
+    static uint16_t defaultTab() { return 8; }
 
+public:
     Terminal(I_Observer & observer,
              I_Tty      & tty,
              uint16_t     rows,
              uint16_t     cols);
     virtual ~Terminal();
 
-    const ModeSet      & getModes()  const { return _modes;     }
+    const ModeSet      & getModes()  const { return _modes;     }       // Try to make non-public
     const SimpleBuffer & buffer()    const { return _buffer;    }
     uint16_t             cursorRow() const { return _cursorRow; }
     uint16_t             cursorCol() const { return _cursorCol; }

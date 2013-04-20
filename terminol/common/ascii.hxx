@@ -46,7 +46,7 @@ const char SPACE = '\x20';
 
 const char DEL   = '\x7F';
 
-inline bool isControl(char c) {
+inline bool isControl(char c) {     // XXX remove me
     return (c >= NUL && c < SPACE) || c == DEL;
 }
 
@@ -58,6 +58,8 @@ struct Char {
 
 inline std::ostream & operator << (std::ostream & ost, Char ch) {
     switch (ch.c) {
+        case NUL:
+            return ost << "\\0";
         case BEL:
             return ost << "\\a";
         case BS:

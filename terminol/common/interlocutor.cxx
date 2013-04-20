@@ -93,7 +93,7 @@ void Interlocutor::write(const char * data, size_t size) {
                 data += rval; size -= rval;
             }
 
-            // Copy remaineder (if any) to queue
+            // Copy remainder (if any) to queue
             if (size != 0) {
                 auto oldSize = _writeBuffer.size();
                 _writeBuffer.resize(oldSize + size);
@@ -102,6 +102,7 @@ void Interlocutor::write(const char * data, size_t size) {
         }
         catch (I_Tty::Error &) {
             _dumpWrites = true;
+            _writeBuffer.clear();
         }
     }
     else {
@@ -147,6 +148,7 @@ void Interlocutor::processBuffer() {
     while (i != _readBuffer.size()) {
         utf8::Length length = utf8::leadLength(_readBuffer[i]);
 
+        // XXX Assumes UTF8 is the only 8-bit stuff in the stream.
         if (_readBuffer.size() < i + length) {
             // Incomplete UTF-8 sequence.
             break;
