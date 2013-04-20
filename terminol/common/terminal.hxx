@@ -27,7 +27,6 @@ public:
         virtual void terminalEnd() throw () = 0;
 
     protected:
-        I_Observer() {}
         ~I_Observer() {}
     };
 

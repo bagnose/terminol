@@ -44,15 +44,15 @@ public:
         std::string message;
     };
 
-    X_Window(Display                     * display,
-             Window                        parent,
-             Screen                      * screen,
-             XIM                           xim,
-             const X_ColorSet            & colorSet,
-             const X_KeyMap              & keyMap,
-             X_FontSet                   & fontSet,
-             const std::string           & term,
-             const Interlocutor::Command & command) throw (Error);
+    X_Window(Display            * display,
+             Window               parent,
+             Screen             * screen,
+             XIM                  xim,
+             const X_ColorSet   & colorSet,
+             const X_KeyMap     & keyMap,
+             X_FontSet          & fontSet,
+             const std::string  & term,
+             const Tty::Command & command) throw (Error);
 
     virtual ~X_Window();
 

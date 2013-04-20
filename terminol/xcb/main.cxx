@@ -19,9 +19,9 @@ class X_EventLoop : protected Uncopyable {
     X_FontSet _fontSet;
     X_Window  _window;
 public:
-    X_EventLoop(const std::string           & fontName,
-                const std::string           & term,
-                const Interlocutor::Command & command)
+    X_EventLoop(const std::string  & fontName,
+                const std::string  & term,
+                const Tty::Command & command)
         throw (X_Basics::Error, X_FontSet::Error, X_Window::Error) :
         _basics(),
         _fontSet(fontName),
@@ -145,10 +145,10 @@ bool argMatch(const std::string & arg, const std::string & opt, std::string & va
 int main(int argc, char * argv[]) {
     // Command line
 
-    std::string fontName = "inconsolata:pixelsize=24";
-    std::string geometryStr;
-    std::string term = "ansi";
-    Interlocutor::Command command;
+    std::string  fontName          = "inconsolata:pixelsize=24";
+    std::string  geometryStr;
+    std::string  term              = "ansi";
+    Tty::Command command;
     bool         accumulateCommand = false;
 
     for (int i = 1; i != argc; ++i) {

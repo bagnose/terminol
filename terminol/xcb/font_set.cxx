@@ -98,7 +98,6 @@ cairo_scaled_font_t * X_FontSet::load(FcPattern * pattern, bool master) throw (E
     PRINT("ascent=" << extents.ascent << ", descent=" << extents.descent <<
           ", height=" << extents.height << ", max_x_advance=" << extents.max_x_advance);
 
-
     _width  = std::max(_width,  static_cast<uint16_t>(extents.max_x_advance));
     _height = std::max(_height, static_cast<uint16_t>(extents.height));
 

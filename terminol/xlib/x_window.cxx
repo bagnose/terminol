@@ -20,7 +20,7 @@ X_Window::X_Window(Display            * display,
                    const X_KeyMap     & keyMap,
                    X_FontSet          & fontSet,
                    const std::string  & term,
-                   const Interlocutor::Command & command) throw (Error) :
+                   const Tty::Command & command) throw (Error) :
     _display(display),
     _screen(screen),
     _colorSet(colorSet),

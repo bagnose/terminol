@@ -13,8 +13,6 @@
 
 class Interlocutor : protected Uncopyable {
 public:
-    typedef std::vector<std::string> Command;
-
     class I_Observer {
     public:
         virtual void interBegin() throw () = 0;
@@ -45,7 +43,6 @@ public:
         virtual void interEnd() throw () = 0;
 
     protected:
-        I_Observer() throw () {}
         ~I_Observer() throw () {}
     };
 

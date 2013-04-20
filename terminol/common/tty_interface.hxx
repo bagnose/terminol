@@ -19,7 +19,6 @@ public:
     virtual size_t write(const char * buffer, size_t length) throw (Error) = 0;
 
 protected:
-    I_Tty() {}
     ~I_Tty() {}
 };
 

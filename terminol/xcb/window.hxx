@@ -42,13 +42,13 @@ public:
         std::string message;
     };
 
-    X_Window(xcb_connection_t            * connection,
-             xcb_screen_t                * screen,
-             xcb_key_symbols_t           * keySymbols,
-             xcb_visualtype_t            * visual,
-             X_FontSet                   & fontSet,
-             const std::string           & term,
-             const Interlocutor::Command & command) throw (Error);
+    X_Window(xcb_connection_t   * connection,
+             xcb_screen_t       * screen,
+             xcb_key_symbols_t  * keySymbols,
+             xcb_visualtype_t   * visual,
+             X_FontSet          & fontSet,
+             const std::string  & term,
+             const Tty::Command & command) throw (Error);
 
     virtual ~X_Window();
 

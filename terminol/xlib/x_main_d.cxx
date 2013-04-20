@@ -20,7 +20,6 @@ public:
     virtual void spawn() = 0;
 
 protected:
-    I_Spawner() {}
     ~I_Spawner() {}
 };
 

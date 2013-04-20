@@ -15,7 +15,10 @@ Tty::Tty(uint16_t            rows,
          uint16_t            cols,
          const std::string & windowId,
          const std::string & term,
-         const Command     & command) {
+         const Command     & command) :
+    _pid(0),
+    _fd(-1)
+{
     openPty(rows, cols, windowId, term, command);
 }
 
@@ -58,7 +61,8 @@ size_t Tty::read(char * buffer, size_t length) throw (Exited) {
 size_t Tty::write(const char * buffer, size_t length) throw (Error) {
     ASSERT(_fd != -1, "");
 
-    ssize_t rval = ::write(_fd, static_cast<const void *>(buffer), length);
+    ssize_t rval =
+        TEMP_FAILURE_RETRY(::write(_fd, static_cast<const void *>(buffer), length));
 
     if (rval == -1) {
         switch (errno) {
@@ -154,7 +158,6 @@ void Tty::execShell(const std::string & windowId,
             shell = "/bin/sh";
             WARNING("Could not determine shell, falling back to: " << shell);
         }
-        //shell = "/bin/sh"; // XXX use sh to avoid colour, etc. (remove this line)
         args.push_back(shell);
         args.push_back("-i");
     }
