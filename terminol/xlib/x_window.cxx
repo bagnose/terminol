@@ -170,9 +170,9 @@ void X_Window::keyPress(XKeyEvent & event) {
 
     const ModeSet & modes = _terminal->getModes();
     _keyMap.lookup(keySym, state & ~Mod2Mask,
-                   modes.get(MODE_APPKEYPAD),
-                   modes.get(MODE_APPCURSOR),
-                   modes.get(MODE_CRLF),
+                   modes.get(Mode::APPKEYPAD),
+                   modes.get(Mode::APPCURSOR),
+                   modes.get(Mode::CRLF),
                    false,
                    str);
 
@@ -518,12 +518,12 @@ void X_Window::drawUtf8(XftDraw    * xftDraw,
     const XftColor * fgColor = _colorSet.getIndexedColor(fg);
     const XftColor * bgColor = _colorSet.getIndexedColor(bg);
 
-    if (attr.get(ATTRIBUTE_REVERSE)) {
+    if (attr.get(Attribute::REVERSE)) {
         std::swap(fgColor, bgColor);
     }
 
-    XftFont * font = _fontSet.get(attr.get(ATTRIBUTE_BOLD),
-                                  attr.get(ATTRIBUTE_ITALIC));
+    XftFont * font = _fontSet.get(attr.get(Attribute::BOLD),
+                                  attr.get(Attribute::ITALIC));
 
     XftDrawRect(xftDraw,
                 bgColor,

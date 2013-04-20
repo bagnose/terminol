@@ -5,16 +5,18 @@
 
 #include <iosfwd>
 
-enum Control {
-    CONTROL_BEL,
-    CONTROL_BS,
-    CONTROL_HT,
-    CONTROL_LF,
-    CONTROL_VT,
-    CONTROL_FF,
-    CONTROL_CR,
-    CONTROL_SO,
-    CONTROL_SI
+#include <stdint.h>
+
+enum class Control {
+    BEL,
+    BS,
+    HT,
+    LF,
+    VT,
+    FF,
+    CR,
+    SO,
+    SI
 };
 
 std::ostream & operator << (std::ostream & ost, Control control);
@@ -23,10 +25,10 @@ std::ostream & operator << (std::ostream & ost, Control control);
 //
 //
 
-enum ClearScreen {
-    CLEAR_SCREEN_BELOW,
-    CLEAR_SCREEN_ABOVE,
-    CLEAR_SCREEN_ALL
+enum class ClearScreen {
+    BELOW,
+    ABOVE,
+    ALL
 };
 
 std::ostream & operator << (std::ostream & ost, ClearScreen clear);
@@ -35,10 +37,10 @@ std::ostream & operator << (std::ostream & ost, ClearScreen clear);
 //
 //
 
-enum ClearLine {
-    CLEAR_LINE_RIGHT,
-    CLEAR_LINE_LEFT,
-    CLEAR_LINE_ALL
+enum class ClearLine {
+    RIGHT,
+    LEFT,
+    ALL
 };
 
 std::ostream & operator << (std::ostream & ost, ClearLine clear);
@@ -47,24 +49,24 @@ std::ostream & operator << (std::ostream & ost, ClearLine clear);
 //
 //
 
-// XXX What about MODE_SHOW_CURSOR, MODE_AUTOREPEAT,
-// MODE_ALT_SENDS_ESC, DELETE_SENDS_DEL?
-enum Mode {
-    MODE_WRAP,      // AUTOWRAP? YES!
-    MODE_INSERT,
-    MODE_APPKEYPAD,
-    MODE_ALTSCREEN,
-    MODE_CRLF,      // CR_ON_LF?
-    MODE_MOUSEBTN,
-    MODE_MOUSEMOTION,
+// XXX What about SHOW_CURSOR, AUTOREPEAT,
+// ALT_SENDS_ESC, DELETE_SENDS_DEL?
+enum class Mode {
+    WRAP,      // AUTOWRAP? YES!
+    INSERT,
+    APPKEYPAD,
+    ALTSCREEN,
+    CRLF,      // CR_ON_LF?
+    MOUSEBTN,
+    MOUSEMOTION,
     // MOUSE = MOUSEBTN | MOUSEMOTION
-    MODE_REVERSE,   // INVERSE ?
-    MODE_KBDLOCK,
-    MODE_HIDE,
-    MODE_ECHO,
-    MODE_APPCURSOR,
-    MODE_MOUSESGR,
-    LAST_MODE = MODE_MOUSESGR
+    REVERSE,   // INVERSE ?
+    KBDLOCK,
+    HIDE,
+    ECHO,
+    APPCURSOR,
+    MOUSESGR,
+    LAST = MOUSESGR
 };
 
 std::ostream & operator << (std::ostream & ost, Mode mode);
@@ -73,13 +75,13 @@ std::ostream & operator << (std::ostream & ost, Mode mode);
 //
 //
 
-enum Attribute {    // XXX what about ATTRIBUTE_CONCEALED?
-    ATTRIBUTE_BOLD,
-    ATTRIBUTE_ITALIC,
-    ATTRIBUTE_UNDERLINE,
-    ATTRIBUTE_BLINK,
-    ATTRIBUTE_REVERSE,
-    LAST_ATTRIBUTE = ATTRIBUTE_REVERSE
+enum class Attribute {    // XXX what about CONCEALED?
+    BOLD,
+    ITALIC,
+    UNDERLINE,
+    BLINK,
+    REVERSE,
+    LAST = REVERSE
 };
 
 std::ostream & operator << (std::ostream & ost, Attribute attribute);

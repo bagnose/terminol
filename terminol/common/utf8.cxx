@@ -5,14 +5,14 @@
 
 namespace utf8 {
 
-const char B0 = 1 << 0;
-const char B1 = 1 << 1;
-const char B2 = 1 << 2;
-const char B3 = 1 << 3;
-const char B4 = 1 << 4;
-const char B5 = 1 << 5;
-const char B6 = 1 << 6;
-const char B7 = char(1 << 7);       // XXX
+const uint8_t B0 = 1 << 0;
+const uint8_t B1 = 1 << 1;
+const uint8_t B2 = 1 << 2;
+const uint8_t B3 = 1 << 3;
+const uint8_t B4 = 1 << 4;
+const uint8_t B5 = 1 << 5;
+const uint8_t B6 = 1 << 6;
+const uint8_t B7 = 1 << 7;
 
 // Just inspect the lead octect to determine the length.
 Length leadLength(char lead) throw (Error) {

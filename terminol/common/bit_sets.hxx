@@ -10,7 +10,7 @@
 
 class AttributeSet {
     uint8_t _bits;
-    static uint8_t bit(Attribute attribute) { return 1 << attribute; }
+    static uint8_t bit(Attribute attribute) { return 1 << static_cast<int>(attribute); }
 
 public:
     AttributeSet() : _bits(0) {}
@@ -44,7 +44,7 @@ inline bool operator != (AttributeSet lhs, AttributeSet rhs) {
 
 class ModeSet {
     uint16_t _bits;
-    static uint16_t bit(Mode mode) { return 1 << mode; }
+    static uint16_t bit(Mode mode) { return 1 << static_cast<int>(mode); }
 
 public:
     ModeSet() : _bits(0) {}

@@ -5,23 +5,23 @@
 
 std::ostream & operator << (std::ostream & ost, Control control) {
     switch (control) {
-        case CONTROL_BEL:
+        case Control::BEL:
             return ost << "BEL";
-        case CONTROL_BS:
+        case Control::BS:
             return ost << "BS";
-        case CONTROL_HT:
+        case Control::HT:
             return ost << "HT";
-        case CONTROL_LF:
+        case Control::LF:
             return ost << "LF";
-        case CONTROL_VT:
+        case Control::VT:
             return ost << "VT";
-        case CONTROL_FF:
+        case Control::FF:
             return ost << "FF";
-        case CONTROL_CR:
+        case Control::CR:
             return ost << "CR";
-        case CONTROL_SO:
+        case Control::SO:
             return ost << "SO";
-        case CONTROL_SI:
+        case Control::SI:
             return ost << "SI";
     }
 
@@ -30,11 +30,11 @@ std::ostream & operator << (std::ostream & ost, Control control) {
 
 std::ostream & operator << (std::ostream & ost, ClearScreen clear) {
     switch (clear) {
-        case CLEAR_SCREEN_BELOW:
+        case ClearScreen::BELOW:
             return ost << "BELOW";
-        case CLEAR_SCREEN_ABOVE:
+        case ClearScreen::ABOVE:
             return ost << "ABOVE";
-        case CLEAR_SCREEN_ALL:
+        case ClearScreen::ALL:
             return ost << "ALL";
     }
 
@@ -43,11 +43,11 @@ std::ostream & operator << (std::ostream & ost, ClearScreen clear) {
 
 std::ostream & operator << (std::ostream & ost, ClearLine clear) {
     switch (clear) {
-        case CLEAR_LINE_RIGHT:
+        case ClearLine::RIGHT:
             return ost << "RIGHT";
-        case CLEAR_LINE_LEFT:
+        case ClearLine::LEFT:
             return ost << "LEFT";
-        case CLEAR_LINE_ALL:
+        case ClearLine::ALL:
             return ost << "ALL";
     }
 
@@ -56,31 +56,31 @@ std::ostream & operator << (std::ostream & ost, ClearLine clear) {
 
 std::ostream & operator << (std::ostream & ost, Mode mode) {
     switch (mode) {
-        case MODE_WRAP:
+        case Mode::WRAP:
             return ost << "WRAP";
-        case MODE_INSERT:
+        case Mode::INSERT:
             return ost << "INSERT";
-        case MODE_APPKEYPAD:
+        case Mode::APPKEYPAD:
             return ost << "APPKEYPAD";
-        case MODE_ALTSCREEN:
+        case Mode::ALTSCREEN:
             return ost << "ALTSCREEN";
-        case MODE_CRLF:
+        case Mode::CRLF:
             return ost << "CRLF";
-        case MODE_MOUSEBTN:
+        case Mode::MOUSEBTN:
             return ost << "MOUSEBTN";
-        case MODE_MOUSEMOTION:
+        case Mode::MOUSEMOTION:
             return ost << "MOUSEMOTION";
-        case MODE_REVERSE:
+        case Mode::REVERSE:
             return ost << "REVERSE";
-        case MODE_KBDLOCK:
+        case Mode::KBDLOCK:
             return ost << "KBDLOCK";
-        case MODE_HIDE:
+        case Mode::HIDE:
             return ost << "HIDE";
-        case MODE_ECHO:
+        case Mode::ECHO:
             return ost << "ECHO";
-        case MODE_APPCURSOR:
+        case Mode::APPCURSOR:
             return ost << "APPCURSOR";
-        case MODE_MOUSESGR:
+        case Mode::MOUSESGR:
             return ost << "MOUSESGR";
     }
 
@@ -89,15 +89,15 @@ std::ostream & operator << (std::ostream & ost, Mode mode) {
 
 std::ostream & operator << (std::ostream & ost, Attribute attribute) {
     switch (attribute) {
-        case ATTRIBUTE_BOLD:
+        case Attribute::BOLD:
             return ost << "BOLD";
-        case ATTRIBUTE_ITALIC:
+        case Attribute::ITALIC:
             return ost << "ITALIC";
-        case ATTRIBUTE_UNDERLINE:
+        case Attribute::UNDERLINE:
             return ost << "UNDERLINE";
-        case ATTRIBUTE_BLINK:
+        case Attribute::BLINK:
             return ost << "BLINK";
-        case ATTRIBUTE_REVERSE:
+        case Attribute::REVERSE:
             return ost << "REVERSE";
     }
 

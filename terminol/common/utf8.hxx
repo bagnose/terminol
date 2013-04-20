@@ -10,7 +10,7 @@ namespace utf8 {
 
 struct Error {};
 
-enum Length {
+enum Length : uint8_t {
     L1 = 1,
     L2,
     L3,
@@ -33,7 +33,5 @@ Length    codePointLength(CodePoint codePoint) throw (Error);
 Length    encode(CodePoint codePoint, char * sequence) throw (Error);
 
 } // namespace utf8
-
-const int UTF_SIZ = 4;
 
 #endif // UTF8__HXX

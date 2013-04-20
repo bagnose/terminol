@@ -25,6 +25,9 @@ class Cell {
         _bg(bg_)
     {
         std::copy(bytes_, bytes_ + length, _bytes);
+#if DEBUG
+        std::fill(_bytes + length, _bytes + utf8::LMAX, 0);
+#endif
     }
 
     static const char BLANK = NUL;    // NUL/SPACE

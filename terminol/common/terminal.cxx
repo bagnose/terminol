@@ -21,7 +21,7 @@ Terminal::Terminal(I_Observer & observer,
     for (size_t i = 0; i != _tabs.size(); ++i) {
         _tabs[i] = (i + 1) % defaultTab() == 0;
     }
-    _modes.set(MODE_WRAP);
+    _modes.set(Mode::WRAP);
 }
 
 Terminal::~Terminal() {
@@ -49,16 +49,16 @@ void Terminal::interBegin() throw () {
 void Terminal::interControl(Control control) throw () {
     //PRINT("Control: " << control);
     switch (control) {
-        case CONTROL_BEL:
+        case Control::BEL:
             PRINT("BEL!!");
             break;
-        case CONTROL_BS:
+        case Control::BS:
             // TODO handle auto-wrap
             if (_cursorCol != 0) {
                 --_cursorCol;
             }
             break;
-        case CONTROL_HT:
+        case Control::HT:
             // Advance to the next tab or the last column.
             // FIXME convert the empty cells into spaces
             for (; _cursorCol != _buffer.getCols(); ++_cursorCol) {
@@ -72,13 +72,13 @@ void Terminal::interControl(Control control) throw () {
                 --_cursorCol;
             }
             break;
-        case CONTROL_LF:
-            if (_modes.get(MODE_CRLF)) {
+        case Control::LF:
+            if (_modes.get(Mode::CRLF)) {
                 _cursorCol = 0;
             }
             // Fall-through
-        case CONTROL_VT:
-        case CONTROL_FF:
+        case Control::VT:
+        case Control::FF:
 #if 1
             if (_cursorRow == _buffer.getRows() - 1) {
                 _buffer.addLine();
@@ -95,13 +95,13 @@ void Terminal::interControl(Control control) throw () {
 #endif
 
             break;
-        case CONTROL_CR:
+        case Control::CR:
             _cursorCol = 0;
             break;
-        case CONTROL_SO:
+        case Control::SO:
             NYI("SO");
             break;
-        case CONTROL_SI:
+        case Control::SI:
             NYI("SI");
             break;
     }
@@ -128,18 +128,18 @@ void Terminal::interRelMoveCursor(int16_t dRow, int16_t dCol) throw () {
 void Terminal::interClearLine(ClearLine clear) throw () {
     PRINT("Clear line: " << clear << " row=" << _cursorRow << ", col=" << _cursorCol);
     switch (clear) {
-        case CLEAR_LINE_RIGHT:
+        case ClearLine::RIGHT:
             // XXX is this right?
             for (uint16_t c = _cursorCol; c != _buffer.getCols(); ++c) {
                 _buffer.set(_cursorRow, c, Cell::blank());
             }
             break;
-        case CLEAR_LINE_LEFT:
+        case ClearLine::LEFT:
             for (uint16_t c = 0; c != _cursorCol; ++c) {
                 _buffer.set(_cursorRow, c, Cell::blank());
             }
             break;
-        case CLEAR_LINE_ALL:
+        case ClearLine::ALL:
             _buffer.clearLine(_cursorRow);
             break;
     }
@@ -148,17 +148,17 @@ void Terminal::interClearLine(ClearLine clear) throw () {
 void Terminal::interClearScreen(ClearScreen clear) throw () {
     PRINT("Clear screen: " << clear << " row=" << _cursorRow);
     switch (clear) {
-        case CLEAR_SCREEN_BELOW:
+        case ClearScreen::BELOW:
             for (uint16_t r = _cursorRow + 1; r != _buffer.getRows(); ++r) {
                 _buffer.clearLine(r);
             }
             break;
-        case CLEAR_SCREEN_ABOVE:
+        case ClearScreen::ABOVE:
             for (uint16_t r = 0; r != _cursorRow; ++r) {
                 _buffer.clearLine(r);
             }
             break;
-        case CLEAR_SCREEN_ALL:
+        case ClearScreen::ALL:
             _buffer.clearAll();
             break;
     }

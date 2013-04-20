@@ -47,13 +47,13 @@ public:
     };
 
 private:
-    enum State {
-        STATE_NORMAL,
-        STATE_ESCAPE_START,
-        STATE_CSI_ESCAPE,
-        STATE_STR_ESCAPE,
-        STATE_ESCAPE_START_STR,     // Same as STATE_ESCAPE_START but with unprocessed str.
-        STATE_TEST_ESCAPE
+    enum class State {
+        NORMAL,
+        ESCAPE_START,
+        CSI_ESCAPE,
+        STR_ESCAPE,
+        ESCAPE_START_STR,     // Same as STATE_ESCAPE_START but with unprocessed str.
+        TEST_ESCAPE
     };
 
     friend std::ostream & operator << (std::ostream & ost, State state);

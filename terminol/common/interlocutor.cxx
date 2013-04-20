@@ -12,6 +12,8 @@
 #include <sys/ioctl.h>
 #include <sys/types.h>
 
+#undef ECHO     // /usr/include/bits/termios.h:183
+
 namespace {
 
 template <typename T>
@@ -44,7 +46,7 @@ Interlocutor::Interlocutor(I_Observer & observer,
     _dispatch(false),
     _tty(tty),
     _dumpWrites(false),
-    _state(STATE_NORMAL) {}
+    _state(State::NORMAL) {}
 
 Interlocutor::~Interlocutor() {
     ASSERT(!_dispatch, "");
@@ -150,7 +152,7 @@ void Interlocutor::processBuffer() {
             break;
         }
 
-        if (_state == STATE_NORMAL && !isControl(_readBuffer[i])) {
+        if (_state == State::NORMAL && !isControl(_readBuffer[i])) {
             if (!utf8Accum) {
                 utf8Index = i;
                 utf8Count = 0;
@@ -188,14 +190,14 @@ void Interlocutor::processChar(const char * s, utf8::Length length) {
     if (length == utf8::L1) {
         char ascii = s[0];
 
-        if (_state == STATE_STR_ESCAPE) {
+        if (_state == State::STR_ESCAPE) {
             switch (ascii) {
                 case ESC:
-                    _state = STATE_ESCAPE_START_STR;
+                    _state = State::ESCAPE_START_STR;
                     break;
                 case BEL:      // xterm backwards compatibility
                     processStrEscape();
-                    _state = STATE_NORMAL;
+                    _state = State::NORMAL;
                     _escapeStr.seq.clear();
                     break;
                 default:
@@ -204,52 +206,52 @@ void Interlocutor::processChar(const char * s, utf8::Length length) {
                     break;
             }
         }
-        else if (_state == STATE_ESCAPE_START_STR) {
+        else if (_state == State::ESCAPE_START_STR) {
             if (ascii == '\\') {    // ST
                 processStrEscape();
             }
             else {
                 // ???
             }
-            _state = STATE_NORMAL;
+            _state = State::NORMAL;
             _escapeStr.seq.clear();
         }
         else {
             if (ascii == ESC) {
-                ASSERT(_state == STATE_NORMAL, "");
-                _state = STATE_ESCAPE_START;
+                ASSERT(_state == State::NORMAL, "");
+                _state = State::ESCAPE_START;
             }
             else if (ascii < SPACE || ascii == DEL) {
-                ASSERT(_state == STATE_NORMAL, "");
+                ASSERT(_state == State::NORMAL, "");
                 // XXX Can be in the middle of an escape sequence
                 // SUB/CAN could be used to terminate it.
                 processControl(ascii);
             }
             else {
                 switch (_state) {
-                    case STATE_NORMAL:
+                    case State::NORMAL:
                         FATAL("Unreachable now");
                         //_observer.interUtf8(&ascii, utf8::L1);
                         break;
-                    case STATE_ESCAPE_START:
+                    case State::ESCAPE_START:
                         processEscape(ascii);
                         break;
-                    case STATE_CSI_ESCAPE:
+                    case State::CSI_ESCAPE:
                         _escapeCsi.seq.push_back(ascii);
 
                         if (ascii >= '@' && ascii < DEL) {
                             processCsiEscape();
-                            _state = STATE_NORMAL;
+                            _state = State::NORMAL;
                             _escapeCsi.seq.clear();
                         }
                         break;
-                    case STATE_STR_ESCAPE:
+                    case State::STR_ESCAPE:
                         FATAL("Unreachable");
                         break;
-                    case STATE_ESCAPE_START_STR:
+                    case State::ESCAPE_START_STR:
                         FATAL("Unreachable");
                         break;
-                    case STATE_TEST_ESCAPE:
+                    case State::TEST_ESCAPE:
                         FATAL("NYI");
                         break;
                 }
@@ -257,7 +259,7 @@ void Interlocutor::processChar(const char * s, utf8::Length length) {
         }
     }
     else {
-        if (_state != STATE_NORMAL) {
+        if (_state != State::NORMAL) {
             ERROR("Got UTF-8 whilst in state: " << _state);
         }
 
@@ -267,35 +269,35 @@ void Interlocutor::processChar(const char * s, utf8::Length length) {
 }
 
 void Interlocutor::processControl(char c) {
-    ASSERT(_state == STATE_NORMAL, "");
+    ASSERT(_state == State::NORMAL, "");
 
     switch (c) {
         case BEL:
-            _observer.interControl(CONTROL_BEL);
+            _observer.interControl(Control::BEL);
             break;
         case HT:
-            _observer.interControl(CONTROL_HT);
+            _observer.interControl(Control::HT);
             break;
         case BS:
-            _observer.interControl(CONTROL_BS);
+            _observer.interControl(Control::BS);
             break;
         case CR:
-            _observer.interControl(CONTROL_CR);
+            _observer.interControl(Control::CR);
             break;
         case FF:
-            _observer.interControl(CONTROL_FF);
+            _observer.interControl(Control::FF);
             break;
         case VT:
-            _observer.interControl(CONTROL_VT);
+            _observer.interControl(Control::VT);
             break;
         case LF:
-            _observer.interControl(CONTROL_LF);
+            _observer.interControl(Control::LF);
             break;
         case SO:
-            _observer.interControl(CONTROL_SO);
+            _observer.interControl(Control::SO);
             break;
         case SI:
-            _observer.interControl(CONTROL_SI);
+            _observer.interControl(Control::SI);
             break;
         case CAN:
         case SUB:
@@ -313,17 +315,17 @@ void Interlocutor::processControl(char c) {
 }
 
 void Interlocutor::processEscape(char c) {
-    ASSERT(_state == STATE_ESCAPE_START, "");
+    ASSERT(_state == State::ESCAPE_START, "");
 
     switch (c) {
         case '[':
             // CSI
-            _state = STATE_CSI_ESCAPE;
+            _state = State::CSI_ESCAPE;
             break;
         case '#':
             // test
             NYI("test escape");
-            _state = STATE_TEST_ESCAPE;
+            _state = State::TEST_ESCAPE;
             break;
         case 'P':   // DCS
         case '_':   // APC - Application Program Command
@@ -331,7 +333,7 @@ void Interlocutor::processEscape(char c) {
         case ']':   // OSC - Operating System Command
         case 'k':   // old title set compatibility
             _escapeStr.type = c;
-            _state = STATE_STR_ESCAPE;
+            _state = State::STR_ESCAPE;
             break;
         case '(':   // Set primary charset G0
             //_altCharSet = true;           XXX
@@ -340,62 +342,62 @@ void Interlocutor::processEscape(char c) {
         case '*':   // Set secondary charset G2
         case '+':   // Set secondary charset G3
             NYI("charset");
-            _state = STATE_NORMAL;
+            _state = State::NORMAL;
             break;
         case 'D':   // IND - linefeed
             NYI("st.c:2169");
-            _state = STATE_NORMAL;
+            _state = State::NORMAL;
             break;
         case 'E':   // NEL - next line
             NYI("st.c:2177");
-            _state = STATE_NORMAL;
+            _state = State::NORMAL;
             break;
         case 'H':   // HTS - Horizontal tab stop.
             _observer.interSetTabStop();
-            _state = STATE_NORMAL;
+            _state = State::NORMAL;
             break;
         case 'M':   // RI - Reverse index.
             NYI("st.c:2185");
-            _state = STATE_NORMAL;
+            _state = State::NORMAL;
             break;
         case 'Z':   // DECID - Identify Terminal
             NYI("st.c:2194");
             //ttywrite(VT102ID, sizeof(VT102ID) - 1);
-            _state = STATE_NORMAL;
+            _state = State::NORMAL;
             break;
         case 'c':   // RIS - Reset to initial state
             _observer.interResetAll();
-            _state = STATE_NORMAL;
+            _state = State::NORMAL;
             break;
         case '=':   // DECPAM - Application keypad
-            _observer.interSetMode(MODE_APPKEYPAD, true);
-            _state = STATE_NORMAL;
+            _observer.interSetMode(Mode::APPKEYPAD, true);
+            _state = State::NORMAL;
             break;
         case '>':   // DECPNM - Normal keypad
-            _observer.interSetMode(MODE_APPKEYPAD, false);
-            _state = STATE_NORMAL;
+            _observer.interSetMode(Mode::APPKEYPAD, false);
+            _state = State::NORMAL;
             break;
         case '7':   // DECSC - Save Cursor
             NYI("st.c:2210");
             //tcursor(CURSOR_SAVE);
-            _state = STATE_NORMAL;
+            _state = State::NORMAL;
             break;
         case '8':   // DECRC - Restore Cursor
             NYI("st.c:2214");
             //tcursor(CURSOR_LOAD);
-            _state = STATE_NORMAL;
+            _state = State::NORMAL;
             break;
         //case 'm':
             //break;
         default:
             ERROR("Unknown escape sequence: " << c);
-            _state = STATE_NORMAL;
+            _state = State::NORMAL;
             break;
     }
 }
 
 void Interlocutor::processCsiEscape() {
-    ENFORCE(_state == STATE_CSI_ESCAPE, "");       // XXX here or outside?
+    ENFORCE(_state == State::CSI_ESCAPE, "");       // XXX here or outside?
     ASSERT(!_escapeCsi.seq.empty(), "");
     dumpCsiEscape();
 
@@ -488,13 +490,13 @@ void Interlocutor::processCsiEscape() {
                 // Clear screen.
                 switch (nthArg(args, 0)) {
                     case 0: // below      FIXME or >2
-                        _observer.interClearScreen(CLEAR_SCREEN_BELOW);
+                        _observer.interClearScreen(ClearScreen::BELOW);
                         break;
                     case 1: // above
-                        _observer.interClearScreen(CLEAR_SCREEN_ABOVE);
+                        _observer.interClearScreen(ClearScreen::ABOVE);
                         break;
                     case 2: // all
-                        _observer.interClearScreen(CLEAR_SCREEN_ALL);
+                        _observer.interClearScreen(ClearScreen::ALL);
                         _observer.interMoveCursor(0, 0);
                         break;
                     default:
@@ -504,13 +506,13 @@ void Interlocutor::processCsiEscape() {
             case 'K':   // EL - Erase line
                 switch (nthArg(args, 0)) {
                     case 0: // right      FIXME or >2
-                        _observer.interClearLine(CLEAR_LINE_RIGHT);
+                        _observer.interClearLine(ClearLine::RIGHT);
                         break;
                     case 1: // left
-                        _observer.interClearLine(CLEAR_LINE_LEFT);
+                        _observer.interClearLine(ClearLine::LEFT);
                         break;
                     case 2: // all
-                        _observer.interClearLine(CLEAR_LINE_ALL);
+                        _observer.interClearLine(ClearLine::ALL);
                         break;
                     default:
                         ERROR("!");
@@ -630,7 +632,7 @@ void Interlocutor::processCsiEscape() {
 }
 
 void Interlocutor::processStrEscape() {
-    ENFORCE(_state == STATE_STR_ESCAPE, "");       // XXX here or outside?
+    ENFORCE(_state == State::STR_ESCAPE, "");       // XXX here or outside?
     dumpStrEscape();
 
     std::vector<std::string> args;
@@ -688,23 +690,23 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
                 _observer.interClearAttributes();
                 break;
             case 1: // Bold
-                _observer.interSetAttribute(ATTRIBUTE_BOLD, true);
+                _observer.interSetAttribute(Attribute::BOLD, true);
                 break;
             case 2: // Faint (decreased intensity)
                 NYI("Faint");
                 break;
             case 3: // Italic: on
-                _observer.interSetAttribute(ATTRIBUTE_ITALIC, true);
+                _observer.interSetAttribute(Attribute::ITALIC, true);
                 break;
             case 4: // Underline: Single
-                _observer.interSetAttribute(ATTRIBUTE_UNDERLINE, true);
+                _observer.interSetAttribute(Attribute::UNDERLINE, true);
                 break;
             case 5: // Blink: slow
             case 6: // Blink: rapid
-                _observer.interSetAttribute(ATTRIBUTE_BLINK, true);
+                _observer.interSetAttribute(Attribute::BLINK, true);
                 break;
             case 7: // Image: Negative
-                _observer.interSetAttribute(ATTRIBUTE_REVERSE, true);
+                _observer.interSetAttribute(Attribute::REVERSE, true);
                 break;
             case 8: // Conceal (not widely supported)
                 NYI("Conceal");
@@ -733,20 +735,20 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
                 // Bold: off or Underline: Double (bold off not widely supported,
                 //                                 double underline hardly ever)
             case 22: // Normal color or intensity (neither bold nor faint)
-                _observer.interSetAttribute(ATTRIBUTE_BOLD, false);
+                _observer.interSetAttribute(Attribute::BOLD, false);
                 break;
             case 23: // Not italic, not Fraktur
-                _observer.interSetAttribute(ATTRIBUTE_ITALIC, false);
+                _observer.interSetAttribute(Attribute::ITALIC, false);
                 break;
             case 24: // Underline: None (not singly or doubly underlined)
-                _observer.interSetAttribute(ATTRIBUTE_UNDERLINE, false);
+                _observer.interSetAttribute(Attribute::UNDERLINE, false);
                 break;
             case 25: // Blink: off
             case 26: // Reserved
-                _observer.interSetAttribute(ATTRIBUTE_BLINK, false);
+                _observer.interSetAttribute(Attribute::BLINK, false);
                 break;
             case 27: // Image: Positive
-                _observer.interSetAttribute(ATTRIBUTE_REVERSE, false);
+                _observer.interSetAttribute(Attribute::REVERSE, false);
                 break;
             case 28: // Reveal (conceal off - not widely supported)
                 NYI("Reveal");
@@ -861,7 +863,7 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
         if (priv) {
             switch (a) {
                 case 1: // DECCKM - Cursor key
-                    _observer.interSetMode(MODE_APPCURSOR, set);
+                    _observer.interSetMode(Mode::APPCURSOR, set);
                     break;
                 case 2: // DECANM - ANSI/VT52
                     NYI("DECANM");
@@ -882,7 +884,7 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                     NYI("Reverse video");
                     /*
                        mode = term.mode;
-                       MODBIT(term.mode, set, MODE_REVERSE);
+                       MODBIT(term.mode, set, Mode::REVERSE);
                        if(mode != term.mode) {
                        redraw(REDRAW_TIMEOUT);
                        }
@@ -896,7 +898,7 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                        */
                     break;
                 case 7: // DECAWM - Auto wrap
-                    _observer.interSetMode(MODE_WRAP, set);
+                    _observer.interSetMode(Mode::WRAP, set);
                     break;
                 case 8:  // DECARM - Auto repeat (IGNORED)
                     NYI("DECARM");
@@ -909,21 +911,21 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                     NYI("DECPFF/DECPEX");
                     break;
                 case 25: // DECTCEM - Text Cursor Enable Mode
-                    _observer.interSetMode(MODE_HIDE, !set);
+                    _observer.interSetMode(Mode::HIDE, !set);
                     break;
                 case 42: // DECNRCM - National characters (IGNORED)
                     NYI("Ignored: "  << a);
                     break;
                 case 1000: // 1000,1002: enable xterm mouse report
-                    _observer.interSetMode(MODE_MOUSEBTN,    set);
-                    _observer.interSetMode(MODE_MOUSEMOTION, false);
+                    _observer.interSetMode(Mode::MOUSEBTN,    set);
+                    _observer.interSetMode(Mode::MOUSEMOTION, false);
                     break;
                 case 1002:
-                    _observer.interSetMode(MODE_MOUSEMOTION, set);
-                    _observer.interSetMode(MODE_MOUSEBTN,    false);
+                    _observer.interSetMode(Mode::MOUSEMOTION, set);
+                    _observer.interSetMode(Mode::MOUSEBTN,    false);
                     break;
                 case 1006:
-                    _observer.interSetMode(MODE_MOUSESGR, set);
+                    _observer.interSetMode(Mode::MOUSESGR, set);
                     break;
                 case 1034: // ssm/rrm, meta mode on/off
                     NYI("1034");
@@ -936,7 +938,7 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                     break;
                 case 47:    // XXX ???
                 case 1047:
-                    _observer.interSetMode(MODE_ALTSCREEN, set);
+                    _observer.interSetMode(Mode::ALTSCREEN, set);
                     if(a != 1049) {
                         break;
                     }
@@ -960,16 +962,16 @@ void Interlocutor::processModes(bool priv, bool set, const std::vector<int32_t> 
                 case 0:  // Error (IGNORED)
                     break;
                 case 2:  // KAM - keyboard action
-                    _observer.interSetMode(MODE_KBDLOCK, set);
+                    _observer.interSetMode(Mode::KBDLOCK, set);
                     break;
                 case 4:  // IRM - Insertion-replacement
-                    _observer.interSetMode(MODE_INSERT, set);
+                    _observer.interSetMode(Mode::INSERT, set);
                     break;
                 case 12: // SRM - Send/Receive
-                    _observer.interSetMode(MODE_ECHO, !set);
+                    _observer.interSetMode(Mode::ECHO, !set);
                     break;
                 case 20: // LNM - Linefeed/new line
-                    _observer.interSetMode(MODE_CRLF, set);
+                    _observer.interSetMode(Mode::CRLF, set);
                     break;
                 default:
                     ERROR("erresc: unknown set/reset mode: " <<  a);
@@ -1001,17 +1003,17 @@ void Interlocutor::dumpStrEscape() const {
 
 std::ostream & operator << (std::ostream & ost, Interlocutor::State state) {
     switch (state) {
-        case Interlocutor::STATE_NORMAL:
+        case Interlocutor::State::NORMAL:
             return ost  << "NORMAL";
-        case Interlocutor::STATE_ESCAPE_START:
+        case Interlocutor::State::ESCAPE_START:
             return ost  << "ESCAPE_START";
-        case Interlocutor::STATE_CSI_ESCAPE:
+        case Interlocutor::State::CSI_ESCAPE:
             return ost  << "CSI_ESCAPE";
-        case Interlocutor::STATE_STR_ESCAPE:
+        case Interlocutor::State::STR_ESCAPE:
             return ost  << "STR_ESCAPE";
-        case Interlocutor::STATE_ESCAPE_START_STR:
+        case Interlocutor::State::ESCAPE_START_STR:
             return ost  << "START_STR";
-        case Interlocutor::STATE_TEST_ESCAPE:
+        case Interlocutor::State::TEST_ESCAPE:
             return ost  << "TEST_ESCAPE";
     }
 
