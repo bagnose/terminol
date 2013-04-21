@@ -1,13 +1,11 @@
 static-lib common
   :
-  support.hxx enums.hxx utf8.hxx interlocutor.hxx terminal.hxx
+  support.hxx enums.hxx utf8.hxx terminal.hxx
   bit_sets.hxx cell.hxx simple_buffer.hxx ascii.hxx tty.hxx
-  terminal2.hxx
   tty_interface.hxx
   :
-  support.cxx enums.cxx utf8.cxx interlocutor.cxx terminal.cxx
+  support.cxx enums.cxx utf8.cxx terminal.cxx
   bit_sets.cxx cell.cxx simple_buffer.cxx ascii.cxx tty.cxx
-  terminal2.cxx
   ;
 
 test-exe test-utf8   : test_utf8.cxx;

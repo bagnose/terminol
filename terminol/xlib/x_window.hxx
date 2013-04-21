@@ -10,12 +10,10 @@
 #include "terminol/xlib/x_key_map.hxx"
 #include "terminol/xlib/x_font_set.hxx"
 #include "terminol/common/tty.hxx"
-//#include "terminol/common/terminal.hxx"
-#include "terminol/common/terminal2.hxx"
+#include "terminol/common/terminal.hxx"
 
 class X_Window :
-    //protected Terminal::I_Observer,
-    protected Terminal2::I_Observer,
+    protected Terminal::I_Observer,
     protected Uncopyable
 {
     static const int         BORDER_THICKNESS;
@@ -33,8 +31,7 @@ class X_Window :
     uint16_t           _width;     // px
     uint16_t           _height;    // px
     Tty              * _tty;
-    //Terminal         * _terminal;
-    Terminal2        * _terminal;
+    Terminal         * _terminal;
     bool               _isOpen;
     uint16_t           _pointerRow;
     uint16_t           _pointerCol;
