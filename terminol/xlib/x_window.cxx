@@ -127,7 +127,7 @@ X_Window::~X_Window() {
 }
 
 void X_Window::keyPress(XKeyEvent & event) {
-    PRINT(std::endl);
+    //PRINT(std::endl);
     uint8_t  state   = event.state;
     //uint16_t keycode = event.keycode;
 
@@ -151,15 +151,15 @@ void X_Window::keyPress(XKeyEvent & event) {
             break;
         case XLookupChars:
             // Use buffer - keySym is not valid.
-            PRINT("Cells");
+            //PRINT("Cells");
             break;
         case XLookupKeySym:
             // Use keySym - buffer is not valid.
             ASSERT(len == 0, "");
-            PRINT("Keysym");
+            //PRINT("Keysym");
             break;
         case XLookupBoth:
-            PRINT("Both");
+            //PRINT("Both");
             break;
         default:
             FATAL("WTF");
@@ -203,11 +203,11 @@ void X_Window::keyRelease(XKeyEvent & UNUSED(event)) {
 }
 
 void X_Window::buttonPress(XButtonEvent & UNUSED(event)) {
-    PRINT("Button press");
+    //PRINT("Button press");
 }
 
 void X_Window::buttonRelease(XButtonEvent & UNUSED(event)) {
-    PRINT("Button release");
+    //PRINT("Button release");
 }
 
 void X_Window::motionNotify(XMotionEvent & event) {
@@ -236,12 +236,12 @@ void X_Window::motionNotify(XMotionEvent & event) {
     if (row != _pointerRow || col != _pointerCol) {
         _pointerRow = row;
         _pointerCol = col;
-        PRINT("Motion row=" << _pointerRow << ", col=" << _pointerCol);
+        //PRINT("Motion row=" << _pointerRow << ", col=" << _pointerCol);
     }
 }
 
 void X_Window::mapNotify(XMapEvent & UNUSED(event)) {
-    PRINT("Map");
+    //PRINT("Map");
 
     ASSERT(!_pixmap, "");
     _pixmap = XCreatePixmap(_display, _window, _width, _height,
@@ -250,7 +250,7 @@ void X_Window::mapNotify(XMapEvent & UNUSED(event)) {
 }
 
 void X_Window::unmapNotify(XUnmapEvent & UNUSED(event)) {
-    PRINT("Unmap");
+    //PRINT("Unmap");
 
     ASSERT(_pixmap, "");
     XFreePixmap(_display, _pixmap);
@@ -258,11 +258,11 @@ void X_Window::unmapNotify(XUnmapEvent & UNUSED(event)) {
 }
 
 void X_Window::reparentNotify(XReparentEvent & UNUSED(event)) {
-    PRINT("Reparent");
+    //PRINT("Reparent");
 }
 
 void X_Window::expose(XExposeEvent & event) {
-    PRINT("Expose");
+    //PRINT("Expose");
     ASSERT(event.window == _window, "Which window?");
     /*
        PRINT("Expose: " <<
@@ -372,7 +372,7 @@ void X_Window::visibilityNotify(XVisibilityEvent & event) {
         default:
             FATAL("");
     }
-    PRINT("Visibility change: " << str);
+    //PRINT("Visibility change: " << str);
 }
 
 void X_Window::destroyNotify(XDestroyWindowEvent & event) {

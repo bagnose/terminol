@@ -346,6 +346,11 @@ void Interlocutor::processEscape(char c) {
             NYI("charset");
             _state = State::NORMAL;
             break;
+
+
+            // terminal.c: M E D c H 7 8 = >
+            // we:         M E D c H 7 8 = > Z
+
         case 'D':   // IND - linefeed
             NYI("st.c:2169");
             _state = State::NORMAL;
@@ -833,11 +838,11 @@ void Interlocutor::processAttributes(const std::vector<int32_t> & args) {
                 }
                 else if (v >= 40 && v < 48) {
                     // bright fg
-                    _observer.interSetBg(v - 40);
+                    _observer.interSetFg(v - 40);
                 }
                 else if (v >= 90 && v < 98) {
                     // normal bg
-                    _observer.interSetFg(v - 90 + 8);
+                    _observer.interSetBg(v - 90 + 8);
                 }
                 else if (v >= 100 && v < 108) {
                     // bright bg

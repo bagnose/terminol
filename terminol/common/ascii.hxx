@@ -4,6 +4,7 @@
 #define ASCII__HXX
 
 #include <iostream>
+#include <vector>
 
 const char NUL   = '\x00';  // '\0'
 const char SOH   = '\x01';
@@ -82,8 +83,9 @@ inline std::ostream & operator << (std::ostream & ost, Char ch) {
 }
 
 struct Str {
-    std::string s;
-    explicit Str(std::string s_) : s(s_) {}     // The C++11 way, right?
+    std::vector<char> s;
+    explicit Str(std::string s_) : s(s_.begin(), s_.end()) {}
+    explicit Str(std::vector<char> s_) : s(s_) {}     // The C++11 way, right?
 };
 
 inline std::ostream & operator << (std::ostream & ost, const Str & str) {

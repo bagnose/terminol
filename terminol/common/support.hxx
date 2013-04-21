@@ -110,7 +110,7 @@ template <typename T> T unstringify(const std::string & str) {
     T t;
     ist >> t;
     if (ist.good()) { return t; }
-    else { FATAL("Failed to convert: " << str); }
+    else { FATAL("Failed to convert: " << str); }   // FIXME use exception
 }
 
 // Explicit Sign

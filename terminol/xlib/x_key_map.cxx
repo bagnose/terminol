@@ -249,11 +249,12 @@ X_KeyMap::~X_KeyMap() {}
 bool X_KeyMap::lookup(KeySym keySym, uint8_t state,
                       bool appKey, bool appCursor, bool crlf, bool numLock,
                       std::string & str) const {
-    std::cerr
-        << "keySym=" << keySym << ", state=" << int(state) << ", appKey=" << appKey
-        << ", appCursor=" << appCursor << ", crlf=" << crlf << ", numLock=" << numLock
-        << ", str=" << Str(str)
-        << std::endl;
+    /*
+    PRINT("keySym=" << keySym << ", state=" << int(state) << ", appKey=" << appKey
+          << ", appCursor=" << appCursor << ", crlf=" << crlf << ", numLock=" << numLock
+          << ", str=" << Str(str)
+          << std::endl);
+          */
 
     for (size_t i = 0; i != numKeys; ++i) {
         const Key & key = keys[i];
