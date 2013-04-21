@@ -104,7 +104,8 @@ X_Window::X_Window(Display            * display,
     XFlush(_display);
 
     _tty = new Tty(rows, cols, stringify(_window), term, command);
-    _terminal = new Terminal(*this, *_tty, rows, cols);
+    //_terminal = new Terminal(*this, *_tty, rows, cols);
+    _terminal = new Terminal2(*this, *_tty, rows, cols);
     _isOpen = true;
 }
 

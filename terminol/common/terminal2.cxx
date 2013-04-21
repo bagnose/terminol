@@ -194,11 +194,12 @@ void Terminal2::processChar(utf8::Seq seq, utf8::Length len) {
             std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
             if (isalpha(lead) || lead == '@' || lead == '`') {
                 processCsi();
+                _escSeq.clear();
+                _state = State::NORMAL;
             }
             break;
         case State::INNER:
             if (lead == '\\') {
-                _state = State::NORMAL;
                 if (_outerState == State::DCS) {
                     processDcs();
                 }
@@ -208,6 +209,8 @@ void Terminal2::processChar(utf8::Seq seq, utf8::Length len) {
                 else {
                     // ??
                 }
+                _escSeq.clear();
+                _state = State::NORMAL;
             }
             else if (lead == ESC) {
                 _state = _outerState;
@@ -227,8 +230,9 @@ void Terminal2::processChar(utf8::Seq seq, utf8::Length len) {
                 _state = State::INNER;
             }
             else if (lead == BEL && _state == State::OSC) {
-                _state = State::NORMAL;
                 processOsc();
+                _escSeq.clear();
+                _state = State::NORMAL;
             }
             else {
                 std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
@@ -236,10 +240,11 @@ void Terminal2::processChar(utf8::Seq seq, utf8::Length len) {
             break;
         case State::SPECIAL:
             std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
-            _state = State::NORMAL;
             if (isdigit(lead) || isalpha(lead)) {
                 processSpecial();
             }
+            _escSeq.clear();
+            _state = State::NORMAL;
             break;
         default:
             break;
