@@ -47,12 +47,11 @@ X_ColorSet::X_ColorSet(Display  * display,
 
     uint8_t index = 0;
 
-    for (auto i = 0; i != 16; ++i) {
-        const char * n = names[i];
-        if (!XftColorAllocName(_display, _visual, _colormap, n, &_indexedColors[i])) {
+    while (index != 16) {
+        const char * n = names[index];
+        if (!XftColorAllocName(_display, _visual, _colormap, n, &_indexedColors[index++])) {
             throw Error(std::string("Failed to alloc named color: ") + n);
         }
-        ++index;
     }
 
     for (auto r = 0; r != 6; ++r) {
@@ -67,12 +66,11 @@ X_ColorSet::X_ColorSet(Display  * display,
                                         _visual,
                                         _colormap,
                                         &xrColor,
-                                        &_indexedColors[index])) {
+                                        &_indexedColors[index++])) {
                     throw Error("Failed to alloc color by value.");
                 }
             }
         }
-        ++index;
     }
 
     for (auto v = 0; v != 24; ++v) {
@@ -83,10 +81,9 @@ X_ColorSet::X_ColorSet(Display  * display,
                                 _visual,
                                 _colormap,
                                 &xrColor,
-                                &_indexedColors[index])) {
+                                &_indexedColors[index++])) {
             throw Error("Failed to alloc color by value.");
         }
-        ++index;
     }
 
     //

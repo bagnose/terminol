@@ -283,7 +283,7 @@ void X_Window::configureNotify(XConfigureEvent & event) {
     ASSERT(event.width != 0 && event.height != 0, "Zero size?");
 
     // We are only interested in size changes.
-    if (_width == event.width && _height == event.height) return;
+    if (_width == event.width && _height == event.height) { return; }
 
     _width  = event.width;
     _height = event.height;

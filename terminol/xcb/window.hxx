@@ -3,6 +3,7 @@
 #ifndef WINDOW__HXX
 #define WINDOW__HXX
 
+#include "terminol/xcb/color_set.hxx"
 #include "terminol/xcb/font_set.hxx"
 #include "terminol/common/tty.hxx"
 #include "terminol/common/terminal.hxx"
@@ -20,12 +21,12 @@ class X_Window :
     static const int           BORDER_THICKNESS;
     static const int           SCROLLBAR_WIDTH;
     static const std::string   DEFAULT_TITLE;
-    static const double        COLOURS[16][3];
 
     xcb_connection_t  * _connection;
     xcb_screen_t      * _screen;
     xcb_key_symbols_t * _keySymbols;
     xcb_visualtype_t  * _visual;
+    const X_ColorSet  & _colorSet;
     X_FontSet         & _fontSet;
     xcb_window_t        _window;
     xcb_gcontext_t      _gc;
@@ -50,6 +51,7 @@ public:
              xcb_screen_t       * screen,
              xcb_key_symbols_t  * keySymbols,
              xcb_visualtype_t   * visual,
+             const X_ColorSet   & colorSet,
              X_FontSet          & fontSet,
              const std::string  & term,
              const Tty::Command & command) throw (Error);
@@ -94,6 +96,7 @@ protected:
     void setTitle(const std::string & title);
 
     void drawBuffer(cairo_t * cr);
+    void drawSelection(cairo_t * cr);
     void drawUtf8(cairo_t    * cr,
                   uint16_t     row,
                   uint16_t     col,

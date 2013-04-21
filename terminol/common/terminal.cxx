@@ -695,8 +695,6 @@ void Terminal::processDcs(const std::vector<char> & seq) {
 }
 
 void Terminal::processOsc(const std::vector<char> & seq) {
-    PRINT("NYI:OSC: " << Str(seq));
-
     ASSERT(!seq.empty(), "");
 
     size_t i = 0;

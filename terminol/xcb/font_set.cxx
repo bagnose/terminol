@@ -61,6 +61,7 @@ cairo_scaled_font_t * X_FontSet::load(FcPattern * pattern, bool master) throw (E
 
     double pixelSize;
     FcPatternGetDouble (match, FC_PIXEL_SIZE, 0, &pixelSize);
+    PRINT("pixelsize: " << pixelSize);
 
     cairo_font_face_t * font_face = cairo_ft_font_face_create_for_pattern(match);
     FcPatternDel(match, FC_WEIGHT); 
@@ -76,10 +77,10 @@ cairo_scaled_font_t * X_FontSet::load(FcPattern * pattern, bool master) throw (E
     cairo_matrix_init_identity(&ctm);
 
     cairo_font_options_t * font_options = cairo_font_options_create();
-    cairo_scaled_font_t * scaled_font = cairo_scaled_font_create(font_face,
-                                                                 &fontMatrix,
-                                                                 &ctm,
-                                                                 font_options);
+    cairo_scaled_font_t  * scaled_font  = cairo_scaled_font_create(font_face,
+                                                                   &fontMatrix,
+                                                                   &ctm,
+                                                                   font_options);
     cairo_font_options_destroy(font_options);
 
     /*
@@ -99,6 +100,8 @@ cairo_scaled_font_t * X_FontSet::load(FcPattern * pattern, bool master) throw (E
     PRINT("ascent=" << extents.ascent << ", descent=" << extents.descent <<
           ", height=" << extents.height << ", max_x_advance=" << extents.max_x_advance);
           */
+
+    PRINT("width: " << extents.max_x_advance << ", height: " << extents.height);
 
     _width  = std::max(_width,  static_cast<uint16_t>(extents.max_x_advance));
     _height = std::max(_height, static_cast<uint16_t>(extents.height));

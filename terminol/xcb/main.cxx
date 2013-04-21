@@ -1,6 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/xcb/window.hxx"
+#include "terminol/xcb/color_set.hxx"
 #include "terminol/xcb/font_set.hxx"
 #include "terminol/xcb/basics.hxx"
 #include "terminol/common/support.hxx"
@@ -15,20 +16,23 @@
 #include <sys/select.h>
 
 class X_EventLoop : protected Uncopyable {
-    X_Basics  _basics;
-    X_FontSet _fontSet;
-    X_Window  _window;
+    X_Basics   _basics;
+    X_ColorSet _colorSet;
+    X_FontSet  _fontSet;
+    X_Window   _window;
 public:
     X_EventLoop(const std::string  & fontName,
                 const std::string  & term,
                 const Tty::Command & command)
         throw (X_Basics::Error, X_FontSet::Error, X_Window::Error) :
         _basics(),
+        _colorSet(),
         _fontSet(fontName),
         _window(_basics.connection(),
                 _basics.screen(),
                 _basics.keySymbols(),
                 _basics.visual(),
+                _colorSet,
                 _fontSet,
                 term,
                 command)
@@ -166,7 +170,8 @@ bool argMatch(const std::string & arg, const std::string & opt, std::string & va
 int main(int argc, char * argv[]) {
     // Command line
 
-    std::string  fontName          = "inconsolata:pixelsize=24";
+    std::string  fontName          = "inconsolata:pixelsize=20";
+    //std::string  fontName          = "mono:pixelsize=20";
     std::string  geometryStr;
     std::string  term              = "ansi";
     Tty::Command command;

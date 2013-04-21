@@ -8,25 +8,6 @@ const int         X_Window::BORDER_THICKNESS = 1;
 const int         X_Window::SCROLLBAR_WIDTH  = 8;
 const std::string X_Window::DEFAULT_TITLE    = "terminol";
 
-const double X_Window::COLOURS[16][3] = {
-    { 0.0,  0.0,  0.0  }, // black
-    { 0.66, 0.0,  0.0  }, // red
-    { 0.0,  0.66, 0.0  }, // green
-    { 0.66, 0.66, 0.0  }, // orange
-    { 0.0,  0.0,  0.66 }, // blue
-    { 0.66, 0.0,  0.66 }, // magenta
-    { 0.0,  0.66, 0.66 }, // cyan
-    { 0.66, 0.66, 0.66 }, // light grey
-    { 0.33, 0.33, 0.33 }, // dark grey
-    { 1.0,  0.33, 0.33 }, // high red
-    { 0.33, 1.0,  0.33 }, // high green
-    { 1.0,  1.0,  0.33 }, // high yellow
-    { 0.33, 0.33, 1.0  }, // high blue
-    { 1.0,  0.33, 1.0  }, // high magenta
-    { 0.33, 1.0,  1.0  }, // high cyan
-    { 1.0,  1.0,  1.0  }  // white
-};
-
 #define xcb_request_failed(connection, cookie, err_msg) _xcb_request_failed(connection, cookie, err_msg, __LINE__)
 namespace {
 int _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
@@ -45,6 +26,7 @@ X_Window::X_Window(xcb_connection_t   * connection,
                    xcb_screen_t       * screen,
                    xcb_key_symbols_t  * keySymbols,
                    xcb_visualtype_t   * visual,
+                   const X_ColorSet   & colorSet,
                    X_FontSet          & fontSet,
                    const std::string  & term,
                    const Tty::Command & command) throw (Error) :
@@ -52,6 +34,7 @@ X_Window::X_Window(xcb_connection_t   * connection,
     _screen(screen),
     _keySymbols(keySymbols),
     _visual(visual),
+    _colorSet(colorSet),
     _fontSet(fontSet),
     _window(0),
     _gc(0),
@@ -206,7 +189,7 @@ void X_Window::keyPress(xcb_key_press_event_t * event) {
 
     if (true || isascii(sym)) {
         char a = sym & 0x7f;
-        PRINT("Got key: " << a);
+        //PRINT("Got key: " << a);
         _tty->write(&a, 1);
     }
 }
@@ -285,6 +268,9 @@ void X_Window::configureNotify(xcb_configure_notify_event_t * event) {
     PRINT("Configure notify: " <<
           event->x << " " << event->y << " " <<
           event->width << " " << event->height);
+
+    // We are only interested in size changes.
+    if (_width == event->width && _height == event->height) { return; }
 
     _width  = event->width;
     _height = event->height;
@@ -408,7 +394,8 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
     double h = static_cast<double>(ih);
 
     cairo_save(cr); {
-        PRINT(x << " " << y << " " << w << " " << h);
+        //PRINT(x << " " << y << " " << w << " " << h);
+        ///
         cairo_rectangle(cr, x, y, w, h);
         cairo_clip(cr);
 
@@ -416,6 +403,7 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
                "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
 
         drawBuffer(cr);
+        drawSelection(cr);
         drawCursor(cr);
 
         ASSERT(cairo_status(cr) == 0,
@@ -495,8 +483,6 @@ void X_Window::drawUtf8(cairo_t    * cr,
                         size_t       count,
                         size_t       UNUSED(size)) {
     cairo_save(cr); {
-        ENFORCE(fg < 16 && bg < 16, "Haven't done 256 col yet");
-
         int x, y;
         rowCol2XY(row, col, x, y);
 
@@ -507,19 +493,22 @@ void X_Window::drawUtf8(cairo_t    * cr,
 
         //PRINT("drawing: " << str << " at: " << x << " " << y);
 
-        const double * bgValues = COLOURS[bg];
-        cairo_set_source_rgb(cr, bgValues[0], bgValues[1], bgValues[2]);
+        const Color & bgValues = _colorSet.getIndexedColor(bg);
+        cairo_set_source_rgb(cr, bgValues.r, bgValues.g, bgValues.b);
         cairo_rectangle(cr, x, y, count * _fontSet.getWidth(), _fontSet.getHeight());
         cairo_fill(cr);
 
-        const double * fgValues = COLOURS[fg];
-        cairo_set_source_rgb(cr, fgValues[0], fgValues[1], fgValues[2]);
+        const Color & fgValues = _colorSet.getIndexedColor(fg);
+        cairo_set_source_rgb(cr, fgValues.r, fgValues.g, fgValues.b);
         cairo_move_to(cr, x, y + _fontSet.getAscent());
         cairo_show_text(cr, str);
 
         ASSERT(cairo_status(cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
     } cairo_restore(cr);
+}
+
+void X_Window::drawSelection(cairo_t * UNUSED(cr)) {
 }
 
 void X_Window::drawCursor(cairo_t * cr) {
@@ -531,8 +520,6 @@ void X_Window::drawCursor(cairo_t * cr) {
 }
 
 void X_Window::setTitle(const std::string & title) {
-    NYI("setTitle");
-
     xcb_icccm_set_wm_name(_connection,
                           _window,
                           XCB_ATOM_STRING,
