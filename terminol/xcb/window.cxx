@@ -8,47 +8,38 @@ const int         X_Window::BORDER_THICKNESS = 1;
 const int         X_Window::SCROLLBAR_WIDTH  = 8;
 const std::string X_Window::DEFAULT_TITLE    = "terminol";
 
-const double COLOURS[16][4] = {
-    { 0.0,  0.0,  0.0,  1.0 }, /* black */
-    { 0.66, 0.0,  0.0,  1.0 }, /* red */
-    { 0.0,  0.66, 0.0,  1.0 }, /* green */
-    { 0.66, 0.66, 0.0,  1.0 }, /* orange */
-    { 0.0,  0.0,  0.66, 1.0 }, /* blue */
-    { 0.66, 0.0,  0.66, 1.0 }, /* magenta */
-    { 0.0,  0.66, 0.66, 1.0 }, /* cyan */
-    { 0.66, 0.66, 0.66, 1.0 }, /* light grey */
-    { 0.33, 0.33, 0.33, 1.0 }, /* dark grey */
-    { 1.0,  0.33, 0.33, 1.0 }, /* high red */
-    { 0.33, 1.0,  0.33, 1.0 }, /* high green */
-    { 1.0,  1.0,  0.33, 1.0 }, /* high yellow */
-    { 0.33, 0.33, 1.0,  1.0 }, /* high blue */
-    { 1.0,  0.33, 1.0,  1.0 }, /* high magenta */
-    { 0.33, 1.0,  1.0,  1.0 }, /* high cyan */
-    { 1.0,  1.0,  1.0,  1.0 }  /* white */
+const double X_Window::COLOURS[16][3] = {
+    { 0.0,  0.0,  0.0  }, // black
+    { 0.66, 0.0,  0.0  }, // red
+    { 0.0,  0.66, 0.0  }, // green
+    { 0.66, 0.66, 0.0  }, // orange
+    { 0.0,  0.0,  0.66 }, // blue
+    { 0.66, 0.0,  0.66 }, // magenta
+    { 0.0,  0.66, 0.66 }, // cyan
+    { 0.66, 0.66, 0.66 }, // light grey
+    { 0.33, 0.33, 0.33 }, // dark grey
+    { 1.0,  0.33, 0.33 }, // high red
+    { 0.33, 1.0,  0.33 }, // high green
+    { 1.0,  1.0,  0.33 }, // high yellow
+    { 0.33, 0.33, 1.0  }, // high blue
+    { 1.0,  0.33, 1.0  }, // high magenta
+    { 0.33, 1.0,  1.0  }, // high cyan
+    { 1.0,  1.0,  1.0  }  // white
 };
 
-#if 0
-const char * names[] = {
-    // 8 normal colors
-    "black",
-    "red3",
-    "green3",
-    "yellow3",
-    "blue2",
-    "magenta3",
-    "cyan3",
-    "gray90",
-    // 8 bright colors
-    "gray50",
-    "red",
-    "green",
-    "yellow",
-    "#5c5cff",
-    "magenta",
-    "cyan",
-    "white"
-};
-#endif
+#define xcb_request_failed(connection, cookie, err_msg) _xcb_request_failed(connection, cookie, err_msg, __LINE__)
+namespace {
+int _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
+                        const char * err_msg, int line) {
+    xcb_generic_error_t * err;
+    if ((err = xcb_request_check(connection, cookie)) != nullptr) {
+        fprintf(stderr, "[%s:%d] ERROR: %s. X Error Code: %d\n", __FILE__, line, err_msg, err->error_code);
+        return err->error_code;
+    }
+    return 0;
+}
+} // namespace {anonymous}
+
 
 X_Window::X_Window(xcb_connection_t   * connection,
                    xcb_screen_t       * screen,
@@ -58,10 +49,12 @@ X_Window::X_Window(xcb_connection_t   * connection,
                    const std::string  & term,
                    const Tty::Command & command) throw (Error) :
     _connection(connection),
+    _screen(screen),
     _keySymbols(keySymbols),
     _visual(visual),
-    _window(0),
     _fontSet(fontSet),
+    _window(0),
+    _gc(0),
     _width(0),
     _height(0),
     _tty(nullptr),
@@ -70,13 +63,16 @@ X_Window::X_Window(xcb_connection_t   * connection,
     _pointerRow(std::numeric_limits<uint16_t>::max()),
     _pointerCol(std::numeric_limits<uint16_t>::min()),
     _damage(false),
+    _pixmap(0),
     _surface(nullptr)
 {
+    xcb_void_cookie_t cookie;
+
     uint32_t values[2];
     // NOTE: This is an important property because it determines
     // flicker when the window is exposed. Ideally background_pixel
     // should be set to whatever the background of the terminal is.
-    values[0] = screen->black_pixel;
+    values[0] = _screen->black_pixel;
     values[1] =
         XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE |
         XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
@@ -97,17 +93,20 @@ X_Window::X_Window(xcb_connection_t   * connection,
     _height = 2 * BORDER_THICKNESS + rows * 24 /*_fontSet.getHeight()*/;
 
     _window = xcb_generate_id(_connection);
-    xcb_create_window(_connection,
-                      XCB_COPY_FROM_PARENT,
-                      _window,
-                      screen->root,
-                      -1, -1,       // x, y     (XXX correct?)
-                      _width, _height,
-                      0,            // border width
-                      XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                      screen->root_visual,      // XXX is there a "copy from parent" equivalent?
-                      XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
-                      values);
+    cookie = xcb_create_window_checked(_connection,
+                                       _screen->root_depth,
+                                       _window,
+                                       _screen->root,
+                                       -1, -1,       // x, y     (XXX correct?)
+                                       _width, _height,
+                                       0,            // border width
+                                       XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                                       _screen->root_visual,  // XXX is there a "copy from parent" equivalent?
+                                       XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
+                                       values);
+    if (xcb_request_failed(_connection, cookie, "Failed to create window")) {
+        FATAL("");
+    }
 
     /*
     XSetStandardProperties(_display, _window,
@@ -116,6 +115,14 @@ X_Window::X_Window(xcb_connection_t   * connection,
                            */
 
     setTitle(DEFAULT_TITLE);
+
+    _gc = xcb_generate_id(_connection);
+    uint32_t mask = XCB_GC_GRAPHICS_EXPOSURES;
+    uint32_t vals[] = { 0 };
+    cookie = xcb_create_gc_checked(_connection, _gc, _window, mask, vals);
+    if (xcb_request_failed(_connection, cookie, "Failed to  allocate gc")) {
+        FATAL("");
+    }
 
     xcb_map_window(_connection, _window);
     xcb_flush(_connection);
@@ -126,12 +133,20 @@ X_Window::X_Window(xcb_connection_t   * connection,
 }
 
 X_Window::~X_Window() {
-    if (_surface) {
+    if (_pixmap) {
+        xcb_void_cookie_t cookie = xcb_free_pixmap(_connection, _pixmap);
+        if (xcb_request_failed(_connection, cookie, "Failed to free pixmap")) {
+            FATAL("");
+        }
+
+        ASSERT(_surface, "");
         cairo_surface_destroy(_surface);
     }
 
     delete _tty;
     delete _terminal;
+
+    xcb_free_gc(_connection, _gc);
 
     if (_window) {
         xcb_destroy_window(_connection, _window);
@@ -222,17 +237,34 @@ void X_Window::motionNotify(xcb_motion_notify_event_t * event) {
 
 void X_Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
     PRINT("Map");
-    ASSERT(!_surface, "");
+    ASSERT(!_pixmap, "");
+
+    _pixmap = xcb_generate_id(_connection);
+    xcb_void_cookie_t cookie = xcb_create_pixmap_checked(_connection,
+                                                         _screen->root_depth,
+                                                         _pixmap,
+                                                         _window,
+                                                         _width,
+                                                         _height);
+    if (xcb_request_failed(_connection, cookie, "Failed to create pixmap")) {
+        FATAL("");
+    }
+
     _surface = cairo_xcb_surface_create(_connection,
-                                        _window,
+                                        _pixmap,
                                         _visual,
                                         _width, _height);
 }
 
 void X_Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     PRINT("UnMap");
+    ASSERT(_pixmap, "");
     ASSERT(_surface, "");
+
     cairo_surface_destroy(_surface);
+
+    xcb_free_pixmap(_connection, _pixmap);
+    _pixmap = 0;
 }
 
 void X_Window::reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) {
@@ -245,7 +277,7 @@ void X_Window::expose(xcb_expose_event_t * event) {
           event->x << " " << event->y << " " <<
           event->width << " " << event->height);
 
-    //draw(event->x, event->y, event->width, event->height);
+    draw(event->x, event->y, event->width, event->height);
 }
 
 void X_Window::configureNotify(xcb_configure_notify_event_t * event) {
@@ -257,11 +289,28 @@ void X_Window::configureNotify(xcb_configure_notify_event_t * event) {
     _width  = event->width;
     _height = event->height;
 
-    if (_surface) {
+    if (_pixmap) {
+        ASSERT(_surface, "");
+
         cairo_surface_destroy(_surface);
 
+        xcb_free_pixmap(_connection, _pixmap);
+
+        //
+
+        _pixmap = xcb_generate_id(_connection);
+        xcb_void_cookie_t cookie = xcb_create_pixmap_checked(_connection,
+                                                             _screen->root_depth,
+                                                             _pixmap,
+                                                             _window,
+                                                             _width,
+                                                             _height);
+        if (xcb_request_failed(_connection, cookie, "Failed to create pixmap")) {
+            FATAL("");
+        }
+
         _surface = cairo_xcb_surface_create(_connection,
-                                            _window,
+                                            _pixmap,
                                             _visual,
                                             _width, _height);
     }
@@ -286,7 +335,8 @@ void X_Window::configureNotify(xcb_configure_notify_event_t * event) {
     _tty->resize(rows, cols);
     _terminal->resize(rows, cols);
 
-    if (_surface) {
+    if (_pixmap) {
+        ASSERT(_surface, "");
         draw(0, 0, _width, _height);
     }
 }
@@ -339,10 +389,15 @@ bool X_Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
 }
 
 void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
-    xcb_clear_area(_connection,
-                   0,   // exposures ??
-                   _window,
-                   ix, iy, iw, ih);
+    // Clear the pixmap
+    xcb_rectangle_t rectangle = { 0, 0, _width, _height };
+    xcb_poly_fill_rectangle(_connection,
+                            _pixmap,
+                            _gc,
+                            1,
+                            &rectangle);
+
+    //
 
     ASSERT(_surface, "");
     cairo_t * cr = cairo_create(_surface);
@@ -353,7 +408,7 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
     double h = static_cast<double>(ih);
 
     cairo_save(cr); {
-        //PRINT(<< x << " " << y << " " << w << " " << h);
+        PRINT(x << " " << y << " " << w << " " << h);
         cairo_rectangle(cr, x, y, w, h);
         cairo_clip(cr);
 
@@ -361,12 +416,21 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
                "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
 
         drawBuffer(cr);
+        drawCursor(cr);
 
         ASSERT(cairo_status(cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
 
     } cairo_restore(cr);
     cairo_destroy(cr);
+
+    xcb_copy_area(_connection,
+                  _pixmap,
+                  _window,
+                  _gc,
+                  0, 0, // src
+                  0, 0, // dst
+                  _width, _height);
 
     xcb_flush(_connection);
 }
@@ -431,6 +495,8 @@ void X_Window::drawUtf8(cairo_t    * cr,
                         size_t       count,
                         size_t       UNUSED(size)) {
     cairo_save(cr); {
+        ENFORCE(fg < 16 && bg < 16, "Haven't done 256 col yet");
+
         int x, y;
         rowCol2XY(row, col, x, y);
 
@@ -454,6 +520,14 @@ void X_Window::drawUtf8(cairo_t    * cr,
         ASSERT(cairo_status(cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
     } cairo_restore(cr);
+}
+
+void X_Window::drawCursor(cairo_t * cr) {
+    int x, y;
+    rowCol2XY(_terminal->cursorRow(), _terminal->cursorCol(), x, y);
+    cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+    cairo_rectangle(cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
+    cairo_fill(cr);
 }
 
 void X_Window::setTitle(const std::string & title) {
@@ -495,7 +569,7 @@ void X_Window::terminalChildExited(int exitStatus) throw () {
 }
 
 void X_Window::terminalEnd() throw () {
-    if (_damage && _surface /*&& _pixmap*/) {   // XXX
+    if (_damage && _pixmap) {
         draw(0, 0, _width, _height);
     }
 }

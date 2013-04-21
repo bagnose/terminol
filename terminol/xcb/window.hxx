@@ -17,15 +17,18 @@ class X_Window :
     protected Terminal::I_Observer,
     protected Uncopyable
 {
-    static const int         BORDER_THICKNESS;
-    static const int         SCROLLBAR_WIDTH;
-    static const std::string DEFAULT_TITLE;
+    static const int           BORDER_THICKNESS;
+    static const int           SCROLLBAR_WIDTH;
+    static const std::string   DEFAULT_TITLE;
+    static const double        COLOURS[16][3];
 
     xcb_connection_t  * _connection;
+    xcb_screen_t      * _screen;
     xcb_key_symbols_t * _keySymbols;
     xcb_visualtype_t  * _visual;
-    xcb_window_t        _window;
     X_FontSet         & _fontSet;
+    xcb_window_t        _window;
+    xcb_gcontext_t      _gc;
     uint16_t            _width;
     uint16_t            _height;
     Tty               * _tty;
@@ -34,6 +37,7 @@ class X_Window :
     uint16_t            _pointerRow;
     uint16_t            _pointerCol;
     bool                _damage;
+    xcb_pixmap_t        _pixmap;
     cairo_surface_t   * _surface;
 
 public:
@@ -99,6 +103,7 @@ protected:
                   const char * str,
                   size_t       count,
                   size_t       size);
+    void drawCursor(cairo_t * cr);
 
     // Terminal::I_Observer implementation:
 

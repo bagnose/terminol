@@ -82,11 +82,9 @@ protected:
 
 protected:
     void xevent() {
-        xcb_generic_event_t * event = ::xcb_poll_for_event(_basics.connection());
-        if (!event) {
-            PRINT("No event!");
-            return;
-        }
+        xcb_generic_event_t * event;
+        while ((event = ::xcb_poll_for_event(_basics.connection()))) {
+
         //bool send_event = XCB_EVENT_SENT(event);
         uint8_t response_type = XCB_EVENT_RESPONSE_TYPE(event);
 
@@ -110,6 +108,12 @@ protected:
                 break;
             case XCB_EXPOSE:
                 _window.expose(reinterpret_cast<xcb_expose_event_t *>(event));
+                break;
+            case XCB_GRAPHICS_EXPOSURE:
+                PRINT("Got graphics exposure");
+                break;
+            case XCB_NO_EXPOSURE:
+                PRINT("Got no exposure");
                 break;
             case XCB_ENTER_NOTIFY:
                 _window.enterNotify(reinterpret_cast<xcb_enter_notify_event_t *>(event));
@@ -140,6 +144,7 @@ protected:
                 break;
         }
         std::free(event);
+    }
     }
 };
 

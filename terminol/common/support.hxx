@@ -177,4 +177,12 @@ private:
     Uncopyable & operator = (const Uncopyable &) { return *this; }
 };
 
+class Timer {
+    uint32_t _sec;
+    uint32_t _usec;
+public:
+    Timer(uint32_t milliseconds);
+    bool expired() const;
+};
+
 #endif // COMMON__HXX

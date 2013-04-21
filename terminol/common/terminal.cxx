@@ -82,13 +82,13 @@ void Terminal::read() {
     _observer.terminalBegin();
 
     try {
+        Timer timer(10);
         char buffer[4096];
-        for (;;) {
+        do {
             size_t rval = _tty.read(buffer, sizeof buffer);
             if (rval == 0) { break; }
-
             processRead(buffer, rval);
-        }
+        } while (!timer.expired());
     }
     catch (I_Tty::Exited & ex) {
         _observer.terminalChildExited(ex.exitCode);
