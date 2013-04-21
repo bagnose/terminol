@@ -31,7 +31,7 @@ class Cell {
 #endif
     }
 
-    static const char BLANK = NUL;    // NUL/SPACE
+    static const char BLANK = SPACE;
 
 public:
     static uint8_t      defaultFg()    { return 7; }

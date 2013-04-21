@@ -38,7 +38,7 @@ public:
 
 protected:
     void loop() {
-        for (;;) {
+        while(_window.isOpen()) {
             int fdMax = 0;
             fd_set readFds, writeFds;
             FD_ZERO(&readFds); FD_ZERO(&writeFds);
@@ -105,17 +105,33 @@ protected:
             case XCB_BUTTON_RELEASE:
                 _window.buttonRelease(reinterpret_cast<xcb_button_release_event_t *>(event));
                 break;
+            case XCB_MOTION_NOTIFY:
+                _window.motionNotify(reinterpret_cast<xcb_motion_notify_event_t *>(event));
+                break;
             case XCB_EXPOSE:
                 _window.expose(reinterpret_cast<xcb_expose_event_t *>(event));
                 break;
-                /*
+            case XCB_ENTER_NOTIFY:
+                _window.enterNotify(reinterpret_cast<xcb_enter_notify_event_t *>(event));
+                break;
+            case XCB_LEAVE_NOTIFY:
+                _window.leaveNotify(reinterpret_cast<xcb_leave_notify_event_t *>(event));
+                break;
+            case XCB_FOCUS_IN:
+                _window.focusIn(reinterpret_cast<xcb_focus_in_event_t *>(event));
+                break;
+            case XCB_FOCUS_OUT:
+                _window.focusOut(reinterpret_cast<xcb_focus_out_event_t *>(event));
+                break;
             case XCB_MAP_NOTIFY:
-                PRINT("Got map notify");
+                _window.mapNotify(reinterpret_cast<xcb_map_notify_event_t *>(event));
+                break;
+            case XCB_UNMAP_NOTIFY:
+                _window.unmapNotify(reinterpret_cast<xcb_unmap_notify_event_t *>(event));
                 break;
             case XCB_REPARENT_NOTIFY:
-                PRINT("Got reparent notify");
+                _window.reparentNotify(reinterpret_cast<xcb_reparent_notify_event_t *>(event));
                 break;
-                */
             case XCB_CONFIGURE_NOTIFY:
                 _window.configureNotify(reinterpret_cast<xcb_configure_notify_event_t *>(event));
                 break;

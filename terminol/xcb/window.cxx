@@ -2,9 +2,53 @@
 
 #include "terminol/xcb/window.hxx"
 
+#include <xcb/xcb_icccm.h>
+
 const int         X_Window::BORDER_THICKNESS = 1;
 const int         X_Window::SCROLLBAR_WIDTH  = 8;
 const std::string X_Window::DEFAULT_TITLE    = "terminol";
+
+const double COLOURS[16][4] = {
+    { 0.0,  0.0,  0.0,  1.0 }, /* black */
+    { 0.66, 0.0,  0.0,  1.0 }, /* red */
+    { 0.0,  0.66, 0.0,  1.0 }, /* green */
+    { 0.66, 0.66, 0.0,  1.0 }, /* orange */
+    { 0.0,  0.0,  0.66, 1.0 }, /* blue */
+    { 0.66, 0.0,  0.66, 1.0 }, /* magenta */
+    { 0.0,  0.66, 0.66, 1.0 }, /* cyan */
+    { 0.66, 0.66, 0.66, 1.0 }, /* light grey */
+    { 0.33, 0.33, 0.33, 1.0 }, /* dark grey */
+    { 1.0,  0.33, 0.33, 1.0 }, /* high red */
+    { 0.33, 1.0,  0.33, 1.0 }, /* high green */
+    { 1.0,  1.0,  0.33, 1.0 }, /* high yellow */
+    { 0.33, 0.33, 1.0,  1.0 }, /* high blue */
+    { 1.0,  0.33, 1.0,  1.0 }, /* high magenta */
+    { 0.33, 1.0,  1.0,  1.0 }, /* high cyan */
+    { 1.0,  1.0,  1.0,  1.0 }  /* white */
+};
+
+#if 0
+const char * names[] = {
+    // 8 normal colors
+    "black",
+    "red3",
+    "green3",
+    "yellow3",
+    "blue2",
+    "magenta3",
+    "cyan3",
+    "gray90",
+    // 8 bright colors
+    "gray50",
+    "red",
+    "green",
+    "yellow",
+    "#5c5cff",
+    "magenta",
+    "cyan",
+    "white"
+};
+#endif
 
 X_Window::X_Window(xcb_connection_t   * connection,
                    xcb_screen_t       * screen,
@@ -28,8 +72,6 @@ X_Window::X_Window(xcb_connection_t   * connection,
     _damage(false),
     _surface(nullptr)
 {
-    //pangoPlay(); exit(0);
-
     uint32_t values[2];
     // NOTE: This is an important property because it determines
     // flicker when the window is exposed. Ideally background_pixel
@@ -124,8 +166,7 @@ void X_Window::keyPress(xcb_key_press_event_t * event) {
      *      * button masks are filtered out */
     //state_filtered &= 0xFF;
 
-    xcb_keysym_t sym =
-        xcb_key_press_lookup_keysym(_keySymbols, event, state_filtered);
+    xcb_keysym_t sym = xcb_key_press_lookup_keysym(_keySymbols, event, state_filtered);
 
 #if 0
     std::ostringstream modifiers;
@@ -150,8 +191,8 @@ void X_Window::keyPress(xcb_key_press_event_t * event) {
 
     if (true || isascii(sym)) {
         char a = sym & 0x7f;
-        PRINT(a);
-        //mTty.enqueue(&a, 1);
+        PRINT("Got key: " << a);
+        _tty->write(&a, 1);
     }
 }
 
@@ -171,19 +212,31 @@ void X_Window::buttonPress(xcb_button_press_event_t * event) {
     std::free(geometry);
 }
 
-void X_Window::buttonRelease(xcb_button_release_event_t * UNUSED(event)) {
+void X_Window::buttonRelease(xcb_button_release_event_t * event) {
+    PRINT("Button-release: " << event->event_x << " " << event->event_y);
 }
 
-void X_Window::motionNotify(xcb_motion_notify_event_t * UNUSED(event)) {
+void X_Window::motionNotify(xcb_motion_notify_event_t * event) {
+    PRINT("Motion-notify: " << event->event_x << " " << event->event_y);
 }
 
 void X_Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
+    PRINT("Map");
+    ASSERT(!_surface, "");
+    _surface = cairo_xcb_surface_create(_connection,
+                                        _window,
+                                        _visual,
+                                        _width, _height);
 }
 
 void X_Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
+    PRINT("UnMap");
+    ASSERT(_surface, "");
+    cairo_surface_destroy(_surface);
 }
 
 void X_Window::reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) {
+    PRINT("Reparent");
 }
 
 void X_Window::expose(xcb_expose_event_t * event) {
@@ -206,14 +259,36 @@ void X_Window::configureNotify(xcb_configure_notify_event_t * event) {
 
     if (_surface) {
         cairo_surface_destroy(_surface);
+
+        _surface = cairo_xcb_surface_create(_connection,
+                                            _window,
+                                            _visual,
+                                            _width, _height);
     }
 
-    _surface = cairo_xcb_surface_create(_connection,
-                                        _window,
-                                        _visual,
-                                        _width, _height);
+    uint16_t rows, cols;
 
-    draw(0, 0, _width, _height);
+    if (_width  > 2 * BORDER_THICKNESS + _fontSet.getWidth() + SCROLLBAR_WIDTH &&
+        _height > 2 * BORDER_THICKNESS + _fontSet.getHeight())
+    {
+        uint16_t w = _width  - (2 * BORDER_THICKNESS + SCROLLBAR_WIDTH);
+        uint16_t h = _height - (2 * BORDER_THICKNESS);
+
+        rows = h / _fontSet.getHeight();
+        cols = w / _fontSet.getWidth();
+    }
+    else {
+        rows = cols = 1;
+    }
+
+    ASSERT(rows > 0 && cols > 0, "");
+
+    _tty->resize(rows, cols);
+    _terminal->resize(rows, cols);
+
+    if (_surface) {
+        draw(0, 0, _width, _height);
+    }
 }
 
 void X_Window::focusIn(xcb_focus_in_event_t * UNUSED(event)) {
@@ -237,13 +312,39 @@ void X_Window::destroyNotify(xcb_destroy_notify_event_t & UNUSED(event)) {
     _window = 0;
 }
 
+void X_Window::rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const {
+    x = BORDER_THICKNESS + col * _fontSet.getWidth();
+    y = BORDER_THICKNESS + row * _fontSet.getHeight();
+}
+
+bool X_Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
+    if (x < BORDER_THICKNESS || y < BORDER_THICKNESS) {
+        // Too left or up.
+        return false;
+    }
+    else if (x < _width - BORDER_THICKNESS && y < _height - BORDER_THICKNESS) {
+        // NYI
+        row = (y - BORDER_THICKNESS) / _fontSet.getHeight();
+        col = (x - BORDER_THICKNESS) / _fontSet.getWidth();
+        ASSERT(row < _terminal->buffer().getRows(),
+               "row is: " << row << ", getRows() is: " << _terminal->buffer().getRows());
+        ASSERT(col < _terminal->buffer().getCols(),
+               "col is: " << col << ", getCols() is: " << _terminal->buffer().getCols());
+        return true;
+    }
+    else {
+        // Too right or down.
+        return false;
+    }
+}
+
 void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
     xcb_clear_area(_connection,
                    0,   // exposures ??
                    _window,
                    ix, iy, iw, ih);
 
-
+    ASSERT(_surface, "");
     cairo_t * cr = cairo_create(_surface);
 
     double x = static_cast<double>(ix);
@@ -258,58 +359,8 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
 
         ASSERT(cairo_status(cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
-        cairo_set_source_rgba(cr, 0, 0, 0, 1);
-        cairo_move_to(cr, 10, 40);
-        cairo_set_scaled_font(cr, _fontSet.getNormal());
-        //cairo_set_font_size(cr, 24.0);
 
-        ASSERT(cairo_status(cr) == 0,
-               "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
-        double h_inc;
-        {
-            cairo_font_extents_t extents;
-            cairo_font_extents(cr, &extents);
-            h_inc = extents.height;
-            /*
-               PRINT("ascent=" << extents.ascent <<
-               ", descent=" << extents.descent <<
-               ", height=" << extents.height << 
-               ", max-x-adv=" << extents.max_x_advance <<
-               ", max-y-adv=" << extents.max_y_advance);
-               */
-        }
-
-        {
-            cairo_move_to(cr, 20, 20);
-            cairo_set_source_rgba(cr, 1, 1, 1, 1);
-            cairo_show_text(cr, "Hello");
-#if 0
-
-
-            //
-            //
-
-            cairo_select_font_face(cr, "inconsolata",
-                                   CAIRO_FONT_SLANT_NORMAL,
-                                   CAIRO_FONT_WEIGHT_NORMAL);
-            cairo_move_to(cr, 20, 70);
-            cairo_set_source_rgba(cr, 1, 1, 1, 1);
-            cairo_show_text(cr, "Hello");
-#endif
-        }
-
-        /*
-           double xx = 1.0;
-           double yy = 1.0;
-
-           ASSERT(cairo_status(cr) == 0,
-           "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
-           for (auto c : mText) {
-           yy += h_inc;
-           cairo_move_to(cr, xx, yy);
-           cairo_show_text(cr, c.c_str());
-           }
-           */
+        drawBuffer(cr);
 
         ASSERT(cairo_status(cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
@@ -320,8 +371,100 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
     xcb_flush(_connection);
 }
 
-void X_Window::setTitle(const std::string & UNUSED(title)) {
+void X_Window::drawBuffer(cairo_t * cr) {
+    // Declare buffer at the outer scope (rather than for each row) to
+    // minimise alloc/free.
+    std::vector<char> buffer;
+    // Reserve the largest amount of memory we could require.
+    buffer.reserve(_terminal->buffer().getCols() * utf8::LMAX + 1);
+
+    for (uint16_t r = 0; r != _terminal->buffer().getRows(); ++r) {
+        uint16_t          cc = 0;
+        uint8_t           fg = 0, bg = 0;
+        AttributeSet      attrs;
+
+        for (uint16_t c = 0; c != _terminal->buffer().getCols(); ++c) {
+            const Cell & cell = _terminal->buffer().getCell(r, c);
+
+            if (buffer.empty() || fg != cell.fg() || bg != cell.bg() || attrs != cell.attrs()) {
+                if (!buffer.empty()) {
+                    // flush buffer
+                    buffer.push_back(NUL);
+                    drawUtf8(cr, r, cc, fg, bg, attrs, &buffer.front(), c - cc, buffer.size());
+                    buffer.clear();
+                }
+
+                cc    = c;
+                fg    = cell.fg();
+                bg    = cell.bg();
+                attrs = cell.attrs();
+
+                utf8::Length len = utf8::leadLength(cell.lead());
+                buffer.resize(len);
+                std::copy(cell.bytes(), cell.bytes() + len, &buffer.front());
+            }
+            else {
+                size_t oldSize = buffer.size();
+                utf8::Length len = utf8::leadLength(cell.lead());
+                buffer.resize(buffer.size() + len);
+                std::copy(cell.bytes(), cell.bytes() + len, &buffer[oldSize]);
+            }
+        }
+
+        if (!buffer.empty()) {
+            // flush buffer
+            buffer.push_back(NUL);
+            drawUtf8(cr, r, cc, fg, bg, attrs,
+                     &buffer.front(), _terminal->buffer().getCols() - cc, buffer.size());
+            buffer.clear();
+        }
+    }
+}
+
+void X_Window::drawUtf8(cairo_t    * cr,
+                        uint16_t     row,
+                        uint16_t     col,
+                        uint8_t      fg,
+                        uint8_t      bg,
+                        AttributeSet attr,
+                        const char * str,
+                        size_t       count,
+                        size_t       UNUSED(size)) {
+    cairo_save(cr); {
+        int x, y;
+        rowCol2XY(row, col, x, y);
+
+        if (attr.get(Attribute::REVERSE)) { std::swap(fg, bg); }
+
+        cairo_set_scaled_font(cr, _fontSet.get(attr.get(Attribute::BOLD),
+                                               attr.get(Attribute::ITALIC)));
+
+        //PRINT("drawing: " << str << " at: " << x << " " << y);
+
+        const double * bgValues = COLOURS[bg];
+        cairo_set_source_rgb(cr, bgValues[0], bgValues[1], bgValues[2]);
+        cairo_rectangle(cr, x, y, count * _fontSet.getWidth(), _fontSet.getHeight());
+        cairo_fill(cr);
+
+        const double * fgValues = COLOURS[fg];
+        cairo_set_source_rgb(cr, fgValues[0], fgValues[1], fgValues[2]);
+        cairo_move_to(cr, x, y + _fontSet.getAscent());
+        cairo_show_text(cr, str);
+
+        ASSERT(cairo_status(cr) == 0,
+               "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
+    } cairo_restore(cr);
+}
+
+void X_Window::setTitle(const std::string & title) {
     NYI("setTitle");
+
+    xcb_icccm_set_wm_name(_connection,
+                          _window,
+                          XCB_ATOM_STRING,
+                          8,
+                          title.size(),
+                          title.data());
 }
 
 // Terminal::I_Observer implementation:
@@ -352,7 +495,7 @@ void X_Window::terminalChildExited(int exitStatus) throw () {
 }
 
 void X_Window::terminalEnd() throw () {
-    if (_damage /*&& _pixmap*/) {   // XXX
+    if (_damage && _surface /*&& _pixmap*/) {   // XXX
         draw(0, 0, _width, _height);
     }
 }

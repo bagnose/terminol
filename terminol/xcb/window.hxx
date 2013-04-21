@@ -33,11 +33,11 @@ class X_Window :
     bool                _isOpen;
     uint16_t            _pointerRow;
     uint16_t            _pointerCol;
-    bool               _damage;
+    bool                _damage;
     cairo_surface_t   * _surface;
 
 public:
-    struct Error {      // FIXME never throw ATM
+    struct Error {      // FIXME constructor never throws ATM
         explicit Error(const std::string & message_) : message(message_) {}
         std::string message;
     };
@@ -59,9 +59,9 @@ public:
 
     // The following calls are forwarded to the Terminal.
 
-    void read()  { _terminal->read(); }
+    void read()                  { _terminal->read(); }
     bool areWritesQueued() const { return _terminal->areWritesQueued(); }
-    void flush() { _terminal->flush(); }
+    void flush()                 { _terminal->flush(); }
 
     // Events:
 
@@ -83,8 +83,22 @@ public:
     void destroyNotify(xcb_destroy_notify_event_t & event);
 
 protected:
+    void rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const;
+    bool xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const;
+
     void draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih);
     void setTitle(const std::string & title);
+
+    void drawBuffer(cairo_t * cr);
+    void drawUtf8(cairo_t    * cr,
+                  uint16_t     row,
+                  uint16_t     col,
+                  uint8_t      fg,
+                  uint8_t      bg,
+                  AttributeSet attr,
+                  const char * str,
+                  size_t       count,
+                  size_t       size);
 
     // Terminal::I_Observer implementation:
 

@@ -3,14 +3,14 @@
 #ifndef X_WINDOW__HXX
 #define X_WINDOW__HXX
 
-#include <X11/Xlib.h>
-
 #include "terminol/xlib/x_basics.hxx"
 #include "terminol/xlib/x_color_set.hxx"
 #include "terminol/xlib/x_key_map.hxx"
 #include "terminol/xlib/x_font_set.hxx"
 #include "terminol/common/tty.hxx"
 #include "terminol/common/terminal.hxx"
+
+#include <X11/Xlib.h>
 
 class X_Window :
     protected Terminal::I_Observer,
@@ -28,8 +28,8 @@ class X_Window :
     Window             _window;
     XIC                _xic;
     GC                 _gc;
-    uint16_t           _width;     // px
-    uint16_t           _height;    // px
+    uint16_t           _width;
+    uint16_t           _height;
     Tty              * _tty;
     Terminal         * _terminal;
     bool               _isOpen;
@@ -63,9 +63,9 @@ public:
 
     // The following calls are forwarded to the Terminal.
 
-    void read()  { _terminal->read(); }
+    void read()                  { _terminal->read(); }
     bool areWritesQueued() const { return _terminal->areWritesQueued(); }
-    void flush() { _terminal->flush(); }
+    void flush()                 { _terminal->flush(); }
 
     // Events:
 
