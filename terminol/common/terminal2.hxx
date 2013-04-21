@@ -33,7 +33,6 @@ private:
     // XXX Terminal stuff
     //
 
-    /*
     SimpleBuffer        _buffer;
     uint16_t            _cursorRow;
     uint16_t            _cursorCol;
@@ -42,7 +41,6 @@ private:
     AttributeSet        _attrs;
     ModeSet             _modes;
     std::vector<bool>   _tabs;
-    */
 
     //
     // XXX Interlocutor stuff
@@ -65,13 +63,18 @@ private:
     std::vector<char>    _writeBuffer;      // Spillover if the TTY would block.
 
     State                _state;
+    State                _outerState;
     utf8::Machine        _utf8Machine;
     std::vector<char>    _escSeq;
 
 public:
     Terminal2(I_Observer & observer,
-              I_Tty      & tty);
+              I_Tty      & tty,
+              uint16_t     rows,
+              uint16_t     cols);
     virtual ~Terminal2();
+
+    void resize(uint16_t rows, uint16_t cols);
 
     void read();
     void write(const char * data, size_t size);
@@ -85,6 +88,9 @@ protected:
     void processNormal(utf8::Seq seq, utf8::Length length);
     void processEscape(char c);
     void processCsi();
+    void processDcs();
+    void processOsc();
+    void processSpecial();
 };
 
 #endif // TERMINAL2__HXX

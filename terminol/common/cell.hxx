@@ -10,6 +10,7 @@
 #include <algorithm>
 
 class Cell {
+    // TODO use utf8::Seq
     char         _bytes[utf8::LMAX];        // UTF-8 sequence
     AttributeSet _attrs;
     uint8_t      _fg;

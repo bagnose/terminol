@@ -5,19 +5,44 @@
 #include <algorithm>
 
 Terminal2::Terminal2(I_Observer & observer,
-                     I_Tty      & tty) :
+                     I_Tty      & tty,
+                     uint16_t     rows,
+                     uint16_t     cols) :
     _observer(observer),
     _dispatch(false),
+    //
+    _buffer(rows, cols),
+    _cursorRow(0), _cursorCol(0),
+    _bg(Cell::defaultBg()),
+    _fg(Cell::defaultFg()),
+    _attrs(Cell::defaultAttrs()),
+    _modes(),
+    _tabs(_buffer.getCols()),
+    //
     _tty(tty),
     _dumpWrites(false),
     _writeBuffer(),
     _state(State::NORMAL),
+    _outerState(State::NORMAL),
     _escSeq()
 {
+    for (size_t i = 0; i != _tabs.size(); ++i) {
+        _tabs[i] = (i + 1) % 8 == 0;
+    }
+    _modes.set(Mode::WRAP);
 }
 
 Terminal2::~Terminal2() {
     ASSERT(!_dispatch, "");
+}
+
+void Terminal2::resize(uint16_t rows, uint16_t cols) {
+    ASSERT(!_dispatch, "");
+    _buffer.resize(rows, cols);
+    _tabs.resize(cols);
+    for (size_t i = 0; i != _tabs.size(); ++i) {
+        _tabs[i] = (i + 1) % 8 == 0;
+    }
 }
 
 void Terminal2::read() {
@@ -126,6 +151,7 @@ void Terminal2::processChar(utf8::Seq seq, utf8::Length len) {
             if (lead == ESC) {
                 ASSERT(len == utf8::Length::L1, "");
                 _state = State::ESCAPE;
+                _outerState = State::NORMAL;
                 ASSERT(_escSeq.empty(), "");
             }
             else if (lead >= NUL && lead < SPACE) {
@@ -160,7 +186,6 @@ void Terminal2::processChar(utf8::Seq seq, utf8::Length len) {
                 default:
                     processEscape(lead);
                     break;
-
             }
             break;
         case State::CSI:
@@ -172,12 +197,49 @@ void Terminal2::processChar(utf8::Seq seq, utf8::Length len) {
             }
             break;
         case State::INNER:
+            if (lead == '\\') {
+                _state = State::NORMAL;
+                if (_outerState == State::DCS) {
+                    processDcs();
+                }
+                else if (_outerState == State::OSC) {
+                    processOsc();
+                }
+                else {
+                    // ??
+                }
+            }
+            else if (lead == ESC) {
+                _state = _outerState;
+                std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
+            }
+            else {
+                _state = _outerState;
+                _escSeq.push_back(ESC);
+                std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
+            }
             break;
         case State::DCS:
         case State::OSC:
         case State::IGNORE:
+            if (lead == ESC) {
+                _outerState = _state;
+                _state = State::INNER;
+            }
+            else if (lead == BEL && _state == State::OSC) {
+                _state = State::NORMAL;
+                processOsc();
+            }
+            else {
+                std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
+            }
             break;
         case State::SPECIAL:
+            std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
+            _state = State::NORMAL;
+            if (isdigit(lead) || isalpha(lead)) {
+                processSpecial();
+            }
             break;
         default:
             break;
@@ -190,20 +252,55 @@ void Terminal2::processControl(char c) {
             PRINT("BEL!!");
             break;
         case HT:
+            // Advance to the next tab or the last column.
+            // FIXME convert the empty cells into spaces
+            for (; _cursorCol != _buffer.getCols(); ++_cursorCol) {
+                if (_tabs[_cursorCol]) {
+                    break;
+                }
+            }
+
+            // Back up the cursor if we went past the end.
+            if (_cursorCol == _buffer.getCols()) {
+                --_cursorCol;
+            }
             break;
         case BS:
+            // TODO handle auto-wrap
+            if (_cursorCol != 0) {
+                --_cursorCol;
+            }
             break;
         case CR:
-            break;
-        case FF:
-            break;
-        case VT:
+            _cursorCol = 0;
             break;
         case LF:
+            if (_modes.get(Mode::CRLF)) {
+                _cursorCol = 0;
+            }
+            // Fall-through
+        case FF:
+        case VT:
+#if 1
+            if (_cursorRow == _buffer.getRows() - 1) {
+                _buffer.addLine();
+            }
+            else {
+                ++_cursorRow;
+            }
+#else
+            // FIXME temp hack to make vim work, but stuffs up
+            // new line in bash.
+            if (_cursorRow != _buffer.getRows() - 1) {
+                ++_cursorRow;
+            }
+#endif
             break;
         case SO:
+            NYI("SO");
             break;
         case SI:
+            NYI("SI");
             break;
         case CAN:
         case SUB:
@@ -220,8 +317,39 @@ void Terminal2::processControl(char c) {
     }
 }
 
-void Terminal2::processNormal(utf8::Seq UNUSED(seq), utf8::Length UNUSED(length)) {
+void Terminal2::processNormal(utf8::Seq seq, utf8::Length length) {
+    _buffer.set(_cursorRow, _cursorCol, Cell::utf8(seq.bytes, length, _attrs, _fg, _bg));
+
+#if 0
+    ++_cursorCol;
+
+    if (_cursorCol == _buffer.getCols()) {
+        if (_cursorRow == _buffer.getRows()) {
+            _buffer.addLine();
+        }
+        else {
+            ++_cursorRow;
+        }
+        _cursorCol = 0;
+    }
+#else
+    _cursorCol = std::min(_buffer.getCols() - 1, _cursorCol + 1);
+#endif
+
+    _observer.terminalDamageAll();
 }
 
 void Terminal2::processEscape(char UNUSED(c)) {
+}
+
+void Terminal2::processCsi() {
+}
+
+void Terminal2::processDcs() {
+}
+
+void Terminal2::processOsc() {
+}
+
+void Terminal2::processSpecial() {
 }
