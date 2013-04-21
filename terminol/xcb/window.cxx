@@ -27,6 +27,7 @@ X_Window::X_Window(xcb_connection_t   * connection,
                    xcb_key_symbols_t  * keySymbols,
                    xcb_visualtype_t   * visual,
                    const X_ColorSet   & colorSet,
+                   const X_KeyMap     & keyMap,
                    X_FontSet          & fontSet,
                    const std::string  & term,
                    const Tty::Command & command) throw (Error) :
@@ -35,6 +36,7 @@ X_Window::X_Window(xcb_connection_t   * connection,
     _keySymbols(keySymbols),
     _visual(visual),
     _colorSet(colorSet),
+    _keyMap(keyMap),
     _fontSet(fontSet),
     _window(0),
     _gc(0),
@@ -84,7 +86,7 @@ X_Window::X_Window(xcb_connection_t   * connection,
                                        _width, _height,
                                        0,            // border width
                                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                       _screen->root_visual,  // XXX is there a "copy from parent" equivalent?
+                                       _screen->root_visual,
                                        XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
                                        values);
     if (xcb_request_failed(_connection, cookie, "Failed to create window")) {
@@ -158,14 +160,6 @@ void X_Window::keyPress(xcb_key_press_event_t * event) {
     } xcb_key_press_event_t;
 #endif
 
-    /* Remove the numlock bit, all other bits are modifiers we can bind to */
-    int state_filtered = event->state; //& ~(XCB_MOD_MASK_LOCK);
-    /* Only use the lower 8 bits of the state (modifier masks) so that mouse
-     *      * button masks are filtered out */
-    //state_filtered &= 0xFF;
-
-    xcb_keysym_t sym = xcb_key_press_lookup_keysym(_keySymbols, event, state_filtered);
-
 #if 0
     std::ostringstream modifiers;
     if (event->state & XCB_MOD_MASK_SHIFT)   { modifiers << "SHIFT "; }
@@ -185,11 +179,28 @@ void X_Window::keyPress(xcb_key_press_event_t * event) {
           ", modifiers: " << modifiers.str());
 #endif
 
-    // TODO check sym against shortcuts
+    /* Remove the numlock bit, all other bits are modifiers we can bind to. */
+    /* Only use the lower 8 bits of the state (modifier masks) so that mouse
+     * button masks are filtered out */
+    uint8_t state_filtered = static_cast<uint8_t>(event->state & ~(XCB_MOD_MASK_LOCK));
 
-    if (true || isascii(sym)) {
-        char a = sym & 0x7f;
-        //PRINT("Got key: " << a);
+    xcb_keysym_t keySym = xcb_key_press_lookup_keysym(_keySymbols, event, state_filtered);
+
+    // TODO check keySym against shortcuts HERE
+
+    std::string str;
+    const ModeSet & modes = _terminal->getModes();
+    if (_keyMap.lookup(keySym, state_filtered & ~XCB_KEY_BUT_MASK_MOD_1,
+                       modes.get(Mode::APPKEYPAD),
+                       modes.get(Mode::APPCURSOR),
+                       modes.get(Mode::CRLF),
+                       false,
+                       str)) {
+        PRINT("str: " << str);
+        _tty->write(str.data(), str.size());
+    }
+    else if (isascii(keySym)) {
+        char a = keySym & 0x7f;
         _tty->write(&a, 1);
     }
 }
@@ -514,7 +525,8 @@ void X_Window::drawSelection(cairo_t * UNUSED(cr)) {
 void X_Window::drawCursor(cairo_t * cr) {
     int x, y;
     rowCol2XY(_terminal->cursorRow(), _terminal->cursorCol(), x, y);
-    cairo_set_source_rgb(cr, 1.0, 0.0, 1.0);
+    const Color & fgValues = _colorSet.getCursorColor();
+    cairo_set_source_rgba(cr, fgValues.r, fgValues.g, fgValues.b, 0.5);
     cairo_rectangle(cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
     cairo_fill(cr);
 }

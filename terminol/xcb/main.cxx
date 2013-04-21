@@ -2,6 +2,7 @@
 
 #include "terminol/xcb/window.hxx"
 #include "terminol/xcb/color_set.hxx"
+#include "terminol/xcb/key_map.hxx"
 #include "terminol/xcb/font_set.hxx"
 #include "terminol/xcb/basics.hxx"
 #include "terminol/common/support.hxx"
@@ -18,6 +19,7 @@
 class X_EventLoop : protected Uncopyable {
     X_Basics   _basics;
     X_ColorSet _colorSet;
+    X_KeyMap   _keyMap;
     X_FontSet  _fontSet;
     X_Window   _window;
 public:
@@ -27,12 +29,14 @@ public:
         throw (X_Basics::Error, X_FontSet::Error, X_Window::Error) :
         _basics(),
         _colorSet(),
+        _keyMap(),
         _fontSet(fontName),
         _window(_basics.connection(),
                 _basics.screen(),
                 _basics.keySymbols(),
                 _basics.visual(),
                 _colorSet,
+                _keyMap,
                 _fontSet,
                 term,
                 command)

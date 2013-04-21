@@ -4,6 +4,7 @@
 #define WINDOW__HXX
 
 #include "terminol/xcb/color_set.hxx"
+#include "terminol/xcb/key_map.hxx"
 #include "terminol/xcb/font_set.hxx"
 #include "terminol/common/tty.hxx"
 #include "terminol/common/terminal.hxx"
@@ -27,6 +28,7 @@ class X_Window :
     xcb_key_symbols_t * _keySymbols;
     xcb_visualtype_t  * _visual;
     const X_ColorSet  & _colorSet;
+    const X_KeyMap    & _keyMap;
     X_FontSet         & _fontSet;
     xcb_window_t        _window;
     xcb_gcontext_t      _gc;
@@ -52,6 +54,7 @@ public:
              xcb_key_symbols_t  * keySymbols,
              xcb_visualtype_t   * visual,
              const X_ColorSet   & colorSet,
+             const X_KeyMap     & keyMap,
              X_FontSet          & fontSet,
              const std::string  & term,
              const Tty::Command & command) throw (Error);
