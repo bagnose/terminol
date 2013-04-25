@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef FONT_SET__HXX
-#define FONT_SET__HXX
+#ifndef XCB__FONT_SET__HXX
+#define XCB__FONT_SET__HXX
 
 #include <cairo-ft.h>
 
@@ -54,4 +54,4 @@ protected:
     void                  unload(cairo_scaled_font_t * font);
 };
 
-#endif // FONT_SET__HXX
+#endif // XCB__FONT_SET__HXX

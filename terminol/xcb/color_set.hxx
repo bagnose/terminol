@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef COLOR_SET__H
-#define COLOR_SET__H
+#ifndef XCB__COLOR_SET__H
+#define XCB__COLOR_SET__H
 
 #include <stdint.h>
 
@@ -22,4 +22,4 @@ public:
     const Color & getCursorColor() const { return _cursorColor; }
 };
 
-#endif // COLOR_SET__H
+#endif // XCB__COLOR_SET__H

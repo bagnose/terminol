@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef UTF8__HXX
-#define UTF8__HXX
+#ifndef COMMON__UTF8__HXX
+#define COMMON__UTF8__HXX
 
 #include "terminol/common/support.hxx"
 
@@ -170,4 +170,4 @@ public:
 
 } // namespace utf8
 
-#endif // UTF8__HXX
+#endif // COMMON__UTF8__HXX

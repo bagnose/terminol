@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef TTY__H
-#define TTY__H
+#ifndef COMMON__TTY__H
+#define COMMON__TTY__H
 
 #include "terminol/common/tty_interface.hxx"
 
@@ -45,4 +45,4 @@ protected:
     int  waitReap();
 };
 
-#endif // TTY__H
+#endif // COMMON__TTY__H

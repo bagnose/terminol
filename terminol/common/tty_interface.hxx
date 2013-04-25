@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef TTY_INTERFACE__H
-#define TTY_INTERFACE__H
+#ifndef COMMON__TTY_INTERFACE__H
+#define COMMON__TTY_INTERFACE__H
 
 #include <cstddef>
 
@@ -22,4 +22,4 @@ protected:
     ~I_Tty() {}
 };
 
-#endif // TTY_INTERFACE__H
+#endif // COMMON__TTY_INTERFACE__H

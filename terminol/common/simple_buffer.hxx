@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef SIMPLE_BUFFER__HXX
-#define SIMPLE_BUFFER__HXX
+#ifndef COMMON__SIMPLE_BUFFER__HXX
+#define COMMON__SIMPLE_BUFFER__HXX
 
 #include "terminol/common/support.hxx"
 #include "terminol/common/cell.hxx"
@@ -126,4 +126,4 @@ public:
 
 void dump(std::ostream & ost, const SimpleBuffer & buffer);
 
-#endif // SIMPLE_BUFFER__HXX
+#endif // COMMON__SIMPLE_BUFFER__HXX

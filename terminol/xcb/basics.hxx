@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef BASICS__HXX
-#define BASICS__HXX
+#ifndef XCB__BASICS__HXX
+#define XCB__BASICS__HXX
 
 #include "terminol/common/support.hxx"
 
@@ -39,4 +39,4 @@ protected:
     void determineMasks();
 };
 
-#endif // BASICS__HXX
+#endif // XCB__BASICS__HXX

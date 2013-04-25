@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef KEY_MAP__HXX
-#define KEY_MAP__HXX
+#ifndef XCB__KEY_MAP__HXX
+#define XCB__KEY_MAP__HXX
 
 #include <string>
 
@@ -22,4 +22,4 @@ protected:
     static void normalise(xkb_keysym_t & keySym);
 };
 
-#endif // KEY_MAP__HXX
+#endif // XCB__KEY_MAP__HXX

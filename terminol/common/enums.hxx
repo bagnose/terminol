@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef ENUMS__HXX
-#define ENUMS__HXX
+#ifndef COMMON__ENUMS__HXX
+#define COMMON__ENUMS__HXX
 
 #include <iosfwd>
 
@@ -86,4 +86,4 @@ enum class Attribute {    // XXX what about CONCEALED?
 
 std::ostream & operator << (std::ostream & ost, Attribute attribute);
 
-#endif // ENUMS_HXX
+#endif // COMMON__ENUMS_HXX

@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef CELL__HXX
-#define CELL__HXX
+#ifndef COMMON__CELL__HXX
+#define COMMON__CELL__HXX
 
 #include "terminol/common/bit_sets.hxx"
 #include "terminol/common/utf8.hxx"
@@ -60,4 +60,4 @@ public:
 
 std::ostream & operator << (std::ostream & ost, const Cell & cell);
 
-#endif // CELL__HXX
+#endif // COMMON__CELL__HXX

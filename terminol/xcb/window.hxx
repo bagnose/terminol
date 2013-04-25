@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef WINDOW__HXX
-#define WINDOW__HXX
+#ifndef XCB__WINDOW__HXX
+#define XCB__WINDOW__HXX
 
 #include "terminol/xcb/basics.hxx"
 #include "terminol/xcb/color_set.hxx"
@@ -117,4 +117,4 @@ protected:
     void terminalEnd() throw ();
 };
 
-#endif // WINDOW__HXX
+#endif // XCB__WINDOW__HXX

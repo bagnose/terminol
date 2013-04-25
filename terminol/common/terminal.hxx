@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef TERMINAL2__HXX
-#define TERMINAL2__HXX
+#ifndef COMMON__TERMINAL__HXX
+#define COMMON__TERMINAL__HXX
 
 #include "terminol/common/tty_interface.hxx"
 #include "terminol/common/bit_sets.hxx"
@@ -102,4 +102,4 @@ protected:
     void processModes(bool priv, bool set, const std::vector<int32_t> & args);
 };
 
-#endif // TERMINAL2__HXX
+#endif // COMMON__TERMINAL__HXX

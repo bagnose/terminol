@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef ASCII__HXX
-#define ASCII__HXX
+#ifndef COMMON__ASCII__HXX
+#define COMMON__ASCII__HXX
 
 #include <iostream>
 #include <string>
@@ -97,4 +97,4 @@ inline std::ostream & operator << (std::ostream & ost, const Str & str) {
     return ost;
 }
 
-#endif // ASCII__HXX
+#endif // COMMON__ASCII__HXX

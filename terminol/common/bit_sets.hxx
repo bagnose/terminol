@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef BIT_SETS__HXX
-#define BIT_SETS__HXX
+#ifndef COMMON__BIT_SETS__HXX
+#define COMMON__BIT_SETS__HXX
 
 #include "terminol/common/enums.hxx"
 
@@ -62,4 +62,4 @@ public:
 
 std::ostream & operator << (std::ostream & ost, ModeSet modeSet);
 
-#endif // BIT_SETS__HXX
+#endif // COMMON__BIT_SETS__HXX

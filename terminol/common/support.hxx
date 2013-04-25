@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef COMMON__HXX
-#define COMMON__HXX
+#ifndef COMMON__SUPPORT__HXX
+#define COMMON__SUPPORT__HXX
 
 #include <iostream>
 #include <sstream>
@@ -186,4 +186,4 @@ public:
     bool expired() const;
 };
 
-#endif // COMMON__HXX
+#endif // COMMON__SUPPORT__HXX
