@@ -68,6 +68,9 @@ Terminal::~Terminal() {
 
 void Terminal::resize(uint16_t rows, uint16_t cols) {
     ASSERT(!_dispatch, "");
+    ASSERT(rows > 0 && cols > 0, "");
+    _cursorRow = std::min<uint16_t>(_cursorRow, rows - 1);
+    _cursorCol = std::min<uint16_t>(_cursorCol, cols - 1);
     _buffer.resize(rows, cols);
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {
@@ -82,11 +85,12 @@ void Terminal::read() {
     _observer.terminalBegin();
 
     try {
-        Timer timer(10);
-        char buffer[4096];
+        Timer timer(50);
+        char buffer[BUFSIZ];        // 8192 last time I looked
         do {
             size_t rval = _tty.read(buffer, sizeof buffer);
-            if (rval == 0) { break; }
+            if (rval == 0) { /*PRINT("Would block");*/ break; }
+            //PRINT("Read: " << rval);
             processRead(buffer, rval);
         } while (!timer.expired());
     }
@@ -108,7 +112,7 @@ void Terminal::write(const char * data, size_t size) {
         try {
             while (size != 0) {
                 size_t rval = _tty.write(data, size);
-                if (rval == 0) { break; }
+                if (rval == 0) { PRINT("Write would block!"); break; }
                 data += rval; size -= rval;
             }
 
@@ -156,7 +160,7 @@ void Terminal::flush() {
     }
 }
 
-void Terminal::resetAll() throw () {
+void Terminal::resetAll() {
     _buffer.clearAll();
 
     _cursorRow = 0;
@@ -374,8 +378,8 @@ void Terminal::processControl(char c) {
     }
 }
 
-void Terminal::processNormal(utf8::Seq seq, utf8::Length length) {
-    _buffer.set(_cursorRow, _cursorCol, Cell::utf8(seq.bytes, length, _attrs, _fg, _bg));
+void Terminal::processNormal(utf8::Seq seq, utf8::Length UNUSED(length)) {
+    _buffer.set(_cursorRow, _cursorCol, Cell::utf8(seq, _attrs, _fg, _bg));
 
 #if 0
     ++_cursorCol;

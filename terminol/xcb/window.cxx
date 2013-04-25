@@ -22,19 +22,13 @@ int _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
 } // namespace {anonymous}
 
 
-X_Window::X_Window(xcb_connection_t   * connection,
-                   xcb_screen_t       * screen,
-                   xcb_key_symbols_t  * keySymbols,
-                   xcb_visualtype_t   * visual,
+X_Window::X_Window(X_Basics           & basics,
                    const X_ColorSet   & colorSet,
                    const X_KeyMap     & keyMap,
                    X_FontSet          & fontSet,
                    const std::string  & term,
                    const Tty::Command & command) throw (Error) :
-    _connection(connection),
-    _screen(screen),
-    _keySymbols(keySymbols),
-    _visual(visual),
+    _basics(basics),
     _colorSet(colorSet),
     _keyMap(keyMap),
     _fontSet(fontSet),
@@ -46,7 +40,7 @@ X_Window::X_Window(xcb_connection_t   * connection,
     _terminal(nullptr),
     _isOpen(false),
     _pointerRow(std::numeric_limits<uint16_t>::max()),
-    _pointerCol(std::numeric_limits<uint16_t>::min()),
+    _pointerCol(std::numeric_limits<uint16_t>::max()),
     _damage(false),
     _pixmap(0),
     _surface(nullptr)
@@ -57,7 +51,7 @@ X_Window::X_Window(xcb_connection_t   * connection,
     // NOTE: This is an important property because it determines
     // flicker when the window is exposed. Ideally background_pixel
     // should be set to whatever the background of the terminal is.
-    values[0] = _screen->black_pixel;
+    values[0] = _basics.screen()->black_pixel;
     values[1] =
         XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE |
         XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
@@ -77,19 +71,19 @@ X_Window::X_Window(xcb_connection_t   * connection,
     _width  = 2 * BORDER_THICKNESS + cols * 16 /*_fontSet.getWidth()*/ + SCROLLBAR_WIDTH;
     _height = 2 * BORDER_THICKNESS + rows * 24 /*_fontSet.getHeight()*/;
 
-    _window = xcb_generate_id(_connection);
-    cookie = xcb_create_window_checked(_connection,
-                                       _screen->root_depth,
+    _window = xcb_generate_id(_basics.connection());
+    cookie = xcb_create_window_checked(_basics.connection(),
+                                       _basics.screen()->root_depth,
                                        _window,
-                                       _screen->root,
+                                       _basics.screen()->root,
                                        -1, -1,       // x, y     (XXX correct?)
                                        _width, _height,
                                        0,            // border width
                                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                       _screen->root_visual,
+                                       _basics.screen()->root_visual,
                                        XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
                                        values);
-    if (xcb_request_failed(_connection, cookie, "Failed to create window")) {
+    if (xcb_request_failed(_basics.connection(), cookie, "Failed to create window")) {
         FATAL("");
     }
 
@@ -101,16 +95,16 @@ X_Window::X_Window(xcb_connection_t   * connection,
 
     setTitle(DEFAULT_TITLE);
 
-    _gc = xcb_generate_id(_connection);
+    _gc = xcb_generate_id(_basics.connection());
     uint32_t mask = XCB_GC_GRAPHICS_EXPOSURES;
     uint32_t vals[] = { 0 };
-    cookie = xcb_create_gc_checked(_connection, _gc, _window, mask, vals);
-    if (xcb_request_failed(_connection, cookie, "Failed to  allocate gc")) {
+    cookie = xcb_create_gc_checked(_basics.connection(), _gc, _window, mask, vals);
+    if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate gc")) {
         FATAL("");
     }
 
-    xcb_map_window(_connection, _window);
-    xcb_flush(_connection);
+    xcb_map_window(_basics.connection(), _window);
+    xcb_flush(_basics.connection());
 
     _tty = new Tty(rows, cols, stringify(_window), term, command);
     _terminal = new Terminal(*this, *_tty, rows, cols);
@@ -119,8 +113,8 @@ X_Window::X_Window(xcb_connection_t   * connection,
 
 X_Window::~X_Window() {
     if (_pixmap) {
-        xcb_void_cookie_t cookie = xcb_free_pixmap(_connection, _pixmap);
-        if (xcb_request_failed(_connection, cookie, "Failed to free pixmap")) {
+        xcb_void_cookie_t cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
+        if (xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap")) {
             FATAL("");
         }
 
@@ -131,16 +125,15 @@ X_Window::~X_Window() {
     delete _tty;
     delete _terminal;
 
-    xcb_free_gc(_connection, _gc);
+    xcb_free_gc(_basics.connection(), _gc);
 
     if (_window) {
-        xcb_destroy_window(_connection, _window);
+        xcb_destroy_window(_basics.connection(), _window);
     }
 }
 
 // Events:
 
-void X_Window::keyPress(xcb_key_press_event_t * event) {
 #if 0
     typedef struct xcb_key_press_event_t {
         uint8_t         response_type; /**<  */
@@ -160,6 +153,29 @@ void X_Window::keyPress(xcb_key_press_event_t * event) {
     } xcb_key_press_event_t;
 #endif
 
+void X_Window::keyPress(xcb_key_press_event_t * event) {
+#if 0
+    // Stuff from Awesome.
+    xcb_keysym_t keySym =
+        keyresolv_get_keysym(event->detail, event->state, _keySymbols, 0, 0, 0, 0);
+    char buffer[16];
+    if (keyresolv_keysym_to_string(keySym, buffer, sizeof buffer)) {
+        _tty->write(buffer, strlen(buffer));
+    }
+    PRINT("***   keySym: " << keySym << " str='" << std::string(buffer) << "'");
+    return;
+#else
+
+    xcb_keysym_t keySym = _basics.getKeySym(event->detail, event->state);
+#if 0
+        xcb_key_press_lookup_keysym(_keySymbols, event,
+                                    event->state & (XCB_MOD_MASK_SHIFT | XCB_MOD_MASK_LOCK));
+        keyresolv_get_keysym(event->detail, event->state, _keySymbols,
+                             XCB_MOD_MASK_2,    // numlockmask
+                             XCB_MOD_MASK_
+#endif
+
+
 #if 0
     std::ostringstream modifiers;
     if (event->state & XCB_MOD_MASK_SHIFT)   { modifiers << "SHIFT "; }
@@ -171,38 +187,31 @@ void X_Window::keyPress(xcb_key_press_event_t * event) {
     if (event->state & XCB_MOD_MASK_4)       { modifiers << "WIN "; }
     if (event->state & XCB_MOD_MASK_5)       { modifiers << "5 "; }
 
-    PRINT("detail: " << event->detail <<
-          ", seq: " << event->sequence <<
-          ", state: " << event->state << " " <<
-          ", sym: " << sym <<
-          ", ascii(int): " << (sym & 0x7f) <<
-          ", modifiers: " << modifiers.str());
+    PRINT("detail: "       << event->detail <<
+          ", seq: "        << event->sequence <<
+          ", state: "      << event->state << " " <<
+          ", sym: "        << keySym <<
+          ", ascii(int): " << (keySym & 0x7f) <<
+          ", modifiers: "  << modifiers.str());
 #endif
-
-    /* Remove the numlock bit, all other bits are modifiers we can bind to. */
-    /* Only use the lower 8 bits of the state (modifier masks) so that mouse
-     * button masks are filtered out */
-    uint8_t state_filtered = static_cast<uint8_t>(event->state & ~(XCB_MOD_MASK_LOCK));
-
-    xcb_keysym_t keySym = xcb_key_press_lookup_keysym(_keySymbols, event, state_filtered);
 
     // TODO check keySym against shortcuts HERE
 
     std::string str;
     const ModeSet & modes = _terminal->getModes();
-    if (_keyMap.lookup(keySym, state_filtered & ~XCB_KEY_BUT_MASK_MOD_1,
+    // Note, we only consider the lower 8 bits of the state.
+    // Other bits relate to button state.
+    if (_keyMap.lookup(keySym, static_cast<uint8_t>(event->state & ~XCB_KEY_BUT_MASK_MOD_1),
                        modes.get(Mode::APPKEYPAD),
                        modes.get(Mode::APPCURSOR),
                        modes.get(Mode::CRLF),
                        false,
-                       str)) {
-        PRINT("str: " << str);
+                       str))
+    {
+        //PRINT("str: " << str);
         _tty->write(str.data(), str.size());
     }
-    else if (isascii(keySym)) {
-        char a = keySym & 0x7f;
-        _tty->write(&a, 1);
-    }
+#endif
 }
 
 void X_Window::keyRelease(xcb_key_release_event_t * UNUSED(event)) {
@@ -213,7 +222,7 @@ void X_Window::buttonPress(xcb_button_press_event_t * event) {
     PRINT("Button-press: " << event->event_x << " " << event->event_y);
 
     xcb_get_geometry_reply_t * geometry =
-        xcb_get_geometry_reply(_connection, xcb_get_geometry(_connection, _window), nullptr);
+        xcb_get_geometry_reply(_basics.connection(), xcb_get_geometry(_basics.connection(), _window), nullptr);
 
     PRINT("Geometry: " << geometry->x << " " << geometry->y << " " <<
           geometry->width << " " << geometry->height);
@@ -233,20 +242,20 @@ void X_Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
     PRINT("Map");
     ASSERT(!_pixmap, "");
 
-    _pixmap = xcb_generate_id(_connection);
-    xcb_void_cookie_t cookie = xcb_create_pixmap_checked(_connection,
-                                                         _screen->root_depth,
+    _pixmap = xcb_generate_id(_basics.connection());
+    xcb_void_cookie_t cookie = xcb_create_pixmap_checked(_basics.connection(),
+                                                         _basics.screen()->root_depth,
                                                          _pixmap,
                                                          _window,
                                                          _width,
                                                          _height);
-    if (xcb_request_failed(_connection, cookie, "Failed to create pixmap")) {
+    if (xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap")) {
         FATAL("");
     }
 
-    _surface = cairo_xcb_surface_create(_connection,
+    _surface = cairo_xcb_surface_create(_basics.connection(),
                                         _pixmap,
-                                        _visual,
+                                        _basics.visual(),
                                         _width, _height);
 }
 
@@ -257,7 +266,7 @@ void X_Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
 
     cairo_surface_destroy(_surface);
 
-    xcb_free_pixmap(_connection, _pixmap);
+    xcb_free_pixmap(_basics.connection(), _pixmap);
     _pixmap = 0;
 }
 
@@ -291,24 +300,24 @@ void X_Window::configureNotify(xcb_configure_notify_event_t * event) {
 
         cairo_surface_destroy(_surface);
 
-        xcb_free_pixmap(_connection, _pixmap);
+        xcb_free_pixmap(_basics.connection(), _pixmap);
 
         //
 
-        _pixmap = xcb_generate_id(_connection);
-        xcb_void_cookie_t cookie = xcb_create_pixmap_checked(_connection,
-                                                             _screen->root_depth,
+        _pixmap = xcb_generate_id(_basics.connection());
+        xcb_void_cookie_t cookie = xcb_create_pixmap_checked(_basics.connection(),
+                                                             _basics.screen()->root_depth,
                                                              _pixmap,
                                                              _window,
                                                              _width,
                                                              _height);
-        if (xcb_request_failed(_connection, cookie, "Failed to create pixmap")) {
+        if (xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap")) {
             FATAL("");
         }
 
-        _surface = cairo_xcb_surface_create(_connection,
+        _surface = cairo_xcb_surface_create(_basics.connection(),
                                             _pixmap,
-                                            _visual,
+                                            _basics.visual(),
                                             _width, _height);
     }
 
@@ -388,7 +397,7 @@ bool X_Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
 void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
     // Clear the pixmap
     xcb_rectangle_t rectangle = { 0, 0, _width, _height };
-    xcb_poly_fill_rectangle(_connection,
+    xcb_poly_fill_rectangle(_basics.connection(),
                             _pixmap,
                             _gc,
                             1,
@@ -423,7 +432,7 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
     } cairo_restore(cr);
     cairo_destroy(cr);
 
-    xcb_copy_area(_connection,
+    xcb_copy_area(_basics.connection(),
                   _pixmap,
                   _window,
                   _gc,
@@ -431,7 +440,7 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
                   0, 0, // dst
                   _width, _height);
 
-    xcb_flush(_connection);
+    xcb_flush(_basics.connection());
 }
 
 void X_Window::drawBuffer(cairo_t * cr) {
@@ -442,9 +451,9 @@ void X_Window::drawBuffer(cairo_t * cr) {
     buffer.reserve(_terminal->buffer().getCols() * utf8::LMAX + 1);
 
     for (uint16_t r = 0; r != _terminal->buffer().getRows(); ++r) {
-        uint16_t          cc = 0;
-        uint8_t           fg = 0, bg = 0;
-        AttributeSet      attrs;
+        uint16_t     cc = 0;
+        uint8_t      fg = 0, bg = 0;
+        AttributeSet attrs;
 
         for (uint16_t c = 0; c != _terminal->buffer().getCols(); ++c) {
             const Cell & cell = _terminal->buffer().getCell(r, c);
@@ -523,16 +532,20 @@ void X_Window::drawSelection(cairo_t * UNUSED(cr)) {
 }
 
 void X_Window::drawCursor(cairo_t * cr) {
-    int x, y;
-    rowCol2XY(_terminal->cursorRow(), _terminal->cursorCol(), x, y);
-    const Color & fgValues = _colorSet.getCursorColor();
-    cairo_set_source_rgba(cr, fgValues.r, fgValues.g, fgValues.b, 0.5);
-    cairo_rectangle(cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
-    cairo_fill(cr);
+    uint16_t r = _terminal->cursorRow();
+    uint16_t c = _terminal->cursorCol();
+
+    const Cell & cell = _terminal->buffer().getCell(r, c);
+
+    drawUtf8(cr,
+             r, c,
+             cell.bg(), cell.fg(),      // Swap fg/bg for cursor.
+             cell.attrs(),
+             cell.bytes(), 1, utf8::leadLength(cell.lead()));
 }
 
 void X_Window::setTitle(const std::string & title) {
-    xcb_icccm_set_wm_name(_connection,
+    xcb_icccm_set_wm_name(_basics.connection(),
                           _window,
                           XCB_ATOM_STRING,
                           8,

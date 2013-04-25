@@ -6,30 +6,24 @@
 #include "terminol/common/bit_sets.hxx"
 #include "terminol/common/utf8.hxx"
 #include "terminol/common/ascii.hxx"
+#include "terminol/common/support.hxx"
 
 #include <algorithm>
 
 class Cell {
-    // TODO use utf8::Seq
-    char         _bytes[utf8::LMAX];        // UTF-8 sequence
+    utf8::Seq    _seq;
     AttributeSet _attrs;
     uint8_t      _fg;
     uint8_t      _bg;
 
-    Cell(const char   * bytes_,
-         utf8::Length   length,
+    Cell(utf8::Seq      seq_,
          AttributeSet   attrs_,
          uint8_t        fg_,
          uint8_t        bg_) :
+        _seq(seq_),
         _attrs(attrs_),
         _fg(fg_),
-        _bg(bg_)
-    {
-        std::copy(bytes_, bytes_ + length, _bytes);
-#if DEBUG
-        std::fill(_bytes + length, _bytes + utf8::LMAX, 0);
-#endif
-    }
+        _bg(bg_) {}
 
     static const char BLANK = SPACE;
 
@@ -43,24 +37,25 @@ public:
     }
 
     static Cell ascii(char c) {
-        return Cell(&c, utf8::L1, defaultAttrs(), defaultFg(), defaultBg());
+        ASSERT((c & 0x80) == 0, "");
+        return Cell(utf8::Seq(c), defaultAttrs(), defaultFg(), defaultBg());
     }
 
-    static Cell utf8(const char   * s,
-                     utf8::Length   length,
-                     AttributeSet   attributes,
-                     uint8_t        fg,
-                     uint8_t        bg) {
-        return Cell(s, length, attributes, fg, bg);
+    static Cell utf8(utf8::Seq    seq_,
+                     AttributeSet attrs_,
+                     uint8_t      fg_,
+                     uint8_t      bg_) {
+        return Cell(seq_, attrs_, fg_, bg_);
     }
 
-    char         lead()    const { return _bytes[0]; }
-    const char * bytes()   const { return _bytes; }
-    AttributeSet attrs()   const { return _attrs; }
-    uint8_t      fg()      const { return _fg; }
-    uint8_t      bg()      const { return _bg; }
+    char         lead()  const { return _seq.bytes[0]; }
+    const char * bytes() const { return &_seq.bytes[0]; }
+    //utf8::Seq    seq()   const { return _seq; }
+    AttributeSet attrs() const { return _attrs; }
+    uint8_t      fg()    const { return _fg; }
+    uint8_t      bg()    const { return _bg; }
 
-    bool         isBlank() const { return _bytes[0] == BLANK; }
+    //bool         isBlank() const { return _seq.bytes[0] == BLANK; }
 };
 
 std::ostream & operator << (std::ostream & ost, const Cell & cell);

@@ -22,13 +22,13 @@ public:
 
     virtual ~Tty();
 
-    int  getFd() { return _fd; }
+    int  getFd() { return _fd; }        // Only perform select() on me.
     void resize(uint16_t rows, uint16_t cols);
     int  close();
 
     // I_Tty implementation:
 
-    size_t read(char * buffer, size_t length) throw (Exited);
+    size_t read (char       * buffer, size_t length) throw (Exited);
     size_t write(const char * buffer, size_t length) throw (Error);
 
 protected:
@@ -42,7 +42,7 @@ protected:
                           const Command     & command);
 
     bool pollReap(int & exitCode, int msec);
-    void waitReap(int & exitCode);
+    int  waitReap();
 };
 
 #endif // TTY__H

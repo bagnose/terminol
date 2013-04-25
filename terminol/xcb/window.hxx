@@ -3,6 +3,7 @@
 #ifndef WINDOW__HXX
 #define WINDOW__HXX
 
+#include "terminol/xcb/basics.hxx"
 #include "terminol/xcb/color_set.hxx"
 #include "terminol/xcb/key_map.hxx"
 #include "terminol/xcb/font_set.hxx"
@@ -23,25 +24,22 @@ class X_Window :
     static const int           SCROLLBAR_WIDTH;
     static const std::string   DEFAULT_TITLE;
 
-    xcb_connection_t  * _connection;
-    xcb_screen_t      * _screen;
-    xcb_key_symbols_t * _keySymbols;
-    xcb_visualtype_t  * _visual;
-    const X_ColorSet  & _colorSet;
-    const X_KeyMap    & _keyMap;
-    X_FontSet         & _fontSet;
-    xcb_window_t        _window;
-    xcb_gcontext_t      _gc;
-    uint16_t            _width;
-    uint16_t            _height;
-    Tty               * _tty;
-    Terminal          * _terminal;
-    bool                _isOpen;
-    uint16_t            _pointerRow;
-    uint16_t            _pointerCol;
-    bool                _damage;
-    xcb_pixmap_t        _pixmap;
-    cairo_surface_t   * _surface;
+    X_Basics         & _basics;
+    const X_ColorSet & _colorSet;
+    const X_KeyMap   & _keyMap;
+    X_FontSet        & _fontSet;
+    xcb_window_t       _window;
+    xcb_gcontext_t     _gc;
+    uint16_t           _width;
+    uint16_t           _height;
+    Tty              * _tty;
+    Terminal         * _terminal;
+    bool               _isOpen;
+    uint16_t           _pointerRow;
+    uint16_t           _pointerCol;
+    bool               _damage;
+    xcb_pixmap_t       _pixmap;
+    cairo_surface_t  * _surface;
 
 public:
     struct Error {      // FIXME constructor never throws ATM
@@ -49,10 +47,7 @@ public:
         std::string message;
     };
 
-    X_Window(xcb_connection_t   * connection,
-             xcb_screen_t       * screen,
-             xcb_key_symbols_t  * keySymbols,
-             xcb_visualtype_t   * visual,
+    X_Window(X_Basics           & basics,
              const X_ColorSet   & colorSet,
              const X_KeyMap     & keyMap,
              X_FontSet          & fontSet,

@@ -35,7 +35,7 @@ X_Window::X_Window(Display            * display,
     _terminal(nullptr),
     _isOpen(false),
     _pointerRow(std::numeric_limits<uint16_t>::max()),
-    _pointerCol(std::numeric_limits<uint16_t>::min()),
+    _pointerCol(std::numeric_limits<uint16_t>::max()),
     _damage(false),
     _pixmap(0)
 {
@@ -149,6 +149,7 @@ void X_Window::keyPress(XKeyEvent & event) {
             FATAL("XLookupNone");
             break;
         case XLookupChars:
+            ASSERT(len != 0, "");
             // Use buffer - keySym is not valid.
             //PRINT("Cells");
             break;
@@ -158,6 +159,7 @@ void X_Window::keyPress(XKeyEvent & event) {
             //PRINT("Keysym");
             break;
         case XLookupBoth:
+            ASSERT(len != 0, "");
             //PRINT("Both");
             break;
         default:
@@ -168,7 +170,7 @@ void X_Window::keyPress(XKeyEvent & event) {
 
     std::string str = std::string(buffer, buffer + len);
 
-    const ModeSet & modes = _terminal->getModes();
+    ModeSet modes = _terminal->getModes();
     _keyMap.lookup(keySym, state & ~Mod2Mask,
                    modes.get(Mode::APPKEYPAD),
                    modes.get(Mode::APPCURSOR),
@@ -442,9 +444,9 @@ void X_Window::drawBuffer(XftDraw * xftDraw) {
     buffer.reserve(_terminal->buffer().getCols() * utf8::LMAX);
 
     for (uint16_t r = 0; r != _terminal->buffer().getRows(); ++r) {
-        uint16_t          cc = 0;
-        uint8_t           fg = 0, bg = 0;
-        AttributeSet      attrs;
+        uint16_t     cc = 0;
+        uint8_t      fg = 0, bg = 0;
+        AttributeSet attrs;
 
         for (uint16_t c = 0; c != _terminal->buffer().getCols(); ++c) {
             const Cell & cell = _terminal->buffer().getCell(r, c);

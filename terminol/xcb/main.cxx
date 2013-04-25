@@ -31,10 +31,7 @@ public:
         _colorSet(),
         _keyMap(),
         _fontSet(fontName),
-        _window(_basics.connection(),
-                _basics.screen(),
-                _basics.keySymbols(),
-                _basics.visual(),
+        _window(_basics,
                 _colorSet,
                 _keyMap,
                 _fontSet,
@@ -46,44 +43,60 @@ public:
 
 protected:
     void loop() {
+        //uint32_t selectCount = 0;
+
         while(_window.isOpen()) {
             int fdMax = 0;
             fd_set readFds, writeFds;
             FD_ZERO(&readFds); FD_ZERO(&writeFds);
 
-            FD_SET(xcb_get_file_descriptor(_basics.connection()), &readFds);
-            fdMax = std::max(fdMax, xcb_get_file_descriptor(_basics.connection()));
+            int wFd = _window.getFd();
+            int xFd = xcb_get_file_descriptor(_basics.connection());
 
-            FD_SET(_window.getFd(), &readFds);
-            fdMax = std::max(fdMax, _window.getFd());
+            FD_SET(xFd, &readFds);
+            fdMax = std::max(fdMax, xFd);
 
+            FD_SET(wFd, &readFds);
+            fdMax = std::max(fdMax, wFd);
+
+#if 0
             bool selectOnWrite = _window.areWritesQueued();
             if (selectOnWrite) {
-                FD_SET(_window.getFd(), &writeFds);
-                fdMax = std::max(fdMax, _window.getFd());
+                FD_SET(wFd, &writeFds);
+                fdMax = std::max(fdMax, wFd);
             }
+#endif
 
-            //PRINT("Calling select");
+            //PRINT("Selecting: " << selectCount++);
             ENFORCE_SYS(TEMP_FAILURE_RETRY(
-                ::select(fdMax + 1, &readFds, &writeFds, nullptr, nullptr)) != -1, "");
-            //PRINT("SELECT returned");
+                ::select(fdMax + 1, &readFds, nullptr /*&writeFds*/, nullptr, nullptr)) != -1, "");
 
-            // Handle _one_ I/O. XXX this is sub-optimal
+            // Handle all.
 
-            if (selectOnWrite && FD_ISSET(_window.getFd(), &writeFds)) {
+#if 0
+            if (selectOnWrite && FD_ISSET(wFd, &writeFds)) {
                 //PRINT("window write event");
                 _window.flush();
             }
-            else if (FD_ISSET(xcb_get_file_descriptor(_basics.connection()), &readFds)) {
+#endif
+
+            if (FD_ISSET(xFd, &readFds)) {
                 //PRINT("xevent");
                 xevent();
-            }
-            else if (FD_ISSET(_window.getFd(), &readFds)) {
-                //PRINT("window read event");
-                _window.read();
+                if (xcb_connection_has_error(_basics.connection())) {
+                    FATAL("Lost connection?");
+                }
             }
             else {
-                FATAL("Unreachable");
+                // XXX Experiment - xevent() anyway!
+                xevent();
+            }
+
+            if (FD_ISSET(wFd, &readFds)) {
+                //PRINT("window read event");
+                if (_window.isOpen()) {
+                    _window.read();
+                }
             }
         }
     }
@@ -92,67 +105,66 @@ protected:
     void xevent() {
         xcb_generic_event_t * event;
         while ((event = ::xcb_poll_for_event(_basics.connection()))) {
+            //bool send_event = XCB_EVENT_SENT(event);
+            uint8_t response_type = XCB_EVENT_RESPONSE_TYPE(event);
 
-        //bool send_event = XCB_EVENT_SENT(event);
-        uint8_t response_type = XCB_EVENT_RESPONSE_TYPE(event);
+            ASSERT(response_type != 0, "Error (according to awesome).");
 
-        ASSERT(response_type != 0, "Error (according to awesome).");
-
-        switch (response_type) {
-            case XCB_KEY_PRESS:
-                _window.keyPress(reinterpret_cast<xcb_key_press_event_t *>(event));
-                break;
-            case XCB_KEY_RELEASE:
-                _window.keyRelease(reinterpret_cast<xcb_key_release_event_t *>(event));
-                break;
-            case XCB_BUTTON_PRESS:
-                _window.buttonPress(reinterpret_cast<xcb_button_press_event_t *>(event));
-                break;
-            case XCB_BUTTON_RELEASE:
-                _window.buttonRelease(reinterpret_cast<xcb_button_release_event_t *>(event));
-                break;
-            case XCB_MOTION_NOTIFY:
-                _window.motionNotify(reinterpret_cast<xcb_motion_notify_event_t *>(event));
-                break;
-            case XCB_EXPOSE:
-                _window.expose(reinterpret_cast<xcb_expose_event_t *>(event));
-                break;
-            case XCB_GRAPHICS_EXPOSURE:
-                PRINT("Got graphics exposure");
-                break;
-            case XCB_NO_EXPOSURE:
-                PRINT("Got no exposure");
-                break;
-            case XCB_ENTER_NOTIFY:
-                _window.enterNotify(reinterpret_cast<xcb_enter_notify_event_t *>(event));
-                break;
-            case XCB_LEAVE_NOTIFY:
-                _window.leaveNotify(reinterpret_cast<xcb_leave_notify_event_t *>(event));
-                break;
-            case XCB_FOCUS_IN:
-                _window.focusIn(reinterpret_cast<xcb_focus_in_event_t *>(event));
-                break;
-            case XCB_FOCUS_OUT:
-                _window.focusOut(reinterpret_cast<xcb_focus_out_event_t *>(event));
-                break;
-            case XCB_MAP_NOTIFY:
-                _window.mapNotify(reinterpret_cast<xcb_map_notify_event_t *>(event));
-                break;
-            case XCB_UNMAP_NOTIFY:
-                _window.unmapNotify(reinterpret_cast<xcb_unmap_notify_event_t *>(event));
-                break;
-            case XCB_REPARENT_NOTIFY:
-                _window.reparentNotify(reinterpret_cast<xcb_reparent_notify_event_t *>(event));
-                break;
-            case XCB_CONFIGURE_NOTIFY:
-                _window.configureNotify(reinterpret_cast<xcb_configure_notify_event_t *>(event));
-                break;
-            default:
-                PRINT("Unrecognised event: " << static_cast<int>(response_type));
-                break;
+            switch (response_type) {
+                case XCB_KEY_PRESS:
+                    _window.keyPress(reinterpret_cast<xcb_key_press_event_t *>(event));
+                    break;
+                case XCB_KEY_RELEASE:
+                    _window.keyRelease(reinterpret_cast<xcb_key_release_event_t *>(event));
+                    break;
+                case XCB_BUTTON_PRESS:
+                    _window.buttonPress(reinterpret_cast<xcb_button_press_event_t *>(event));
+                    break;
+                case XCB_BUTTON_RELEASE:
+                    _window.buttonRelease(reinterpret_cast<xcb_button_release_event_t *>(event));
+                    break;
+                case XCB_MOTION_NOTIFY:
+                    _window.motionNotify(reinterpret_cast<xcb_motion_notify_event_t *>(event));
+                    break;
+                case XCB_EXPOSE:
+                    _window.expose(reinterpret_cast<xcb_expose_event_t *>(event));
+                    break;
+                case XCB_GRAPHICS_EXPOSURE:
+                    PRINT("Got graphics exposure");
+                    break;
+                case XCB_NO_EXPOSURE:
+                    PRINT("Got no exposure");
+                    break;
+                case XCB_ENTER_NOTIFY:
+                    _window.enterNotify(reinterpret_cast<xcb_enter_notify_event_t *>(event));
+                    break;
+                case XCB_LEAVE_NOTIFY:
+                    _window.leaveNotify(reinterpret_cast<xcb_leave_notify_event_t *>(event));
+                    break;
+                case XCB_FOCUS_IN:
+                    _window.focusIn(reinterpret_cast<xcb_focus_in_event_t *>(event));
+                    break;
+                case XCB_FOCUS_OUT:
+                    _window.focusOut(reinterpret_cast<xcb_focus_out_event_t *>(event));
+                    break;
+                case XCB_MAP_NOTIFY:
+                    _window.mapNotify(reinterpret_cast<xcb_map_notify_event_t *>(event));
+                    break;
+                case XCB_UNMAP_NOTIFY:
+                    _window.unmapNotify(reinterpret_cast<xcb_unmap_notify_event_t *>(event));
+                    break;
+                case XCB_REPARENT_NOTIFY:
+                    _window.reparentNotify(reinterpret_cast<xcb_reparent_notify_event_t *>(event));
+                    break;
+                case XCB_CONFIGURE_NOTIFY:
+                    _window.configureNotify(reinterpret_cast<xcb_configure_notify_event_t *>(event));
+                    break;
+                default:
+                    PRINT("Unrecognised event: " << static_cast<int>(response_type));
+                    break;
+            }
+            std::free(event);
         }
-        std::free(event);
-    }
     }
 };
 

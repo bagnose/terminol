@@ -4,6 +4,7 @@
 #define ASCII__HXX
 
 #include <iostream>
+#include <string>
 #include <vector>
 
 const char NUL   = '\x00';  // '\0'

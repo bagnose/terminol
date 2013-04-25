@@ -6,8 +6,354 @@
 
 #include <cstring>
 
+#include <xcb/xcb.h>        // FIXME remove dependency on xcb
 #include <xkbcommon/xkbcommon.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
+
+#if 1
+
+namespace {
+
+// The following code was stolen and modified from weston/clients/terminal.c.
+
+// Copyright © 2008 Kristian Høgsberg
+
+struct Map {
+    xkb_keysym_t  sym;
+    int           num;
+    char          escape;
+    char          code;
+};
+
+// Set last key_sub sym to 0.
+
+const Map MAP_NORMAL[] = {
+    { XKB_KEY_Left,  1, '[', 'D' },
+    { XKB_KEY_Right, 1, '[', 'C' },
+    { XKB_KEY_Up,    1, '[', 'A' },
+    { XKB_KEY_Down,  1, '[', 'B' },
+    { XKB_KEY_Home,  1, '[', 'H' },
+    { XKB_KEY_End,   1, '[', 'F' },
+    { 0, 0, 0, 0 }
+};
+
+const Map MAP_APPLICATION[] = {
+    { XKB_KEY_Left,          1, 'O', 'D' },
+    { XKB_KEY_Right,         1, 'O', 'C' },
+    { XKB_KEY_Up,            1, 'O', 'A' },
+    { XKB_KEY_Down,          1, 'O', 'B' },
+    { XKB_KEY_Home,          1, 'O', 'H' },
+    { XKB_KEY_End,           1, 'O', 'F' },
+    { XKB_KEY_KP_Enter,      1, 'O', 'M' },
+    { XKB_KEY_KP_Multiply,   1, 'O', 'j' },
+    { XKB_KEY_KP_Add,        1, 'O', 'k' },
+    { XKB_KEY_KP_Separator,  1, 'O', 'l' },
+    { XKB_KEY_KP_Subtract,   1, 'O', 'm' },
+    { XKB_KEY_KP_Divide,     1, 'O', 'o' },
+    { 0, 0, 0, 0 }
+};
+
+void function_key_response(char escape, int num, uint8_t state, char code,
+                           std::ostream & response) {
+    int mod_num = 0;
+
+    const uint8_t MOD_SHIFT_MASK   = XCB_KEY_BUT_MASK_SHIFT;
+    const uint8_t MOD_ALT_MASK     = XCB_KEY_BUT_MASK_MOD_1;
+    const uint8_t MOD_CONTROL_MASK = XCB_KEY_BUT_MASK_CONTROL;
+
+    if (state & MOD_SHIFT_MASK)   mod_num |= 1;
+    if (state & MOD_ALT_MASK)     mod_num |= 2;
+    if (state & MOD_CONTROL_MASK) mod_num |= 4;
+
+    if (mod_num != 0) {
+        response << ESC << '[' << num << ';' << mod_num + 1 << code;
+    }
+    else if (code != '~') {
+        response << ESC << escape << code;
+    }
+    else {
+        response << ESC << escape << num << code;
+    }
+}
+
+bool apply_key_map(const Map * mode, xkb_keysym_t sym, uint8_t state,
+                   std::ostream & response) {
+    const Map * map;
+    int i = 0;
+
+    while (mode[i].sym) {
+        map = &mode[i++];
+        if (sym == map->sym) {
+            function_key_response(map->escape, map->num, state, map->code, response);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+} // namespace {anonymous}
+
+X_KeyMap::X_KeyMap() {}
+
+X_KeyMap::~X_KeyMap() {}
+
+bool X_KeyMap::lookup(xkb_keysym_t keySym, uint8_t state,
+                      bool UNUSED(appKey),  // Mode::APPKEYPAD - DECPAM
+                      bool appCursor,       // Mode::APPCURSOR - DECCKM
+                      bool crlf,
+                      bool UNUSED(numLock),
+                      std::string & str) const {
+    /*
+    PRINT("keySym=" << keySym << ", state=" << int(state) << ", appKey=" << appKey
+          << ", appCursor=" << appCursor << ", crlf=" << crlf << ", numLock=" << numLock
+          << ", str=" << Str(str)
+          << std::endl);
+          */
+
+    normalise(keySym);
+
+    std::ostringstream ost;
+
+    const uint8_t MOD_CONTROL_MASK = XCB_KEY_BUT_MASK_CONTROL;
+    const uint8_t MOD_ALT_MASK     = XCB_KEY_BUT_MASK_MOD_1;
+
+    switch (keySym) {
+        case XKB_KEY_BackSpace:
+            if (state & MOD_ALT_MASK) {
+                ost << ESC;
+            }
+            ost << DEL;
+            break;
+
+        case XKB_KEY_Tab:
+        case XKB_KEY_Linefeed:
+        case XKB_KEY_Clear:
+        case XKB_KEY_Pause:
+        case XKB_KEY_Scroll_Lock:
+        case XKB_KEY_Sys_Req:
+        case XKB_KEY_Escape:
+            ost << static_cast<char>(keySym & 0x7F);
+            break;
+
+        case XKB_KEY_Return:
+            if (crlf /* terminal->mode & MODE_LF_NEWLINE */) {
+                ost << 0X0D << 0X0A;
+            }
+            else {
+                ost << 0X0D;
+            }
+            break;
+
+        case XKB_KEY_Shift_L:
+        case XKB_KEY_Shift_R:
+        case XKB_KEY_Control_L:
+        case XKB_KEY_Control_R:
+        case XKB_KEY_Alt_L:
+        case XKB_KEY_Alt_R:
+        case XKB_KEY_Meta_L:
+        case XKB_KEY_Meta_R:
+        case XKB_KEY_Super_L:
+        case XKB_KEY_Super_R:
+        case XKB_KEY_Hyper_L:
+        case XKB_KEY_Hyper_R:
+            break;
+
+        case XKB_KEY_Insert:
+            function_key_response('[', 2, state, '~', ost);
+            break;
+
+        case XKB_KEY_Delete:
+            if (false /*terminal->mode & MODE_DELETE_SENDS_DEL */) {
+                ost << EOT;
+            }
+            else {
+                function_key_response('[', 3, state, '~', ost);
+            }
+            break;
+
+        case XKB_KEY_Page_Up:
+            function_key_response('[', 5, state, '~', ost);
+            break;
+
+        case XKB_KEY_Page_Down:
+            function_key_response('[', 6, state, '~', ost);
+            break;
+
+        case XKB_KEY_F1:
+            function_key_response('O', 1, state, 'P', ost);
+            break;
+
+        case XKB_KEY_F2:
+            function_key_response('O', 1, state, 'Q', ost);
+            break;
+
+        case XKB_KEY_F3:
+            function_key_response('O', 1, state, 'R', ost);
+            break;
+
+        case XKB_KEY_F4:
+            function_key_response('O', 1, state, 'S', ost);
+            break;
+
+        case XKB_KEY_F5:
+            function_key_response('[', 15, state, '~', ost);
+            break;
+
+        case XKB_KEY_F6:
+            function_key_response('[', 17, state, '~', ost);
+            break;
+
+        case XKB_KEY_F7:
+            function_key_response('[', 18, state, '~', ost);
+            break;
+
+        case XKB_KEY_F8:
+            function_key_response('[', 19, state, '~', ost);
+            break;
+
+        case XKB_KEY_F9:
+            function_key_response('[', 20, state, '~', ost);
+            break;
+
+        case XKB_KEY_F10:
+            function_key_response('[', 21, state, '~', ost);
+            break;
+
+        case XKB_KEY_F12:
+            function_key_response('[', 24, state, '~', ost);
+            break;
+
+        default:
+            bool convert_utf8 = true;
+
+            // Handle special keys with alternate mappings.
+            if (apply_key_map(appCursor ? MAP_APPLICATION : MAP_NORMAL,
+                              keySym, state, ost))
+            {
+                break;
+            }
+
+            if (state & MOD_CONTROL_MASK) {
+                if (keySym >= '3' && keySym <= '7') {
+                    keySym = (keySym & 0x1f) + 8;
+                }
+
+                if (!((keySym >= '!' && keySym <= '/') ||
+                      (keySym >= '8' && keySym <= '?') ||
+                      (keySym >= '0' && keySym <= '2'))) { keySym = keySym & 0x1f; }
+                else if (keySym == '2')                  { keySym = 0x00;          }
+                else if (keySym == '/')                  { keySym = 0x1F;          }
+                else if (keySym == '8' || keySym == '?') { keySym = 0x7F;          }
+            }
+
+            if (state & MOD_ALT_MASK) {
+                if (false /* terminal->mode & MODE_ALT_SENDS_ESC */) {
+                    ost << ESC;
+                }
+                else {
+                    keySym = keySym | 0x80;
+                    convert_utf8 = false;
+                }
+            }
+
+            if ((keySym < 0x80 ) || (!convert_utf8 && keySym < 0x100)) {
+                ost << static_cast<char>(keySym);       // char?? uint8_t?
+            }
+            else {
+                char buffer[16];
+                int ret = xkb_keysym_to_utf8(keySym, buffer, sizeof(buffer));
+
+                if (ret == -1) {
+                    ERROR("Buffer to small to encode UTF-8 character.");
+                }
+                else if (ret == 0) {
+                    ERROR("No conversion for key press");
+                }
+                else {
+                    ost << buffer;
+                }
+            }
+
+            break;
+    }
+
+    str = ost.str();
+    return !str.empty();
+}
+
+void X_KeyMap::normalise(xkb_keysym_t & keySym) {
+    switch (keySym) {
+        case XKB_KEY_KP_Space:
+            keySym = XKB_KEY_space;
+            break;
+        case XKB_KEY_KP_Tab:
+            keySym = XKB_KEY_Tab;
+            break;
+        case XKB_KEY_KP_Enter:
+            keySym = XKB_KEY_Return;
+            break;
+        case XKB_KEY_KP_Left:
+            keySym = XKB_KEY_Left;
+            break;
+        case XKB_KEY_KP_Up:
+            keySym = XKB_KEY_Up;
+            break;
+        case XKB_KEY_KP_Right:
+            keySym = XKB_KEY_Right;
+            break;
+        case XKB_KEY_KP_Down:
+            keySym = XKB_KEY_Down;
+            break;
+        case XKB_KEY_KP_Equal:
+            keySym = XKB_KEY_equal;
+            break;
+        case XKB_KEY_KP_Multiply:
+            keySym = XKB_KEY_asterisk;
+            break;
+        case XKB_KEY_KP_Add:
+            keySym = XKB_KEY_plus;
+            break;
+        case XKB_KEY_KP_Separator:
+            /* Note this is actually locale-dependent and should mostly be
+             * a comma.  But leave it as period until we one day start
+             * doing the right thing. */
+            keySym = XKB_KEY_period;
+            break;
+        case XKB_KEY_KP_Subtract:
+            keySym = XKB_KEY_minus;
+            break;
+        case XKB_KEY_KP_Decimal:
+            keySym = XKB_KEY_period;
+            break;
+        case XKB_KEY_KP_Divide:
+            keySym = XKB_KEY_slash;
+            break;
+        case XKB_KEY_KP_0:
+        case XKB_KEY_KP_1:
+        case XKB_KEY_KP_2:
+        case XKB_KEY_KP_3:
+        case XKB_KEY_KP_4:
+        case XKB_KEY_KP_5:
+        case XKB_KEY_KP_6:
+        case XKB_KEY_KP_7:
+        case XKB_KEY_KP_8:
+        case XKB_KEY_KP_9:
+            keySym = (keySym - XKB_KEY_KP_0) + XKB_KEY_0;
+            break;
+        default:
+            break;
+    }
+}
+
+#else
+
+// The following code was stolen and modified from st/st.c.
+
+// © 2009-2012 Aurélien APTEL <aurelien dot aptel at gmail dot com> 
+// © 2012 Roberto E. Vargas Caballero <k0ga at shike2 dot com>
+// © 2012 Christoph Lohmann <20h at r-36 dot net>
+// © 2009 Anselm R Garbe <garbeam at gmail dot com>
 
 namespace {
 
@@ -27,7 +373,7 @@ bool match(uint8_t mask, uint8_t state) {
 }
 
 struct Key {
-    xcb_keysym_t keySym;
+    xkb_keysym_t keySym;
     uint8_t      mask;
     const char * str;
     // three valued logic variables: 0 indifferent, 1 on, -1 off
@@ -241,7 +587,7 @@ X_KeyMap::X_KeyMap() {}
 
 X_KeyMap::~X_KeyMap() {}
 
-bool X_KeyMap::lookup(xcb_keysym_t keySym, uint8_t state,
+bool X_KeyMap::lookup(xkb_keysym_t keySym, uint8_t state,
                       bool appKey, bool appCursor, bool crlf, bool numLock,
                       std::string & str) const {
     /*
@@ -272,11 +618,61 @@ bool X_KeyMap::lookup(xcb_keysym_t keySym, uint8_t state,
         return true;
     }
 
-#if 0
-    char buffer[16];
-    int i = xkb_keysym_to_utf8(keySym, buffer, 16);
-    PRINT("Got: i=" << i << ", buffer=" << buffer);
-#endif
+    const uint8_t MOD_CONTROL_MASK = XCB_KEY_BUT_MASK_CONTROL;
+    const uint8_t MOD_ALT_MASK     = XCB_KEY_BUT_MASK_MOD_1;
 
-    return false;
+    if (state & MOD_CONTROL_MASK) {
+        //PRINT("Gets here!");
+        if (keySym >= '3' && keySym <= '7') {
+            keySym = (keySym & 0x1f) + 8;
+        }
+
+        if (!((keySym >= '!' && keySym <= '/') ||
+              (keySym >= '8' && keySym <= '?') ||
+              (keySym >= '0' && keySym <= '2'))) { keySym = keySym & 0x1f; }
+        else if (keySym == '2')                  { keySym = 0x00;          }
+        else if (keySym == '/')                  { keySym = 0x1F;          }
+        else if (keySym == '8' || keySym == '?') { keySym = 0x7F;          }
+    }
+
+    char ch[256];
+    size_t len = 0;
+    bool convert_utf8 = true;
+
+    if (state & MOD_ALT_MASK) {
+        if (false /* terminal->mode & MODE_ALT_SENDS_ESC */) {
+            ch[len++] = ESC; //0x1b;
+        }
+        else {
+            keySym = keySym | 0x80;
+            convert_utf8 = false;
+        }
+    }
+
+    if ((keySym < 0x80 ) || (!convert_utf8 && keySym < 0x100)) {
+        //fprintf(stderr, "Using < 128 case\n");
+        ch[len++] = keySym;
+    }
+    else {
+        //fprintf(stderr, "Using xkb_keysym_to_utf8, len is already %d\n", len);
+        int ret = xkb_keysym_to_utf8(keySym, ch + len, sizeof(ch) - len);
+        if (ret == -1) {
+            ERROR("Buffer to small to encode UTF-8 character");
+        }
+        else if (ret == 0) {
+            ERROR("No conversion for key press");
+        }
+        else {
+            len += ret;
+        }
+    }
+
+    if (len > 0) {
+        str = std::string(ch, ch + len);
+        return true;
+    }
+    else {
+        return false;
+    }
 }
+#endif

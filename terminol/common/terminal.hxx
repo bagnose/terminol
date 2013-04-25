@@ -26,11 +26,11 @@ public:
     };
 
 private:
-    I_Observer         & _observer;
+    I_Observer        & _observer;
     bool                _dispatch;
 
     //
-    // XXX Terminal stuff
+    //
     //
 
     SimpleBuffer        _buffer;
@@ -43,7 +43,7 @@ private:
     std::vector<bool>   _tabs;
 
     //
-    // XXX Interlocutor stuff
+    //
     //
 
     enum class State {
@@ -57,15 +57,15 @@ private:
         SPECIAL
     };
 
-    I_Tty              & _tty;
-    bool                 _dumpWrites;
+    I_Tty               & _tty;
+    bool                  _dumpWrites;
 
-    std::vector<char>    _writeBuffer;      // Spillover if the TTY would block.
+    std::vector<char>     _writeBuffer;      // Spillover if the TTY would block.
 
-    State                _state;
-    State                _outerState;
-    utf8::Machine        _utf8Machine;
-    std::vector<char>    _escSeq;
+    State                 _state;
+    State                 _outerState;
+    utf8::Machine         _utf8Machine;
+    std::vector<char>     _escSeq;
 
 public:
     Terminal(I_Observer & observer,
@@ -74,7 +74,7 @@ public:
              uint16_t     cols);
     virtual ~Terminal();
 
-    const ModeSet      & getModes()  const { return _modes;     }       // Try to make non-public
+    ModeSet              getModes()  const { return _modes;     }       // Try to make non-public
     const SimpleBuffer & buffer()    const { return _buffer;    }
     uint16_t             cursorRow() const { return _cursorRow; }
     uint16_t             cursorCol() const { return _cursorCol; }
@@ -87,26 +87,7 @@ public:
 
 protected:
 
-    //void clearLine(ClearLine clear) throw ();
-    //void clearScreen(ClearScreen clear) throw ();
-    //void insertChars(uint16_t num) throw ();
-    //void insertLines(uint16_t num) throw ();
-    //void deleteLines(uint16_t num) throw ();
-    //void resetFg() throw ();
-    //void resetBg() throw ();
-    //void setFg(uint8_t fg) throw ();
-    //void setBg(uint8_t bg) throw ();
-    //void clearAttributes() throw ();
-    //void setAttribute(Attribute attribute, bool value) throw ();
-    //void setMode(Mode mode, bool value) throw ();
-    //void setTabStop() throw ();
-    //void advanceTab(uint16_t count) throw ();
-    //void setScrollTopBottom(uint16_t row0, uint16_t row1);
-    //void setScrollTop(uint16_t row);
-    void resetAll() throw ();
-    //void setTitle(const std::string & title) throw ();
-    //void utf8(const char * s, size_t count, size_t size) throw ();
-    //void getCursorPos(uint16_t & row, uint16_t & col) const throw ();
+    void resetAll();
 
     void processRead(const char * data, size_t size);
     void processChar(utf8::Seq seq, utf8::Length length);

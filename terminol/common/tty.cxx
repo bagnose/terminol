@@ -36,9 +36,9 @@ void Tty::resize(uint16_t rows, uint16_t cols) {
 
 size_t Tty::read(char * buffer, size_t length) throw (Exited) {
     ASSERT(_fd != -1, "");
+    ASSERT(length != 0, "");
 
-    ssize_t rval =
-        TEMP_FAILURE_RETRY(::read(_fd, static_cast<void *>(buffer), length));
+    ssize_t rval = TEMP_FAILURE_RETRY(::read(_fd, static_cast<void *>(buffer), length));
 
     if (rval == -1) {
         switch (errno) {
@@ -51,7 +51,7 @@ size_t Tty::read(char * buffer, size_t length) throw (Exited) {
         }
     }
     else if (rval == 0) {
-        FATAL("!!");
+        FATAL("Zero length read.");
     }
     else {
         return rval;
@@ -60,6 +60,7 @@ size_t Tty::read(char * buffer, size_t length) throw (Exited) {
 
 size_t Tty::write(const char * buffer, size_t length) throw (Error) {
     ASSERT(_fd != -1, "");
+    ASSERT(length != 0, "");
 
     ssize_t rval =
         TEMP_FAILURE_RETRY(::write(_fd, static_cast<const void *>(buffer), length));
@@ -75,7 +76,7 @@ size_t Tty::write(const char * buffer, size_t length) throw (Error) {
         }
     }
     else if (rval == 0) {
-        FATAL("!!");
+        FATAL("Zero length write.");
     }
     else {
         return rval;
@@ -169,19 +170,25 @@ void Tty::execShell(const std::string & windowId,
 
     args.push_back(nullptr);
     ::execvp(args[0], const_cast<char * const *>(&args.front()));
+    // If we are here then the exec call failed.
     std::exit(127); // Same as ::system() for failed commands.
 }
 
 int Tty::close() {
     ASSERT(_fd != -1, "");
 
-    ENFORCE_SYS(::close(_fd) != -1, "");
+    ENFORCE_SYS(::close(_fd) != -1, "::close() failed");
     _fd = -1;
+
+    int exitCode;
+
+    // Maybe the child has already died.
+    if (pollReap(exitCode, 0)) { return exitCode; }
 
     ::kill(_pid, SIGCONT);
     ::kill(_pid, SIGPIPE);
 
-    int exitCode;
+    // Give the child a chance to exit nicely.
     if (pollReap(exitCode, 100)) { return exitCode; }
     PRINT("Sending SIGINT.");
     ::kill(_pid, SIGINT);
@@ -193,35 +200,43 @@ int Tty::close() {
     ::kill(_pid, SIGQUIT);
     if (pollReap(exitCode, 100)) { return exitCode; }
     PRINT("Sending SIGKILL.");
+
+    // Too slow - knock it on the head.
     ::kill(_pid, SIGKILL);
-    waitReap(exitCode);
-    return exitCode;
+    return waitReap();
 }
 
 bool Tty::pollReap(int & exitCode, int msec) {
     ASSERT(_pid != 0, "");
+    ASSERT(msec >= 0, "");
 
-    for (int i = 0; i != msec; ++i) {
+    for (;;) {
         int stat;
-        int rval = ::waitpid(_pid, &stat, WNOHANG);
-        ENFORCE_SYS(rval != -1, "::waitpid() failed.");
-        if (rval != 0) {
-            ENFORCE(rval == _pid, "");
+        pid_t pid = ::waitpid(_pid, &stat, WNOHANG);
+        ENFORCE_SYS(pid != -1, "::waitpid() failed.");
+        if (pid != 0) {
+            ENFORCE(pid == _pid, "pid mismatch.");
             _pid = 0;
             exitCode = WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
             return true;
         }
+
+        if (msec == 0) {
+            break;
+        }
+
+        --msec;
         ::usleep(1000);     // 1ms
     }
 
     return false;
 }
 
-void Tty::waitReap(int & exitCode) {
+int Tty::waitReap() {
     ASSERT(_pid != 0, "");
 
     int stat;
-    ENFORCE_SYS(::waitpid(_pid, &stat, 0) == _pid, "");
+    ENFORCE_SYS(::waitpid(_pid, &stat, 0) == _pid, "::waitpid() failed.");
     _pid = 0;
-    exitCode = WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
+    return WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
 }
