@@ -7,7 +7,7 @@
 
 #include "terminol/common/support.hxx"
 
-class X_FontSet : protected Uncopyable {
+class FontSet : protected Uncopyable {
     cairo_scaled_font_t * _normal;
     cairo_scaled_font_t * _bold;
     cairo_scaled_font_t * _italic;
@@ -21,8 +21,8 @@ public:
         std::string message;
     };
 
-    explicit X_FontSet(const std::string & fontName) throw (Error);
-    ~X_FontSet();
+    explicit FontSet(const std::string & fontName) throw (Error);
+    ~FontSet();
 
     // Font accessors:
 

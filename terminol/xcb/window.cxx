@@ -4,9 +4,9 @@
 
 #include <xcb/xcb_icccm.h>
 
-const int         X_Window::BORDER_THICKNESS = 1;
-const int         X_Window::SCROLLBAR_WIDTH  = 8;
-const std::string X_Window::DEFAULT_TITLE    = "terminol";
+const int         Window::BORDER_THICKNESS = 1;
+const int         Window::SCROLLBAR_WIDTH  = 8;
+const std::string Window::DEFAULT_TITLE    = "terminol";
 
 #define xcb_request_failed(connection, cookie, err_msg) _xcb_request_failed(connection, cookie, err_msg, __LINE__)
 namespace {
@@ -22,12 +22,12 @@ int _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
 } // namespace {anonymous}
 
 
-X_Window::X_Window(X_Basics           & basics,
-                   const X_ColorSet   & colorSet,
-                   const X_KeyMap     & keyMap,
-                   X_FontSet          & fontSet,
-                   const std::string  & term,
-                   const Tty::Command & command) throw (Error) :
+Window::Window(Basics             & basics,
+               const ColorSet     & colorSet,
+               const KeyMap       & keyMap,
+               FontSet            & fontSet,
+               const std::string  & term,
+               const Tty::Command & command) throw (Error) :
     _basics(basics),
     _colorSet(colorSet),
     _keyMap(keyMap),
@@ -111,7 +111,7 @@ X_Window::X_Window(X_Basics           & basics,
     _isOpen = true;
 }
 
-X_Window::~X_Window() {
+Window::~Window() {
     if (_pixmap) {
         xcb_void_cookie_t cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
         if (xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap")) {
@@ -153,7 +153,7 @@ X_Window::~X_Window() {
     } xcb_key_press_event_t;
 #endif
 
-void X_Window::keyPress(xcb_key_press_event_t * event) {
+void Window::keyPress(xcb_key_press_event_t * event) {
 #if 0
     // Stuff from Awesome.
     xcb_keysym_t keySym =
@@ -214,10 +214,10 @@ void X_Window::keyPress(xcb_key_press_event_t * event) {
 #endif
 }
 
-void X_Window::keyRelease(xcb_key_release_event_t * UNUSED(event)) {
+void Window::keyRelease(xcb_key_release_event_t * UNUSED(event)) {
 }
 
-void X_Window::buttonPress(xcb_button_press_event_t * event) {
+void Window::buttonPress(xcb_button_press_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
     PRINT("Button-press: " << event->event_x << " " << event->event_y);
 
@@ -230,15 +230,15 @@ void X_Window::buttonPress(xcb_button_press_event_t * event) {
     std::free(geometry);
 }
 
-void X_Window::buttonRelease(xcb_button_release_event_t * event) {
+void Window::buttonRelease(xcb_button_release_event_t * event) {
     PRINT("Button-release: " << event->event_x << " " << event->event_y);
 }
 
-void X_Window::motionNotify(xcb_motion_notify_event_t * event) {
+void Window::motionNotify(xcb_motion_notify_event_t * event) {
     PRINT("Motion-notify: " << event->event_x << " " << event->event_y);
 }
 
-void X_Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
+void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
     PRINT("Map");
     ASSERT(!_pixmap, "");
 
@@ -259,7 +259,7 @@ void X_Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
                                         _width, _height);
 }
 
-void X_Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
+void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     PRINT("UnMap");
     ASSERT(_pixmap, "");
     ASSERT(_surface, "");
@@ -270,11 +270,11 @@ void X_Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     _pixmap = 0;
 }
 
-void X_Window::reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) {
+void Window::reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) {
     PRINT("Reparent");
 }
 
-void X_Window::expose(xcb_expose_event_t * event) {
+void Window::expose(xcb_expose_event_t * event) {
     ASSERT(event->window == _window, "Which window?");
     PRINT("Expose: " <<
           event->x << " " << event->y << " " <<
@@ -283,7 +283,7 @@ void X_Window::expose(xcb_expose_event_t * event) {
     draw(event->x, event->y, event->width, event->height);
 }
 
-void X_Window::configureNotify(xcb_configure_notify_event_t * event) {
+void Window::configureNotify(xcb_configure_notify_event_t * event) {
     ASSERT(event->window == _window, "Which window?");
     PRINT("Configure notify: " <<
           event->x << " " << event->y << " " <<
@@ -347,33 +347,33 @@ void X_Window::configureNotify(xcb_configure_notify_event_t * event) {
     }
 }
 
-void X_Window::focusIn(xcb_focus_in_event_t * UNUSED(event)) {
+void Window::focusIn(xcb_focus_in_event_t * UNUSED(event)) {
 }
 
-void X_Window::focusOut(xcb_focus_out_event_t * UNUSED(event)) {
+void Window::focusOut(xcb_focus_out_event_t * UNUSED(event)) {
 }
 
-void X_Window::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {
+void Window::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {
 }
 
-void X_Window::leaveNotify(xcb_leave_notify_event_t * UNUSED(event)) {
+void Window::leaveNotify(xcb_leave_notify_event_t * UNUSED(event)) {
 }
 
-void X_Window::visibilityNotify(xcb_visibility_notify_event_t & UNUSED(event)) {
+void Window::visibilityNotify(xcb_visibility_notify_event_t & UNUSED(event)) {
 }
 
-void X_Window::destroyNotify(xcb_destroy_notify_event_t & UNUSED(event)) {
+void Window::destroyNotify(xcb_destroy_notify_event_t & UNUSED(event)) {
     _tty->close();
     _isOpen = false;
     _window = 0;
 }
 
-void X_Window::rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const {
+void Window::rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const {
     x = BORDER_THICKNESS + col * _fontSet.getWidth();
     y = BORDER_THICKNESS + row * _fontSet.getHeight();
 }
 
-bool X_Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
+bool Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
     if (x < BORDER_THICKNESS || y < BORDER_THICKNESS) {
         // Too left or up.
         return false;
@@ -394,7 +394,7 @@ bool X_Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
     }
 }
 
-void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
+void Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
     // Clear the pixmap
     xcb_rectangle_t rectangle = { 0, 0, _width, _height };
     xcb_poly_fill_rectangle(_basics.connection(),
@@ -443,7 +443,7 @@ void X_Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
     xcb_flush(_basics.connection());
 }
 
-void X_Window::drawBuffer(cairo_t * cr) {
+void Window::drawBuffer(cairo_t * cr) {
     // Declare buffer at the outer scope (rather than for each row) to
     // minimise alloc/free.
     std::vector<char> buffer;
@@ -493,15 +493,15 @@ void X_Window::drawBuffer(cairo_t * cr) {
     }
 }
 
-void X_Window::drawUtf8(cairo_t    * cr,
-                        uint16_t     row,
-                        uint16_t     col,
-                        uint8_t      fg,
-                        uint8_t      bg,
-                        AttributeSet attr,
-                        const char * str,
-                        size_t       count,
-                        size_t       UNUSED(size)) {
+void Window::drawUtf8(cairo_t    * cr,
+                      uint16_t     row,
+                      uint16_t     col,
+                      uint8_t      fg,
+                      uint8_t      bg,
+                      AttributeSet attr,
+                      const char * str,
+                      size_t       count,
+                      size_t       UNUSED(size)) {
     cairo_save(cr); {
         int x, y;
         rowCol2XY(row, col, x, y);
@@ -528,10 +528,10 @@ void X_Window::drawUtf8(cairo_t    * cr,
     } cairo_restore(cr);
 }
 
-void X_Window::drawSelection(cairo_t * UNUSED(cr)) {
+void Window::drawSelection(cairo_t * UNUSED(cr)) {
 }
 
-void X_Window::drawCursor(cairo_t * cr) {
+void Window::drawCursor(cairo_t * cr) {
     uint16_t r = _terminal->cursorRow();
     uint16_t c = _terminal->cursorCol();
 
@@ -544,7 +544,7 @@ void X_Window::drawCursor(cairo_t * cr) {
              cell.bytes(), 1, utf8::leadLength(cell.lead()));
 }
 
-void X_Window::setTitle(const std::string & title) {
+void Window::setTitle(const std::string & title) {
     xcb_icccm_set_wm_name(_basics.connection(),
                           _window,
                           XCB_ATOM_STRING,
@@ -555,32 +555,32 @@ void X_Window::setTitle(const std::string & title) {
 
 // Terminal::I_Observer implementation:
 
-void X_Window::terminalBegin() throw () {
+void Window::terminalBegin() throw () {
 }
 
-void X_Window::terminalDamageCells(uint16_t UNUSED(row), uint16_t UNUSED(col0), uint16_t UNUSED(col1)) throw () {
+void Window::terminalDamageCells(uint16_t UNUSED(row), uint16_t UNUSED(col0), uint16_t UNUSED(col1)) throw () {
     _damage = true;
 }
 
-void X_Window::terminalDamageAll() throw () {
+void Window::terminalDamageAll() throw () {
     _damage = true;
 }
 
-void X_Window::terminalResetTitle() throw () {
+void Window::terminalResetTitle() throw () {
     setTitle(DEFAULT_TITLE);
 }
 
-void X_Window::terminalSetTitle(const std::string & title) throw () {
+void Window::terminalSetTitle(const std::string & title) throw () {
     //PRINT("Set title: " << title);
     setTitle(title);
 }
 
-void X_Window::terminalChildExited(int exitStatus) throw () {
+void Window::terminalChildExited(int exitStatus) throw () {
     PRINT("Child exited: " << exitStatus);
     _isOpen = false;
 }
 
-void X_Window::terminalEnd() throw () {
+void Window::terminalEnd() throw () {
     if (_damage && _pixmap) {
         draw(0, 0, _width, _height);
     }

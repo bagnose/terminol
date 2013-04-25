@@ -94,11 +94,11 @@ bool apply_key_map(const Map * mode, xkb_keysym_t sym, uint8_t state,
 
 } // namespace {anonymous}
 
-X_KeyMap::X_KeyMap() {}
+KeyMap::KeyMap() {}
 
-X_KeyMap::~X_KeyMap() {}
+KeyMap::~KeyMap() {}
 
-bool X_KeyMap::lookup(xkb_keysym_t keySym, uint8_t state,
+bool KeyMap::lookup(xkb_keysym_t keySym, uint8_t state,
                       bool UNUSED(appKey),  // Mode::APPKEYPAD - DECPAM
                       bool appCursor,       // Mode::APPCURSOR - DECCKM
                       bool crlf,
@@ -138,10 +138,10 @@ bool X_KeyMap::lookup(xkb_keysym_t keySym, uint8_t state,
 
         case XKB_KEY_Return:
             if (crlf /* terminal->mode & MODE_LF_NEWLINE */) {
-                ost << 0X0D << 0X0A;
+                ost << CR << LF;
             }
             else {
-                ost << 0X0D;
+                ost << CR;
             }
             break;
 
@@ -282,7 +282,7 @@ bool X_KeyMap::lookup(xkb_keysym_t keySym, uint8_t state,
     return !str.empty();
 }
 
-void X_KeyMap::normalise(xkb_keysym_t & keySym) {
+void KeyMap::normalise(xkb_keysym_t & keySym) {
     switch (keySym) {
         case XKB_KEY_KP_Space:
             keySym = XKB_KEY_space;
@@ -583,13 +583,13 @@ const size_t numKeys = sizeof(keys) / sizeof(keys[0]);
 
 } // namespace {anonymous}
 
-X_KeyMap::X_KeyMap() {}
+KeyMap::KeyMap() {}
 
-X_KeyMap::~X_KeyMap() {}
+KeyMap::~KeyMap() {}
 
-bool X_KeyMap::lookup(xkb_keysym_t keySym, uint8_t state,
-                      bool appKey, bool appCursor, bool crlf, bool numLock,
-                      std::string & str) const {
+bool KeyMap::lookup(xkb_keysym_t keySym, uint8_t state,
+                    bool appKey, bool appCursor, bool crlf, bool numLock,
+                    std::string & str) const {
     /*
     PRINT("keySym=" << keySym << ", state=" << int(state) << ", appKey=" << appKey
           << ", appCursor=" << appCursor << ", crlf=" << crlf << ", numLock=" << numLock

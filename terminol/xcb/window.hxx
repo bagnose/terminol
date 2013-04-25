@@ -16,7 +16,7 @@
 #include <cairo-xcb.h>
 #include <cairo-ft.h>
 
-class X_Window :
+class Window :
     protected Terminal::I_Observer,
     protected Uncopyable
 {
@@ -24,22 +24,22 @@ class X_Window :
     static const int           SCROLLBAR_WIDTH;
     static const std::string   DEFAULT_TITLE;
 
-    X_Basics         & _basics;
-    const X_ColorSet & _colorSet;
-    const X_KeyMap   & _keyMap;
-    X_FontSet        & _fontSet;
-    xcb_window_t       _window;
-    xcb_gcontext_t     _gc;
-    uint16_t           _width;
-    uint16_t           _height;
-    Tty              * _tty;
-    Terminal         * _terminal;
-    bool               _isOpen;
-    uint16_t           _pointerRow;
-    uint16_t           _pointerCol;
-    bool               _damage;
-    xcb_pixmap_t       _pixmap;
-    cairo_surface_t  * _surface;
+    Basics         & _basics;
+    const ColorSet & _colorSet;
+    const KeyMap   & _keyMap;
+    FontSet        & _fontSet;
+    xcb_window_t     _window;
+    xcb_gcontext_t   _gc;
+    uint16_t         _width;
+    uint16_t         _height;
+    Tty            * _tty;
+    Terminal       * _terminal;
+    bool             _isOpen;
+    uint16_t         _pointerRow;
+    uint16_t         _pointerCol;
+    bool             _damage;
+    xcb_pixmap_t     _pixmap;
+    cairo_surface_t* _surface;
 
 public:
     struct Error {      // FIXME constructor never throws ATM
@@ -47,14 +47,14 @@ public:
         std::string message;
     };
 
-    X_Window(X_Basics           & basics,
-             const X_ColorSet   & colorSet,
-             const X_KeyMap     & keyMap,
-             X_FontSet          & fontSet,
-             const std::string  & term,
-             const Tty::Command & command) throw (Error);
+    Window(Basics             & basics,
+           const ColorSet     & colorSet,
+           const KeyMap       & keyMap,
+           FontSet            & fontSet,
+           const std::string  & term,
+           const Tty::Command & command) throw (Error);
 
-    virtual ~X_Window();
+    virtual ~Window();
 
     // We handle these:
 

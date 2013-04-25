@@ -2,7 +2,7 @@
 
 #include "terminol/xcb/font_set.hxx"
 
-X_FontSet::X_FontSet(const std::string & fontName) throw (Error) :
+FontSet::FontSet(const std::string & fontName) throw (Error) :
     _normal(nullptr),
     _bold(nullptr),
     _italic(nullptr),
@@ -43,14 +43,14 @@ X_FontSet::X_FontSet(const std::string & fontName) throw (Error) :
     FcPatternDestroy(pattern);
 }
 
-X_FontSet::~X_FontSet() {
+FontSet::~FontSet() {
     unload(_italicBold);
     unload(_italic);
     unload(_bold);
     unload(_normal);
 }
 
-cairo_scaled_font_t * X_FontSet::load(FcPattern * pattern, bool master) throw (Error) {
+cairo_scaled_font_t * FontSet::load(FcPattern * pattern, bool master) throw (Error) {
     FcResult result;
     FcPattern * match = FcFontMatch(nullptr, pattern, &result);
     ENFORCE(match, "");
@@ -114,7 +114,7 @@ cairo_scaled_font_t * X_FontSet::load(FcPattern * pattern, bool master) throw (E
     return scaled_font;
 }
 
-void X_FontSet::unload(cairo_scaled_font_t * scaled_font) {
+void FontSet::unload(cairo_scaled_font_t * scaled_font) {
     cairo_font_face_t * font_face = cairo_scaled_font_get_font_face(scaled_font);
     cairo_scaled_font_destroy(scaled_font);
     cairo_font_face_destroy(font_face);

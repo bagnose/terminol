@@ -8,7 +8,7 @@
 #include <xcb/xcb.h>
 #include <xcb/xcb_keysyms.h>
 
-class X_Basics : protected Uncopyable {
+class Basics : protected Uncopyable {
     xcb_connection_t  * _connection;
     xcb_screen_t      * _screen;
     xcb_visualtype_t  * _visual;
@@ -25,8 +25,8 @@ public:
         std::string message;
     };
 
-    X_Basics() throw (Error);
-    ~X_Basics();
+    Basics() throw (Error);
+    ~Basics();
 
     xcb_connection_t  * connection() { return _connection; }
     xcb_screen_t      * screen()     { return _screen;     }

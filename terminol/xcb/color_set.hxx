@@ -9,14 +9,14 @@ struct Color {
     double r, g, b;
 };
 
-class X_ColorSet {
+class ColorSet {
     static const Color COLORS16[16];
 
     Color _indexedColors[256];
     Color _cursorColor;
 
 public:
-    X_ColorSet();
+    ColorSet();
 
     const Color & getIndexedColor(uint8_t index) const { return _indexedColors[index]; }
     const Color & getCursorColor() const { return _cursorColor; }

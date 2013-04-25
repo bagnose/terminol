@@ -16,17 +16,17 @@
 #include <unistd.h>
 #include <sys/select.h>
 
-class X_EventLoop : protected Uncopyable {
-    X_Basics   _basics;
-    X_ColorSet _colorSet;
-    X_KeyMap   _keyMap;
-    X_FontSet  _fontSet;
-    X_Window   _window;
+class EventLoop : protected Uncopyable {
+    Basics   _basics;
+    ColorSet _colorSet;
+    KeyMap   _keyMap;
+    FontSet  _fontSet;
+    Window   _window;
 public:
-    X_EventLoop(const std::string  & fontName,
+    EventLoop(const std::string  & fontName,
                 const std::string  & term,
                 const Tty::Command & command)
-        throw (X_Basics::Error, X_FontSet::Error, X_Window::Error) :
+        throw (Basics::Error, FontSet::Error, Window::Error) :
         _basics(),
         _colorSet(),
         _keyMap(),
@@ -212,15 +212,15 @@ int main(int argc, char * argv[]) {
     FcInit();
 
     try {
-        X_EventLoop eventLoop(fontName, term, command);
+        EventLoop eventLoop(fontName, term, command);
     }
-    catch (X_Window::Error & ex) {
+    catch (Window::Error & ex) {
         FATAL(ex.message);
     }
-    catch (X_FontSet::Error & ex) {
+    catch (FontSet::Error & ex) {
         FATAL(ex.message);
     }
-    catch (X_Basics::Error & ex) {
+    catch (Basics::Error & ex) {
         FATAL(ex.message);
     }
 

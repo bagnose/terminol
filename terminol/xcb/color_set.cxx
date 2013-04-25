@@ -5,7 +5,7 @@
 
 #include <algorithm>
 
-const Color X_ColorSet::COLORS16[16] = {
+const Color ColorSet::COLORS16[16] = {
     // normal
     { 0.0,  0.0,  0.0  }, // black
     { 0.66, 0.0,  0.0  }, // red
@@ -26,7 +26,7 @@ const Color X_ColorSet::COLORS16[16] = {
     { 1.0,  1.0,  1.0  }  // white
 };
 
-X_ColorSet::X_ColorSet() {
+ColorSet::ColorSet() {
     // 0..7     normal colors
     // 8..15    bright colors
     // 16..231  6x6x6 color cube

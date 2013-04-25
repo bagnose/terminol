@@ -4,7 +4,7 @@
 
 #include <xkbcommon/xkbcommon-keysyms.h>
 
-X_Basics::X_Basics() throw (Error) {
+Basics::Basics() throw (Error) {
     int screenNum;
     _connection = xcb_connect(nullptr, &screenNum);
     if (xcb_connection_has_error(_connection)) {
@@ -48,7 +48,7 @@ X_Basics::X_Basics() throw (Error) {
     PRINT("Mode switch mask: " << int(_modeSwitchMask));
 }
 
-X_Basics::~X_Basics() {
+Basics::~Basics() {
     xcb_key_symbols_free(_keySymbols);
     xcb_disconnect(_connection);
 }
@@ -59,7 +59,7 @@ X_Basics::~X_Basics() {
 // Copyright © 2008 Pierre Habouzit <madcoder@debian.org>
 
 xcb_keysym_t
-X_Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
+Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
     xcb_keysym_t k0, k1;
 
     /* 'col' (third parameter) is used to get the proper KeySym
@@ -129,7 +129,7 @@ X_Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
     return XCB_NO_SYMBOL;
 }
 
-void X_Basics::determineMasks() {
+void Basics::determineMasks() {
     xcb_get_modifier_mapping_cookie_t cookie =
         xcb_get_modifier_mapping_unchecked(_connection);
 

@@ -9,10 +9,10 @@
 
 #include <xkbcommon/xkbcommon.h>
 
-class X_KeyMap {
+class KeyMap {
 public:
-    X_KeyMap();
-    ~X_KeyMap();
+    KeyMap();
+    ~KeyMap();
 
     bool lookup(xkb_keysym_t keySym, uint8_t state,
                 bool appKey, bool appCursor, bool crlf, bool numLock,
