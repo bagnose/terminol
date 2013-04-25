@@ -50,7 +50,7 @@ FontSet::~FontSet() {
     unload(_normal);
 }
 
-cairo_scaled_font_t * FontSet::load(FcPattern * pattern, bool master) throw (Error) {
+cairo_scaledFont_t * FontSet::load(FcPattern * pattern, bool master) throw (Error) {
     FcResult result;
     FcPattern * match = FcFontMatch(nullptr, pattern, &result);
     ENFORCE(match, "");
@@ -67,10 +67,10 @@ cairo_scaled_font_t * FontSet::load(FcPattern * pattern, bool master) throw (Err
     FcPatternGetDouble(match, FC_PIXEL_SIZE, 0, &pixelSize);
     PRINT("pixelsize: " << pixelSize);
 
-    cairo_font_face_t * font_face = cairo_ft_font_face_create_for_pattern(match);
+    cairo_font_face_t * fontFace = cairo_ft_font_face_create_for_pattern(match);
     FcPatternDestroy(match);
 
-    if (!font_face) {
+    if (!fontFace) {
         throw Error("Failed to load font.");
     }
 
@@ -79,30 +79,30 @@ cairo_scaled_font_t * FontSet::load(FcPattern * pattern, bool master) throw (Err
     cairo_matrix_scale(&fontMatrix, pixelSize, pixelSize);
     cairo_matrix_init_identity(&ctm);
 
-    cairo_font_options_t * font_options = cairo_font_options_create();
-    cairo_scaled_font_t  * scaled_font  = cairo_scaled_font_create(font_face,
-                                                                   &fontMatrix,
-                                                                   &ctm,
-                                                                   font_options);
-    cairo_font_options_destroy(font_options);
+    cairo_fontOptions_t * fontOptions = cairo_fontOptions_create();
+    cairo_scaledFont_t  * scaledFont  = cairo_scaledFont_create(fontFace,
+                                                                &fontMatrix,
+                                                                &ctm,
+                                                                fontOptions);
+    cairo_fontOptions_destroy(fontOptions);
 
     /*
-    typedef struct {
-        double ascent;
-        double descent;
-        double height;
-        double max_x_advance;
-        double max_y_advance;
-    } cairo_font_extents_t;
-    */
+       typedef struct {
+       double ascent;
+       double descent;
+       double height;
+       double max_x_advance;
+       double max_y_advance;
+       } cairo_font_extents_t;
+       */
 
     cairo_font_extents_t extents;
-    cairo_scaled_font_extents(scaled_font, &extents);
+    cairo_scaledFont_extents(scaledFont, &extents);
 
     /*
-    PRINT("ascent=" << extents.ascent << ", descent=" << extents.descent <<
-          ", height=" << extents.height << ", max_x_advance=" << extents.max_x_advance);
-          */
+       PRINT("ascent=" << extents.ascent << ", descent=" << extents.descent <<
+       ", height=" << extents.height << ", max_x_advance=" << extents.max_x_advance);
+       */
 
     _width  = std::max(_width,  static_cast<uint16_t>(extents.max_x_advance));
     _height = std::max(_height, static_cast<uint16_t>(extents.height));
@@ -111,11 +111,11 @@ cairo_scaled_font_t * FontSet::load(FcPattern * pattern, bool master) throw (Err
         _ascent = extents.ascent;
     }
 
-    return scaled_font;
+    return scaledFont;
 }
 
-void FontSet::unload(cairo_scaled_font_t * scaled_font) {
-    cairo_font_face_t * font_face = cairo_scaled_font_get_font_face(scaled_font);
-    cairo_scaled_font_destroy(scaled_font);
-    cairo_font_face_destroy(font_face);
+void FontSet::unload(cairo_scaledFont_t * scaledFont) {
+    cairo_font_face_t * fontFace = cairo_scaledFont_get_font_face(scaledFont);
+    cairo_scaledFont_destroy(scaledFont);
+    cairo_font_face_destroy(fontFace);
 }
