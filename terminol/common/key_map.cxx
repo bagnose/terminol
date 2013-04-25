@@ -1,6 +1,6 @@
 // vi:noai:sw=4
 
-#include "terminol/xcb/key_map.hxx"
+#include "terminol/common/key_map.hxx"
 #include "terminol/common/ascii.hxx"
 #include "terminol/common/support.hxx"
 
@@ -45,11 +45,11 @@ KeyMap::KeyMap(uint8_t maskShift, uint8_t maskAlt, uint8_t maskControl) :
 
 KeyMap::~KeyMap() {}
 
-bool KeyMap::lookup(xkb_keysym_t keySym, uint8_t state,
-                    bool UNUSED(appKey),  // Mode::APPKEYPAD - DECPAM
-                    bool appCursor,       // Mode::APPCURSOR - DECCKM
-                    bool crlf,
-                    std::string & str) const {
+bool KeyMap::convert(xkb_keysym_t keySym, uint8_t state,
+                     bool UNUSED(appKey),  // Mode::APPKEYPAD - DECPAM
+                     bool appCursor,       // Mode::APPCURSOR - DECCKM
+                     bool crlf,
+                     std::string & str) const {
     normalise(keySym);
 
     std::ostringstream ost;
@@ -96,7 +96,7 @@ bool KeyMap::lookup(xkb_keysym_t keySym, uint8_t state,
             break;
 
         case XKB_KEY_Insert:
-            function_key_response('[', 2, state, '~', ost);
+            functionKeyResponse('[', 2, state, '~', ost);
             break;
 
         case XKB_KEY_Delete:
@@ -104,67 +104,67 @@ bool KeyMap::lookup(xkb_keysym_t keySym, uint8_t state,
                 ost << EOT;
             }
             else {
-                function_key_response('[', 3, state, '~', ost);
+                functionKeyResponse('[', 3, state, '~', ost);
             }
             break;
 
         case XKB_KEY_Page_Up:
-            function_key_response('[', 5, state, '~', ost);
+            functionKeyResponse('[', 5, state, '~', ost);
             break;
 
         case XKB_KEY_Page_Down:
-            function_key_response('[', 6, state, '~', ost);
+            functionKeyResponse('[', 6, state, '~', ost);
             break;
 
         case XKB_KEY_F1:
-            function_key_response('O', 1, state, 'P', ost);
+            functionKeyResponse('O', 1, state, 'P', ost);
             break;
 
         case XKB_KEY_F2:
-            function_key_response('O', 1, state, 'Q', ost);
+            functionKeyResponse('O', 1, state, 'Q', ost);
             break;
 
         case XKB_KEY_F3:
-            function_key_response('O', 1, state, 'R', ost);
+            functionKeyResponse('O', 1, state, 'R', ost);
             break;
 
         case XKB_KEY_F4:
-            function_key_response('O', 1, state, 'S', ost);
+            functionKeyResponse('O', 1, state, 'S', ost);
             break;
 
         case XKB_KEY_F5:
-            function_key_response('[', 15, state, '~', ost);
+            functionKeyResponse('[', 15, state, '~', ost);
             break;
 
         case XKB_KEY_F6:
-            function_key_response('[', 17, state, '~', ost);
+            functionKeyResponse('[', 17, state, '~', ost);
             break;
 
         case XKB_KEY_F7:
-            function_key_response('[', 18, state, '~', ost);
+            functionKeyResponse('[', 18, state, '~', ost);
             break;
 
         case XKB_KEY_F8:
-            function_key_response('[', 19, state, '~', ost);
+            functionKeyResponse('[', 19, state, '~', ost);
             break;
 
         case XKB_KEY_F9:
-            function_key_response('[', 20, state, '~', ost);
+            functionKeyResponse('[', 20, state, '~', ost);
             break;
 
         case XKB_KEY_F10:
-            function_key_response('[', 21, state, '~', ost);
+            functionKeyResponse('[', 21, state, '~', ost);
             break;
 
         case XKB_KEY_F12:
-            function_key_response('[', 24, state, '~', ost);
+            functionKeyResponse('[', 24, state, '~', ost);
             break;
 
         default:
             bool convert_utf8 = true;
 
             // Handle special keys with alternate mappings.
-            if (apply_key_map(appCursor ? MAP_APPLICATION : MAP_NORMAL,
+            if (applyKeyMap(appCursor ? MAP_APPLICATION : MAP_NORMAL,
                               keySym, state, ost))
             {
                 break;
@@ -282,7 +282,7 @@ void KeyMap::normalise(xkb_keysym_t & keySym) {
     }
 }
 
-void KeyMap::function_key_response(char escape, int num, uint8_t state, char code,
+void KeyMap::functionKeyResponse(char escape, int num, uint8_t state, char code,
                                    std::ostream & response) const {
     int mod_num = 0;
 
@@ -301,7 +301,7 @@ void KeyMap::function_key_response(char escape, int num, uint8_t state, char cod
     }
 }
 
-bool KeyMap::apply_key_map(const Map * mode, xkb_keysym_t sym, uint8_t state,
+bool KeyMap::applyKeyMap(const Map * mode, xkb_keysym_t sym, uint8_t state,
                            std::ostream & response) const {
     const Map * map;
     int i = 0;
@@ -309,7 +309,7 @@ bool KeyMap::apply_key_map(const Map * mode, xkb_keysym_t sym, uint8_t state,
     while (mode[i].sym) {
         map = &mode[i++];
         if (sym == map->sym) {
-            function_key_response(map->escape, map->num, state, map->code, response);
+            functionKeyResponse(map->escape, map->num, state, map->code, response);
             return true;
         }
     }

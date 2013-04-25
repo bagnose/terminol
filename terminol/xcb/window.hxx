@@ -5,8 +5,8 @@
 
 #include "terminol/xcb/basics.hxx"
 #include "terminol/xcb/color_set.hxx"
-#include "terminol/xcb/key_map.hxx"
 #include "terminol/xcb/font_set.hxx"
+#include "terminol/common/key_map.hxx"
 #include "terminol/common/tty.hxx"
 #include "terminol/common/terminal.hxx"
 #include "terminol/common/support.hxx"

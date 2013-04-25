@@ -2,9 +2,9 @@
 
 #include "terminol/xcb/window.hxx"
 #include "terminol/xcb/color_set.hxx"
-#include "terminol/xcb/key_map.hxx"
 #include "terminol/xcb/font_set.hxx"
 #include "terminol/xcb/basics.hxx"
+#include "terminol/common/key_map.hxx"
 #include "terminol/common/support.hxx"
 
 #include <xcb/xcb.h>
@@ -24,8 +24,8 @@ class EventLoop : protected Uncopyable {
     Window   _window;
 public:
     EventLoop(const std::string  & fontName,
-                const std::string  & term,
-                const Tty::Command & command)
+              const std::string  & term,
+              const Tty::Command & command)
         throw (Basics::Error, FontSet::Error, Window::Error) :
         _basics(),
         _colorSet(),

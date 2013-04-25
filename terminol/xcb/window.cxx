@@ -157,11 +157,11 @@ void Window::keyPress(xcb_key_press_event_t * event) {
     std::string str;
     // Note, we only consider the lower 8 bits of the state.
     // Other bits relate to button state.
-    if (_keyMap.lookup(keySym, static_cast<uint8_t>(event->state),
-                       modes.get(Mode::APPKEYPAD),
-                       modes.get(Mode::APPCURSOR),
-                       modes.get(Mode::CRLF),
-                       str)) {
+    if (_keyMap.convert(keySym, static_cast<uint8_t>(event->state),
+                        modes.get(Mode::APPKEYPAD),
+                        modes.get(Mode::APPCURSOR),
+                        modes.get(Mode::CRLF),
+                        str)) {
         _tty->write(str.data(), str.size());
     }
 }
