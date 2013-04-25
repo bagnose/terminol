@@ -28,7 +28,7 @@ class SimpleBuffer {
         }
 
         void erase(uint16_t col, uint16_t n) {
-            ASSERT(col < getCols(), "");
+            ASSERT(col + n < getCols(), "");
             std::copy(&_cells[col], &_cells[_cells.size()], &_cells[col] - n);
             std::fill(&_cells[_cells.size()] - n, &_cells[_cells.size()], Cell::blank());
         }

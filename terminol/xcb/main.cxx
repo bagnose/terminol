@@ -29,7 +29,9 @@ public:
         throw (Basics::Error, FontSet::Error, Window::Error) :
         _basics(),
         _colorSet(),
-        _keyMap(),
+        _keyMap(_basics.maskShift(),
+                _basics.maskAlt(),
+                _basics.maskControl()),
         _fontSet(fontName),
         _window(_basics,
                 _colorSet,

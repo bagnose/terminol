@@ -339,7 +339,7 @@ void Terminal::processControl(char c) {
             if (_modes.get(Mode::CRLF)) {
                 _cursorCol = 0;
             }
-            // Fall-through
+            // Fall-through:
         case FF:
         case VT:
 #if 1
@@ -590,7 +590,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 _observer.terminalDamageAll();
                 break;
             case 'P': // DCH - ??? Delete Character???
-                NYI("DCH");
+                _buffer.eraseCells(_cursorRow, _cursorCol, nthArg(args, 0, 1));
                 break;
 
             case 'S': // SU - Scroll Up

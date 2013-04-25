@@ -84,7 +84,7 @@ Window::Window(Basics             & basics,
                                        XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
                                        values);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to create window")) {
-        FATAL("");
+        throw Error("Failed to create window.");
     }
 
     /*
@@ -100,6 +100,7 @@ Window::Window(Basics             & basics,
     uint32_t vals[] = { 0 };
     cookie = xcb_create_gc_checked(_basics.connection(), _gc, _window, mask, vals);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate gc")) {
+        xcb_destroy_window(_basics.connection(), _window);
         FATAL("");
     }
 
@@ -394,6 +395,15 @@ bool Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
     }
 }
 
+void Window::setTitle(const std::string & title) {
+    xcb_icccm_set_wm_name(_basics.connection(),
+                          _window,
+                          XCB_ATOM_STRING,
+                          8,
+                          title.size(),
+                          title.data());
+}
+
 void Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
     // Clear the pixmap
     xcb_rectangle_t rectangle = { 0, 0, _width, _height };
@@ -462,7 +472,7 @@ void Window::drawBuffer(cairo_t * cr) {
                 if (!buffer.empty()) {
                     // flush buffer
                     buffer.push_back(NUL);
-                    drawUtf8(cr, r, cc, fg, bg, attrs, &buffer.front(), c - cc, buffer.size());
+                    drawUtf8(cr, r, cc, fg, bg, attrs, &buffer.front(), c - cc);
                     buffer.clear();
                 }
 
@@ -487,10 +497,13 @@ void Window::drawBuffer(cairo_t * cr) {
             // flush buffer
             buffer.push_back(NUL);
             drawUtf8(cr, r, cc, fg, bg, attrs,
-                     &buffer.front(), _terminal->buffer().getCols() - cc, buffer.size());
+                     &buffer.front(), _terminal->buffer().getCols() - cc);
             buffer.clear();
         }
     }
+}
+
+void Window::drawSelection(cairo_t * UNUSED(cr)) {
 }
 
 void Window::drawUtf8(cairo_t    * cr,
@@ -500,8 +513,7 @@ void Window::drawUtf8(cairo_t    * cr,
                       uint8_t      bg,
                       AttributeSet attr,
                       const char * str,
-                      size_t       count,
-                      size_t       UNUSED(size)) {
+                      size_t       count) {
     cairo_save(cr); {
         int x, y;
         rowCol2XY(row, col, x, y);
@@ -528,9 +540,6 @@ void Window::drawUtf8(cairo_t    * cr,
     } cairo_restore(cr);
 }
 
-void Window::drawSelection(cairo_t * UNUSED(cr)) {
-}
-
 void Window::drawCursor(cairo_t * cr) {
     uint16_t r = _terminal->cursorRow();
     uint16_t c = _terminal->cursorCol();
@@ -541,29 +550,12 @@ void Window::drawCursor(cairo_t * cr) {
              r, c,
              cell.bg(), cell.fg(),      // Swap fg/bg for cursor.
              cell.attrs(),
-             cell.bytes(), 1, utf8::leadLength(cell.lead()));
-}
-
-void Window::setTitle(const std::string & title) {
-    xcb_icccm_set_wm_name(_basics.connection(),
-                          _window,
-                          XCB_ATOM_STRING,
-                          8,
-                          title.size(),
-                          title.data());
+             cell.bytes(), 1);
 }
 
 // Terminal::I_Observer implementation:
 
 void Window::terminalBegin() throw () {
-}
-
-void Window::terminalDamageCells(uint16_t UNUSED(row), uint16_t UNUSED(col0), uint16_t UNUSED(col1)) throw () {
-    _damage = true;
-}
-
-void Window::terminalDamageAll() throw () {
-    _damage = true;
 }
 
 void Window::terminalResetTitle() throw () {
@@ -573,6 +565,14 @@ void Window::terminalResetTitle() throw () {
 void Window::terminalSetTitle(const std::string & title) throw () {
     //PRINT("Set title: " << title);
     setTitle(title);
+}
+
+void Window::terminalDamageCells(uint16_t UNUSED(row), uint16_t UNUSED(col0), uint16_t UNUSED(col1)) throw () {
+    _damage = true;
+}
+
+void Window::terminalDamageAll() throw () {
+    _damage = true;
 }
 
 void Window::terminalChildExited(int exitStatus) throw () {

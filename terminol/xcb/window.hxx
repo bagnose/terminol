@@ -20,9 +20,9 @@ class Window :
     protected Terminal::I_Observer,
     protected Uncopyable
 {
-    static const int           BORDER_THICKNESS;
-    static const int           SCROLLBAR_WIDTH;
-    static const std::string   DEFAULT_TITLE;
+    static const int         BORDER_THICKNESS;
+    static const int         SCROLLBAR_WIDTH;
+    static const std::string DEFAULT_TITLE;
 
     Basics         & _basics;
     const ColorSet & _colorSet;
@@ -42,7 +42,7 @@ class Window :
     cairo_surface_t* _surface;
 
 public:
-    struct Error {      // FIXME constructor never throws ATM
+    struct Error {
         explicit Error(const std::string & message_) : message(message_) {}
         std::string message;
     };
@@ -61,7 +61,7 @@ public:
     bool isOpen() const { return _isOpen; }
     int  getFd() { return _tty->getFd(); }
 
-    // The following calls are forwarded to the Terminal.
+    // The following calls are forwarded to the Terminal:
 
     void read()                  { _terminal->read(); }
     bool areWritesQueued() const { return _terminal->areWritesQueued(); }
@@ -90,8 +90,8 @@ protected:
     void rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const;
     bool xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const;
 
-    void draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih);
     void setTitle(const std::string & title);
+    void draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih);
 
     void drawBuffer(cairo_t * cr);
     void drawSelection(cairo_t * cr);
@@ -102,17 +102,16 @@ protected:
                   uint8_t      bg,
                   AttributeSet attr,
                   const char * str,
-                  size_t       count,
-                  size_t       size);
+                  size_t       count);
     void drawCursor(cairo_t * cr);
 
     // Terminal::I_Observer implementation:
 
     void terminalBegin() throw ();
-    void terminalDamageCells(uint16_t row, uint16_t col0, uint16_t col1) throw ();
-    void terminalDamageAll() throw ();
     void terminalResetTitle() throw ();
     void terminalSetTitle(const std::string & title) throw ();
+    void terminalDamageCells(uint16_t row, uint16_t col0, uint16_t col1) throw ();
+    void terminalDamageAll() throw ();
     void terminalChildExited(int exitStatus) throw ();
     void terminalEnd() throw ();
 };

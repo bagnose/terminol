@@ -14,10 +14,13 @@ class Basics : protected Uncopyable {
     xcb_visualtype_t  * _visual;
     xcb_key_symbols_t * _keySymbols;
 
-    uint8_t             _numLockMask;
-    uint8_t             _shiftLockMask;
-    uint8_t             _capsLockMask;
-    uint8_t             _modeSwitchMask;
+    uint8_t             _maskShift;
+    uint8_t             _maskAlt;
+    uint8_t             _maskControl;
+    uint8_t             _maskNumLock;
+    uint8_t             _maskShiftLock;
+    uint8_t             _maskCapsLock;
+    uint8_t             _maskModeSwitch;
 
 public:
     struct Error {
@@ -34,6 +37,14 @@ public:
     xcb_key_symbols_t * keySymbols() { return _keySymbols; }
 
     xcb_keysym_t        getKeySym(xcb_keycode_t keyCode, uint8_t state);
+
+    uint8_t             maskShift()      const { return _maskShift; }
+    uint8_t             maskAlt()        const { return _maskAlt; }
+    uint8_t             maskControl()    const { return _maskControl; }
+    uint8_t             maskNumLock()    const { return _maskNumLock; }
+    uint8_t             maskShiftLock()  const { return _maskShiftLock; }
+    uint8_t             maskCapsLock()   const { return _maskCapsLock; }
+    uint8_t             maskModeSwitch() const { return _maskModeSwitch; }
 
 protected:
     void determineMasks();

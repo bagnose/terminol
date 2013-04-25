@@ -42,10 +42,14 @@ Basics::Basics() throw (Error) {
 
     determineMasks();
 
-    PRINT("Num lock mask: " << int(_numLockMask));
-    PRINT("Shift lock mask: " << int(_shiftLockMask));
-    PRINT("Caps lock mask: " << int(_capsLockMask));
-    PRINT("Mode switch mask: " << int(_modeSwitchMask));
+    PRINT("Mask: Shift: " << int(_maskShift));
+    PRINT("Mask: Alt: " << int(_maskAlt));
+    PRINT("Mask: Control: " << int(_maskControl));
+
+    PRINT("Mask: Num lock: " << int(_maskNumLock));
+    PRINT("Mask: Shift lock: " << int(_maskShiftLock));
+    PRINT("Mask: Caps lock: " << int(_maskCapsLock));
+    PRINT("Mask: Mode switch: " << int(_maskModeSwitch));
 }
 
 Basics::~Basics() {
@@ -58,8 +62,7 @@ Basics::~Basics() {
 // Copyright © 2008-2009 Julien Danjou <julien@danjou.info>
 // Copyright © 2008 Pierre Habouzit <madcoder@debian.org>
 
-xcb_keysym_t
-Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
+xcb_keysym_t Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
     xcb_keysym_t k0, k1;
 
     /* 'col' (third parameter) is used to get the proper KeySym
@@ -68,7 +71,7 @@ Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
      *
      * If Mode_Switch is ON we look into second group.
      */
-    if (state & _modeSwitchMask)
+    if (state & _maskModeSwitch)
     {
         k0 = xcb_key_symbols_get_keysym(_keySymbols, keyCode, 4);
         k1 = xcb_key_symbols_get_keysym(_keySymbols, keyCode, 5);
@@ -86,12 +89,12 @@ Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
 
     /* The numlock modifier is on and the second KeySym is a keypad
      * KeySym */
-    if ((state & _numLockMask) && xcb_is_keypad_key(k1))
+    if ((state & _maskNumLock) && xcb_is_keypad_key(k1))
     {
         /* The Shift modifier is on, or if the Lock modifier is on and
          * is interpreted as ShiftLock, use the first KeySym */
         if ((state & XCB_MOD_MASK_SHIFT)
-           || (state & XCB_MOD_MASK_LOCK && (state & _shiftLockMask)))
+           || (state & XCB_MOD_MASK_LOCK && (state & _maskShiftLock)))
             return k0;
         else
             return k1;
@@ -104,7 +107,7 @@ Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
     /* The Shift modifier is off and the Lock modifier is on and is
      * interpreted as CapsLock */
     else if (!(state & XCB_MOD_MASK_SHIFT)
-             && (state & XCB_MOD_MASK_LOCK && (state & _capsLockMask))) {
+             && (state & XCB_MOD_MASK_LOCK && (state & _maskCapsLock))) {
         /* The first Keysym is used but if that KeySym is lowercase
          * alphabetic, then the corresponding uppercase KeySym is used
          * instead */
@@ -113,7 +116,7 @@ Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
     /* The Shift modifier is on, and the Lock modifier is on and is
      * interpreted as CapsLock */
     else if ((state & XCB_MOD_MASK_SHIFT)
-            && (state & XCB_MOD_MASK_LOCK && (state & _capsLockMask))) {
+            && (state & XCB_MOD_MASK_LOCK && (state & _maskCapsLock))) {
         /* The second Keysym is used but if that KeySym is lowercase
          * alphabetic, then the corresponding uppercase KeySym is used
          * instead */
@@ -122,7 +125,7 @@ Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
     /* The Shift modifier is on, or the Lock modifier is on and is
      * interpreted as ShiftLock, or both */
     else if ((state & XCB_MOD_MASK_SHIFT)
-            || (state & XCB_MOD_MASK_LOCK && (state & _shiftLockMask))) {
+            || (state & XCB_MOD_MASK_LOCK && (state & _maskShiftLock))) {
         return k1;
     }
 
@@ -133,6 +136,12 @@ void Basics::determineMasks() {
     xcb_get_modifier_mapping_cookie_t cookie =
         xcb_get_modifier_mapping_unchecked(_connection);
 
+    xcb_keycode_t * shiftCodes =
+        xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Shift_L);
+    xcb_keycode_t * altCodes =
+        xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Alt_L);
+    xcb_keycode_t * controlCodes =
+        xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Control_L);
     xcb_keycode_t * numLockCodes =
         xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Num_Lock);
     xcb_keycode_t * shiftLockCodes =
@@ -148,30 +157,42 @@ void Basics::determineMasks() {
         xcb_get_modifier_mapping_keycodes(modmapReply);
 
     // Clear the masks.
-    _numLockMask = _shiftLockMask = _capsLockMask = _modeSwitchMask = 0;
+    _maskShift = _maskAlt = _maskControl =
+        _maskNumLock = _maskShiftLock = _maskCapsLock = _maskModeSwitch = 0;
 
     for(int i = 0; i != 8; ++i) {
         for(int j = 0; j != modmapReply->keycodes_per_modifier; j++) {
             xcb_keycode_t kc = modmap[i * modmapReply->keycodes_per_modifier + j];
 
 #define LOOK_FOR(mask, codes) \
-            if (mask == 0 && codes) \
-                for (xcb_keycode_t * ktest = codes; *ktest; ++ktest) \
+            do { \
+                if (mask == 0 && codes) { \
+                    for (xcb_keycode_t * ktest = codes; *ktest; ++ktest) \
                     if (*ktest == kc) { \
                         mask = (1 << i); \
                         break; \
-                    }
+                    } \
+                } \
+            } while (false)
 
-            LOOK_FOR(_numLockMask,    numLockCodes)
-            LOOK_FOR(_shiftLockMask,  shiftLockCodes)
-            LOOK_FOR(_capsLockMask,   capsLockCodes)
-            LOOK_FOR(_modeSwitchMask, modeSwitchCodes)
+            LOOK_FOR(_maskShift,      shiftCodes);
+            LOOK_FOR(_maskAlt,        altCodes);
+            LOOK_FOR(_maskControl,    controlCodes);
+            LOOK_FOR(_maskNumLock,    numLockCodes);
+            LOOK_FOR(_maskShiftLock,  shiftLockCodes);
+            LOOK_FOR(_maskCapsLock,   capsLockCodes);
+            LOOK_FOR(_maskModeSwitch, modeSwitchCodes);
 #undef LOOK_FOR
         }
     }
-    std::free(numLockCodes);
-    std::free(shiftLockCodes);
-    std::free(capsLockCodes);
-    std::free(modeSwitchCodes);
+
     std::free(modmapReply);
+
+    std::free(modeSwitchCodes);
+    std::free(capsLockCodes);
+    std::free(shiftLockCodes);
+    std::free(numLockCodes);
+    std::free(controlCodes);
+    std::free(altCodes);
+    std::free(shiftCodes);
 }

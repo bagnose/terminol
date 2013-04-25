@@ -13,11 +13,11 @@ public:
     class I_Observer {
     public:
         virtual void terminalBegin() throw () = 0;
+        virtual void terminalResetTitle() throw () = 0;
+        virtual void terminalSetTitle(const std::string & title) throw () = 0;
         virtual void terminalDamageCells(uint16_t row,
                                          uint16_t col0, uint16_t col1) throw () = 0;
         virtual void terminalDamageAll() throw () = 0;
-        virtual void terminalResetTitle() throw () = 0;
-        virtual void terminalSetTitle(const std::string & title) throw () = 0;
         virtual void terminalChildExited(int exitStatus) throw () = 0;
         virtual void terminalEnd() throw () = 0;
 
