@@ -135,84 +135,35 @@ Window::~Window() {
 
 // Events:
 
-#if 0
-    typedef struct xcb_key_press_event_t {
-        uint8_t         response_type; /**<  */
-        xcb_keycode_t   detail; /**<  */
-        uint16_t        sequence; /**<  */
-        xcb_timestamp_t time; /**<  */
-        xcb_window_t    root; /**<  */
-        xcb_window_t    event; /**<  */
-        xcb_window_t    child; /**<  */
-        int16_t         root_x; /**<  */
-        int16_t         root_y; /**<  */
-        int16_t         event_x; /**<  */
-        int16_t         event_y; /**<  */
-        uint16_t        state; /**<  */
-        uint8_t         same_screen; /**<  */
-        uint8_t         pad0; /**<  */
-    } xcb_key_press_event_t;
-#endif
-
 void Window::keyPress(xcb_key_press_event_t * event) {
-#if 0
-    // Stuff from Awesome.
-    xcb_keysym_t keySym =
-        keyresolv_get_keysym(event->detail, event->state, _keySymbols, 0, 0, 0, 0);
-    char buffer[16];
-    if (keyresolv_keysym_to_string(keySym, buffer, sizeof buffer)) {
-        _tty->write(buffer, strlen(buffer));
-    }
-    PRINT("***   keySym: " << keySym << " str='" << std::string(buffer) << "'");
-    return;
-#else
-
     xcb_keysym_t keySym = _basics.getKeySym(event->detail, event->state);
-#if 0
-        xcb_key_press_lookup_keysym(_keySymbols, event,
-                                    event->state & (XCB_MOD_MASK_SHIFT | XCB_MOD_MASK_LOCK));
-        keyresolv_get_keysym(event->detail, event->state, _keySymbols,
-                             XCB_MOD_MASK_2,    // numlockmask
-                             XCB_MOD_MASK_
-#endif
 
+    const ModeSet & modes = _terminal->getModes();
 
 #if 0
-    std::ostringstream modifiers;
-    if (event->state & XCB_MOD_MASK_SHIFT)   { modifiers << "SHIFT "; }
-    if (event->state & XCB_MOD_MASK_LOCK)    { modifiers << "LOCK "; }
-    if (event->state & XCB_MOD_MASK_CONTROL) { modifiers << "CTRL "; }
-    if (event->state & XCB_MOD_MASK_1)       { modifiers << "ALT "; }
-    if (event->state & XCB_MOD_MASK_2)       { modifiers << "2 "; }
-    if (event->state & XCB_MOD_MASK_3)       { modifiers << "3 "; }
-    if (event->state & XCB_MOD_MASK_4)       { modifiers << "WIN "; }
-    if (event->state & XCB_MOD_MASK_5)       { modifiers << "5 "; }
-
     PRINT("detail: "       << event->detail <<
           ", seq: "        << event->sequence <<
           ", state: "      << event->state << " " <<
           ", sym: "        << keySym <<
           ", ascii(int): " << (keySym & 0x7f) <<
-          ", modifiers: "  << modifiers.str());
+          ", state: "      << _basics.stateToString(event->state) <<
+          ", APPKEYPAD: "  << modes.get(Mode::APPKEYPAD) <<
+          ", APPCURSOR: "  << modes.get(Mode::APPCURSOR) <<
+          ", CRLF: "       << modes.get(Mode::CRLF));
 #endif
 
     // TODO check keySym against shortcuts HERE
 
     std::string str;
-    const ModeSet & modes = _terminal->getModes();
     // Note, we only consider the lower 8 bits of the state.
     // Other bits relate to button state.
-    if (_keyMap.lookup(keySym, static_cast<uint8_t>(event->state & ~XCB_KEY_BUT_MASK_MOD_1),
+    if (_keyMap.lookup(keySym, static_cast<uint8_t>(event->state),
                        modes.get(Mode::APPKEYPAD),
                        modes.get(Mode::APPCURSOR),
                        modes.get(Mode::CRLF),
-                       false,
-                       str))
-    {
-        //PRINT("str: " << str);
+                       str)) {
         _tty->write(str.data(), str.size());
     }
-#endif
 }
 
 void Window::keyRelease(xcb_key_release_event_t * UNUSED(event)) {

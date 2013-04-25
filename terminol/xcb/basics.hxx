@@ -46,6 +46,8 @@ public:
     uint8_t             maskCapsLock()   const { return _maskCapsLock; }
     uint8_t             maskModeSwitch() const { return _maskModeSwitch; }
 
+    std::string         stateToString(uint8_t state) const;
+
 protected:
     void determineMasks();
 };

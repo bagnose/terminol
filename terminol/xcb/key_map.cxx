@@ -49,15 +49,7 @@ bool KeyMap::lookup(xkb_keysym_t keySym, uint8_t state,
                     bool UNUSED(appKey),  // Mode::APPKEYPAD - DECPAM
                     bool appCursor,       // Mode::APPCURSOR - DECCKM
                     bool crlf,
-                    bool UNUSED(numLock),
                     std::string & str) const {
-    /*
-    PRINT("keySym=" << keySym << ", state=" << int(state) << ", appKey=" << appKey
-          << ", appCursor=" << appCursor << ", crlf=" << crlf << ", numLock=" << numLock
-          << ", str=" << Str(str)
-          << std::endl);
-          */
-
     normalise(keySym);
 
     std::ostringstream ost;

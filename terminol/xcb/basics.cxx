@@ -196,3 +196,17 @@ void Basics::determineMasks() {
     std::free(altCodes);
     std::free(shiftCodes);
 }
+
+std::string Basics::stateToString(uint8_t state) const {
+    std::ostringstream ost;
+    if (state & _maskShift)      { ost << "|SHIFT"; }
+    if (state & _maskAlt)        { ost << "|ALT"; }
+    if (state & _maskControl)    { ost << "|CONTROL"; }
+    if (state & _maskNumLock)    { ost << "|NUM_LOCK"; }
+    if (state & _maskShiftLock)  { ost << "|SHIFT_LOCK"; }
+    if (state & _maskCapsLock)   { ost << "|CAPS_LOCK"; }
+    if (state & _maskModeSwitch) { ost << "|MODE_SWITCH"; }
+    std::string result = ost.str();
+    if (result.empty()) { return result; }
+    else                { return result.substr(1); }    // Remove leading '|'
+}

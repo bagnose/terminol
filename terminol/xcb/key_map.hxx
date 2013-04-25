@@ -30,7 +30,7 @@ public:
     ~KeyMap();
 
     bool lookup(xkb_keysym_t keySym, uint8_t state,
-                bool appKey, bool appCursor, bool crlf, bool numLock,
+                bool appKey, bool appCursor, bool crlf,
                 std::string & str) const;
 
 protected:
