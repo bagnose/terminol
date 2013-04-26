@@ -9,6 +9,8 @@
 #include <xcb/xcb_keysyms.h>
 
 class Basics : protected Uncopyable {
+    std::string         _hostname;
+
     xcb_connection_t  * _connection;
     xcb_screen_t      * _screen;
     xcb_visualtype_t  * _visual;
@@ -31,12 +33,11 @@ public:
     Basics() throw (Error);
     ~Basics();
 
-    xcb_connection_t  * connection() { return _connection; }
-    xcb_screen_t      * screen()     { return _screen;     }
-    xcb_visualtype_t  * visual()     { return _visual;     }
-    xcb_key_symbols_t * keySymbols() { return _keySymbols; }
+    const std::string & hostname()       const { return _hostname; }
 
-    xcb_keysym_t        getKeySym(xcb_keycode_t keyCode, uint8_t state);
+    xcb_connection_t  * connection()           { return _connection; }
+    xcb_screen_t      * screen()               { return _screen;     }
+    xcb_visualtype_t  * visual()               { return _visual;     }
 
     uint8_t             maskShift()      const { return _maskShift; }
     uint8_t             maskAlt()        const { return _maskAlt; }
@@ -45,6 +46,8 @@ public:
     uint8_t             maskShiftLock()  const { return _maskShiftLock; }
     uint8_t             maskCapsLock()   const { return _maskCapsLock; }
     uint8_t             maskModeSwitch() const { return _maskModeSwitch; }
+
+    xcb_keysym_t        getKeySym(xcb_keycode_t keyCode, uint8_t state);
 
     std::string         stateToString(uint8_t state) const;
 

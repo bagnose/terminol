@@ -62,10 +62,8 @@ Window::Window(Basics             & basics,
         XCB_EVENT_MASK_FOCUS_CHANGE |
         0;
 
-    //uint16_t rows = 25;
-    //uint16_t cols = 80;
-    uint16_t rows = 6;
-    uint16_t cols = 14;
+    uint16_t rows = 25;
+    uint16_t cols = 80;
 
     _width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
     _height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
@@ -86,11 +84,7 @@ Window::Window(Basics             & basics,
         throw Error("Failed to create window.");
     }
 
-    /*
-    XSetStandardProperties(_display, _window,
-                           "terminol", "terminol",
-                           None, nullptr, 0, nullptr);
-                           */
+    icccmConfigure();
 
     setTitle(DEFAULT_TITLE);
 
@@ -322,6 +316,68 @@ void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
     _window = 0;        // I assume we don't need to call xcb_destroy_window?
 }
 
+void Window::icccmConfigure() {
+    //
+    // machine
+    //
+
+    const std::string & hostname = _basics.hostname();
+    if (!hostname.empty()) {
+        xcb_icccm_set_wm_client_machine(_basics.connection(),
+                                        _window,
+                                        XCB_ATOM_STRING,
+                                        8,
+                                        hostname.size(),
+                                        hostname.data());
+    }
+
+    //
+    // class
+    //
+
+    std::string wm_class = "terminol";
+    xcb_icccm_set_wm_class(_basics.connection(), _window,
+                           wm_class.size(), wm_class.data());
+
+    //
+    // size
+    //
+
+    xcb_size_hints_t sizeHints;
+    sizeHints.flags = 0;
+    xcb_icccm_size_hints_set_min_size(&sizeHints,
+                                      2 * BORDER_THICKNESS + _fontSet.getWidth(),
+                                      2 * BORDER_THICKNESS + _fontSet.getHeight());
+    xcb_icccm_size_hints_set_resize_inc(&sizeHints,
+                                        _fontSet.getWidth(),
+                                        _fontSet.getHeight());
+    xcb_icccm_size_hints_set_base_size(&sizeHints,
+                                       2 * BORDER_THICKNESS,
+                                       2 * BORDER_THICKNESS);
+    xcb_icccm_size_hints_set_win_gravity(&sizeHints, XCB_GRAVITY_NORTH_WEST);
+    // XXX or call xcb_icccm_set_wm_normal_hints() ?
+    xcb_icccm_set_wm_size_hints(_basics.connection(),
+                                _window,
+                                XCB_ATOM_WM_NORMAL_HINTS,
+                                &sizeHints);
+
+    //
+    // wm?
+    //
+
+    xcb_icccm_wm_hints_t wmHints;
+    wmHints.flags = 0;
+    xcb_icccm_wm_hints_set_input(&wmHints, 1 /* What value? */);
+    //xcb_icccm_wm_hints_set_icon_pixmap
+    xcb_icccm_set_wm_hints(_basics.connection(), _window, &wmHints);
+
+    //
+    // xcb_icccm_set_wm_protocols
+    //
+
+    // TODO
+}
+
 void Window::rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const {
     x = BORDER_THICKNESS + col * _fontSet.getWidth();
     y = BORDER_THICKNESS + row * _fontSet.getHeight();
@@ -333,7 +389,6 @@ bool Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
         return false;
     }
     else if (x < _width - BORDER_THICKNESS && y < _height - BORDER_THICKNESS) {
-        // NYI
         row = (y - BORDER_THICKNESS) / _fontSet.getHeight();
         col = (x - BORDER_THICKNESS) / _fontSet.getWidth();
         ASSERT(row < _terminal->buffer().getRows(),
@@ -355,6 +410,13 @@ void Window::setTitle(const std::string & title) {
                           8,
                           title.size(),
                           title.data());
+
+    xcb_icccm_set_wm_icon_name(_basics.connection(),
+                               _window,
+                               XCB_ATOM_STRING,
+                               8,
+                               title.size(),
+                               title.data());
 }
 
 void Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {

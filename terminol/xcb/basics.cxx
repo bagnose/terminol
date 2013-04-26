@@ -4,7 +4,14 @@
 
 #include <xkbcommon/xkbcommon-keysyms.h>
 
+#include <cstdlib>
+
 Basics::Basics() throw (Error) {
+    // FIXME this isn't right :(
+    const char * hostname = std::getenv("HOSTNAME");
+    PRINT("Hostname: " << hostname);
+    _hostname = hostname ? hostname : "";
+
     int screenNum;
     _connection = xcb_connect(nullptr, &screenNum);
     if (xcb_connection_has_error(_connection)) {

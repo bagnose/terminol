@@ -86,6 +86,8 @@ public:
     void destroyNotify(xcb_destroy_notify_event_t * event);
 
 protected:
+    void icccmConfigure();
+
     void rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const;
     bool xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const;
 
