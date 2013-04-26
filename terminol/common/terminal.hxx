@@ -6,7 +6,10 @@
 #include "terminol/common/tty_interface.hxx"
 #include "terminol/common/bit_sets.hxx"
 #include "terminol/common/simple_buffer.hxx"
+#include "terminol/common/key_map.hxx"
 #include "terminol/common/support.hxx"
+
+#include <xkbcommon/xkbcommon.h>
 
 class Terminal : protected Uncopyable {
 public:
@@ -57,9 +60,10 @@ private:
         SPECIAL
     };
 
+    const KeyMap        & _keyMap;
     I_Tty               & _tty;
-    bool                  _dumpWrites;
 
+    bool                  _dumpWrites;
     std::vector<char>     _writeBuffer;      // Spillover if the TTY would block.
 
     State                 _state;
@@ -68,24 +72,26 @@ private:
     std::vector<char>     _escSeq;
 
 public:
-    Terminal(I_Observer & observer,
-             I_Tty      & tty,
-             uint16_t     rows,
-             uint16_t     cols);
+    Terminal(I_Observer   & observer,
+             const KeyMap & keyMap,
+             I_Tty        & tty,
+             uint16_t       rows,
+             uint16_t       cols);
     virtual ~Terminal();
 
-    ModeSet              getModes()  const { return _modes;     }       // Try to make non-public
     const SimpleBuffer & buffer()    const { return _buffer;    }
     uint16_t             cursorRow() const { return _cursorRow; }
     uint16_t             cursorCol() const { return _cursorCol; }
     void                 resize(uint16_t rows, uint16_t cols);
 
+    void keyPress(xkb_keysym_t keySym, uint8_t state);
     void read();
-    void write(const char * data, size_t size);
-    bool areWritesQueued() const;
+    bool needsFlush() const;
     void flush();
 
 protected:
+
+    void write(const char * data, size_t size);
 
     void resetAll();
 

@@ -180,7 +180,7 @@ private:
 class Timer {
     uint32_t _sec;
     uint32_t _usec;
-    mutable uint32_t _expiredCheckCounter;      // XXX TEMP
+
 public:
     Timer(uint32_t milliseconds);
     bool expired() const;

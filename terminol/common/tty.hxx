@@ -4,6 +4,7 @@
 #define COMMON__TTY__H
 
 #include "terminol/common/tty_interface.hxx"
+#include "terminol/common/support.hxx"
 
 #include <vector>
 #include <string>
@@ -11,6 +12,7 @@
 class Tty : public I_Tty {
     pid_t _pid;
     int   _fd;
+
 public:
     typedef std::vector<std::string> Command;
 
@@ -22,11 +24,13 @@ public:
 
     virtual ~Tty();
 
-    int  getFd() { return _fd; }        // Only perform select() on me.
+    // Used by Window:
+
+    int  getFd() { ASSERT(_fd != -1, ""); return _fd; } // Only perform select() on me.
     void resize(uint16_t rows, uint16_t cols);
     int  close();
 
-    // I_Tty implementation:
+    // I_Tty implementation (Used by Terminal):
 
     size_t read (char       * buffer, size_t length) throw (Exited);
     size_t write(const char * buffer, size_t length) throw (Error);

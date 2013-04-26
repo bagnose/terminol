@@ -23,8 +23,6 @@ Timer::Timer(uint32_t milliseconds) {
         _sec  += 1;
         _usec -= MILLION;
     }
-
-    _expiredCheckCounter = 0;
 }
 
 bool Timer::expired() const {
@@ -35,9 +33,6 @@ bool Timer::expired() const {
     uint32_t usec = tv.tv_usec;
 
     bool expired = sec > _sec || (sec == _sec && usec >= _usec);
-
-    //PRINT("Expired: " << _expiredCheckCounter++ << "  " << std::boolalpha << expired);
-    if (expired) { PRINT("Expired"); }
 
     return expired;
 }

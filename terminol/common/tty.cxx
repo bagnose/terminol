@@ -1,7 +1,6 @@
 // vi:noai:sw=4
 
 #include "terminol/common/tty.hxx"
-#include "terminol/common/support.hxx"
 
 #include <unistd.h>
 #include <pty.h>
@@ -88,6 +87,8 @@ void Tty::openPty(uint16_t            rows,
                   const std::string & windowId,
                   const std::string & term,
                   const Command     & command) {
+    ASSERT(_fd == -1, "");
+
     int master, slave;
     struct winsize winsize = { rows, cols, 0, 0 };
 
@@ -169,7 +170,9 @@ void Tty::execShell(const std::string & windowId,
     }
 
     args.push_back(nullptr);
+
     ::execvp(args[0], const_cast<char * const *>(&args.front()));
+
     // If we are here then the exec call failed.
     std::exit(127); // Same as ::system() for failed commands.
 }

@@ -34,10 +34,11 @@ T nthArg(const std::vector<T> & args, size_t n, const T & fallback = T()) {
 //
 //
 
-Terminal::Terminal(I_Observer & observer,
-                   I_Tty      & tty,
-                   uint16_t     rows,
-                   uint16_t     cols) :
+Terminal::Terminal(I_Observer   & observer,
+                   const KeyMap & keyMap,
+                   I_Tty        & tty,
+                   uint16_t       rows,
+                   uint16_t       cols) :
     _observer(observer),
     _dispatch(false),
     //
@@ -49,6 +50,7 @@ Terminal::Terminal(I_Observer & observer,
     _modes(),
     _tabs(_buffer.getCols()),
     //
+    _keyMap(keyMap),
     _tty(tty),
     _dumpWrites(false),
     _writeBuffer(),
@@ -78,6 +80,17 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     }
 }
 
+void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
+    std::string str;
+    if (_keyMap.convert(keySym, state,
+                        _modes.get(Mode::APPKEYPAD),
+                        _modes.get(Mode::APPCURSOR),
+                        _modes.get(Mode::CRLF),
+                        str)) {
+        write(str.data(), str.size());
+    }
+}
+
 void Terminal::read() {
     ASSERT(!_dispatch, "");
 
@@ -86,7 +99,7 @@ void Terminal::read() {
 
     try {
         Timer timer(50);
-        char buffer[BUFSIZ];        // 8192 last time I looked
+        char buffer[BUFSIZ];        // 8192 last time I looked.
         do {
             size_t rval = _tty.read(buffer, sizeof buffer);
             if (rval == 0) { /*PRINT("Would block");*/ break; }
@@ -100,6 +113,29 @@ void Terminal::read() {
 
     _observer.terminalEnd();
     _dispatch = false;
+}
+
+bool Terminal::needsFlush() const {
+    ASSERT(!_dispatch, "");
+    return !_writeBuffer.empty();
+}
+
+void Terminal::flush() {
+    ASSERT(!_dispatch, "");
+    ASSERT(needsFlush(), "No writes queued.");
+    ASSERT(!_dumpWrites, "Dump writes is set.");
+
+    try {
+        while (!_writeBuffer.empty()) {
+            size_t rval = _tty.write(&_writeBuffer.front(), _writeBuffer.size());
+            if (rval == 0) { break; }
+            _writeBuffer.erase(_writeBuffer.begin(), _writeBuffer.begin() + rval);
+        }
+    }
+    catch (I_Tty::Error & ex) {
+        _dumpWrites = true;
+        _writeBuffer.clear();
+    }
 }
 
 void Terminal::write(const char * data, size_t size) {
@@ -134,29 +170,6 @@ void Terminal::write(const char * data, size_t size) {
         auto oldSize = _writeBuffer.size();
         _writeBuffer.resize(oldSize + size);
         std::copy(data, data + size, &_writeBuffer[oldSize]);
-    }
-}
-
-bool Terminal::areWritesQueued() const {
-    ASSERT(!_dispatch, "");
-    return !_writeBuffer.empty();
-}
-
-void Terminal::flush() {
-    ASSERT(!_dispatch, "");
-    ASSERT(areWritesQueued(), "No writes queued.");
-    ASSERT(!_dumpWrites, "Dump writes is set.");
-
-    try {
-        while (!_writeBuffer.empty()) {
-            size_t rval = _tty.write(&_writeBuffer.front(), _writeBuffer.size());
-            if (rval == 0) { break; }
-            _writeBuffer.erase(_writeBuffer.begin(), _writeBuffer.begin() + rval);
-        }
-    }
-    catch (I_Tty::Error & ex) {
-        _dumpWrites = true;
-        _writeBuffer.clear();
     }
 }
 

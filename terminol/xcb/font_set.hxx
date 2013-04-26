@@ -29,11 +29,11 @@ public:
     cairo_scaled_font_t * get(bool bold, bool italic) {
         switch ((bold ? 1 : 0) + (italic ? 2 : 0)) {
             case 0: return getNormal();
-            case 1: return getBold();
-            //case 1: return getNormal();
+            //case 1: return getBold();
+            case 1: return getNormal();
             case 2: return getItalic();
-            case 3: return getItalicBold();
-            //case 3: return getItalic();
+            //case 3: return getItalicBold();
+            case 3: return getItalic();
         }
         FATAL("Unreachable");
     }

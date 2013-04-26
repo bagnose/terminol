@@ -26,7 +26,6 @@ class Window :
 
     Basics         & _basics;
     const ColorSet & _colorSet;
-    const KeyMap   & _keyMap;
     FontSet        & _fontSet;
     xcb_window_t     _window;
     xcb_gcontext_t   _gc;
@@ -49,8 +48,8 @@ public:
 
     Window(Basics             & basics,
            const ColorSet     & colorSet,
-           const KeyMap       & keyMap,
            FontSet            & fontSet,
+           const KeyMap       & keyMap,
            const std::string  & term,
            const Tty::Command & command) throw (Error);
 
@@ -59,13 +58,13 @@ public:
     // We handle these:
 
     bool isOpen() const { return _isOpen; }
-    int  getFd() { return _tty->getFd(); }
+    int  getFd() { ASSERT(_isOpen, ""); return _tty->getFd(); }
 
     // The following calls are forwarded to the Terminal:
 
-    void read()                  { _terminal->read(); }
-    bool areWritesQueued() const { return _terminal->areWritesQueued(); }
-    void flush()                 { _terminal->flush(); }
+    void read();
+    bool needsFlush() const;
+    void flush();
 
     // Events:
 
@@ -83,8 +82,8 @@ public:
     void focusOut(xcb_focus_out_event_t * event);
     void enterNotify(xcb_enter_notify_event_t * event);
     void leaveNotify(xcb_leave_notify_event_t * event);
-    void visibilityNotify(xcb_visibility_notify_event_t & event);
-    void destroyNotify(xcb_destroy_notify_event_t & event);
+    void visibilityNotify(xcb_visibility_notify_event_t * event);
+    void destroyNotify(xcb_destroy_notify_event_t * event);
 
 protected:
     void rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const;

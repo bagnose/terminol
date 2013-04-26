@@ -24,13 +24,12 @@ int _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
 
 Window::Window(Basics             & basics,
                const ColorSet     & colorSet,
-               const KeyMap       & keyMap,
                FontSet            & fontSet,
+               const KeyMap       & keyMap,
                const std::string  & term,
                const Tty::Command & command) throw (Error) :
     _basics(basics),
     _colorSet(colorSet),
-    _keyMap(keyMap),
     _fontSet(fontSet),
     _window(0),
     _gc(0),
@@ -68,8 +67,8 @@ Window::Window(Basics             & basics,
     uint16_t rows = 6;
     uint16_t cols = 14;
 
-    _width  = 2 * BORDER_THICKNESS + cols * 16 /*_fontSet.getWidth()*/ + SCROLLBAR_WIDTH;
-    _height = 2 * BORDER_THICKNESS + rows * 24 /*_fontSet.getHeight()*/;
+    _width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
+    _height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
 
     _window = xcb_generate_id(_basics.connection());
     cookie = xcb_create_window_checked(_basics.connection(),
@@ -108,7 +107,7 @@ Window::Window(Basics             & basics,
     xcb_flush(_basics.connection());
 
     _tty = new Tty(rows, cols, stringify(_window), term, command);
-    _terminal = new Terminal(*this, *_tty, rows, cols);
+    _terminal = new Terminal(*this, keyMap, *_tty, rows, cols);
     _isOpen = true;
 }
 
@@ -133,45 +132,38 @@ Window::~Window() {
     }
 }
 
+void Window::read() {
+    ASSERT(_isOpen, "");
+    _terminal->read();
+}
+
+bool Window::needsFlush() const {
+    ASSERT(_isOpen, "");
+    return _terminal->needsFlush();
+}
+
+void Window::flush() {
+    ASSERT(_isOpen, "");
+    _terminal->flush();
+}
+
 // Events:
 
 void Window::keyPress(xcb_key_press_event_t * event) {
+    if (!_isOpen) { return; }
+
     xcb_keysym_t keySym = _basics.getKeySym(event->detail, event->state);
-
-    const ModeSet & modes = _terminal->getModes();
-
-#if 0
-    PRINT("detail: "       << event->detail <<
-          ", seq: "        << event->sequence <<
-          ", state: "      << event->state << " " <<
-          ", sym: "        << keySym <<
-          ", ascii(int): " << (keySym & 0x7f) <<
-          ", state: "      << _basics.stateToString(event->state) <<
-          ", APPKEYPAD: "  << modes.get(Mode::APPKEYPAD) <<
-          ", APPCURSOR: "  << modes.get(Mode::APPCURSOR) <<
-          ", CRLF: "       << modes.get(Mode::CRLF));
-#endif
-
-    // TODO check keySym against shortcuts HERE
-
-    std::string str;
-    // Note, we only consider the lower 8 bits of the state.
-    // Other bits relate to button state.
-    if (_keyMap.convert(keySym, static_cast<uint8_t>(event->state),
-                        modes.get(Mode::APPKEYPAD),
-                        modes.get(Mode::APPCURSOR),
-                        modes.get(Mode::CRLF),
-                        str)) {
-        _tty->write(str.data(), str.size());
-    }
+    _terminal->keyPress(keySym, event->state);
 }
 
 void Window::keyRelease(xcb_key_release_event_t * UNUSED(event)) {
+    if (!_isOpen) { return; }
 }
 
 void Window::buttonPress(xcb_button_press_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
     PRINT("Button-press: " << event->event_x << " " << event->event_y);
+    if (!_isOpen) { return; }
 
     xcb_get_geometry_reply_t * geometry =
         xcb_get_geometry_reply(_basics.connection(), xcb_get_geometry(_basics.connection(), _window), nullptr);
@@ -183,11 +175,15 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
 }
 
 void Window::buttonRelease(xcb_button_release_event_t * event) {
+    ASSERT(event->event == _window, "Which window?");
     PRINT("Button-release: " << event->event_x << " " << event->event_y);
+    if (!_isOpen) { return; }
 }
 
 void Window::motionNotify(xcb_motion_notify_event_t * event) {
+    ASSERT(event->event == _window, "Which window?");
     PRINT("Motion-notify: " << event->event_x << " " << event->event_y);
+    if (!_isOpen) { return; }
 }
 
 void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
@@ -290,8 +286,11 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
     ASSERT(rows > 0 && cols > 0, "");
 
-    _tty->resize(rows, cols);
-    _terminal->resize(rows, cols);
+    if (_isOpen) {
+        _tty->resize(rows, cols);
+    }
+
+    _terminal->resize(rows, cols);      // Ok to resize if not open?
 
     if (_pixmap) {
         ASSERT(_surface, "");
@@ -311,13 +310,16 @@ void Window::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {
 void Window::leaveNotify(xcb_leave_notify_event_t * UNUSED(event)) {
 }
 
-void Window::visibilityNotify(xcb_visibility_notify_event_t & UNUSED(event)) {
+void Window::visibilityNotify(xcb_visibility_notify_event_t * UNUSED(event)) {
 }
 
-void Window::destroyNotify(xcb_destroy_notify_event_t & UNUSED(event)) {
+void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
+    ASSERT(event->window == _window, "Which window?");
+    PRINT("Destroy notify");
+
     _tty->close();
     _isOpen = false;
-    _window = 0;
+    _window = 0;        // I assume we don't need to call xcb_destroy_window?
 }
 
 void Window::rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const {
