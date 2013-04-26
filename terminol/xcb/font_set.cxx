@@ -50,7 +50,7 @@ FontSet::~FontSet() {
     unload(_normal);
 }
 
-cairo_scaledFont_t * FontSet::load(FcPattern * pattern, bool master) throw (Error) {
+cairo_scaled_font_t * FontSet::load(FcPattern * pattern, bool master) throw (Error) {
     FcResult result;
     FcPattern * match = FcFontMatch(nullptr, pattern, &result);
     ENFORCE(match, "");
@@ -79,12 +79,12 @@ cairo_scaledFont_t * FontSet::load(FcPattern * pattern, bool master) throw (Erro
     cairo_matrix_scale(&fontMatrix, pixelSize, pixelSize);
     cairo_matrix_init_identity(&ctm);
 
-    cairo_fontOptions_t * fontOptions = cairo_fontOptions_create();
-    cairo_scaledFont_t  * scaledFont  = cairo_scaledFont_create(fontFace,
-                                                                &fontMatrix,
-                                                                &ctm,
-                                                                fontOptions);
-    cairo_fontOptions_destroy(fontOptions);
+    cairo_font_options_t * fontOptions = cairo_font_options_create();
+    cairo_scaled_font_t  * scaledFont  = cairo_scaled_font_create(fontFace,
+                                                                  &fontMatrix,
+                                                                  &ctm,
+                                                                  fontOptions);
+    cairo_font_options_destroy(fontOptions);
 
     /*
        typedef struct {
@@ -97,7 +97,7 @@ cairo_scaledFont_t * FontSet::load(FcPattern * pattern, bool master) throw (Erro
        */
 
     cairo_font_extents_t extents;
-    cairo_scaledFont_extents(scaledFont, &extents);
+    cairo_scaled_font_extents(scaledFont, &extents);
 
     /*
        PRINT("ascent=" << extents.ascent << ", descent=" << extents.descent <<
@@ -114,8 +114,8 @@ cairo_scaledFont_t * FontSet::load(FcPattern * pattern, bool master) throw (Erro
     return scaledFont;
 }
 
-void FontSet::unload(cairo_scaledFont_t * scaledFont) {
-    cairo_font_face_t * fontFace = cairo_scaledFont_get_font_face(scaledFont);
-    cairo_scaledFont_destroy(scaledFont);
+void FontSet::unload(cairo_scaled_font_t * scaledFont) {
+    cairo_font_face_t * fontFace = cairo_scaled_font_get_font_face(scaledFont);
+    cairo_scaled_font_destroy(scaledFont);
     cairo_font_face_destroy(fontFace);
 }
