@@ -254,6 +254,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
                     break;
                 default:
                     processEscape(lead);
+                    _escSeq.clear();
                     break;
             }
             break;
