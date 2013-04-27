@@ -65,7 +65,7 @@ cairo_scaled_font_t * FontSet::load(FcPattern * pattern, bool master) throw (Err
 
     double pixelSize;
     FcPatternGetDouble(match, FC_PIXEL_SIZE, 0, &pixelSize);
-    PRINT("pixelsize: " << pixelSize);
+    //PRINT("pixelsize: " << pixelSize);
 
     cairo_font_face_t * fontFace = cairo_ft_font_face_create_for_pattern(match);
     FcPatternDestroy(match);

@@ -39,12 +39,12 @@ public:
     xcb_screen_t      * screen()               { return _screen;     }
     xcb_visualtype_t  * visual()               { return _visual;     }
 
-    uint8_t             maskShift()      const { return _maskShift; }
-    uint8_t             maskAlt()        const { return _maskAlt; }
-    uint8_t             maskControl()    const { return _maskControl; }
-    uint8_t             maskNumLock()    const { return _maskNumLock; }
-    uint8_t             maskShiftLock()  const { return _maskShiftLock; }
-    uint8_t             maskCapsLock()   const { return _maskCapsLock; }
+    uint8_t             maskShift()      const { return _maskShift;      }
+    uint8_t             maskAlt()        const { return _maskAlt;        }
+    uint8_t             maskControl()    const { return _maskControl;    }
+    uint8_t             maskNumLock()    const { return _maskNumLock;    }
+    uint8_t             maskShiftLock()  const { return _maskShiftLock;  }
+    uint8_t             maskCapsLock()   const { return _maskCapsLock;   }
     uint8_t             maskModeSwitch() const { return _maskModeSwitch; }
 
     xcb_keysym_t        getKeySym(xcb_keycode_t keyCode, uint8_t state);

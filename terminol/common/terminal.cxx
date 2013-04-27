@@ -42,6 +42,7 @@ Terminal::Terminal(I_Observer   & observer,
     _observer(observer),
     _dispatch(false),
     //
+    _keyMap(keyMap),
     _buffer(rows, cols),
     _cursorRow(0), _cursorCol(0),
     _bg(Cell::defaultBg()),
@@ -50,7 +51,6 @@ Terminal::Terminal(I_Observer   & observer,
     _modes(),
     _tabs(_buffer.getCols()),
     //
-    _keyMap(keyMap),
     _tty(tty),
     _dumpWrites(false),
     _writeBuffer(),
@@ -227,6 +227,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
             }
             break;
         case State::ESCAPE:
+            ASSERT(_escSeq.empty(), "");
             std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
             switch (lead) {
                 case 'P':
@@ -257,9 +258,39 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
             }
             break;
         case State::CSI:
-            // XXX Check for control characters here?
-            // XXX deal with CSI flags?
-            std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
+            ASSERT(!_escSeq.empty(), "");
+            if (lead >= NUL && lead < SPACE) {
+                ASSERT(len == utf8::Length::L1, "");
+                processControl(lead);
+            }
+            else if (lead == '?') {
+                // XXX FOr now put the '?' into _escSeq because
+                // processCsi is expecting it.
+                std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
+                //terminal->escape_flags |= ESC_FLAG_WHAT;
+            }
+            else if (lead == '>') {
+                //terminal->escape_flags |= ESC_FLAG_GT;
+            }
+            else if (lead == '!') {
+                //terminal->escape_flags |= ESC_FLAG_BANG;
+            }
+            else if (lead == '$') {
+                //terminal->escape_flags |= ESC_FLAG_CASH;
+            }
+            else if (lead == '\'') {
+                //terminal->escape_flags |= ESC_FLAG_SQUOTE;
+            }
+            else if (lead == '"') {
+                //terminal->escape_flags |= ESC_FLAG_DQUOTE;
+            }
+            else if (lead == ' ') {
+                //terminal->escape_flags |= ESC_FLAG_SPACE;
+            }
+            else {
+                std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
+            }
+
             if (isalpha(lead) || lead == '@' || lead == '`') {
                 processCsi(_escSeq);
                 _escSeq.clear();
@@ -267,6 +298,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
             }
             break;
         case State::INNER:
+            FATAL("!!!!");
             if (lead == '\\') {
                 if (_outerState == State::DCS) {
                     processDcs(_escSeq);
@@ -279,13 +311,16 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
                 }
                 _escSeq.clear();
                 _state = State::NORMAL;
+                // XXX reset _outerState?
             }
             else if (lead == ESC) {
                 _state = _outerState;
+                // XXX reset _outerState?
                 std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
             }
             else {
                 _state = _outerState;
+                // XXX reset _outerState?
                 _escSeq.push_back(ESC);
                 std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
             }
@@ -293,6 +328,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
         case State::DCS:
         case State::OSC:
         case State::IGNORE:
+            ASSERT(!_escSeq.empty(), "");
             if (lead == ESC) {
                 _outerState = _state;
                 _state = State::INNER;
@@ -307,6 +343,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
             }
             break;
         case State::SPECIAL:
+            ASSERT(!_escSeq.empty(), "");
             std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
             if (isdigit(lead) || isalpha(lead)) {
                 processSpecial(_escSeq);
@@ -320,6 +357,8 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
 }
 
 void Terminal::processControl(char c) {
+    //PRINT("Control: " << Char(c));
+
     switch (c) {
         case BEL:
             PRINT("BEL!!");
@@ -405,6 +444,8 @@ void Terminal::processNormal(utf8::Seq seq, utf8::Length UNUSED(length)) {
 }
 
 void Terminal::processEscape(char c) {
+    //PRINT("ESC" << Char(c));
+
     switch (c) {
         case 'D':   // IND - linefeed
             NYI("st.c:2169");
@@ -440,13 +481,13 @@ void Terminal::processEscape(char c) {
             //tcursor(CURSOR_LOAD);
             break;
         default:
-            ERROR("Unknown escape sequence: " << c);
+            ERROR("Unknown escape sequence: ESC" << Char(c));
             break;
     }
 }
 
 void Terminal::processCsi(const std::vector<char> & seq) {
-    //PRINT("NYI:CSI: ESC" << Str(seq));
+    //PRINT("CSI: ESC" << Str(seq));
 
     ASSERT(seq.size() >= 2, "");
 
@@ -524,16 +565,17 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 _observer.terminalDamageAll();
                 break;
             case 'E': // CNL - Cursor Next Line
-                NYI('E');
+                NYI("CNL");
                 break;
             case 'F': // CPL - Cursor Previous Line
-                NYI('F');
+                NYI("CPL");
                 break;
             case 'G': // CHA - Cursor Horizontal Absolute
-                NYI('G');
+                NYI("CHA");
                 break;
             case 'f':       // HVP - Horizontal and Vertical Position
             case 'H': {     // CUP - Cursor Position
+                _observer.terminalDamageCells(_cursorRow, _cursorCol, _cursorCol + 1);
                 uint16_t row = nthArg(args, 0, 1) - 1;
                 uint16_t col = nthArg(args, 1, 1) - 1;
                 _cursorRow = clamp<int32_t>(row, 0, _buffer.getRows() - 1);
@@ -671,13 +713,15 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                     // http://www.vt100.net/docs/vt510-rm/DECSTBM
                     uint16_t top = nthArg(args, 0, 1);
                     uint16_t bottom = nthArg(args, 1, 1);
-                    if (bottom > top) {
-                        //_observer.interSetScrollTopBottom(top - 1, bottom - 1);
+                    PRINT("NYI DECSTBM: " << top << ", " << bottom);
+                    if (top < bottom) {
+                        //_scrollTop    = top - 1;
+                        //_scrollBottom = bottom - 1;
                     }
                     else {
-                        //_observer.interSetScrollTop(top - 1);
+                        ERROR("!(top < bottom) for DECSTM");
                     }
-                    //_observer.interMoveCursor(0, 0);
+                    _cursorRow = _cursorCol = 0;
                 }
                 break;
             case 's': // restore cursor?
@@ -703,6 +747,8 @@ void Terminal::processDcs(const std::vector<char> & seq) {
 }
 
 void Terminal::processOsc(const std::vector<char> & seq) {
+    //PRINT("OSC: ESC" << Str(seq));
+
     ASSERT(!seq.empty(), "");
 
     size_t i = 0;
@@ -741,6 +787,7 @@ void Terminal::processOsc(const std::vector<char> & seq) {
             break;
         default:
             PRINT("Unandled: " << Str(seq));
+            break;
     }
 }
 
@@ -847,7 +894,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 }
                 break;
             case 39:
-                //_observer.interResetFg();
+                _fg = Cell::defaultFg();
                 break;
                 // 40..47 (set background colour - handled separately)
             case 48:
@@ -935,7 +982,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     _modes.setTo(Mode::APPCURSOR, set);
                     break;
                 case 2: // DECANM - ANSI/VT52
-                    NYI("DECANM");
+                    NYI("DECANM: " << set);
                     break;
                 case 3: // DECCOLM - Column
                     if (set) {
@@ -944,13 +991,13 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     else {
                         // resize 80x24
                     }
-                    NYI("DECCOLM");
+                    NYI("DECCOLM: " << set);
                     break;
                 case 4:  // DECSCLM - Scroll (IGNORED)
-                    NYI("DECSLM");
+                    NYI("DECSLM: " << set);
                     break;
                 case 5: // DECSCNM - Reverse video
-                    NYI("Reverse video");
+                    NYI("Reverse video: " << set);
                     /*
                        mode = term.mode;
                        MODBIT(term.mode, set, Mode::REVERSE);
@@ -960,30 +1007,30 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                        */
                     break;
                 case 6: // DECOM - Origin
-                    NYI("DECOM: origin");
+                    NYI("DECOM: origin: " << set);
                     /*
                        MODBIT(term.c.state, set, CURSOR_ORIGIN);
                        tmoveato(0, 0);
                        */
                     break;
                 case 7: // DECAWM - Auto wrap
-                    //_observer.interSetMode(Mode::WRAP, set);
+                    _modes.setTo(Mode::WRAP, set);
                     break;
                 case 8:  // DECARM - Auto repeat (IGNORED)
-                    NYI("DECARM");
+                    NYI("DECARM: " << set);
                     break;
                 case 12: // CVVIS/att610 - Start blinking cursor (IGNORED)
-                    NYI("CVVIS/att610");
+                    //NYI("CVVIS/att610: " << set);
                     break;
                 case 18: // DECPFF - Printer feed (IGNORED)
                 case 19: // DECPEX - Printer extent (IGNORED)
-                    NYI("DECPFF/DECPEX");
+                    NYI("DECPFF/DECPEX: " << set);
                     break;
                 case 25: // DECTCEM - Text Cursor Enable Mode
                     _modes.setTo(Mode::HIDE, !set);
                     break;
                 case 42: // DECNRCM - National characters (IGNORED)
-                    NYI("Ignored: "  << a);
+                    NYI("Ignored: "  << a << ", " << set);
                     break;
                 case 1000: // 1000,1002: enable xterm mouse report
                     _modes.setTo(Mode::MOUSEBTN, set);
@@ -994,16 +1041,16 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     _modes.setTo(Mode::MOUSEBTN, false);
                     break;
                 case 1006:
-                    //_observer.interSetMode(Mode::MOUSESGR, set);
+                    _modes.setTo(Mode::MOUSESGR, set);
                     break;
                 case 1034: // ssm/rrm, meta mode on/off
-                    NYI("1034");
+                    NYI("1034: " << set);
                     break;
                 case 1037: // deleteSendsDel
-                    NYI("1037");
+                    NYI("1037: " << set);
                     break;
                 case 1039: // altSendsEscape
-                    NYI("1039");
+                    NYI("1039: " << set);
                     break;
                 case 47:    // XXX ???
                 case 1047:
@@ -1013,13 +1060,13 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     }
                     // Deliberate fall through
                 case 1048:
-                    NYI("Ignored: "  << a);
+                    NYI("Ignored: "  << a << ", " << set);
                     /*
                        tcursor((set) ? CURSOR_SAVE : CURSOR_LOAD);
                        */
                     break;
                 case 1049: // rmcup/smcup, alternative screen
-                    NYI("1049 - alt screen");
+                    NYI("1049 - alt screen: " << set);
                     break;
                 default:
                     ERROR("erresc: unknown private set/reset mode : " << a);

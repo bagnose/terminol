@@ -73,7 +73,7 @@ Window::Window(Basics             & basics,
                                        _basics.screen()->root_depth,
                                        _window,
                                        _basics.screen()->root,
-                                       -1, -1,       // x, y     (XXX correct?)
+                                       -1, -1,       // x, y
                                        _width, _height,
                                        0,            // border width
                                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
@@ -181,7 +181,7 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
 }
 
 void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
-    PRINT("Map");
+    //PRINT("Map");
     ASSERT(!_pixmap, "");
 
     _pixmap = xcb_generate_id(_basics.connection());
@@ -213,23 +213,27 @@ void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
 }
 
 void Window::reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) {
-    PRINT("Reparent");
+    //PRINT("Reparent");
 }
 
 void Window::expose(xcb_expose_event_t * event) {
     ASSERT(event->window == _window, "Which window?");
+    /*
     PRINT("Expose: " <<
           event->x << " " << event->y << " " <<
           event->width << " " << event->height);
+          */
 
     draw(event->x, event->y, event->width, event->height);
 }
 
 void Window::configureNotify(xcb_configure_notify_event_t * event) {
     ASSERT(event->window == _window, "Which window?");
+    /*
     PRINT("Configure notify: " <<
           event->x << " " << event->y << " " <<
           event->width << " " << event->height);
+          */
 
     // We are only interested in size changes.
     if (_width == event->width && _height == event->height) { return; }
@@ -457,6 +461,8 @@ void Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih) {
     } cairo_restore(cr);
     cairo_destroy(cr);
 
+    cairo_surface_flush(_surface);      // Useful?
+
     xcb_copy_area(_basics.connection(),
                   _pixmap,
                   _window,
@@ -529,6 +535,21 @@ void Window::drawUtf8(cairo_t    * cr,
                       AttributeSet attr,
                       const char * str,
                       size_t       count) {
+#if 0
+    {
+        bool nonSpace = false;
+        for (const char * s = str; *s != NUL; ++s) {
+            if (*s != SPACE) {
+                nonSpace = true;
+                break;
+            }
+        }
+        if (nonSpace) {
+            PRINT("Drawing: " << str);
+        }
+    }
+#endif
+
     cairo_save(cr); {
         int x, y;
         rowCol2XY(row, col, x, y);

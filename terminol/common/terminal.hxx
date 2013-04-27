@@ -29,21 +29,22 @@ public:
     };
 
 private:
-    I_Observer        & _observer;
-    bool                _dispatch;
+    I_Observer          & _observer;
+    bool                  _dispatch;
 
     //
     //
     //
 
-    SimpleBuffer        _buffer;
-    uint16_t            _cursorRow;
-    uint16_t            _cursorCol;
-    uint8_t             _bg;
-    uint8_t             _fg;
-    AttributeSet        _attrs;
-    ModeSet             _modes;
-    std::vector<bool>   _tabs;
+    const KeyMap        & _keyMap;
+    SimpleBuffer          _buffer;
+    uint16_t              _cursorRow;
+    uint16_t              _cursorCol;
+    uint8_t               _bg;
+    uint8_t               _fg;
+    AttributeSet          _attrs;
+    ModeSet               _modes;
+    std::vector<bool>     _tabs;
 
     //
     //
@@ -60,7 +61,6 @@ private:
         SPECIAL
     };
 
-    const KeyMap        & _keyMap;
     I_Tty               & _tty;
 
     bool                  _dumpWrites;

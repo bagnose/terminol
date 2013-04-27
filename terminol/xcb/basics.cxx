@@ -9,7 +9,9 @@
 Basics::Basics() throw (Error) {
     // FIXME this isn't right :(
     const char * hostname = std::getenv("HOSTNAME");
-    PRINT("Hostname: " << hostname);
+    if (hostname) {
+        PRINT("Hostname: " << hostname);
+    }
     _hostname = hostname ? hostname : "";
 
     int screenNum;
@@ -49,6 +51,7 @@ Basics::Basics() throw (Error) {
 
     determineMasks();
 
+    /*
     PRINT("Mask: Shift: " << int(_maskShift));
     PRINT("Mask: Alt: " << int(_maskAlt));
     PRINT("Mask: Control: " << int(_maskControl));
@@ -57,6 +60,7 @@ Basics::Basics() throw (Error) {
     PRINT("Mask: Shift lock: " << int(_maskShiftLock));
     PRINT("Mask: Caps lock: " << int(_maskCapsLock));
     PRINT("Mask: Mode switch: " << int(_maskModeSwitch));
+    */
 }
 
 Basics::~Basics() {

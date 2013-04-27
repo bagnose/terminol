@@ -89,7 +89,7 @@ protected:
             if (FD_ISSET(xFd, &readFds)) {
                 xevent();
                 if (xcb_connection_has_error(_basics.connection())) {
-                    FATAL("Lost connection?");
+                    throw Error("Lost connection (1)?");
                 }
             }
             else {
@@ -107,7 +107,7 @@ protected:
                 uint8_t response_type = XCB_EVENT_RESPONSE_TYPE(event);
 
                 if (response_type == 0) {
-                    throw Error("Lost connection");     // Correct?
+                    throw Error("Lost connection (2)?");
                 }
 
                 switch (response_type & ~0x80) {
@@ -212,7 +212,7 @@ bool argMatch(const std::string & arg, const std::string & opt, std::string & va
 int main(int argc, char * argv[]) {
     // Command line
 
-    std::string  fontName          = "inconsolata:pixelsize=20";
+    std::string  fontName          = "inconsolata:pixelsize=24";
     std::string  geometryStr;
     std::string  term              = "ansi";
     Tty::Command command;
