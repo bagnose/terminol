@@ -355,20 +355,12 @@ void Terminal::processControl(char c) {
             // Fall-through:
         case FF:
         case VT:
-#if 1
             if (_cursorRow == _buffer.getRows() - 1) {
                 _buffer.addLine();
             }
             else {
                 ++_cursorRow;
             }
-#else
-            // FIXME temp hack to make vim work, but stuffs up
-            // new line in bash.
-            if (_cursorRow != _buffer.getRows() - 1) {
-                ++_cursorRow;
-            }
-#endif
             break;
         case SO:
             NYI("SO");
@@ -584,7 +576,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                         }
                         break;
                     case 1: // left
-                        for (uint16_t c = 0; c != _cursorCol; ++c) {
+                        for (uint16_t c = 0; c != _cursorCol + 1; ++c) {
                             _buffer.set(_cursorRow, c, Cell::blank());
                         }
                         break;
@@ -595,7 +587,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 _observer.terminalDamageAll();
                 break;
             case 'L': // IL - Insert Lines
-                _buffer.insertLines(_cursorRow + 1, nthArg(args, 0, 1));
+                _buffer.insertLines(_cursorRow, nthArg(args, 0, 1));
                 _observer.terminalDamageAll();
                 break;
             case 'M': // DL - Delete Lines

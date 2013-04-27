@@ -100,7 +100,7 @@ public:
             _lines.insert(_lines.begin() + beforeRow, Line(getCols()));
         }
         for (uint16_t i = 0; i != n; ++i) {
-            _lines.pop_front();     // Or back?
+            _lines.pop_back();
         }
     }
 
