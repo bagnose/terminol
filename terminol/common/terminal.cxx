@@ -139,8 +139,6 @@ void Terminal::flush() {
 }
 
 void Terminal::write(const char * data, size_t size) {
-    ASSERT(!_dispatch, "");
-
     if (_dumpWrites) { return; }
 
     if (_writeBuffer.empty()) {
@@ -619,7 +617,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 NYI("REP");
                 break;
             case 'c': // Primary DA
-                NYI("Primary DA");
+                write("\x1B[?6c", 5);
                 break;
             case 'd': // VPA
                 NYI("VPA");
