@@ -34,7 +34,7 @@ public:
               const Tty::Command & command)
         throw (Basics::Error, FontSet::Error, Window::Error, Error) :
         _basics(),
-        _colorSet(),
+        _colorSet(_basics),
         _fontSet(fontName),
         _keyMap(_basics.maskShift(),
                 _basics.maskAlt(),

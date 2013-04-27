@@ -50,7 +50,7 @@ Window::Window(Basics             & basics,
     // NOTE: This is an important property because it determines
     // flicker when the window is exposed. Ideally background_pixel
     // should be set to whatever the background of the terminal is.
-    values[0] = _basics.screen()->black_pixel;
+    values[0] = _colorSet.getBackgroundPixel();
     values[1] =
         XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE |
         XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
@@ -89,8 +89,8 @@ Window::Window(Basics             & basics,
     setTitle(DEFAULT_TITLE);
 
     _gc = xcb_generate_id(_basics.connection());
-    uint32_t mask = XCB_GC_GRAPHICS_EXPOSURES;
-    uint32_t vals[] = { 0 };
+    uint32_t mask = XCB_GC_BACKGROUND | XCB_GC_GRAPHICS_EXPOSURES;
+    uint32_t vals[] = { _colorSet.getBackgroundPixel(), 0 };
     cookie = xcb_create_gc_checked(_basics.connection(), _gc, _window, mask, vals);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate gc")) {
         xcb_destroy_window(_basics.connection(), _window);

@@ -3,6 +3,8 @@
 #ifndef XCB__COLOR_SET__H
 #define XCB__COLOR_SET__H
 
+#include "terminol/xcb/basics.hxx"
+
 #include <stdint.h>
 
 struct Color {
@@ -12,14 +14,16 @@ struct Color {
 class ColorSet {
     static const Color COLORS16[16];
 
-    Color _indexedColors[256];
-    Color _cursorColor;
+    Basics & _basics;
+    Color    _indexedColors[256];
+    uint32_t _backgroundPixel;
 
 public:
-    ColorSet();
+    explicit ColorSet(Basics & basics);
+    ~ColorSet();
 
+    uint32_t      getBackgroundPixel() const { return _backgroundPixel; }
     const Color & getIndexedColor(uint8_t index) const { return _indexedColors[index]; }
-    const Color & getCursorColor() const { return _cursorColor; }
 };
 
 #endif // XCB__COLOR_SET__H
