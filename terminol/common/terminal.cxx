@@ -510,19 +510,19 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 _observer.terminalDamageAll();
                 break;
             case 'A': // CUU - Cursor Up
-                _cursorRow = clamp<uint16_t>(_cursorRow - nthArg(args, 0, 1), 0, _buffer.getRows() - 1);
+                _cursorRow = clamp<int32_t>(_cursorRow - nthArg(args, 0, 1), 0, _buffer.getRows() - 1);
                 _observer.terminalDamageAll();
                 break;
             case 'B': // CUD - Cursor Down
-                _cursorRow = clamp<uint16_t>(_cursorRow + nthArg(args, 0, 1), 0, _buffer.getRows() - 1);
+                _cursorRow = clamp<int32_t>(_cursorRow + nthArg(args, 0, 1), 0, _buffer.getRows() - 1);
                 _observer.terminalDamageAll();
                 break;
             case 'C': // CUF - Cursor Forward
-                _cursorCol = clamp<uint16_t>(_cursorCol + nthArg(args, 0, 1), 0, _buffer.getCols() - 1);
+                _cursorCol = clamp<int32_t>(_cursorCol + nthArg(args, 0, 1), 0, _buffer.getCols() - 1);
                 _observer.terminalDamageAll();
                 break;
             case 'D': // CUB - Cursor Backward
-                _cursorCol = clamp<uint16_t>(_cursorCol - nthArg(args, 0, 1), 0, _buffer.getCols() - 1);
+                _cursorCol = clamp<int32_t>(_cursorCol - nthArg(args, 0, 1), 0, _buffer.getCols() - 1);
                 _observer.terminalDamageAll();
                 break;
             case 'E': // CNL - Cursor Next Line
@@ -538,8 +538,8 @@ void Terminal::processCsi(const std::vector<char> & seq) {
             case 'H': {     // CUP - Cursor Position
                 uint16_t row = nthArg(args, 0, 1) - 1;
                 uint16_t col = nthArg(args, 1, 1) - 1;
-                _cursorRow = clamp<uint16_t>(row, 0, _buffer.getRows() - 1);
-                _cursorCol = clamp<uint16_t>(col, 0, _buffer.getCols() - 1);
+                _cursorRow = clamp<int32_t>(row, 0, _buffer.getRows() - 1);
+                _cursorCol = clamp<int32_t>(col, 0, _buffer.getCols() - 1);
                 _observer.terminalDamageCells(_cursorRow, _cursorCol, _cursorCol + 1);
             }
                 break;
