@@ -38,6 +38,10 @@ class SimpleBuffer {
             _cells[col] = cell;
         }
 
+        void resize(uint16_t cols) {
+            _cells.resize(cols, Cell::blank());
+        }
+
         void clear() {
             std::fill(_cells.begin(), _cells.end(), Cell::blank());
         }
@@ -85,8 +89,15 @@ public:
     }
 
     void resize(uint16_t rows, uint16_t cols) {
-        _lines.clear();
-        _lines.resize(rows, Line(cols));
+        if (rows != getRows()) {
+            _lines.resize(rows, Line(cols));
+        }
+
+        if (cols != getCols()) {
+            for (auto & line : _lines) {
+                line.resize(cols);
+            }
+        }
     }
 
     void addLine() {
