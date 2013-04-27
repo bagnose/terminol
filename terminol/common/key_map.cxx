@@ -161,7 +161,7 @@ bool KeyMap::convert(xkb_keysym_t keySym, uint8_t state,
             break;
 
         default:
-            bool convert_utf8 = true;
+            bool convertUtf8 = true;
 
             // Handle special keys with alternate mappings.
             if (applyKeyMap(appCursor ? MAP_APPLICATION : MAP_NORMAL,
@@ -189,12 +189,12 @@ bool KeyMap::convert(xkb_keysym_t keySym, uint8_t state,
                 }
                 else {
                     keySym = keySym | 0x80;
-                    convert_utf8 = false;
+                    convertUtf8 = false;
                 }
             }
 
-            if ((keySym < 0x80 ) || (!convert_utf8 && keySym < 0x100)) {
-                ost << static_cast<char>(keySym);       // char?? uint8_t?
+            if ((keySym < 0x80 ) || (!convertUtf8 && keySym < 0x100)) {
+                ost << static_cast<char>(keySym);
             }
             else {
                 char buffer[16];
@@ -251,9 +251,9 @@ void KeyMap::normalise(xkb_keysym_t & keySym) {
             keySym = XKB_KEY_plus;
             break;
         case XKB_KEY_KP_Separator:
-            /* Note this is actually locale-dependent and should mostly be
-             * a comma.  But leave it as period until we one day start
-             * doing the right thing. */
+            // Note this is actually locale-dependent and should mostly be
+            // a comma.  But leave it as period until we one day start
+            // doing the right thing.
             keySym = XKB_KEY_period;
             break;
         case XKB_KEY_KP_Subtract:
@@ -284,14 +284,14 @@ void KeyMap::normalise(xkb_keysym_t & keySym) {
 
 void KeyMap::functionKeyResponse(char escape, int num, uint8_t state, char code,
                                    std::ostream & response) const {
-    int mod_num = 0;
+    int modNum = 0;
 
-    if (state & _maskShift)   mod_num |= 1;
-    if (state & _maskAlt)     mod_num |= 2;
-    if (state & _maskControl) mod_num |= 4;
+    if (state & _maskShift)   modNum |= 1;
+    if (state & _maskAlt)     modNum |= 2;
+    if (state & _maskControl) modNum |= 4;
 
-    if (mod_num != 0) {
-        response << ESC << '[' << num << ';' << mod_num + 1 << code;
+    if (modNum != 0) {
+        response << ESC << '[' << num << ';' << modNum + 1 << code;
     }
     else if (code != '~') {
         response << ESC << escape << code;
