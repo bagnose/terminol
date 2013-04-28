@@ -27,7 +27,8 @@ Window::Window(Basics             & basics,
                FontSet            & fontSet,
                const KeyMap       & keyMap,
                const std::string  & term,
-               const Tty::Command & command) throw (Error) :
+               const Tty::Command & command,
+               bool                 trace) throw (Error) :
     _basics(basics),
     _colorSet(colorSet),
     _fontSet(fontSet),
@@ -101,7 +102,7 @@ Window::Window(Basics             & basics,
     xcb_flush(_basics.connection());
 
     _tty = new Tty(rows, cols, stringify(_window), term, command);
-    _terminal = new Terminal(*this, keyMap, *_tty, rows, cols);
+    _terminal = new Terminal(*this, keyMap, *_tty, rows, cols, trace);
     _isOpen = true;
 }
 

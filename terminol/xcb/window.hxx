@@ -51,7 +51,8 @@ public:
            FontSet            & fontSet,
            const KeyMap       & keyMap,
            const std::string  & term,
-           const Tty::Command & command) throw (Error);
+           const Tty::Command & command,
+           bool                 trace) throw (Error);
 
     virtual ~Window();
 

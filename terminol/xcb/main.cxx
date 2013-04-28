@@ -1,4 +1,4 @@
-// vi:noai:sw=4:cinoptions=:0,l1,g0,N-s,(s,Ws,ks,m1
+// vi:noai:sw=4
 
 #include "terminol/xcb/window.hxx"
 #include "terminol/xcb/color_set.hxx"
@@ -31,7 +31,8 @@ public:
 
     EventLoop(const std::string  & fontName,
               const std::string  & term,
-              const Tty::Command & command)
+              const Tty::Command & command,
+              bool                 trace)
         throw (Basics::Error, FontSet::Error, Window::Error, Error) :
         _basics(),
         _colorSet(_basics),
@@ -44,7 +45,8 @@ public:
                 _fontSet,
                 _keyMap,
                 term,
-                command)
+                command,
+                trace)
     {
         loop();
     }
@@ -214,7 +216,8 @@ int main(int argc, char * argv[]) {
 
     std::string  fontName          = "inconsolata:pixelsize=24";
     std::string  geometryStr;
-    std::string  term              = "ansi";
+    std::string  term              = "xterm";
+    bool         trace             = false;
     Tty::Command command;
     bool         accumulateCommand = false;
 
@@ -222,22 +225,34 @@ int main(int argc, char * argv[]) {
         std::string arg = argv[i];
         if      (accumulateCommand)                      { command.push_back(arg);   }
         else if (arg == "--execute")                     { accumulateCommand = true; }
+        else if (arg == "--trace")                       { trace = true;             }
         else if (argMatch(arg, "font", fontName))        {}
         else if (argMatch(arg, "term", term))            {}
         else if (argMatch(arg, "geometry", geometryStr)) {}
         else {
+            if (arg != "--help") {
+                std::cerr
+                    << "Unrecognised argument '" << arg << "'" << std::endl;
+            }
             std::cerr
-                << "Unrecognised argument '" << arg << "'" << std::endl
-                << "Try: --font=FONT --term=TERM --geometry=GEOMETRY --execute ARG0 ARG1..."
+                << "Usage:" << std::endl
+                << "  " << argv[0] << " \\" << std::endl
+                << "    " << "--font=FONT --term=TERM --geometry=GEOMETRY \\" << std::endl
+                << "    " << "--trace --execute ARG0 ARG1..."
                 << std::endl;
-            return 2;
+            if (arg != "--help") {
+                return 2;
+            }
+            else {
+                return 0;
+            }
         }
     }
 
     FcInit();
 
     try {
-        EventLoop eventLoop(fontName, term, command);
+        EventLoop eventLoop(fontName, term, command, trace);
     }
     catch (EventLoop::Error & ex) {
         FATAL(ex.message);

@@ -62,8 +62,8 @@ std::ostream & operator << (std::ostream & ost, Mode mode) {
             return ost << "INSERT";
         case Mode::APPKEYPAD:
             return ost << "APPKEYPAD";
-        case Mode::ALTSCREEN:
-            return ost << "ALTSCREEN";
+        //case Mode::ALTSCREEN:
+            //return ost << "ALTSCREEN";
         case Mode::CRLF:
             return ost << "CRLF";
         case Mode::MOUSEBTN:

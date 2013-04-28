@@ -37,14 +37,24 @@ private:
     //
 
     const KeyMap        & _keyMap;
-    SimpleBuffer          _buffer;
+    SimpleBuffer          _priBuffer;
+    SimpleBuffer          _altBuffer;
+    SimpleBuffer        * _buffer;
     uint16_t              _cursorRow;
     uint16_t              _cursorCol;
     uint8_t               _bg;
     uint8_t               _fg;
     AttributeSet          _attrs;
+    bool                  _originMode;
     ModeSet               _modes;
     std::vector<bool>     _tabs;
+
+    uint16_t              _savedCursorRow;
+    uint16_t              _savedCursorCol;
+    uint8_t               _savedFg;
+    uint8_t               _savedBg;
+    AttributeSet          _savedAttrs;
+    bool                  _savedOriginMode;
 
     //
     //
@@ -71,15 +81,18 @@ private:
     utf8::Machine         _utf8Machine;
     std::vector<char>     _escSeq;
 
+    bool                  _trace;
+
 public:
     Terminal(I_Observer   & observer,
              const KeyMap & keyMap,
              I_Tty        & tty,
              uint16_t       rows,
-             uint16_t       cols);
+             uint16_t       cols,
+             bool           trace);
     virtual ~Terminal();
 
-    const SimpleBuffer & buffer()    const { return _buffer;    }
+    const SimpleBuffer & buffer()    const { return *_buffer;   }
     uint16_t             cursorRow() const { return _cursorRow; }
     uint16_t             cursorCol() const { return _cursorCol; }
     void                 resize(uint16_t rows, uint16_t cols);

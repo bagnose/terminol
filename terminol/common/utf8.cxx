@@ -167,6 +167,18 @@ Length encode(CodePoint codePoint, char * sequence) throw (Error) {
 //
 //
 
+std::ostream & operator << (std::ostream & ost, Seq seq) {
+    Length l = leadLength(seq.bytes[0]);
+    for (uint8_t i = 0; i != l; ++i) {
+        ost << seq.bytes[i];
+    }
+    return ost;
+}
+
+//
+//
+//
+
 Machine::State Machine::next(char c) {
     switch (_state) {
         case State::START:

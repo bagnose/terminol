@@ -26,6 +26,7 @@ typedef int32_t CodePoint;
 //
 //
 
+// FIXME use uint8_t instead of char.
 // Given a lead character, what is the length of the sequence?
 Length    leadLength(char lead) throw (Error);
 
@@ -43,6 +44,7 @@ Length    encode(CodePoint codePoint, char * sequence) throw (Error);
 //
 
 struct Seq {
+    // FIXME use uint8_t instead of char.
     Seq(char b0 = '\0', char b1 = '\0', char b2 = '\0', char b3 = '\0') {
         bytes[0] = b0; bytes[1] = b1; bytes[2] = b2; bytes[3] = b3;
     }
@@ -55,6 +57,8 @@ struct Seq {
 };
 
 const Seq REPLACEMENT(0xEF, 0xBF, 0xBD, 0x00);
+
+std::ostream & operator << (std::ostream & ost, Seq seq);
 
 //
 //

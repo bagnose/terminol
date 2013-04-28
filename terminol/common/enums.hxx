@@ -55,7 +55,7 @@ enum class Mode {
     WRAP,      // AUTOWRAP? YES!
     INSERT,
     APPKEYPAD,
-    ALTSCREEN,
+    // ALTSCREEN,
     CRLF,      // CR_ON_LF?
     MOUSEBTN,
     MOUSEMOTION,

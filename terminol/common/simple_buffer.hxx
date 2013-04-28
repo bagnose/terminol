@@ -52,17 +52,34 @@ class SimpleBuffer {
     //
 
     std::deque<Line> _lines;
+    uint16_t         _scrollBegin;
+    uint16_t         _scrollEnd;
 
 public:
     SimpleBuffer(uint16_t rows, uint16_t cols) :
-        _lines(rows, Line(cols))
+        _lines(rows, Line(cols)),
+        _scrollBegin(0),
+        _scrollEnd(rows)
     {
         ASSERT(rows != 0, "");
         ASSERT(cols != 0, "");
     }
 
     uint16_t getRows() const { return _lines.size(); }
-    uint16_t getCols() const { return _lines.front().getCols(); }
+    uint16_t getCols() const { ASSERT(!_lines.empty(), ""); return _lines.front().getCols(); }
+
+    uint16_t getScrollBegin() const { return _scrollBegin; }
+    uint16_t getScrollEnd()   const { return _scrollEnd;   }
+
+    void setScrollBeginEnd(uint16_t begin, uint16_t end) {
+        _scrollBegin = begin;
+        _scrollEnd   = end;
+    }
+
+    void resetScrollBeginEnd() {
+        _scrollBegin = 0;
+        _scrollEnd   = getRows();
+    }
 
     const Cell & getCell(uint16_t row, uint16_t col) const {
         ASSERT(row < getRows(), "");
@@ -89,6 +106,9 @@ public:
     }
 
     void resize(uint16_t rows, uint16_t cols) {
+        ASSERT(rows != 0, "");
+        ASSERT(cols != 0, "");
+
         if (rows != getRows()) {
             _lines.resize(rows, Line(cols));
         }
@@ -98,29 +118,29 @@ public:
                 line.resize(cols);
             }
         }
+
+        _scrollBegin = 0;
+        _scrollEnd = rows;
     }
 
     void addLine() {
-        _lines.push_back(Line(getCols()));
+        //PRINT("Add line");
+        _lines.insert(_lines.begin() + getScrollEnd(), Line(getCols()));
         _lines.pop_front();
     }
 
     void insertLines(uint16_t beforeRow, uint16_t n) {
+        //PRINT("eraseLines. beforeRow=" << beforeRow << ", n=" << n << ", rows=" << getRows() << ", scrollBegin=" << _scrollBegin << ", scrollEnd=" << _scrollEnd);
         ASSERT(beforeRow < getRows() + 1, "");
-        for (uint16_t i = 0; i != n; ++i) {
-            _lines.insert(_lines.begin() + beforeRow, Line(getCols()));
-        }
-        for (uint16_t i = 0; i != n; ++i) {
-            _lines.pop_back();
-        }
+        _lines.erase(_lines.begin() + _scrollEnd - n, _lines.begin() + _scrollEnd);
+        _lines.insert(_lines.begin() + beforeRow, n, Line(getCols()));
     }
 
     void eraseLines(uint16_t row, uint16_t n) {
-        ASSERT(row + n < getRows(), "");
+        //PRINT("eraseLines. row=" << row << ", n=" << n << ", rows=" << getRows() << ", scrollBegin=" << _scrollBegin << ", scrollEnd=" << _scrollEnd);
+        ASSERT(row + n < getRows() + 1, "");
+        _lines.insert(_lines.begin() + _scrollEnd, n, Line(getCols()));
         _lines.erase(_lines.begin() + row, _lines.begin() + row + n);
-        for (uint16_t i = 0; i != n; ++i) {
-            _lines.push_back(Line(getCols()));
-        }
     }
 
     void clearLine(uint16_t row) {

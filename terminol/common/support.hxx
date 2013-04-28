@@ -186,4 +186,41 @@ public:
     bool expired() const;
 };
 
+enum class Esc {
+    RESET,
+
+    BOLD,
+    DIM,
+    UNDERLINE,
+    BLINK,      // (SAME AS REVERSE)
+    REVERSE,
+    HIDDEN,
+
+    CL_BOLD,
+    CL_UNDERLINE,
+    CL_BLINK,
+    CL_REVERSE,
+    CL_COLOR,
+
+    FG_BLACK,
+    FG_RED,
+    FG_GREEN,
+    FG_YELLOW,
+    FG_BLUE,
+    FG_MAGENTA,
+    FG_CYAN,
+    FG_WHITE,
+
+    BG_BLACK,
+    BG_RED,
+    BG_GREEN,
+    BG_YELLOW,
+    BG_BLUE,
+    BG_MAGENTA,
+    BG_CYAN,
+    BG_WHITE
+};
+
+std::ostream & operator << (std::ostream & ost, Esc e);
+
 #endif // COMMON__SUPPORT__HXX
