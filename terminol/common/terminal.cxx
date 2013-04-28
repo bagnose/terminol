@@ -466,7 +466,7 @@ void Terminal::processNormal(utf8::Seq seq, utf8::Length UNUSED(length)) {
 
     if (_cursorCol == _buffer->getCols()) {
         if (_modes.get(Mode::WRAP)) {
-            if (_cursorRow == _buffer->getRows()) {
+            if (_cursorRow == _buffer->getRows() - 1) {
                 _buffer->addLine();
             }
             else {
@@ -599,12 +599,12 @@ void Terminal::processCsi(const std::vector<char> & seq) {
     else {
         char mode = seq[i];
 
-        //if (mode != 'm') {
+        if (mode != 'm') {
             // SGR stuff can be quite noise.
             if (_trace) {
                 std::cerr << Esc::FG_CYAN << "ESC" << Str(seq) << Esc::RESET;
             }
-        //}
+        }
 
         switch (mode) {
             case '@': // ICH - Insert Character

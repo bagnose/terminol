@@ -28,7 +28,8 @@ Window::Window(Basics             & basics,
                const KeyMap       & keyMap,
                const std::string  & term,
                const Tty::Command & command,
-               bool                 trace) throw (Error) :
+               bool                 trace,
+               bool                 sync) throw (Error) :
     _basics(basics),
     _colorSet(colorSet),
     _fontSet(fontSet),
@@ -43,7 +44,8 @@ Window::Window(Basics             & basics,
     _pointerCol(std::numeric_limits<uint16_t>::max()),
     _damage(false),
     _pixmap(0),
-    _surface(nullptr)
+    _surface(nullptr),
+    _sync(sync)
 {
     xcb_void_cookie_t cookie;
 
@@ -606,10 +608,16 @@ void Window::terminalSetTitle(const std::string & title) throw () {
 
 void Window::terminalDamageCells(uint16_t UNUSED(row), uint16_t UNUSED(col0), uint16_t UNUSED(col1)) throw () {
     _damage = true;
+    if (_sync && _pixmap) {
+        draw(0, 0, _width, _height);
+    }
 }
 
 void Window::terminalDamageAll() throw () {
     _damage = true;
+    if (_sync && _pixmap) {
+        draw(0, 0, _width, _height);
+    }
 }
 
 void Window::terminalChildExited(int exitStatus) throw () {
@@ -618,7 +626,7 @@ void Window::terminalChildExited(int exitStatus) throw () {
 }
 
 void Window::terminalEnd() throw () {
-    if (_damage && _pixmap) {
+    if (!_sync && _damage && _pixmap) {
         draw(0, 0, _width, _height);
     }
 }

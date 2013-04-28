@@ -24,21 +24,22 @@ class Window :
     static const int         SCROLLBAR_WIDTH;
     static const std::string DEFAULT_TITLE;
 
-    Basics         & _basics;
-    const ColorSet & _colorSet;
-    FontSet        & _fontSet;
-    xcb_window_t     _window;
-    xcb_gcontext_t   _gc;
-    uint16_t         _width;
-    uint16_t         _height;
-    Tty            * _tty;
-    Terminal       * _terminal;
-    bool             _isOpen;
-    uint16_t         _pointerRow;
-    uint16_t         _pointerCol;
-    bool             _damage;
-    xcb_pixmap_t     _pixmap;
-    cairo_surface_t* _surface;
+    Basics          & _basics;
+    const ColorSet  & _colorSet;
+    FontSet         & _fontSet;
+    xcb_window_t      _window;
+    xcb_gcontext_t    _gc;
+    uint16_t          _width;
+    uint16_t          _height;
+    Tty             * _tty;
+    Terminal        * _terminal;
+    bool              _isOpen;
+    uint16_t          _pointerRow;
+    uint16_t          _pointerCol;
+    bool              _damage;
+    xcb_pixmap_t      _pixmap;
+    cairo_surface_t * _surface;
+    bool              _sync;
 
 public:
     struct Error {
@@ -52,7 +53,8 @@ public:
            const KeyMap       & keyMap,
            const std::string  & term,
            const Tty::Command & command,
-           bool                 trace) throw (Error);
+           bool                 trace,
+           bool                 sync) throw (Error);
 
     virtual ~Window();
 

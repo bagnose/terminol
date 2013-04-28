@@ -32,7 +32,8 @@ public:
     EventLoop(const std::string  & fontName,
               const std::string  & term,
               const Tty::Command & command,
-              bool                 trace)
+              bool                 trace,
+              bool                 sync)
         throw (Basics::Error, FontSet::Error, Window::Error, Error) :
         _basics(),
         _colorSet(_basics),
@@ -46,7 +47,8 @@ public:
                 _keyMap,
                 term,
                 command,
-                trace)
+                trace,
+                sync)
     {
         loop();
     }
@@ -218,6 +220,7 @@ int main(int argc, char * argv[]) {
     std::string  geometryStr;
     std::string  term              = "xterm";
     bool         trace             = false;
+    bool         sync              = false;
     Tty::Command command;
     bool         accumulateCommand = false;
 
@@ -226,6 +229,7 @@ int main(int argc, char * argv[]) {
         if      (accumulateCommand)                      { command.push_back(arg);   }
         else if (arg == "--execute")                     { accumulateCommand = true; }
         else if (arg == "--trace")                       { trace = true;             }
+        else if (arg == "--sync")                        { sync  = true;             }
         else if (argMatch(arg, "font", fontName))        {}
         else if (argMatch(arg, "term", term))            {}
         else if (argMatch(arg, "geometry", geometryStr)) {}
@@ -238,7 +242,7 @@ int main(int argc, char * argv[]) {
                 << "Usage:" << std::endl
                 << "  " << argv[0] << " \\" << std::endl
                 << "    " << "--font=FONT --term=TERM --geometry=GEOMETRY \\" << std::endl
-                << "    " << "--trace --execute ARG0 ARG1..."
+                << "    " << "--trace --sync --execute ARG0 ARG1..."
                 << std::endl;
             if (arg != "--help") {
                 return 2;
@@ -252,7 +256,7 @@ int main(int argc, char * argv[]) {
     FcInit();
 
     try {
-        EventLoop eventLoop(fontName, term, command, trace);
+        EventLoop eventLoop(fontName, term, command, trace, sync);
     }
     catch (EventLoop::Error & ex) {
         FATAL(ex.message);
