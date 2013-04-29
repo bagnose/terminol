@@ -599,7 +599,7 @@ void Window::drawUtf8(cairo_t    * cr,
                       uint16_t     col,
                       uint8_t      fg,
                       uint8_t      bg,
-                      AttributeSet attr,
+                      AttributeSet attrs,
                       const char * str,
                       size_t       count) {
 #if 0
@@ -618,22 +618,20 @@ void Window::drawUtf8(cairo_t    * cr,
 #endif
 
     cairo_save(cr); {
+        if (attrs.get(Attribute::REVERSE)) { std::swap(fg, bg); }
+
+        cairo_set_scaled_font(cr, _fontSet.get(attrs.get(Attribute::BOLD),
+                                               attrs.get(Attribute::ITALIC)));
+
         int x, y;
         rowCol2XY(row, col, x, y);
 
-        if (attr.get(Attribute::REVERSE)) { std::swap(fg, bg); }
-
-        cairo_set_scaled_font(cr, _fontSet.get(attr.get(Attribute::BOLD),
-                                               attr.get(Attribute::ITALIC)));
-
-        //PRINT("drawing: " << str << " at: " << x << " " << y);
-
-        const Color & bgValues = _colorSet.getIndexedColor(bg);
+        const auto & bgValues = _colorSet.getIndexedColor(bg);
         cairo_set_source_rgb(cr, bgValues.r, bgValues.g, bgValues.b);
         cairo_rectangle(cr, x, y, count * _fontSet.getWidth(), _fontSet.getHeight());
         cairo_fill(cr);
 
-        const Color & fgValues = _colorSet.getIndexedColor(fg);
+        const auto & fgValues = _colorSet.getIndexedColor(fg);
         cairo_set_source_rgb(cr, fgValues.r, fgValues.g, fgValues.b);
         cairo_move_to(cr, x, y + _fontSet.getAscent());
         cairo_show_text(cr, str);
@@ -644,16 +642,42 @@ void Window::drawUtf8(cairo_t    * cr,
 }
 
 void Window::drawCursor(cairo_t * cr) {
-    uint16_t r = _terminal->cursorRow();
-    uint16_t c = _terminal->cursorCol();
+    uint16_t row = _terminal->cursorRow();
+    uint16_t col = _terminal->cursorCol();
 
-    const Cell & cell = _terminal->buffer().getCell(r, c);
+    const Cell & cell = _terminal->buffer().getCell(row, col);
+    utf8::Length length = utf8::leadLength(cell.lead());
+    char buf[utf8::LMAX + 1];
+    std::copy(cell.bytes(), cell.bytes() + length, buf);
+    buf[length] = NUL;
 
-    drawUtf8(cr,
-             r, c,
-             cell.bg(), cell.fg(),      // Swap fg/bg for cursor.
-             cell.attrs(),
-             cell.bytes(), 1);
+#if 0
+    const auto & fgValues = _colorSet.getIndexedColor(cell.bg());
+    const auto & bgValues = _colorSet.getIndexedColor(cell.fg());
+#else
+    const auto & fgValues = _colorSet.getCursorFgColor();
+    const auto & bgValues = _colorSet.getCursorBgColor();
+#endif
+
+    cairo_save(cr); {
+        const AttributeSet & attrs = cell.attrs();
+        cairo_set_scaled_font(cr, _fontSet.get(attrs.get(Attribute::BOLD),
+                                               attrs.get(Attribute::ITALIC)));
+
+        int x, y;
+        rowCol2XY(row, col, x, y);
+
+        cairo_set_source_rgb(cr, bgValues.r, bgValues.g, bgValues.b);
+        cairo_rectangle(cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
+        cairo_fill(cr);
+
+        cairo_set_source_rgb(cr, fgValues.r, fgValues.g, fgValues.b);
+        cairo_move_to(cr, x, y + _fontSet.getAscent());
+        cairo_show_text(cr, buf);
+
+        ASSERT(cairo_status(cr) == 0,
+               "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
+    } cairo_restore(cr);
 }
 
 // Terminal::I_Observer implementation:

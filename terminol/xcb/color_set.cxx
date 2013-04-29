@@ -52,6 +52,9 @@ const Color ColorSet::COLORS16[16] = {
 ColorSet::ColorSet(Basics & basics) :
     _basics(basics)
 {
+    _cursorFgColor = { 0.0, 0.0,  0.0 };
+    _cursorBgColor = { 1.0, 0.25, 1.0 };
+
     // 0..7     normal colors
     // 8..15    bright colors
     // 16..231  6x6x6 color cube
