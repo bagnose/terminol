@@ -29,14 +29,15 @@ class Window :
     FontSet         & _fontSet;
     xcb_window_t      _window;
     xcb_gcontext_t    _gc;
-    uint16_t          _width;
+    uint16_t          _width;           // Actual width/height of window
     uint16_t          _height;
+    uint16_t          _nominalWidth;    // Used width/height of window
+    uint16_t          _nominalHeight;
     Tty             * _tty;
     Terminal        * _terminal;
     bool              _isOpen;
     uint16_t          _pointerRow;
     uint16_t          _pointerCol;
-    bool              _damage;
     xcb_pixmap_t      _pixmap;
     cairo_surface_t * _surface;
     bool              _sync;
@@ -95,29 +96,28 @@ protected:
     bool xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const;
 
     void setTitle(const std::string & title);
-    void draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih);
-
-    void drawBuffer(cairo_t * cr);
+    void draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih, bool damageOnly);
+    void drawPadding();
+    void drawBorder();
+    void drawScrollBar();
+    void drawBuffer(cairo_t * cr, bool damageOnly);
     void drawSelection(cairo_t * cr);
-    void drawUtf8(cairo_t    * cr,
-                  uint16_t     row,
-                  uint16_t     col,
-                  uint8_t      fg,
-                  uint8_t      bg,
-                  AttributeSet attr,
-                  const char * str,
-                  size_t       count);
+    void drawUtf8(cairo_t      * cr,
+                  uint16_t       row,
+                  uint16_t       col,
+                  uint8_t        fg,
+                  uint8_t        bg,
+                  AttributeSet   attr,
+                  const char   * str,
+                  size_t         count);
     void drawCursor(cairo_t * cr);
 
     // Terminal::I_Observer implementation:
 
-    void terminalBegin() throw ();
     void terminalResetTitle() throw ();
     void terminalSetTitle(const std::string & title) throw ();
-    void terminalDamageCells(uint16_t row, uint16_t col0, uint16_t col1) throw ();
-    void terminalDamageAll() throw ();
+    void terminalFixDamage() throw ();
     void terminalChildExited(int exitStatus) throw ();
-    void terminalEnd() throw ();
 };
 
 #endif // XCB__WINDOW__HXX

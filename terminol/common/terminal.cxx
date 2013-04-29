@@ -111,7 +111,6 @@ void Terminal::read() {
     ASSERT(!_dispatch, "");
 
     _dispatch = true;
-    _observer.terminalBegin();
 
     try {
         Timer timer(50);
@@ -127,8 +126,9 @@ void Terminal::read() {
         _observer.terminalChildExited(ex.exitCode);
     }
 
-    _observer.terminalEnd();
+    _observer.terminalFixDamage();
     _dispatch = false;
+    _buffer->resetDamage();
 }
 
 bool Terminal::needsFlush() const {
@@ -396,6 +396,8 @@ void Terminal::processControl(char c) {
             PRINT("BEL!!");
             break;
         case HT:
+            _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
+
             // Advance to the next tab or the last column.
             for (; _cursorCol != _buffer->getCols(); ++_cursorCol) {
                 if (_tabs[_cursorCol]) {
@@ -411,14 +413,17 @@ void Terminal::processControl(char c) {
         case BS:
             // TODO handle auto-wrap
             if (_cursorCol != 0) {
+                _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
                 --_cursorCol;
             }
             break;
         case CR:
+            _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
             _cursorCol = 0;
             break;
         case LF:
             if (_modes.get(Mode::CRLF)) {
+                _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
                 _cursorCol = 0;
             }
             // Fall-through:
@@ -428,8 +433,10 @@ void Terminal::processControl(char c) {
                 _buffer->addLine();
             }
             else {
+                _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
                 ++_cursorRow;
             }
+
             if (_trace) {
                 std::cerr << std::endl;
             }
@@ -462,6 +469,7 @@ void Terminal::processNormal(utf8::Seq seq, utf8::Length UNUSED(length)) {
 
     _buffer->set(_cursorRow, _cursorCol, Cell::utf8(seq, _attrs, _fg, _bg));
 
+    _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
     ++_cursorCol;
 
     if (_cursorCol == _buffer->getCols()) {
@@ -478,8 +486,6 @@ void Terminal::processNormal(utf8::Seq seq, utf8::Length UNUSED(length)) {
             --_cursorCol;
         }
     }
-
-    _observer.terminalDamageAll();
 }
 
 void Terminal::processEscape(char c) {
@@ -503,6 +509,7 @@ void Terminal::processEscape(char c) {
                 _buffer->insertLines(0, 1);
             }
             else {
+                _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
                 --_cursorRow;
             }
             break;
@@ -529,6 +536,7 @@ void Terminal::processEscape(char c) {
             // TODO save character sets (cs/g0/g1)
             break;
         case '8':   // DECRC - Restore Cursor
+            _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
             _cursorRow  = _savedCursorRow;
             _cursorCol  = _savedCursorCol;
             _fg         = _savedFg;
@@ -609,23 +617,22 @@ void Terminal::processCsi(const std::vector<char> & seq) {
         switch (mode) {
             case '@': // ICH - Insert Character
                 _buffer->insertCells(_cursorRow, _cursorCol, nthArg(args, 0, 1));
-                _observer.terminalDamageAll();
                 break;
             case 'A': // CUU - Cursor Up
+                _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
                 _cursorRow = clamp<int32_t>(_cursorRow - nthArg(args, 0, 1), 0, _buffer->getRows() - 1);
-                _observer.terminalDamageAll();
                 break;
             case 'B': // CUD - Cursor Down
+                _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
                 _cursorRow = clamp<int32_t>(_cursorRow + nthArg(args, 0, 1), 0, _buffer->getRows() - 1);
-                _observer.terminalDamageAll();
                 break;
             case 'C': // CUF - Cursor Forward
+                _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
                 _cursorCol = clamp<int32_t>(_cursorCol + nthArg(args, 0, 1), 0, _buffer->getCols() - 1);
-                _observer.terminalDamageAll();
                 break;
             case 'D': // CUB - Cursor Backward
+                _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
                 _cursorCol = clamp<int32_t>(_cursorCol - nthArg(args, 0, 1), 0, _buffer->getCols() - 1);
-                _observer.terminalDamageAll();
                 break;
             case 'E': // CNL - Cursor Next Line
                 NYI("CNL");
@@ -641,12 +648,11 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 if (_trace) {
                     std::cerr << std::endl;
                 }
-                _observer.terminalDamageCells(_cursorRow, _cursorCol, _cursorCol + 1);
+                _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
                 uint16_t row = nthArg(args, 0, 1) - 1;
                 uint16_t col = nthArg(args, 1, 1) - 1;
                 _cursorRow = clamp<int32_t>(row, 0, _buffer->getRows() - 1);
                 _cursorCol = clamp<int32_t>(col, 0, _buffer->getCols() - 1);
-                _observer.terminalDamageCells(_cursorRow, _cursorCol, _cursorCol + 1);
             }
                 break;
             case 'I': // CHT - ??? Horizontal tab?
@@ -671,7 +677,6 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                         _cursorRow = _cursorCol = 0;
                         break;
                 }
-                _observer.terminalDamageAll();
                 break;
             case 'K':   // EL - Erase line
                 switch (nthArg(args, 0)) {
@@ -691,15 +696,12 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                         _buffer->clearLine(_cursorRow);
                         break;
                 }
-                _observer.terminalDamageAll();
                 break;
             case 'L': // IL - Insert Lines
                 _buffer->insertLines(_cursorRow, nthArg(args, 0, 1));
-                _observer.terminalDamageAll();
                 break;
             case 'M': // DL - Delete Lines
                 _buffer->eraseLines(_cursorRow, nthArg(args, 0, 1));
-                _observer.terminalDamageAll();
                 break;
             case 'P': // DCH - ??? Delete Character???
                 _buffer->eraseCells(_cursorRow, _cursorCol, nthArg(args, 0, 1));
@@ -781,6 +783,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 else {
                     if (args.empty()) {
                         _buffer->resetScrollBeginEnd();
+                        _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
                         _cursorRow = _cursorCol = 0;
                     }
                     else {
@@ -797,6 +800,8 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                         else {
                             _buffer->resetScrollBeginEnd();
                         }
+
+                        _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
 
                         if (_originMode) {
                             _cursorRow = top;
@@ -817,6 +822,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 NYI("Window ops");
                 break;
             case 'u': // restore cursor
+                _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
                 _cursorRow = _savedCursorRow;
                 _cursorCol = _savedCursorCol;
                 break;
@@ -1101,6 +1107,8 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                 case 6: // DECOM - Origin
                     _originMode = set;
 
+                    _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
+
                     if (_originMode) {
                         _cursorRow = _buffer->getScrollBegin();
                     }
@@ -1158,7 +1166,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
 
                     _buffer = set ? &_altBuffer : &_priBuffer;
                     if(a != 1049) {
-                        _observer.terminalDamageAll();
+                        _buffer->damageAll();
                         break;
                     }
                     // Fall-through:
@@ -1172,6 +1180,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                         _savedOriginMode = _originMode;
                     }
                     else {
+                        _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
                         _cursorRow  = _savedCursorRow;
                         _cursorCol  = _savedCursorCol;
                         _fg         = _savedFg;
@@ -1179,7 +1188,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                         _attrs      = _savedAttrs;
                         _originMode = _savedOriginMode;
                     }
-                    _observer.terminalDamageAll();
+                    _buffer->damageAll();
                     break;
                 default:
                     ERROR("erresc: unknown private set/reset mode : " << a);

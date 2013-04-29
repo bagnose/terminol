@@ -216,7 +216,7 @@ bool argMatch(const std::string & arg, const std::string & opt, std::string & va
 int main(int argc, char * argv[]) {
     // Command line
 
-    std::string  fontName          = "inconsolata:pixelsize=24";
+    std::string  fontName          = "inconsolata:pixelsize=18";
     std::string  geometryStr;
     std::string  term              = "xterm";
     bool         trace             = false;
