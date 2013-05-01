@@ -39,7 +39,8 @@ Terminal::Terminal(I_Observer   & observer,
                    I_Tty        & tty,
                    uint16_t       rows,
                    uint16_t       cols,
-                   bool           trace) :
+                   bool           trace,
+                   bool           sync) :
     _observer(observer),
     _dispatch(false),
     //
@@ -67,7 +68,8 @@ Terminal::Terminal(I_Observer   & observer,
     _state(State::NORMAL),
     _outerState(State::NORMAL),
     _escSeq(),
-    _trace(trace)
+    _trace(trace),
+    _sync(sync)
 {
     for (size_t i = 0; i != _tabs.size(); ++i) {
         _tabs[i] = (i + 1) % 8 == 0;
@@ -204,10 +206,12 @@ void Terminal::read() {
         _observer.terminalChildExited(ex.exitCode);
     }
 
-    if (_observer.terminalBeginFixDamage(true)) {
-        draw(0, _buffer->getRows(), 0, _buffer->getCols(), true);
-        _observer.terminalEndFixDamage(true);
-        _buffer->resetDamage();
+    if (!_sync) {
+        if (_observer.terminalBeginFixDamage(true)) {
+            draw(0, _buffer->getRows(), 0, _buffer->getCols(), true);
+            _observer.terminalEndFixDamage(true);
+            _buffer->resetDamage();
+        }
     }
 
     _dispatch = false;
@@ -465,6 +469,14 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
             break;
         default:
             break;
+    }
+
+    if (_sync) {
+        if (_observer.terminalBeginFixDamage(true)) {
+            draw(0, _buffer->getRows(), 0, _buffer->getCols(), true);
+            _observer.terminalEndFixDamage(true);
+            _buffer->resetDamage();
+        }
     }
 }
 

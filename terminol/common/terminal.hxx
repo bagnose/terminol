@@ -92,6 +92,7 @@ private:
     std::vector<char>     _escSeq;
 
     bool                  _trace;
+    bool                  _sync;
 
 public:
     Terminal(I_Observer   & observer,
@@ -99,7 +100,8 @@ public:
              I_Tty        & tty,
              uint16_t       rows,
              uint16_t       cols,
-             bool           trace);
+             bool           trace,
+             bool           sync);
     virtual ~Terminal();
 
     // FIXME Get rid of the following three accessors.

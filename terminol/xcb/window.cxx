@@ -31,7 +31,7 @@ Window::Window(Basics             & basics,
                const Tty::Command & command,
                bool                 doubleBuffer,
                bool                 trace,
-               bool                 UNUSED(sync)) throw (Error) :
+               bool                 sync) throw (Error) :
     _basics(basics),
     _colorSet(colorSet),
     _fontSet(fontSet),
@@ -135,9 +135,9 @@ Window::Window(Basics             & basics,
     xcb_flush(_basics.connection());
 
     _tty = new Tty(rows, cols, stringify(_window), term, command);
-    _terminal = new Terminal(*this, keyMap, *_tty, rows, cols, trace);
+    _terminal = new Terminal(*this, keyMap, *_tty, rows, cols, trace, sync);
     _isOpen = true;
-    PRINT("Created");
+    //PRINT("Created");
 }
 
 Window::~Window() {
@@ -176,7 +176,7 @@ Window::~Window() {
     if (_window) {
         xcb_destroy_window(_basics.connection(), _window);
     }
-    PRINT("Destroyed");
+    //PRINT("Destroyed");
 }
 
 void Window::read() {
@@ -209,9 +209,10 @@ void Window::keyRelease(xcb_key_release_event_t * UNUSED(event)) {
 
 void Window::buttonPress(xcb_button_press_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
-    PRINT("Button-press: " << event->event_x << " " << event->event_y);
+    //PRINT("Button-press: " << event->event_x << " " << event->event_y);
     if (!_isOpen) { return; }
 
+    /*
     xcb_get_geometry_reply_t * geometry =
         xcb_get_geometry_reply(_basics.connection(), xcb_get_geometry(_basics.connection(), _window), nullptr);
 
@@ -219,22 +220,23 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
           geometry->width << " " << geometry->height);
 
     std::free(geometry);
+    */
 }
 
 void Window::buttonRelease(xcb_button_release_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
-    PRINT("Button-release: " << event->event_x << " " << event->event_y);
+    //PRINT("Button-release: " << event->event_x << " " << event->event_y);
     if (!_isOpen) { return; }
 }
 
 void Window::motionNotify(xcb_motion_notify_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
-    PRINT("Motion-notify: " << event->event_x << " " << event->event_y);
+    //PRINT("Motion-notify: " << event->event_x << " " << event->event_y);
     if (!_isOpen) { return; }
 }
 
 void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
-    PRINT("Map");
+    //PRINT("Map");
     ASSERT(!_mapped, "");
 
     if (_doubleBuffer) {
@@ -260,7 +262,7 @@ void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
 }
 
 void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
-    PRINT("UnMap");
+    //PRINT("UnMap");
     ASSERT(_mapped, "");
 
     ASSERT(_surface, "");
@@ -280,14 +282,16 @@ void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
 }
 
 void Window::reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) {
-    PRINT("Reparent");
+    //PRINT("Reparent");
 }
 
 void Window::expose(xcb_expose_event_t * event) {
     ASSERT(event->window == _window, "Which window?");
+    /*
     PRINT("Expose: " <<
           event->x << " " << event->y << " " <<
           event->width << " " << event->height);
+          */
 
     if (_mapped) {
         if (_doubleBuffer) {
@@ -307,9 +311,11 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
         return;
     }
 
+    /*
     PRINT("Configure notify: " <<
           event->x << " " << event->y << " " <<
           event->width << " " << event->height);
+          */
 
     _width  = event->width;
     _height = event->height;
@@ -407,7 +413,7 @@ void Window::visibilityNotify(xcb_visibility_notify_event_t * UNUSED(event)) {
 
 void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
     ASSERT(event->window == _window, "Which window?");
-    PRINT("Destroy notify");
+    //PRINT("Destroy notify");
 
     _tty->close();
     _isOpen = false;
@@ -708,7 +714,7 @@ void Window::terminalSetTitle(const std::string & title) throw () {
 }
 
 bool Window::terminalBeginFixDamage(bool internal) throw () {
-    PRINT("Damage begin, internal: " << std::boolalpha << internal);
+    //PRINT("Damage begin, internal: " << std::boolalpha << internal);
 
     if (internal) {
         if (_mapped) {
