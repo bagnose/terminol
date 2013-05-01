@@ -17,7 +17,21 @@ public:
     public:
         virtual void terminalResetTitle() throw () = 0;
         virtual void terminalSetTitle(const std::string & title) throw () = 0;
-        virtual void terminalFixDamage() throw () = 0;
+        virtual bool terminalBeginFixDamage(bool internal) throw () = 0;
+        virtual void terminalDrawRun(uint16_t       row,
+                                     uint16_t       col,
+                                     uint8_t        fg,
+                                     uint8_t        bg,
+                                     AttributeSet   attrs,
+                                     const char   * str,       // nul-terminated
+                                     size_t         count) throw () = 0;
+        virtual void terminalDrawCursor(uint16_t       row,
+                                        uint16_t       col,
+                                        uint8_t        fg,
+                                        uint8_t        bg,
+                                        AttributeSet   attrs,
+                                        const char   * str) throw () = 0;
+        virtual void terminalEndFixDamage(bool internal) throw () = 0;
         virtual void terminalChildExited(int exitStatus) throw () = 0;
 
     protected:
@@ -88,17 +102,25 @@ public:
              bool           trace);
     virtual ~Terminal();
 
+    // FIXME Get rid of the following three accessors.
     const SimpleBuffer & buffer()    const { return *_buffer;   }
     uint16_t             cursorRow() const { return _cursorRow; }
     uint16_t             cursorCol() const { return _cursorCol; }
+
     void                 resize(uint16_t rows, uint16_t cols);
 
-    void keyPress(xkb_keysym_t keySym, uint8_t state);
-    void read();
-    bool needsFlush() const;
-    void flush();
+    void                 damage(uint16_t rowBegin, uint16_t rowEnd,
+                                uint16_t colBegin, uint16_t colEnd);
+
+    void                 keyPress(xkb_keysym_t keySym, uint8_t state);
+    void                 read();
+    bool                 needsFlush() const;
+    void                 flush();
 
 protected:
+    void draw(uint16_t rowBegin, uint16_t rowEnd,
+              uint16_t colBegin, uint16_t colEnd,
+              bool internal);
 
     void write(const char * data, size_t size);
 

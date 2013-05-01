@@ -96,6 +96,84 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     }
 }
 
+void Terminal::damage(uint16_t rowBegin, uint16_t rowEnd,
+                      uint16_t colBegin, uint16_t colEnd) {
+    ENFORCE(_observer.terminalBeginFixDamage(false), "");
+    draw(rowBegin, rowEnd, colBegin, colEnd, false);
+    _observer.terminalEndFixDamage(false);
+}
+
+void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
+                    uint16_t colBegin, uint16_t colEnd,
+                    bool internal) {
+    // Declare buffer at the outer scope (rather than for each row) to
+    // minimise alloc/free.
+    std::vector<char> buffer;
+    // Reserve the largest amount of memory we could require.
+    buffer.reserve(_buffer->getCols() * utf8::LMAX + 1);
+
+    for (uint16_t r = rowBegin; r != rowEnd; ++r) {
+        uint16_t     c_;        // Accumulation start column.
+        uint8_t      fg, bg;
+        AttributeSet attrs;
+        uint16_t     c;
+        uint16_t     colBegin2, colEnd2;
+
+        if (internal) {
+            _buffer->getDamage(r, colBegin2, colEnd2);
+            //PRINT("Consulted buffer damage, got: " << colBegin2 << ", " << colEnd2);
+        }
+        else {
+            colBegin2 = colBegin;
+            colEnd2   = colEnd;
+            //PRINT("External damage damage, got: " << colBegin2 << ", " << colEnd2);
+        }
+
+        for (c = colBegin2; c != colEnd2; ++c) {
+            const Cell & cell = _buffer->getCell(r, c);
+
+            if (buffer.empty() || fg != cell.fg() || bg != cell.bg() || attrs != cell.attrs()) {
+                if (!buffer.empty()) {
+                    // flush buffer
+                    buffer.push_back(NUL);
+                    _observer.terminalDrawRun(r, c_, fg, bg, attrs, &buffer.front(), c - c_);
+                    buffer.clear();
+                }
+
+                c_    = c;
+                fg    = cell.fg();
+                bg    = cell.bg();
+                attrs = cell.attrs();
+
+                utf8::Length len = utf8::leadLength(cell.lead());
+                buffer.resize(len);
+                std::copy(cell.bytes(), cell.bytes() + len, &buffer.front());
+            }
+            else {
+                size_t oldSize = buffer.size();
+                utf8::Length len = utf8::leadLength(cell.lead());
+                buffer.resize(buffer.size() + len);
+                std::copy(cell.bytes(), cell.bytes() + len, &buffer[oldSize]);
+            }
+        }
+
+        if (!buffer.empty()) {
+            // flush buffer
+            buffer.push_back(NUL);
+            _observer.terminalDrawRun(r, c_, fg, bg, attrs, &buffer.front(), c - c_);
+            buffer.clear();
+        }
+    }
+
+    const Cell & cell = _buffer->getCell(_cursorRow, _cursorCol);
+    utf8::Length len = utf8::leadLength(cell.lead());
+    buffer.resize(len);
+    std::copy(cell.bytes(), cell.bytes() + len, &buffer.front());
+    buffer.push_back(NUL);
+    _observer.terminalDrawCursor(_cursorRow, _cursorCol,
+                                 cell.fg(), cell.bg(), cell.attrs(), &buffer.front());
+}
+
 void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
     std::string str;
     if (_keyMap.convert(keySym, state,
@@ -126,9 +204,13 @@ void Terminal::read() {
         _observer.terminalChildExited(ex.exitCode);
     }
 
-    _observer.terminalFixDamage();
+    if (_observer.terminalBeginFixDamage(true)) {
+        draw(0, _buffer->getRows(), 0, _buffer->getCols(), true);
+        _observer.terminalEndFixDamage(true);
+        _buffer->resetDamage();
+    }
+
     _dispatch = false;
-    _buffer->resetDamage();
 }
 
 bool Terminal::needsFlush() const {

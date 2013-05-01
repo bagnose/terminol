@@ -31,7 +31,7 @@ Window::Window(Basics             & basics,
                const std::string  & term,
                const Tty::Command & command,
                bool                 trace,
-               bool                 sync) throw (Error) :
+               bool                 UNUSED(sync)) throw (Error) :
     _basics(basics),
     _colorSet(colorSet),
     _fontSet(fontSet),
@@ -48,7 +48,7 @@ Window::Window(Basics             & basics,
     _pointerCol(std::numeric_limits<uint16_t>::max()),
     _pixmap(0),
     _surface(nullptr),
-    _sync(sync)
+    _cr(nullptr)
 {
     xcb_void_cookie_t cookie;
 
@@ -268,16 +268,10 @@ void Window::expose(xcb_expose_event_t * event) {
           event->x << " " << event->y << " " <<
           event->width << " " << event->height);
 
-#if 0
-    draw(event->x, event->y, event->width, event->height, Damage::EXPOSURE);
-#else
-    if (event->count == 0) {
-        draw(0, 0, _width, _height, Damage::EXPOSURE);
+    if (_pixmap) {
+        ASSERT(_surface, "");
+        draw(event->x, event->y, event->width, event->height);
     }
-    else {
-        PRINT("*** Ignoring exposure");
-    }
-#endif
 }
 
 void Window::configureNotify(xcb_configure_notify_event_t * event) {
@@ -285,7 +279,6 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
     // We are only interested in size changes.
     if (_width == event->width && _height == event->height) {
-        PRINT("*** Ignoring configure");
         return;
     }
 
@@ -357,7 +350,7 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
     if (_pixmap) {
         ASSERT(_surface, "");
-        draw(0, 0, _width, _height, Damage::EXPOSURE);
+        draw(0, 0, _width, _height);
     }
 }
 
@@ -453,25 +446,41 @@ void Window::rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const {
 }
 
 bool Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
-    if (x < BORDER_THICKNESS || y < BORDER_THICKNESS) {
-        // Too left or up.
-        return false;
+    bool within = true;
+
+    // x / cols:
+
+    if (x < BORDER_THICKNESS) {
+        col = 0;
+        within = false;
     }
-    else if (x < _nominalWidth  - BORDER_THICKNESS - SCROLLBAR_WIDTH &&
-             y < _nominalHeight - BORDER_THICKNESS)
-    {
-        row = (y - BORDER_THICKNESS) / _fontSet.getHeight();
+    else if (x < _nominalWidth - BORDER_THICKNESS - SCROLLBAR_WIDTH) {
         col = (x - BORDER_THICKNESS) / _fontSet.getWidth();
-        ASSERT(row < _terminal->buffer().getRows(),
-               "row is: " << row << ", getRows() is: " << _terminal->buffer().getRows());
         ASSERT(col < _terminal->buffer().getCols(),
                "col is: " << col << ", getCols() is: " << _terminal->buffer().getCols());
-        return true;
     }
     else {
-        // Too right or down.
-        return false;
+        col = _terminal->buffer().getCols();
+        within = false;
     }
+
+    // y / rows:
+
+    if (y < BORDER_THICKNESS) {
+        row = 0;
+        within = false;
+    }
+    else if (y < _nominalHeight - BORDER_THICKNESS) {
+        row = (y - BORDER_THICKNESS) / _fontSet.getHeight();
+        ASSERT(row < _terminal->buffer().getRows(),
+               "row is: " << row << ", getRows() is: " << _terminal->buffer().getRows());
+    }
+    else {
+        row = _terminal->buffer().getRows();
+        within = false;
+    }
+
+    return within;
 }
 
 void Window::setTitle(const std::string & title) {
@@ -490,66 +499,84 @@ void Window::setTitle(const std::string & title) {
                                title.data());
 }
 
-void Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih, Damage damage) {
+void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
+    ASSERT(_pixmap, "");
     ASSERT(_surface, "");
-    cairo_t * cr = cairo_create(_surface);
+    _cr = cairo_create(_surface);
+
+#if DEBUG
+    // Clear the damaged area so that we know we are completely drawing to it.
+    xcb_rectangle_t rect = {
+        static_cast<int16_t>(x), static_cast<int16_t>(y), w, h
+    };
+
+    xcb_poly_rectangle(_basics.connection(),
+                       _pixmap,
+                       _gc,
+                       1,
+                       &rect);
+#endif
 
     // Top left corner of damage.
-    double x0 = static_cast<double>(ix);
-    double y0 = static_cast<double>(iy);
+    double x0 = static_cast<double>(x);
+    double y0 = static_cast<double>(y);
 
     // Bottom right corner of damage, constrained by nominal area.
-    double x2 = static_cast<double>(std::min<uint16_t>(ix + iw, _nominalWidth));
-    double y2 = static_cast<double>(std::min<uint16_t>(iy + ih, _nominalHeight));
+    double x1 = static_cast<double>(std::min<uint16_t>(x + w, _nominalWidth));
+    double y1 = static_cast<double>(std::min<uint16_t>(y + h, _nominalHeight));
 
-    if (damage == Damage::EXPOSURE) {
-        if (_width > _nominalWidth || _height > _nominalHeight) {
-            // The window manager didn't honour our size base/increment hints.
-            cairo_save(cr); {
-                const auto & bgValues = _colorSet.getBackgroundColor();
-                cairo_set_source_rgb(cr, bgValues.r, bgValues.g, bgValues.b);
+    if (_width > _nominalWidth || _height > _nominalHeight) {
+        // The window manager didn't honour our size base/increment hints.
+        cairo_save(_cr); {
+            const auto & bgValues = _colorSet.getBackgroundColor();
+            cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
 
-                if (_width > _nominalWidth) {
-                    // Right vertical strip.
-                    cairo_rectangle(cr,
-                                    static_cast<double>(_nominalWidth),
-                                    0.0,
-                                    static_cast<double>(_width - _nominalWidth),
-                                    static_cast<double>(_height));
-                    cairo_fill(cr);
-                }
+            if (_width > _nominalWidth) {
+                // Right vertical strip.
+                cairo_rectangle(_cr,
+                                static_cast<double>(_nominalWidth),
+                                0.0,
+                                static_cast<double>(_width - _nominalWidth),
+                                static_cast<double>(_height));
+                cairo_fill(_cr);
+            }
 
-                if (_height > _nominalHeight) {
-                    // Bottom horizontal strip.
-                    cairo_rectangle(cr,
-                                    0.0,
-                                    static_cast<double>(_nominalHeight),
-                                    static_cast<double>(_width),
-                                    static_cast<double>(_height - _nominalHeight));
-                    cairo_fill(cr);
-                }
-            } cairo_restore(cr);
-        }
+            if (_height > _nominalHeight) {
+                // Bottom horizontal strip.
+                cairo_rectangle(_cr,
+                                0.0,
+                                static_cast<double>(_nominalHeight),
+                                static_cast<double>(_width),
+                                static_cast<double>(_height - _nominalHeight));
+                cairo_fill(_cr);
+            }
+        } cairo_restore(_cr);
     }
 
-    cairo_save(cr); {
-        cairo_rectangle(cr, x0, y0, x2 - x0, y2 - y0);
-        cairo_clip(cr);
+    cairo_save(_cr); {
+        cairo_rectangle(_cr, x0, y0, x1 - x0, y1 - y0);
+        cairo_clip(_cr);
 
-        ASSERT(cairo_status(cr) == 0,
-               "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
+        ASSERT(cairo_status(_cr) == 0,
+               "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
 
-        drawBorder(cr, damage);
-        drawScrollBar(cr, damage);
-        drawBuffer(cr, damage);
-        drawSelection(cr, damage);
-        drawCursor(cr, damage);
+        drawBorder();
+        drawScrollBar();
 
-        ASSERT(cairo_status(cr) == 0,
-               "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
+        uint16_t rowBegin, colBegin;
+        xy2RowCol(x, y, rowBegin, colBegin);
+        uint16_t rowEnd, colEnd;
+        xy2RowCol(x + w, y + h, rowEnd, colEnd);
+        if (colEnd != _terminal->buffer().getCols()) ++colEnd;
+        if (rowEnd != _terminal->buffer().getRows()) ++rowEnd;
+        _terminal->damage(rowBegin, rowEnd, colBegin, colEnd);
 
-    } cairo_restore(cr);
-    cairo_destroy(cr);
+        ASSERT(cairo_status(_cr) == 0,
+               "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
+
+    } cairo_restore(_cr);
+    cairo_destroy(_cr);
+    _cr = nullptr;
 
     cairo_surface_flush(_surface);      // Useful?
 
@@ -557,210 +584,56 @@ void Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih, Damage dam
                   _pixmap,
                   _window,
                   _gc,
-                  ix, iy, // src
-                  ix, iy, // dst
-                  iw, ih);
+                  x, y, // src
+                  x, y, // dst
+                  w, h);
 
     xcb_flush(_basics.connection());
 }
 
-void Window::drawBorder(cairo_t * cr, Damage UNUSED(damage)) {
+void Window::drawBorder() {
     if (BORDER_THICKNESS > 0) {
-        cairo_save(cr); {
+        cairo_save(_cr); {
             const auto & bgValues = _colorSet.getBorderColor();
-            cairo_set_source_rgb(cr, bgValues.r, bgValues.g, bgValues.b);
+            cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
 
             // Left edge.
-            cairo_rectangle(cr,
+            cairo_rectangle(_cr,
                             0.0,
                             0.0,
                             static_cast<double>(BORDER_THICKNESS),
                             static_cast<double>(_nominalHeight));
-            cairo_fill(cr);
+            cairo_fill(_cr);
 
             // Right edge.
-            cairo_rectangle(cr,
+            cairo_rectangle(_cr,
                             static_cast<double>(_nominalWidth - BORDER_THICKNESS),
                             0.0,
                             static_cast<double>(BORDER_THICKNESS),
                             static_cast<double>(_nominalHeight));
-            cairo_fill(cr);
+            cairo_fill(_cr);
 
             // Top edge.
-            cairo_rectangle(cr,
+            cairo_rectangle(_cr,
                             0.0,
                             0.0,
                             static_cast<double>(_nominalWidth),
                             static_cast<double>(BORDER_THICKNESS));
-            cairo_fill(cr);
+            cairo_fill(_cr);
 
             // Bottom edge.
-            cairo_rectangle(cr,
+            cairo_rectangle(_cr,
                             0.0,
                             static_cast<double>(_nominalHeight - BORDER_THICKNESS),
                             static_cast<double>(_nominalWidth),
                             static_cast<double>(BORDER_THICKNESS));
-            cairo_fill(cr);
-        } cairo_restore(cr);
+            cairo_fill(_cr);
+        } cairo_restore(_cr);
     }
 }
 
-void Window::drawScrollBar(cairo_t * UNUSED(cr), Damage UNUSED(damage)) {
+void Window::drawScrollBar() {
     // TODO
-}
-
-void Window::drawBuffer(cairo_t * cr, Damage damage) {
-    // Declare buffer at the outer scope (rather than for each row) to
-    // minimise alloc/free.
-    std::vector<char> buffer;
-    // Reserve the largest amount of memory we could require.
-    buffer.reserve(_terminal->buffer().getCols() * utf8::LMAX + 1);
-
-    for (uint16_t r = 0; r != _terminal->buffer().getRows(); ++r) {
-        uint16_t colBegin, colEnd;
-
-        switch (damage) {
-            case Damage::TERMINAL:
-                _terminal->buffer().getDamage(r, colBegin, colEnd);
-                break;
-            case Damage::EXPOSURE:
-                // FIXME constrain colBegin and colEnd to exposure
-                colBegin = 0;
-                colEnd   = _terminal->buffer().getCols();
-                break;
-        }
-
-        uint16_t     c_;
-        uint8_t      fg, bg;
-        AttributeSet attrs;
-
-        uint16_t     c;
-
-        for (c = colBegin; c != colEnd; ++c) {
-            const Cell & cell = _terminal->buffer().getCell(r, c);
-
-            if (buffer.empty() || fg != cell.fg() || bg != cell.bg() || attrs != cell.attrs()) {
-                if (!buffer.empty()) {
-                    // flush buffer
-                    buffer.push_back(NUL);
-                    drawUtf8(cr, r, c_, fg, bg, attrs, &buffer.front(), c - c_);
-                    buffer.clear();
-                }
-
-                c_    = c;
-                fg    = cell.fg();
-                bg    = cell.bg();
-                attrs = cell.attrs();
-
-                utf8::Length len = utf8::leadLength(cell.lead());
-                buffer.resize(len);
-                std::copy(cell.bytes(), cell.bytes() + len, &buffer.front());
-            }
-            else {
-                size_t oldSize = buffer.size();
-                utf8::Length len = utf8::leadLength(cell.lead());
-                buffer.resize(buffer.size() + len);
-                std::copy(cell.bytes(), cell.bytes() + len, &buffer[oldSize]);
-            }
-        }
-
-        if (!buffer.empty()) {
-            // flush buffer
-            buffer.push_back(NUL);
-            drawUtf8(cr, r, c_, fg, bg, attrs, &buffer.front(), c - c_);
-            buffer.clear();
-        }
-    }
-}
-
-void Window::drawSelection(cairo_t * UNUSED(cr), Damage UNUSED(damage)) {
-}
-
-void Window::drawUtf8(cairo_t    * cr,
-                      uint16_t     row,
-                      uint16_t     col,
-                      uint8_t      fg,
-                      uint8_t      bg,
-                      AttributeSet attrs,
-                      const char * str,
-                      size_t       count) {
-#if 0
-    {
-        bool nonSpace = false;
-        for (const char * s = str; *s != NUL; ++s) {
-            if (*s != SPACE) {
-                nonSpace = true;
-                break;
-            }
-        }
-        if (nonSpace) {
-            PRINT("Drawing: '" << str << "'  count=" << count);
-        }
-    }
-#endif
-
-    cairo_save(cr); {
-        if (attrs.get(Attribute::REVERSE)) { std::swap(fg, bg); }
-
-        cairo_set_scaled_font(cr, _fontSet.get(attrs.get(Attribute::BOLD),
-                                               attrs.get(Attribute::ITALIC)));
-
-        int x, y;
-        rowCol2XY(row, col, x, y);
-
-        const auto & bgValues = _colorSet.getIndexedColor(bg);
-        cairo_set_source_rgb(cr, bgValues.r, bgValues.g, bgValues.b);
-        cairo_rectangle(cr, x, y, count * _fontSet.getWidth(), _fontSet.getHeight());
-        cairo_fill(cr);
-
-        const auto & fgValues = _colorSet.getIndexedColor(fg);
-        cairo_set_source_rgb(cr, fgValues.r, fgValues.g, fgValues.b);
-        cairo_move_to(cr, x, y + _fontSet.getAscent());
-        cairo_show_text(cr, str);
-
-        ASSERT(cairo_status(cr) == 0,
-               "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
-    } cairo_restore(cr);
-}
-
-void Window::drawCursor(cairo_t * cr, Damage UNUSED(damage)) {
-    uint16_t row = _terminal->cursorRow();
-    uint16_t col = _terminal->cursorCol();
-
-    const Cell & cell = _terminal->buffer().getCell(row, col);
-    utf8::Length length = utf8::leadLength(cell.lead());
-    char buf[utf8::LMAX + 1];
-    std::copy(cell.bytes(), cell.bytes() + length, buf);
-    buf[length] = NUL;
-
-    // TODO consult config here.
-#if 0
-    const auto & fgValues = _colorSet.getIndexedColor(cell.bg());
-    const auto & bgValues = _colorSet.getIndexedColor(cell.fg());
-#else
-    const auto & fgValues = _colorSet.getCursorFgColor();
-    const auto & bgValues = _colorSet.getCursorBgColor();
-#endif
-
-    cairo_save(cr); {
-        const AttributeSet & attrs = cell.attrs();
-        cairo_set_scaled_font(cr, _fontSet.get(attrs.get(Attribute::BOLD),
-                                               attrs.get(Attribute::ITALIC)));
-
-        int x, y;
-        rowCol2XY(row, col, x, y);
-
-        cairo_set_source_rgb(cr, bgValues.r, bgValues.g, bgValues.b);
-        cairo_rectangle(cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
-        cairo_fill(cr);
-
-        cairo_set_source_rgb(cr, fgValues.r, fgValues.g, fgValues.b);
-        cairo_move_to(cr, x, y + _fontSet.getAscent());
-        cairo_show_text(cr, buf);
-
-        ASSERT(cairo_status(cr) == 0,
-               "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
-    } cairo_restore(cr);
 }
 
 // Terminal::I_Observer implementation:
@@ -774,9 +647,115 @@ void Window::terminalSetTitle(const std::string & title) throw () {
     setTitle(title);
 }
 
-void Window::terminalFixDamage() throw () {
-    if (_pixmap) {
-        draw(0, 0, _width, _height, Damage::TERMINAL);
+bool Window::terminalBeginFixDamage(bool internal) throw () {
+    PRINT("Damage begin, internal: " << std::boolalpha << internal);
+
+    if (internal) {
+        if (_pixmap) {
+            ASSERT(_surface, "");
+            _cr = cairo_create(_surface);
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    else {
+        ASSERT(_pixmap, "");
+        ASSERT(_surface, "");
+        ASSERT(_cr, "");
+        return true;
+    }
+}
+
+void Window::terminalDrawRun(uint16_t       row,
+                             uint16_t       col,
+                             uint8_t        fg,
+                             uint8_t        bg,
+                             AttributeSet   attrs,
+                             const char   * str,
+                             size_t         count) throw () {
+    ASSERT(_cr, "");
+
+    cairo_save(_cr); {
+        if (attrs.get(Attribute::REVERSE)) { std::swap(fg, bg); }
+
+        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attribute::BOLD),
+                                                attrs.get(Attribute::ITALIC)));
+
+        int x, y;
+        rowCol2XY(row, col, x, y);
+
+        const auto & bgValues = _colorSet.getIndexedColor(bg);
+        cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
+        cairo_rectangle(_cr, x, y, count * _fontSet.getWidth(), _fontSet.getHeight());
+        cairo_fill(_cr);
+
+        const auto & fgValues = _colorSet.getIndexedColor(fg);
+        cairo_set_source_rgb(_cr, fgValues.r, fgValues.g, fgValues.b);
+        cairo_move_to(_cr, x, y + _fontSet.getAscent());
+        cairo_show_text(_cr, str);
+
+        ASSERT(cairo_status(_cr) == 0,
+               "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
+    } cairo_restore(_cr);
+}
+
+void Window::terminalDrawCursor(uint16_t       row,
+                                uint16_t       col,
+                                uint8_t        fg,
+                                uint8_t        bg,
+                                AttributeSet   attrs,
+                                const char   * str) throw () {
+    // TODO consult config here.
+    const auto & fgValues =
+        false ?
+        _colorSet.getIndexedColor(bg) :
+        _colorSet.getCursorFgColor();
+
+    const auto & bgValues =
+        false ?
+        _colorSet.getIndexedColor(fg) :
+        _colorSet.getCursorBgColor();
+
+    cairo_save(_cr); {
+        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attribute::BOLD),
+                                                attrs.get(Attribute::ITALIC)));
+
+        int x, y;
+        rowCol2XY(row, col, x, y);
+
+        cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
+        cairo_rectangle(_cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
+        cairo_fill(_cr);
+
+        cairo_set_source_rgb(_cr, fgValues.r, fgValues.g, fgValues.b);
+        cairo_move_to(_cr, x, y + _fontSet.getAscent());
+        cairo_show_text(_cr, str);
+
+        ASSERT(cairo_status(_cr) == 0,
+               "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
+    } cairo_restore(_cr);
+}
+
+void Window::terminalEndFixDamage(bool internal) throw () {
+    if (internal) {
+        cairo_destroy(_cr);
+        _cr = nullptr;
+
+        cairo_surface_flush(_surface);      // Useful?
+
+        // FIXME we shouldn't copy the entire thing, just the area
+        // that's damaged.
+        xcb_copy_area(_basics.connection(),
+                      _pixmap,
+                      _window,
+                      _gc,
+                      0, 0, // src
+                      0, 0, // dest
+                      _width, _height);
+
+        xcb_flush(_basics.connection());
     }
 }
 

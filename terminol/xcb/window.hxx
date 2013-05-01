@@ -40,7 +40,8 @@ class Window :
     uint16_t          _pointerCol;
     xcb_pixmap_t      _pixmap;
     cairo_surface_t * _surface;
-    bool              _sync;
+
+    cairo_t         * _cr;
 
 public:
     struct Error {
@@ -97,30 +98,29 @@ protected:
 
     void setTitle(const std::string & title);
 
-    enum class Damage {
-        TERMINAL, EXPOSURE
-    };
-
-    void draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih, Damage damage);
-    void drawBorder(cairo_t * cr, Damage damage);
-    void drawScrollBar(cairo_t * cr, Damage damage);
-    void drawBuffer(cairo_t * cr, Damage damage);
-    void drawSelection(cairo_t * cr, Damage damage);
-    void drawUtf8(cairo_t      * cr,
-                  uint16_t       row,
-                  uint16_t       col,
-                  uint8_t        fg,
-                  uint8_t        bg,
-                  AttributeSet   attr,
-                  const char   * str,
-                  size_t         count);
-    void drawCursor(cairo_t * cr, Damage damage);
+    void draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
+    void drawBorder();
+    void drawScrollBar();
 
     // Terminal::I_Observer implementation:
 
     void terminalResetTitle() throw ();
     void terminalSetTitle(const std::string & title) throw ();
-    void terminalFixDamage() throw ();
+    bool terminalBeginFixDamage(bool internal) throw ();
+    void terminalDrawRun(uint16_t       row,
+                         uint16_t       col,
+                         uint8_t        fg,
+                         uint8_t        bg,
+                         AttributeSet   attrs,
+                         const char   * str,
+                         size_t         count) throw ();
+    void terminalDrawCursor(uint16_t       row,
+                            uint16_t       col,
+                            uint8_t        fg,
+                            uint8_t        bg,
+                            AttributeSet   attrs,
+                            const char   * str) throw ();
+    void terminalEndFixDamage(bool internal) throw ();
     void terminalChildExited(int exitStatus) throw ();
 };
 
