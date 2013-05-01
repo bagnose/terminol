@@ -194,6 +194,8 @@ protected:
                 std::free(event);
                 throw;
             }
+
+            std::free(event);
         }
     }
 };

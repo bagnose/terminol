@@ -169,12 +169,11 @@ template <typename T> std::string toBinary(T t) {
 
 // Inherit from this to be uncopyable.
 class Uncopyable {
-public:
-    Uncopyable() {}
-
-private:
     Uncopyable(const Uncopyable &) {}
     Uncopyable & operator = (const Uncopyable &) { return *this; }
+
+public:
+    Uncopyable() {}
 };
 
 class Timer {
@@ -192,7 +191,7 @@ enum class Esc {
     BOLD,
     DIM,
     UNDERLINE,
-    BLINK,      // (SAME AS REVERSE)
+    BLINK,
     REVERSE,
     HIDDEN,
 

@@ -33,7 +33,7 @@ const Color ColorSet::COLORS16[16] = {
     { 0.66, 0.0,  0.0  }, // red
     { 0.0,  0.66, 0.0  }, // green
     { 0.66, 0.66, 0.0  }, // orange
-    { 0.16, 0.16, 0.90 }, // blue
+    { 0.33, 0.33, 0.90 }, // blue
     { 0.66, 0.0,  0.66 }, // magenta
     { 0.0,  0.66, 0.66 }, // cyan
     { 0.66, 0.66, 0.66 }, // light grey
@@ -42,7 +42,7 @@ const Color ColorSet::COLORS16[16] = {
     { 1.0,  0.33, 0.33 }, // high red
     { 0.33, 1.0,  0.33 }, // high green
     { 1.0,  1.0,  0.33 }, // high yellow
-    { 0.33, 0.33, 1.0  }, // high blue
+    { 0.66, 0.66, 1.0  }, // high blue
     { 1.0,  0.33, 1.0  }, // high magenta
     { 0.33, 1.0,  1.0  }, // high cyan
     { 1.0,  1.0,  1.0  }  // white
@@ -54,6 +54,7 @@ ColorSet::ColorSet(Basics & basics) :
 {
     _cursorFgColor = { 0.0, 0.0,  0.0 };
     _cursorBgColor = { 1.0, 0.25, 1.0 };
+    _borderColor   = { 0.0, 0.0, 0.15 };
 
     // 0..7     normal colors
     // 8..15    bright colors

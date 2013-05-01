@@ -17,6 +17,7 @@ class ColorSet {
     Basics & _basics;
     Color    _cursorFgColor;
     Color    _cursorBgColor;
+    Color    _borderColor;
     Color    _indexedColors[256];
     uint32_t _backgroundPixel;
 
@@ -27,6 +28,8 @@ public:
     const Color & getCursorFgColor() const { return _cursorFgColor; }
     const Color & getCursorBgColor() const { return _cursorBgColor; }
     const Color & getIndexedColor(uint8_t index) const { return _indexedColors[index]; }
+    const Color & getBorderColor() const { return _borderColor; }
+    const Color & getBackgroundColor() const { return _indexedColors[0]; }
     uint32_t      getBackgroundPixel() const { return _backgroundPixel; }
 };
 

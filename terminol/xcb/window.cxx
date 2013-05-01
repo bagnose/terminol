@@ -4,7 +4,9 @@
 
 #include <xcb/xcb_icccm.h>
 
-const int         Window::BORDER_THICKNESS = 0;
+#include <unistd.h>
+
+const int         Window::BORDER_THICKNESS = 50;
 const int         Window::SCROLLBAR_WIDTH  = 0;
 const std::string Window::DEFAULT_TITLE    = "terminol";
 
@@ -50,21 +52,32 @@ Window::Window(Basics             & basics,
 {
     xcb_void_cookie_t cookie;
 
-    uint32_t values[2];
-    // NOTE: This is an important property because it determines
-    // flicker when the window is exposed. Ideally background_pixel
-    // should be set to whatever the background of the terminal is.
-    values[0] = _colorSet.getBackgroundPixel();
-    values[1] =
+    // Note, it is important to set XCB_CW_BACK_PIXEL to the actual
+    // background colour used by the terminal in order to prevent
+    // flicker when the window is exposed.
+    uint32_t values[] = {
+        // XCB_CW_BACK_PIXEL
+        _colorSet.getBackgroundPixel(),
+        // XCB_CW_BIT_GRAVITY
+        XCB_GRAVITY_NORTH_WEST,         // What to do if window is resized.
+        // XCB_CW_WIN_GRAVITY
+        XCB_GRAVITY_NORTH_WEST,         // What to do if parent is resized.
+        // XCB_CW_BACKING_STORE
+        XCB_BACKING_STORE_NOT_USEFUL,   // XCB_BACKING_STORE_WHEN_MAPPED, XCB_BACKING_STORE_ALWAYS
+        // XCB_CW_SAVE_UNDER
+        0,                              // 1 -> useful
+        // XCB_CW_CURSOR
+        //                                 TODO
+        // XCB_CW_EVENT_MASK
         XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE |
         XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
         XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW |
-        XCB_EVENT_MASK_POINTER_MOTION_HINT |
-        XCB_EVENT_MASK_BUTTON_MOTION |
+        XCB_EVENT_MASK_POINTER_MOTION_HINT | XCB_EVENT_MASK_BUTTON_MOTION |
         XCB_EVENT_MASK_EXPOSURE |
         XCB_EVENT_MASK_STRUCTURE_NOTIFY |
         XCB_EVENT_MASK_FOCUS_CHANGE |
-        0;
+        0
+    };
 
     uint16_t rows = 25;
     uint16_t cols = 80;
@@ -84,7 +97,13 @@ Window::Window(Basics             & basics,
                                        0,            // border width
                                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
                                        _basics.screen()->root_visual,
-                                       XCB_CW_BACK_PIXEL | XCB_CW_EVENT_MASK,
+                                       XCB_CW_BACK_PIXEL |
+                                       XCB_CW_BIT_GRAVITY |
+                                       XCB_CW_WIN_GRAVITY |
+                                       XCB_CW_BACKING_STORE |
+                                       XCB_CW_SAVE_UNDER |
+                                       //XCB_CW_CURSOR |
+                                       XCB_CW_EVENT_MASK,
                                        values);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to create window")) {
         throw Error("Failed to create window.");
@@ -95,9 +114,16 @@ Window::Window(Basics             & basics,
     setTitle(DEFAULT_TITLE);
 
     _gc = xcb_generate_id(_basics.connection());
-    uint32_t mask = XCB_GC_BACKGROUND | XCB_GC_GRAPHICS_EXPOSURES;
-    uint32_t vals[] = { _basics.screen()->white_pixel /*_colorSet.getBackgroundPixel()*/, 0 };
-    cookie = xcb_create_gc_checked(_basics.connection(), _gc, _window, mask, vals);
+    uint32_t vals[] = {
+        _basics.screen()->white_pixel /*_colorSet.getBackgroundPixel()*/,
+        _basics.screen()->white_pixel /*_colorSet.getBackgroundPixel()*/,
+        0                               // no exposures
+    };
+    cookie = xcb_create_gc_checked(_basics.connection(),
+                                   _gc,
+                                   _window,
+                                   XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_GRAPHICS_EXPOSURES,
+                                   vals);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate gc")) {
         xcb_destroy_window(_basics.connection(), _window);
         FATAL("");
@@ -109,27 +135,36 @@ Window::Window(Basics             & basics,
     _tty = new Tty(rows, cols, stringify(_window), term, command);
     _terminal = new Terminal(*this, keyMap, *_tty, rows, cols, trace);
     _isOpen = true;
+    PRINT("Created");
 }
 
 Window::~Window() {
     if (_pixmap) {
+        ASSERT(_surface, "");
+        cairo_surface_destroy(_surface);
+
+        ASSERT(_pixmap, "");
         xcb_void_cookie_t cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
         if (xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap")) {
             FATAL("");
         }
-
-        ASSERT(_surface, "");
-        cairo_surface_destroy(_surface);
     }
+    else {
+        ASSERT(!_surface, "");
+    }
+
+    // Unwind constructor.
 
     delete _tty;
     delete _terminal;
 
     xcb_free_gc(_basics.connection(), _gc);
 
+    // The window may have been destroyed exogenously.
     if (_window) {
         xcb_destroy_window(_basics.connection(), _window);
     }
+    PRINT("Destroyed");
 }
 
 void Window::read() {
@@ -187,7 +222,7 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
 }
 
 void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
-    //PRINT("Map");
+    PRINT("Map");
     ASSERT(!_pixmap, "");
 
     _pixmap = xcb_generate_id(_basics.connection());
@@ -210,60 +245,79 @@ void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
 
 void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     PRINT("UnMap");
-    ASSERT(_pixmap, "");
+
     ASSERT(_surface, "");
-
     cairo_surface_destroy(_surface);
+    _surface = nullptr;
 
-    xcb_free_pixmap(_basics.connection(), _pixmap);
+    ASSERT(_pixmap, "");
+    xcb_void_cookie_t cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
+    if (xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap")) {
+        FATAL("");
+    }
     _pixmap = 0;
 }
 
 void Window::reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) {
-    //PRINT("Reparent");
+    PRINT("Reparent");
 }
 
 void Window::expose(xcb_expose_event_t * event) {
     ASSERT(event->window == _window, "Which window?");
-    /*
     PRINT("Expose: " <<
           event->x << " " << event->y << " " <<
           event->width << " " << event->height);
-          */
 
-    draw(event->x, event->y, event->width, event->height, false);
+#if 0
+    draw(event->x, event->y, event->width, event->height, Damage::EXPOSURE);
+#else
+    if (event->count == 0) {
+        draw(0, 0, _width, _height, Damage::EXPOSURE);
+    }
+    else {
+        PRINT("*** Ignoring exposure");
+    }
+#endif
 }
 
 void Window::configureNotify(xcb_configure_notify_event_t * event) {
     ASSERT(event->window == _window, "Which window?");
-    /*
+
+    // We are only interested in size changes.
+    if (_width == event->width && _height == event->height) {
+        PRINT("*** Ignoring configure");
+        return;
+    }
+
     PRINT("Configure notify: " <<
           event->x << " " << event->y << " " <<
           event->width << " " << event->height);
-          */
-
-    // We are only interested in size changes.
-    if (_width == event->width && _height == event->height) { return; }
 
     _width  = event->width;
     _height = event->height;
 
     if (_pixmap) {
         ASSERT(_surface, "");
-
         cairo_surface_destroy(_surface);
+        _surface = nullptr;
 
-        xcb_free_pixmap(_basics.connection(), _pixmap);
+        ASSERT(_pixmap, "");
+        xcb_void_cookie_t cookie;
+        cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
+        if (xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap")) {
+            FATAL("");
+        }
+        _pixmap = 0;
 
         //
 
         _pixmap = xcb_generate_id(_basics.connection());
-        xcb_void_cookie_t cookie = xcb_create_pixmap_checked(_basics.connection(),
-                                                             _basics.screen()->root_depth,
-                                                             _pixmap,
-                                                             _window,
-                                                             _width,
-                                                             _height);
+        cookie = xcb_create_pixmap_checked(_basics.connection(),
+                                           _basics.screen()->root_depth,
+                                           _pixmap,
+                                           _window,
+                                           _width,
+                                           _height);
         if (xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap")) {
             FATAL("");
         }
@@ -271,7 +325,8 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
         _surface = cairo_xcb_surface_create(_basics.connection(),
                                             _pixmap,
                                             _basics.visual(),
-                                            _width, _height);
+                                            _width,
+                                            _height);
     }
 
     uint16_t rows, cols;
@@ -302,7 +357,7 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
     if (_pixmap) {
         ASSERT(_surface, "");
-        draw(0, 0, _width, _height, false);
+        draw(0, 0, _width, _height, Damage::EXPOSURE);
     }
 }
 
@@ -360,7 +415,7 @@ void Window::icccmConfigure() {
     xcb_size_hints_t sizeHints;
     sizeHints.flags = 0;
     xcb_icccm_size_hints_set_min_size(&sizeHints,
-                                      2 * BORDER_THICKNESS + _fontSet.getWidth(),
+                                      2 * BORDER_THICKNESS + _fontSet.getWidth() + SCROLLBAR_WIDTH,
                                       2 * BORDER_THICKNESS + _fontSet.getHeight());
     xcb_icccm_size_hints_set_resize_inc(&sizeHints,
                                         _fontSet.getWidth(),
@@ -435,31 +490,60 @@ void Window::setTitle(const std::string & title) {
                                title.data());
 }
 
-void Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih, bool damageOnly) {
-    drawPadding();
-    drawBorder();
-    drawScrollBar();
-
+void Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih, Damage damage) {
     ASSERT(_surface, "");
     cairo_t * cr = cairo_create(_surface);
 
-    double x = static_cast<double>(ix);
-    double y = static_cast<double>(iy);
-    double w = static_cast<double>(iw);
-    double h = static_cast<double>(ih);
+    // Top left corner of damage.
+    double x0 = static_cast<double>(ix);
+    double y0 = static_cast<double>(iy);
+
+    // Bottom right corner of damage, constrained by nominal area.
+    double x2 = static_cast<double>(std::min<uint16_t>(ix + iw, _nominalWidth));
+    double y2 = static_cast<double>(std::min<uint16_t>(iy + ih, _nominalHeight));
+
+    if (damage == Damage::EXPOSURE) {
+        if (_width > _nominalWidth || _height > _nominalHeight) {
+            // The window manager didn't honour our size base/increment hints.
+            cairo_save(cr); {
+                const auto & bgValues = _colorSet.getBackgroundColor();
+                cairo_set_source_rgb(cr, bgValues.r, bgValues.g, bgValues.b);
+
+                if (_width > _nominalWidth) {
+                    // Right vertical strip.
+                    cairo_rectangle(cr,
+                                    static_cast<double>(_nominalWidth),
+                                    0.0,
+                                    static_cast<double>(_width - _nominalWidth),
+                                    static_cast<double>(_height));
+                    cairo_fill(cr);
+                }
+
+                if (_height > _nominalHeight) {
+                    // Bottom horizontal strip.
+                    cairo_rectangle(cr,
+                                    0.0,
+                                    static_cast<double>(_nominalHeight),
+                                    static_cast<double>(_width),
+                                    static_cast<double>(_height - _nominalHeight));
+                    cairo_fill(cr);
+                }
+            } cairo_restore(cr);
+        }
+    }
 
     cairo_save(cr); {
-        //PRINT(x << " " << y << " " << w << " " << h);
-        ///
-        cairo_rectangle(cr, x, y, w, h);
+        cairo_rectangle(cr, x0, y0, x2 - x0, y2 - y0);
         cairo_clip(cr);
 
         ASSERT(cairo_status(cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
 
-        drawBuffer(cr, damageOnly);
-        drawSelection(cr);
-        drawCursor(cr);
+        drawBorder(cr, damage);
+        drawScrollBar(cr, damage);
+        drawBuffer(cr, damage);
+        drawSelection(cr, damage);
+        drawCursor(cr, damage);
 
         ASSERT(cairo_status(cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(cr)));
@@ -473,59 +557,59 @@ void Window::draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih, bool damag
                   _pixmap,
                   _window,
                   _gc,
-                  x, y, // src
-                  x, y, // dst
-                  w, h);
+                  ix, iy, // src
+                  ix, iy, // dst
+                  iw, ih);
 
     xcb_flush(_basics.connection());
 }
 
-void Window::drawPadding() {
-    if (_width > _nominalWidth) {
-        /*
-        PRINT("width=" << _width << ", n-width=" << _nominalWidth);
-        PRINT("Right sliver: " << _width - _nominalWidth);
-        */
+void Window::drawBorder(cairo_t * cr, Damage UNUSED(damage)) {
+    if (BORDER_THICKNESS > 0) {
+        cairo_save(cr); {
+            const auto & bgValues = _colorSet.getBorderColor();
+            cairo_set_source_rgb(cr, bgValues.r, bgValues.g, bgValues.b);
 
-        xcb_rectangle_t rectangle = {
-            static_cast<int16_t>(_nominalWidth),
-            0,
-            static_cast<uint16_t>(_width - _nominalWidth),
-            _height
-        };
+            // Left edge.
+            cairo_rectangle(cr,
+                            0.0,
+                            0.0,
+                            static_cast<double>(BORDER_THICKNESS),
+                            static_cast<double>(_nominalHeight));
+            cairo_fill(cr);
 
-        //PRINT(rectangle.x << " " << rectangle.y << " " << rectangle.width << " " << rectangle.height);
+            // Right edge.
+            cairo_rectangle(cr,
+                            static_cast<double>(_nominalWidth - BORDER_THICKNESS),
+                            0.0,
+                            static_cast<double>(BORDER_THICKNESS),
+                            static_cast<double>(_nominalHeight));
+            cairo_fill(cr);
 
-        xcb_poly_fill_rectangle(_basics.connection(),
-                                _pixmap,
-                                _gc,
-                                1,
-                                &rectangle);
+            // Top edge.
+            cairo_rectangle(cr,
+                            0.0,
+                            0.0,
+                            static_cast<double>(_nominalWidth),
+                            static_cast<double>(BORDER_THICKNESS));
+            cairo_fill(cr);
+
+            // Bottom edge.
+            cairo_rectangle(cr,
+                            0.0,
+                            static_cast<double>(_nominalHeight - BORDER_THICKNESS),
+                            static_cast<double>(_nominalWidth),
+                            static_cast<double>(BORDER_THICKNESS));
+            cairo_fill(cr);
+        } cairo_restore(cr);
     }
-
-    if (_height > _nominalHeight) {
-        xcb_rectangle_t rectangle = {
-            0,
-            static_cast<int16_t>(_nominalHeight),
-            static_cast<uint16_t>(_width),
-            static_cast<uint16_t>(_height - _nominalHeight)
-        };
-
-        xcb_poly_fill_rectangle(_basics.connection(),
-                                _pixmap,
-                                _gc,
-                                1,
-                                &rectangle);
-    }
 }
 
-void Window::drawBorder() {
+void Window::drawScrollBar(cairo_t * UNUSED(cr), Damage UNUSED(damage)) {
+    // TODO
 }
 
-void Window::drawScrollBar() {
-}
-
-void Window::drawBuffer(cairo_t * cr, bool damageOnly) {
+void Window::drawBuffer(cairo_t * cr, Damage damage) {
     // Declare buffer at the outer scope (rather than for each row) to
     // minimise alloc/free.
     std::vector<char> buffer;
@@ -535,17 +619,15 @@ void Window::drawBuffer(cairo_t * cr, bool damageOnly) {
     for (uint16_t r = 0; r != _terminal->buffer().getRows(); ++r) {
         uint16_t colBegin, colEnd;
 
-        if (damageOnly) {
-            _terminal->buffer().getDamage(r, colBegin, colEnd);
-            /*
-            if (colBegin != colEnd) {
-                PRINT("Damage: row=" << r << ", begin=" << colBegin << ", end=" << colEnd);
-            }
-            */
-        }
-        else {
-            colBegin = 0;
-            colEnd   = _terminal->buffer().getCols();
+        switch (damage) {
+            case Damage::TERMINAL:
+                _terminal->buffer().getDamage(r, colBegin, colEnd);
+                break;
+            case Damage::EXPOSURE:
+                // FIXME constrain colBegin and colEnd to exposure
+                colBegin = 0;
+                colEnd   = _terminal->buffer().getCols();
+                break;
         }
 
         uint16_t     c_;
@@ -591,7 +673,7 @@ void Window::drawBuffer(cairo_t * cr, bool damageOnly) {
     }
 }
 
-void Window::drawSelection(cairo_t * UNUSED(cr)) {
+void Window::drawSelection(cairo_t * UNUSED(cr), Damage UNUSED(damage)) {
 }
 
 void Window::drawUtf8(cairo_t    * cr,
@@ -641,7 +723,7 @@ void Window::drawUtf8(cairo_t    * cr,
     } cairo_restore(cr);
 }
 
-void Window::drawCursor(cairo_t * cr) {
+void Window::drawCursor(cairo_t * cr, Damage UNUSED(damage)) {
     uint16_t row = _terminal->cursorRow();
     uint16_t col = _terminal->cursorCol();
 
@@ -651,6 +733,7 @@ void Window::drawCursor(cairo_t * cr) {
     std::copy(cell.bytes(), cell.bytes() + length, buf);
     buf[length] = NUL;
 
+    // TODO consult config here.
 #if 0
     const auto & fgValues = _colorSet.getIndexedColor(cell.bg());
     const auto & bgValues = _colorSet.getIndexedColor(cell.fg());
@@ -693,7 +776,7 @@ void Window::terminalSetTitle(const std::string & title) throw () {
 
 void Window::terminalFixDamage() throw () {
     if (_pixmap) {
-        draw(0, 0, _width, _height, true);
+        draw(0, 0, _width, _height, Damage::TERMINAL);
     }
 }
 

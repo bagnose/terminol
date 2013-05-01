@@ -96,12 +96,16 @@ protected:
     bool xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const;
 
     void setTitle(const std::string & title);
-    void draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih, bool damageOnly);
-    void drawPadding();
-    void drawBorder();
-    void drawScrollBar();
-    void drawBuffer(cairo_t * cr, bool damageOnly);
-    void drawSelection(cairo_t * cr);
+
+    enum class Damage {
+        TERMINAL, EXPOSURE
+    };
+
+    void draw(uint16_t ix, uint16_t iy, uint16_t iw, uint16_t ih, Damage damage);
+    void drawBorder(cairo_t * cr, Damage damage);
+    void drawScrollBar(cairo_t * cr, Damage damage);
+    void drawBuffer(cairo_t * cr, Damage damage);
+    void drawSelection(cairo_t * cr, Damage damage);
     void drawUtf8(cairo_t      * cr,
                   uint16_t       row,
                   uint16_t       col,
@@ -110,7 +114,7 @@ protected:
                   AttributeSet   attr,
                   const char   * str,
                   size_t         count);
-    void drawCursor(cairo_t * cr);
+    void drawCursor(cairo_t * cr, Damage damage);
 
     // Terminal::I_Observer implementation:
 

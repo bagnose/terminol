@@ -328,7 +328,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
             }
             break;
         case State::INNER:
-            FATAL("!!!!");
+            // XXX check the logic for INNER
             if (lead == '\\') {
                 if (_outerState == State::DCS) {
                     processDcs(_escSeq);
@@ -776,9 +776,12 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                     ERROR("FIXME");
                 }
                 break;
+            case 'q': // DECSCA - Select Character Protection Attribute
+                NYI("DECSCA");
+                break;
             case 'r': // DECSTBM - Set Top and Bottom Margins (scrolling)
                 if (priv) {
-                    goto Default;
+                    goto default_;
                 }
                 else {
                     if (args.empty()) {
@@ -826,7 +829,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 _cursorRow = _savedCursorRow;
                 _cursorCol = _savedCursorCol;
                 break;
-Default:
+default_:
             default:
                 PRINT("NYI:CSI: ESC" << Str(seq));
                 break;
@@ -889,6 +892,51 @@ void Terminal::processOsc(const std::vector<char> & seq) {
 
 void Terminal::processSpecial(const std::vector<char> & seq) {
     PRINT("NYI:SPECIAL: " << Str(seq));
+
+    ASSERT(seq.size() == 2, "");
+    char special = seq.front();
+    char code    = seq.back();
+
+    switch (special) {
+        case '#':
+            switch (code) {
+                case '8':
+                    break;
+                default:
+                    NYI("?");
+                    break;
+            }
+            break;
+        case '(':
+            switch (code) {
+                case '0':
+                    break;
+                case 'A':
+                    break;
+                case 'B':
+                    break;
+                default:
+                    NYI("Unknown character set: " << code);
+                    break;
+            }
+            break;
+        case ')':
+            switch (code) {
+                case '0':
+                    break;
+                case 'A':
+                    break;
+                case 'B':
+                    break;
+                default:
+                    NYI("Unknown character set: " << code);
+                    break;
+            }
+            break;
+        default:
+            NYI("Special: " << Str(seq));
+            break;
+    }
 }
 
 void Terminal::processAttributes(const std::vector<int32_t> & args) {
@@ -1092,7 +1140,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     NYI("DECCOLM: " << set);
                     break;
                 case 4:  // DECSCLM - Scroll (IGNORED)
-                    NYI("DECSLM: " << set);
+                    NYI("DECSCLM: " << set);
                     break;
                 case 5: // DECSCNM - Reverse video
                     NYI("Reverse video: " << set);
