@@ -16,8 +16,6 @@
 #include <cairo-xcb.h>
 #include <cairo-ft.h>
 
-#define USE_PIXMAP 0
-
 class Window :
     protected Terminal::I_Observer,
     protected Uncopyable
@@ -41,9 +39,10 @@ class Window :
     uint16_t          _pointerRow;
     uint16_t          _pointerCol;
     bool              _mapped;          // Is the window mapped.
-#if USE_PIXMAP
+
+    bool              _doubleBuffer;
     xcb_pixmap_t      _pixmap;          // Created when mapped, destroyed when unmapped.
-#endif
+
     cairo_surface_t * _surface;
 
     cairo_t         * _cr;
@@ -60,6 +59,7 @@ public:
            const KeyMap       & keyMap,
            const std::string  & term,
            const Tty::Command & command,
+           bool                 doubleBuffer,
            bool                 trace,
            bool                 sync) throw (Error);
 

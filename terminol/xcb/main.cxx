@@ -32,6 +32,7 @@ public:
     EventLoop(const std::string  & fontName,
               const std::string  & term,
               const Tty::Command & command,
+              bool                 doubleBuffer,
               bool                 trace,
               bool                 sync)
         throw (Basics::Error, FontSet::Error, Window::Error, Error) :
@@ -47,6 +48,7 @@ public:
                 _keyMap,
                 term,
                 command,
+                doubleBuffer,
                 trace,
                 sync)
     {
@@ -221,6 +223,7 @@ int main(int argc, char * argv[]) {
     std::string  fontName          = "inconsolata:pixelsize=18";
     std::string  geometryStr;
     std::string  term              = "xterm";
+    bool         doubleBuffer      = false;
     bool         trace             = false;
     bool         sync              = false;
     Tty::Command command;
@@ -230,6 +233,7 @@ int main(int argc, char * argv[]) {
         std::string arg = argv[i];
         if      (accumulateCommand)                      { command.push_back(arg);   }
         else if (arg == "--execute")                     { accumulateCommand = true; }
+        else if (arg == "--double-buffer")               { doubleBuffer = true; }
         else if (arg == "--trace")                       { trace = true;             }
         else if (arg == "--sync")                        { sync  = true;             }
         else if (argMatch(arg, "font", fontName))        {}
@@ -244,7 +248,7 @@ int main(int argc, char * argv[]) {
                 << "Usage:" << std::endl
                 << "  " << argv[0] << " \\" << std::endl
                 << "    " << "--font=FONT --term=TERM --geometry=GEOMETRY \\" << std::endl
-                << "    " << "--trace --sync --execute ARG0 ARG1..."
+                << "    " << "--double-buffer --trace --sync --execute ARG0 ARG1..."
                 << std::endl;
             if (arg != "--help") {
                 return 2;
@@ -258,7 +262,7 @@ int main(int argc, char * argv[]) {
     FcInit();
 
     try {
-        EventLoop eventLoop(fontName, term, command, trace, sync);
+        EventLoop eventLoop(fontName, term, command, doubleBuffer, trace, sync);
     }
     catch (EventLoop::Error & ex) {
         FATAL(ex.message);
