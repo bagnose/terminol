@@ -6,7 +6,7 @@
 
 #include <unistd.h>
 
-const int         Window::BORDER_THICKNESS = 50;
+const int         Window::BORDER_THICKNESS = 10;
 const int         Window::SCROLLBAR_WIDTH  = 0;
 const std::string Window::DEFAULT_TITLE    = "terminol";
 
@@ -22,7 +22,6 @@ int _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
     return 0;
 }
 } // namespace {anonymous}
-
 
 Window::Window(Basics             & basics,
                const ColorSet     & colorSet,
@@ -46,7 +45,10 @@ Window::Window(Basics             & basics,
     _isOpen(false),
     _pointerRow(std::numeric_limits<uint16_t>::max()),
     _pointerCol(std::numeric_limits<uint16_t>::max()),
+    _mapped(false),
+#if USE_PIXMAP
     _pixmap(0),
+#endif
     _surface(nullptr),
     _cr(nullptr)
 {
@@ -139,18 +141,26 @@ Window::Window(Basics             & basics,
 }
 
 Window::~Window() {
-    if (_pixmap) {
+    if (_mapped) {
+#if USE_PIXMAP
+        ASSERT(_pixmap, "");
+#endif
         ASSERT(_surface, "");
+
         cairo_surface_destroy(_surface);
 
-        ASSERT(_pixmap, "");
+#if USE_PIXMAP
         xcb_void_cookie_t cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
         if (xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap")) {
             FATAL("");
         }
+#endif
     }
     else {
         ASSERT(!_surface, "");
+#if USE_PIXMAP
+        ASSERT(!_pixmap, "");
+#endif
     }
 
     // Unwind constructor.
@@ -223,8 +233,9 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
 
 void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
     PRINT("Map");
-    ASSERT(!_pixmap, "");
+    ASSERT(!_mapped, "");
 
+#if USE_PIXMAP
     _pixmap = xcb_generate_id(_basics.connection());
     xcb_void_cookie_t cookie = xcb_create_pixmap_checked(_basics.connection(),
                                                          _basics.screen()->root_depth,
@@ -235,27 +246,39 @@ void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap")) {
         FATAL("");
     }
+#endif
 
     _surface = cairo_xcb_surface_create(_basics.connection(),
+#if USE_PIXMAP
                                         _pixmap,
+#else
+                                        _window,
+#endif
                                         _basics.visual(),
                                         _width,
                                         _height);
+
+    _mapped = true;
 }
 
 void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     PRINT("UnMap");
+    ASSERT(_mapped, "");
 
     ASSERT(_surface, "");
     cairo_surface_destroy(_surface);
     _surface = nullptr;
 
+#if USE_PIXMAP
     ASSERT(_pixmap, "");
     xcb_void_cookie_t cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap")) {
         FATAL("");
     }
     _pixmap = 0;
+#endif
+
+    _mapped = false;
 }
 
 void Window::reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) {
@@ -268,7 +291,10 @@ void Window::expose(xcb_expose_event_t * event) {
           event->x << " " << event->y << " " <<
           event->width << " " << event->height);
 
-    if (_pixmap) {
+    if (_mapped) {
+#if USE_PIXMAP
+        ASSERT(_pixmap, "");
+#endif
         ASSERT(_surface, "");
         draw(event->x, event->y, event->width, event->height);
     }
@@ -289,12 +315,16 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
     _width  = event->width;
     _height = event->height;
 
-    if (_pixmap) {
+    if (_mapped) {
+#if USE_PIXMAP
+        ASSERT(_pixmap, "");
+#endif
         ASSERT(_surface, "");
+
         cairo_surface_destroy(_surface);
         _surface = nullptr;
 
-        ASSERT(_pixmap, "");
+#if USE_PIXMAP
         xcb_void_cookie_t cookie;
         cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
         if (xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap")) {
@@ -314,9 +344,14 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
         if (xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap")) {
             FATAL("");
         }
+#endif
 
         _surface = cairo_xcb_surface_create(_basics.connection(),
+#if USE_PIXMAP
                                             _pixmap,
+#else
+                                            _window,
+#endif
                                             _basics.visual(),
                                             _width,
                                             _height);
@@ -348,7 +383,10 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
     _terminal->resize(rows, cols);      // Ok to resize if not open?
 
-    if (_pixmap) {
+    if (_mapped) {
+#if USE_PIXMAP
+        ASSERT(_pixmap, "");
+#endif
         ASSERT(_surface, "");
         draw(0, 0, _width, _height);
     }
@@ -500,12 +538,17 @@ void Window::setTitle(const std::string & title) {
 }
 
 void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
+    ASSERT(_mapped, "");
+#if USE_PIXMAP
     ASSERT(_pixmap, "");
+#endif
     ASSERT(_surface, "");
     _cr = cairo_create(_surface);
 
 #if DEBUG
     // Clear the damaged area so that we know we are completely drawing to it.
+
+#  if USE_PIXMAP
     xcb_rectangle_t rect = {
         static_cast<int16_t>(x), static_cast<int16_t>(y), w, h
     };
@@ -515,6 +558,13 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
                        _gc,
                        1,
                        &rect);
+#  else
+    xcb_clear_area(_basics.connection(),
+                   0,       // don't generate exposure
+                   _window,
+                   x, y, w, h);
+
+#  endif
 #endif
 
     // Top left corner of damage.
@@ -528,7 +578,7 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     if (_width > _nominalWidth || _height > _nominalHeight) {
         // The window manager didn't honour our size base/increment hints.
         cairo_save(_cr); {
-            const auto & bgValues = _colorSet.getBackgroundColor();
+            const auto & bgValues = _colorSet.getPaddingColor();
             cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
 
             if (_width > _nominalWidth) {
@@ -580,6 +630,7 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 
     cairo_surface_flush(_surface);      // Useful?
 
+#if USE_PIXMAP
     xcb_copy_area(_basics.connection(),
                   _pixmap,
                   _window,
@@ -587,6 +638,7 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
                   x, y, // src
                   x, y, // dst
                   w, h);
+#endif
 
     xcb_flush(_basics.connection());
 }
@@ -651,7 +703,8 @@ bool Window::terminalBeginFixDamage(bool internal) throw () {
     PRINT("Damage begin, internal: " << std::boolalpha << internal);
 
     if (internal) {
-        if (_pixmap) {
+        if (_mapped) {
+            ASSERT(_mapped, "");
             ASSERT(_surface, "");
             _cr = cairo_create(_surface);
             return true;
@@ -661,7 +714,10 @@ bool Window::terminalBeginFixDamage(bool internal) throw () {
         }
     }
     else {
+        ASSERT(_mapped, "");
+#if USE_PIXMAP
         ASSERT(_pixmap, "");
+#endif
         ASSERT(_surface, "");
         ASSERT(_cr, "");
         return true;
@@ -745,6 +801,7 @@ void Window::terminalEndFixDamage(bool internal) throw () {
 
         cairo_surface_flush(_surface);      // Useful?
 
+#if USE_PIXMAP
         // FIXME we shouldn't copy the entire thing, just the area
         // that's damaged.
         xcb_copy_area(_basics.connection(),
@@ -754,6 +811,7 @@ void Window::terminalEndFixDamage(bool internal) throw () {
                       0, 0, // src
                       0, 0, // dest
                       _width, _height);
+#endif
 
         xcb_flush(_basics.connection());
     }

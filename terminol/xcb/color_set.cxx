@@ -52,9 +52,10 @@ const Color ColorSet::COLORS16[16] = {
 ColorSet::ColorSet(Basics & basics) :
     _basics(basics)
 {
-    _cursorFgColor = { 0.0, 0.0,  0.0 };
-    _cursorBgColor = { 1.0, 0.25, 1.0 };
-    _borderColor   = { 0.0, 0.0, 0.15 };
+    _cursorFgColor = { 0.0, 0.0,  0.0  };
+    _cursorBgColor = { 1.0, 0.25, 1.0  };
+    _borderColor   = { 0.0, 0.4,  0.0  };
+    _paddingColor  = { 0.4, 0.0,  0.0  };
 
     // 0..7     normal colors
     // 8..15    bright colors
