@@ -230,9 +230,10 @@ public:
         }
     }
 
-    void damageAdd(uint16_t row, uint16_t colBegin, uint16_t colEnd) {
-        ASSERT(row < getRows(), "");
-        _lines[row].damageAdd(colBegin, colEnd);
+    void damageCell(uint16_t row, uint16_t col) {
+        if (col != getCols()) {     // Tolerant of cursor damage.
+            _lines[row].damageAdd(col, col + 1);
+        }
     }
 
     void resetDamage() {
