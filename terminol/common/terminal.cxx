@@ -30,6 +30,50 @@ T nthArg(const std::vector<T> & args, size_t n, const T & fallback = T()) {
 
 } // namespace {anonymous}
 
+const Terminal::CharSub Terminal::CS_US[] = {
+    { { 0 }, { 0 } }
+};
+
+const Terminal::CharSub Terminal::CS_UK[] = {
+    {{'#', 0, }, {0xC2, 0xA3, 0, }}, /* POUND: £ */
+    {{0, }, {0, }}
+};
+
+const Terminal::CharSub Terminal::CS_SPECIAL[] = {
+    {{'`', 0, }, {0xE2, 0x99, 0xA6, 0}}, /* diamond: ♦ */
+    {{'a', 0, }, {0xE2, 0x96, 0x92, 0}}, /* 50% cell: ▒ */
+    {{'b', 0, }, {0xE2, 0x90, 0x89, 0}}, /* HT: ␉ */
+    {{'c', 0, }, {0xE2, 0x90, 0x8C, 0}}, /* FF: ␌ */
+    {{'d', 0, }, {0xE2, 0x90, 0x8D, 0}}, /* CR: ␍ */
+    {{'e', 0, }, {0xE2, 0x90, 0x8A, 0}}, /* LF: ␊ */
+    {{'f', 0, }, {0xC2, 0xB0, 0,     }}, /* Degree: ° */
+    {{'g', 0, }, {0xC2, 0xB1, 0,     }}, /* Plus/Minus: ± */
+    {{'h', 0, }, {0xE2, 0x90, 0xA4, 0}}, /* NL: ␤ */
+    {{'i', 0, }, {0xE2, 0x90, 0x8B, 0}}, /* VT: ␋ */
+    {{'j', 0, }, {0xE2, 0x94, 0x98, 0}}, /* CN_RB: ┘ */
+    {{'k', 0, }, {0xE2, 0x94, 0x90, 0}}, /* CN_RT: ┐ */
+    {{'l', 0, }, {0xE2, 0x94, 0x8C, 0}}, /* CN_LT: ┌ */
+    {{'m', 0, }, {0xE2, 0x94, 0x94, 0}}, /* CN_LB: └ */
+    {{'n', 0, }, {0xE2, 0x94, 0xBC, 0}}, /* CROSS: ┼ */
+    {{'o', 0, }, {0xE2, 0x8E, 0xBA, 0}}, /* Horiz. Scan Line 1: ⎺ */
+    {{'p', 0, }, {0xE2, 0x8E, 0xBB, 0}}, /* Horiz. Scan Line 3: ⎻ */
+    {{'q', 0, }, {0xE2, 0x94, 0x80, 0}}, /* Horiz. Scan Line 5: ─ */
+    {{'r', 0, }, {0xE2, 0x8E, 0xBC, 0}}, /* Horiz. Scan Line 7: ⎼ */
+    {{'s', 0, }, {0xE2, 0x8E, 0xBD, 0}}, /* Horiz. Scan Line 9: ⎽ */
+    {{'t', 0, }, {0xE2, 0x94, 0x9C, 0}}, /* TR: ├ */
+    {{'u', 0, }, {0xE2, 0x94, 0xA4, 0}}, /* TL: ┤ */
+    {{'v', 0, }, {0xE2, 0x94, 0xB4, 0}}, /* TU: ┴ */
+    {{'w', 0, }, {0xE2, 0x94, 0xAC, 0}}, /* TD: ┬ */
+    {{'x', 0, }, {0xE2, 0x94, 0x82, 0}}, /* V: │ */
+    {{'y', 0, }, {0xE2, 0x89, 0xA4, 0}}, /* LE: ≤ */
+    {{'z', 0, }, {0xE2, 0x89, 0xA5, 0}}, /* GE: ≥ */
+    {{'{', 0, }, {0xCF, 0x80, 0,     }}, /* PI: π */
+    {{'|', 0, }, {0xE2, 0x89, 0xA0, 0}}, /* NEQ: ≠ */
+    {{'}', 0, }, {0xC2, 0xA3, 0,     }}, /* POUND: £ */
+    {{'~', 0, }, {0xE2, 0x8B, 0x85, 0}}, /* DOT: ⋅ */
+    {{0, }, {0, }}
+};
+
 //
 //
 //
@@ -48,13 +92,22 @@ Terminal::Terminal(I_Observer   & observer,
     _priBuffer(rows, cols),
     _altBuffer(rows, cols),
     _buffer(&_priBuffer),
+    //
+    _G0(CS_US),
+    _G1(CS_US),
+    _CS(_G0),
     _cursorRow(0), _cursorCol(0),
     _bg(Cell::defaultBg()),
     _fg(Cell::defaultFg()),
     _attrs(Cell::defaultAttrs()),
     _originMode(false),
+    //
     _modes(),
     _tabs(_buffer->getCols()),
+    //
+    _savedG0(_G0),
+    _savedG1(_G1),
+    _savedCS(_CS),
     _savedCursorRow(0),
     _savedCursorCol(0),
     _savedFg(0),
@@ -103,6 +156,21 @@ void Terminal::damage(uint16_t rowBegin, uint16_t rowEnd,
     ENFORCE(_observer.terminalBeginFixDamage(false), "");
     draw(rowBegin, rowEnd, colBegin, colEnd, false);
     _observer.terminalEndFixDamage(false);
+}
+
+utf8::Seq Terminal::translate(utf8::Seq seq) const {
+    for (const CharSub * cs = _CS; cs->match.bytes[0]; ++cs) {
+        if (seq == cs->match) {
+            if (_trace) {
+                std::cerr
+                    << Esc::BG_BLUE << Esc::FG_WHITE
+                    << '/' << cs->match << '/' << cs->replace << '/'
+                    << Esc::RESET;
+            }
+            return cs->replace;
+        }
+    }
+    return seq;
 }
 
 void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
@@ -310,9 +378,10 @@ void Terminal::resetAll() {
 void Terminal::processRead(const char * data, size_t size) {
     for (size_t i = 0; i != size; ++i) {
         switch (_utf8Machine.next(data[i])) {
-            case utf8::Machine::State::ACCEPT:
+            case utf8::Machine::State::ACCEPT: {
                 processChar(_utf8Machine.seq(), _utf8Machine.length());
                 break;
+            }
             case utf8::Machine::State::REJECT:
                 ERROR("Rejecting UTF-8 data.");
                 break;
@@ -338,7 +407,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
                 processControl(lead);
             }
             else {
-                processNormal(seq, len);
+                processNormal(seq);
             }
             break;
         case State::ESCAPE:
@@ -536,10 +605,10 @@ void Terminal::processControl(char c) {
             }
             break;
         case SO:
-            NYI("SO");
+            _CS = _G1;
             break;
         case SI:
-            NYI("SI");
+            _CS = _G0;
             break;
         case CAN:
         case SUB:
@@ -556,12 +625,14 @@ void Terminal::processControl(char c) {
     }
 }
 
-void Terminal::processNormal(utf8::Seq seq, utf8::Length UNUSED(length)) {
+void Terminal::processNormal(utf8::Seq seq) {
+    seq = translate(seq);
+
     if (_trace) {
         std::cerr << Esc::FG_GREEN << Esc::UNDERLINE << seq << Esc::RESET;
     }
 
-    _buffer->set(_cursorRow, _cursorCol, Cell::utf8(seq, _attrs, _fg, _bg));
+    _buffer->setCell(_cursorRow, _cursorCol, Cell::utf8(seq, _attrs, _fg, _bg));
 
     _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
     ++_cursorCol;
@@ -621,6 +692,9 @@ void Terminal::processEscape(char c) {
             _modes.setTo(Mode::APPKEYPAD, false);
             break;
         case '7':   // DECSC - Save Cursor
+            _savedG0         = _G0;
+            _savedG1         = _G1;
+            _savedCS         = _CS;
             _savedCursorRow  = _cursorRow;
             _savedCursorCol  = _cursorCol;
             _savedFg         = _fg;
@@ -631,6 +705,9 @@ void Terminal::processEscape(char c) {
             break;
         case '8':   // DECRC - Restore Cursor
             _buffer->damageAdd(_cursorRow, _cursorCol, _cursorCol + 1);
+            _G0         = _savedG0;
+            _G1         = _savedG1;
+            _CS         = _savedCS;
             _cursorRow  = _savedCursorRow;
             _cursorCol  = _savedCursorCol;
             _fg         = _savedFg;
@@ -775,12 +852,12 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                     case 0: // right      FIXME or >2
                         // XXX is this right?
                         for (uint16_t c = _cursorCol; c != _buffer->getCols(); ++c) {
-                            _buffer->set(_cursorRow, c, Cell::blank());
+                            _buffer->setCell(_cursorRow, c, Cell::blank());
                         }
                         break;
                     case 1: // left
                         for (uint16_t c = 0; c != _cursorCol + 1; ++c) {
-                            _buffer->set(_cursorRow, c, Cell::blank());
+                            _buffer->setCell(_cursorRow, c, Cell::blank());
                         }
                         break;
                     case 2: // all
@@ -996,6 +1073,12 @@ void Terminal::processSpecial(const std::vector<char> & seq) {
         case '#':
             switch (code) {
                 case '8':
+                    // Fill terminal with 'E'
+                    for (uint16_t r = 0; r != _buffer->getRows(); ++r) {
+                        for (uint16_t c = 0; c != _buffer->getRows(); ++c) {
+                            _buffer->setCell(r, c, Cell::utf8(utf8::Seq('E'), _attrs, _fg, _bg));
+                        }
+                    }
                     break;
                 default:
                     NYI("?");
@@ -1005,10 +1088,13 @@ void Terminal::processSpecial(const std::vector<char> & seq) {
         case '(':
             switch (code) {
                 case '0':
+                    _G0 = CS_SPECIAL;
                     break;
                 case 'A':
+                    _G0 = CS_UK;
                     break;
                 case 'B':
+                    _G0 = CS_US;
                     break;
                 default:
                     NYI("Unknown character set: " << code);
@@ -1018,10 +1104,13 @@ void Terminal::processSpecial(const std::vector<char> & seq) {
         case ')':
             switch (code) {
                 case '0':
+                    _G1 = CS_SPECIAL;
                     break;
                 case 'A':
+                    _G1 = CS_UK;
                     break;
                 case 'B':
+                    _G0 = CS_UK;
                     break;
                 default:
                     NYI("Unknown character set: " << code);
@@ -1228,11 +1317,14 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
     for (auto a : args) {
         if (priv) {
             switch (a) {
-                case 1: // DECCKM - Cursor key
+                case 1: // DECCKM - Cursor Keys Mode
                     _modes.setTo(Mode::APPCURSOR, set);
                     break;
-                case 2: // DECANM - ANSI/VT52
+                case 2: // DECANM - ANSI/VT52 Mode
                     NYI("DECANM: " << set);
+                    _G0 = CS_US;
+                    _G1 = CS_US;
+                    _CS = _G0;
                     break;
                 case 3: // DECCOLM - Column
                     if (set) {

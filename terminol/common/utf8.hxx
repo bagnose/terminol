@@ -56,6 +56,16 @@ struct Seq {
     char bytes[LMAX];
 };
 
+inline bool operator == (Seq lhs, Seq rhs) {
+    return
+        *reinterpret_cast<const int32_t *>(&lhs.bytes[0]) ==
+        *reinterpret_cast<const int32_t *>(&rhs.bytes[0]);
+}
+
+inline bool operator != (Seq lhs, Seq rhs) {
+    return !(lhs == rhs);
+}
+
 const Seq REPLACEMENT(0xEF, 0xBF, 0xBD, 0x00);
 
 std::ostream & operator << (std::ostream & ost, Seq seq);

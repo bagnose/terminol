@@ -12,6 +12,15 @@
 #include <xkbcommon/xkbcommon.h>
 
 class Terminal : protected Uncopyable {
+    struct CharSub {
+        utf8::Seq match;
+        utf8::Seq replace;
+    };
+
+    static const CharSub CS_US[];
+    static const CharSub CS_UK[];
+    static const CharSub CS_SPECIAL[];
+
 public:
     class I_Observer {
     public:
@@ -50,15 +59,23 @@ private:
     SimpleBuffer          _priBuffer;
     SimpleBuffer          _altBuffer;
     SimpleBuffer        * _buffer;
+
+    const CharSub       * _G0;
+    const CharSub       * _G1;
+    const CharSub       * _CS;
     uint16_t              _cursorRow;
     uint16_t              _cursorCol;
     uint8_t               _bg;
     uint8_t               _fg;
     AttributeSet          _attrs;
     bool                  _originMode;
+
     ModeSet               _modes;
     std::vector<bool>     _tabs;
 
+    const CharSub       * _savedG0;
+    const CharSub       * _savedG1;
+    const CharSub       * _savedCS;
     uint16_t              _savedCursorRow;
     uint16_t              _savedCursorCol;
     uint8_t               _savedFg;
@@ -120,6 +137,8 @@ public:
     void                 flush();
 
 protected:
+    utf8::Seq translate(utf8::Seq seq) const;
+
     void draw(uint16_t rowBegin, uint16_t rowEnd,
               uint16_t colBegin, uint16_t colEnd,
               bool internal);
@@ -131,7 +150,7 @@ protected:
     void processRead(const char * data, size_t size);
     void processChar(utf8::Seq seq, utf8::Length length);
     void processControl(char c);
-    void processNormal(utf8::Seq seq, utf8::Length length);
+    void processNormal(utf8::Seq seq);
     void processEscape(char c);
     void processCsi(const std::vector<char> & seq);
     void processDcs(const std::vector<char> & seq);

@@ -155,7 +155,7 @@ public:
         _lines[row].erase(col, n);
     }
 
-    void set(uint16_t row, uint16_t col, const Cell & cell) {
+    void setCell(uint16_t row, uint16_t col, const Cell & cell) {
         ASSERT(row < getRows(), "");
         ASSERT(col < getCols(), "");
         _lines[row].setCell(col, cell);
