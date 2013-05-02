@@ -165,7 +165,7 @@ bool KeyMap::convert(xkb_keysym_t keySym, uint8_t state,
 
             // Handle special keys with alternate mappings.
             if (applyKeyMap(appCursor ? MAP_APPLICATION : MAP_NORMAL,
-                              keySym, state, ost))
+                            keySym, state, ost))
             {
                 break;
             }

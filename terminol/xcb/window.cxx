@@ -6,7 +6,7 @@
 
 #include <unistd.h>
 
-const int         Window::BORDER_THICKNESS = 10;
+const int         Window::BORDER_THICKNESS = 2;
 const int         Window::SCROLLBAR_WIDTH  = 8;
 const std::string Window::DEFAULT_TITLE    = "terminol";
 
@@ -211,16 +211,6 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
     //PRINT("Button-press: " << event->event_x << " " << event->event_y);
     if (!_isOpen) { return; }
-
-    /*
-    xcb_get_geometry_reply_t * geometry =
-        xcb_get_geometry_reply(_basics.connection(), xcb_get_geometry(_basics.connection(), _window), nullptr);
-
-    PRINT("Geometry: " << geometry->x << " " << geometry->y << " " <<
-          geometry->width << " " << geometry->height);
-
-    std::free(geometry);
-    */
 }
 
 void Window::buttonRelease(xcb_button_release_event_t * event) {
@@ -233,6 +223,32 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
     //PRINT("Motion-notify: " << event->event_x << " " << event->event_y);
     if (!_isOpen) { return; }
+
+    int16_t x, y;
+
+    if (event->detail == XCB_MOTION_HINT) {
+        xcb_query_pointer_reply_t * pointer =
+            xcb_query_pointer_reply(_basics.connection(),
+                                    xcb_query_pointer(_basics.connection(), _window),
+                                    nullptr);
+        x = pointer->win_x;
+        y = pointer->win_y;
+        std::free(pointer);
+    }
+    else {
+        x = event->event_x;
+        y = event->event_y;
+    }
+
+    uint16_t row, col;
+    xy2RowCol(x, y, row, col);
+
+    if (_pointerRow != row || _pointerCol != col) {
+        _pointerRow = row;
+        _pointerCol = col;
+        PRINT("Pointer: " << _pointerRow << ", " << _pointerCol);
+    }
+
 }
 
 void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
@@ -663,7 +679,7 @@ void Window::drawBorder() {
 
             // Right edge.
             cairo_rectangle(_cr,
-                            static_cast<double>(_nominalWidth - BORDER_THICKNESS),
+                            static_cast<double>(_nominalWidth - BORDER_THICKNESS - SCROLLBAR_WIDTH),
                             0.0,
                             static_cast<double>(BORDER_THICKNESS),
                             static_cast<double>(_nominalHeight));
@@ -673,7 +689,7 @@ void Window::drawBorder() {
             cairo_rectangle(_cr,
                             0.0,
                             0.0,
-                            static_cast<double>(_nominalWidth),
+                            static_cast<double>(_nominalWidth - SCROLLBAR_WIDTH),
                             static_cast<double>(BORDER_THICKNESS));
             cairo_fill(_cr);
 
@@ -681,7 +697,7 @@ void Window::drawBorder() {
             cairo_rectangle(_cr,
                             0.0,
                             static_cast<double>(_nominalHeight - BORDER_THICKNESS),
-                            static_cast<double>(_nominalWidth),
+                            static_cast<double>(_nominalWidth - SCROLLBAR_WIDTH),
                             static_cast<double>(BORDER_THICKNESS));
             cairo_fill(_cr);
         } cairo_restore(_cr);
@@ -720,6 +736,12 @@ bool Window::terminalBeginFixDamage(bool internal) throw () {
         if (_mapped) {
             ASSERT(_mapped, "");
             ASSERT(_surface, "");
+#if 0
+            xcb_clear_area(_basics.connection(),
+                           0,       // don't generate exposure event
+                           _window,
+                           0, 0, _width, _height);
+#endif
             _cr = cairo_create(_surface);
             return true;
         }
@@ -748,7 +770,8 @@ void Window::terminalDrawRun(uint16_t       row,
     ASSERT(_cr, "");
 
     cairo_save(_cr); {
-        if (attrs.get(Attribute::REVERSE)) { std::swap(fg, bg); }
+        if (attrs.get(Attribute::INVERSE) ||
+            attrs.get(Attribute::BLINK)) { std::swap(fg, bg); }
 
         cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attribute::BOLD),
                                                 attrs.get(Attribute::ITALIC)));
@@ -816,7 +839,7 @@ void Window::terminalEndFixDamage(bool internal) throw () {
         cairo_surface_flush(_surface);      // Useful?
 
         if (_doubleBuffer) {
-            // FIXME we shouldn't copy the entire thing, just the area
+            // FIXME we shouldn't copy the entire pixmap, just the area
             // that's damaged.
             xcb_copy_area(_basics.connection(),
                           _pixmap,

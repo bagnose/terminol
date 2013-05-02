@@ -56,8 +56,18 @@ std::ostream & operator << (std::ostream & ost, ClearLine clear) {
 
 std::ostream & operator << (std::ostream & ost, Mode mode) {
     switch (mode) {
-        case Mode::WRAP:
-            return ost << "WRAP";
+        case Mode::AUTO_WRAP:
+            return ost << "AUTO_WRAP";
+        case Mode::AUTO_REPEAT:
+            return ost << "AUTO_REPEAT";
+        case Mode::SHOW_CURSOR:
+            return ost << "SHOW_CURSOR";
+        case Mode::ALT_SENDS_ESC:
+            return ost << "ALT_SENDS_ESC";
+        case Mode::DELETE_SENDS_DEL:
+            return ost << "DELETE_SENDS_DEL";
+
+            // Remainder are dubious...
         case Mode::INSERT:
             return ost << "INSERT";
         case Mode::APPKEYPAD:
@@ -74,8 +84,6 @@ std::ostream & operator << (std::ostream & ost, Mode mode) {
             return ost << "REVERSE";
         case Mode::KBDLOCK:
             return ost << "KBDLOCK";
-        case Mode::HIDE:
-            return ost << "HIDE";
         case Mode::ECHO:
             return ost << "ECHO";
         case Mode::APPCURSOR:
@@ -97,8 +105,10 @@ std::ostream & operator << (std::ostream & ost, Attribute attribute) {
             return ost << "UNDERLINE";
         case Attribute::BLINK:
             return ost << "BLINK";
-        case Attribute::REVERSE:
-            return ost << "REVERSE";
+        case Attribute::INVERSE:
+            return ost << "INVERSE";
+        case Attribute::CONCEAL:
+            return ost << "CONCEAL";
     }
 
     FATAL("Invalid attribute: " << static_cast<int>(attribute));

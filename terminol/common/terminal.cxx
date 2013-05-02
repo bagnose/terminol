@@ -75,10 +75,10 @@ Terminal::Terminal(I_Observer   & observer,
         _tabs[i] = (i + 1) % 8 == 0;
     }
 
-    //_modes.set(Mode::SHOW_CURSOR);
-    //_modes.set(Mode::AUTOREPEAT);
-    //_modes.set(Mode::ODE_ALT_SENDS_ESC);
-    _modes.set(Mode::WRAP);
+    _modes.set(Mode::AUTO_WRAP);
+    _modes.set(Mode::SHOW_CURSOR);
+    _modes.set(Mode::AUTO_REPEAT);
+    _modes.set(Mode::ALT_SENDS_ESC);
 }
 
 Terminal::~Terminal() {
@@ -168,12 +168,14 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
     }
 
     const Cell & cell = _buffer->getCell(_cursorRow, _cursorCol);
-    utf8::Length len = utf8::leadLength(cell.lead());
+    utf8::Length len  = utf8::leadLength(cell.lead());
     buffer.resize(len);
     std::copy(cell.bytes(), cell.bytes() + len, &buffer.front());
     buffer.push_back(NUL);
-    _observer.terminalDrawCursor(_cursorRow, _cursorCol,
-                                 cell.fg(), cell.bg(), cell.attrs(), &buffer.front());
+    if (_modes.get(Mode::SHOW_CURSOR)) {
+        _observer.terminalDrawCursor(_cursorRow, _cursorCol,
+                                     cell.fg(), cell.bg(), cell.attrs(), &buffer.front());
+    }
 }
 
 void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
@@ -285,10 +287,10 @@ void Terminal::resetAll() {
     _originMode = false;
 
     _modes.clear();
-    //_modes.set(Mode::SHOW_CURSOR);
-    //_modes.set(Mode::AUTOREPEAT);
-    //_modes.set(Mode::ODE_ALT_SENDS_ESC);
-    _modes.set(Mode::WRAP);
+    _modes.set(Mode::AUTO_WRAP);
+    _modes.set(Mode::SHOW_CURSOR);
+    _modes.set(Mode::AUTO_REPEAT);
+    _modes.set(Mode::ALT_SENDS_ESC);
 
     for (size_t i = 0; i != _tabs.size(); ++i) {
         _tabs[i] = (i + 1) % 8 == 0;
@@ -306,8 +308,8 @@ void Terminal::resetAll() {
 }
 
 void Terminal::processRead(const char * data, size_t size) {
-    while (size != 0) {
-        switch (_utf8Machine.next(*data)) {
+    for (size_t i = 0; i != size; ++i) {
+        switch (_utf8Machine.next(data[i])) {
             case utf8::Machine::State::ACCEPT:
                 processChar(_utf8Machine.seq(), _utf8Machine.length());
                 break;
@@ -317,8 +319,6 @@ void Terminal::processRead(const char * data, size_t size) {
             default:
                 break;
         }
-
-        ++data; --size;
     }
 }
 
@@ -380,7 +380,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
                 processControl(lead);
             }
             else if (lead == '?') {
-                // XXX FOr now put the '?' into _escSeq because
+                // XXX For now put the '?' into _escSeq because
                 // processCsi is expecting it.
                 std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
                 //terminal->escape_flags |= ESC_FLAG_WHAT;
@@ -567,7 +567,7 @@ void Terminal::processNormal(utf8::Seq seq, utf8::Length UNUSED(length)) {
     ++_cursorCol;
 
     if (_cursorCol == _buffer->getCols()) {
-        if (_modes.get(Mode::WRAP)) {
+        if (_modes.get(Mode::AUTO_WRAP)) {
             if (_cursorRow == _buffer->getRows() - 1) {
                 _buffer->addLine();
             }
@@ -584,7 +584,7 @@ void Terminal::processNormal(utf8::Seq seq, utf8::Length UNUSED(length)) {
 
 void Terminal::processEscape(char c) {
     if (_trace) {
-        std::cerr << Esc::FG_MAGENTA << "ESC" << Char(c) << Esc::RESET;
+        std::cerr << Esc::FG_MAGENTA << "ESC" << Char(c) << Esc::RESET << " ";
     }
 
     switch (c) {
@@ -648,6 +648,10 @@ void Terminal::processEscape(char c) {
 void Terminal::processCsi(const std::vector<char> & seq) {
     ASSERT(seq.size() >= 2, "");
 
+    if (_trace) {
+        std::cerr << Esc::FG_CYAN << "ESC" << Str(seq) << Esc::RESET << " ";
+    }
+
     size_t i = 0;
     bool priv = false;
     std::vector<int32_t> args;
@@ -700,13 +704,6 @@ void Terminal::processCsi(const std::vector<char> & seq) {
     }
     else {
         char mode = seq[i];
-
-        if (mode != 'm') {
-            // SGR stuff can be quite noise.
-            if (_trace) {
-                std::cerr << Esc::FG_CYAN << "ESC" << Str(seq) << Esc::RESET;
-            }
-        }
 
         switch (mode) {
             case '@': // ICH - Insert Character
@@ -933,13 +930,13 @@ default_:
 
 void Terminal::processDcs(const std::vector<char> & seq) {
     if (_trace) {
-        std::cerr << Esc::FG_RED << "ESC" << Str(seq) << Esc::RESET;
+        std::cerr << Esc::FG_RED << "ESC" << Str(seq) << Esc::RESET << " ";
     }
 }
 
 void Terminal::processOsc(const std::vector<char> & seq) {
     if (_trace) {
-        std::cerr << Esc::FG_MAGENTA << "ESC" << Str(seq) << Esc::RESET;
+        std::cerr << Esc::FG_MAGENTA << "ESC" << Str(seq) << Esc::RESET << " ";
     }
 
     ASSERT(!seq.empty(), "");
@@ -986,6 +983,10 @@ void Terminal::processOsc(const std::vector<char> & seq) {
 
 void Terminal::processSpecial(const std::vector<char> & seq) {
     PRINT("NYI:SPECIAL: " << Str(seq));
+
+    if (_trace) {
+        std::cerr << Esc::FG_BLUE << "ESC" << Str(seq) << Esc::RESET << " ";
+    }
 
     ASSERT(seq.size() == 2, "");
     char special = seq.front();
@@ -1041,15 +1042,17 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
 
         switch (v) {
             case 0: // Reset/Normal
-                _bg = Cell::defaultBg();
-                _fg = Cell::defaultFg();
+                _bg    = Cell::defaultBg();
+                _fg    = Cell::defaultFg();
                 _attrs = Cell::defaultAttrs();
                 break;
             case 1: // Bold
                 _attrs.set(Attribute::BOLD);
+                if (_fg < 8) { _fg += 8; }      // Normal -> Bright.
                 break;
             case 2: // Faint (decreased intensity)
-                NYI("Faint");
+                _attrs.unset(Attribute::BOLD);
+                if (_fg >= 8 && _fg < 16) { _fg -= 8; } // Bright -> Normal.
                 break;
             case 3: // Italic: on
                 _attrs.set(Attribute::ITALIC);
@@ -1062,10 +1065,10 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 _attrs.set(Attribute::BLINK);
                 break;
             case 7: // Image: Negative
-                _attrs.set(Attribute::REVERSE);
+                _attrs.set(Attribute::INVERSE);
                 break;
             case 8: // Conceal (not widely supported)
-                NYI("Conceal");
+                _attrs.set(Attribute::CONCEAL);
                 break;
             case 9: // Crossed-out (not widely supported)
                 NYI("Crossed-out");
@@ -1090,8 +1093,12 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
             case 21:
                 // Bold: off or Underline: Double (bold off not widely supported,
                 //                                 double underline hardly ever)
+                _attrs.unset(Attribute::BOLD);
+                if (_fg >= 8 && _fg < 16) { _fg -= 8; } // Bright -> Normal.
+                break;
             case 22: // Normal color or intensity (neither bold nor faint)
                 _attrs.unset(Attribute::BOLD);
+                if (_fg >= 8 && _fg < 16) { _fg -= 8; } // Bright -> Normal.
                 break;
             case 23: // Not italic, not Fraktur
                 _attrs.unset(Attribute::ITALIC);
@@ -1100,14 +1107,16 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 _attrs.unset(Attribute::UNDERLINE);
                 break;
             case 25: // Blink: off
-            case 26: // Reserved
                 _attrs.unset(Attribute::BLINK);
                 break;
+            case 26: // Reserved?
+                _attrs.set(Attribute::INVERSE);
+                break;
             case 27: // Image: Positive
-                _attrs.unset(Attribute::REVERSE);
+                _attrs.unset(Attribute::INVERSE);
                 break;
             case 28: // Reveal (conceal off - not widely supported)
-                NYI("Reveal");
+                _attrs.unset(Attribute::CONCEAL);
                 break;
             case 29: // Not crossed-out (not widely supported)
                 NYI("Crossed-out");
@@ -1184,14 +1193,15 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 if (v >= 30 && v < 38) {
                     // normal fg
                     _fg = v - 30;
+                    // BOLD -> += 8
                 }
                 else if (v >= 40 && v < 48) {
-                    // bright fg
-                    _fg = v - 40;
+                    // normal bg
+                    _bg = v - 40;
                 }
                 else if (v >= 90 && v < 98) {
-                    // normal bg
-                    _bg = v - 90 + 8;
+                    // bright fg
+                    _fg = v - 90 + 8;
                 }
                 else if (v >= 100 && v < 108) {
                     // bright bg
@@ -1236,15 +1246,8 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                 case 4:  // DECSCLM - Scroll (IGNORED)
                     NYI("DECSCLM: " << set);
                     break;
-                case 5: // DECSCNM - Reverse video
-                    NYI("Reverse video: " << set);
-                    /*
-                       mode = term.mode;
-                       MODBIT(term.mode, set, Mode::REVERSE);
-                       if(mode != term.mode) {
-                       redraw(REDRAW_TIMEOUT);
-                       }
-                       */
+                case 5: // DECSCNM - Screen Mode: Light or Dark background.
+                    NYI("DECSCNM: " << set);
                     break;
                 case 6: // DECOM - Origin
                     _originMode = set;
@@ -1261,12 +1264,15 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     _cursorCol = 0;
                     break;
                 case 7: // DECAWM - Auto wrap
-                    _modes.setTo(Mode::WRAP, set);
+                    _modes.setTo(Mode::AUTO_WRAP, set);
                     break;
-                case 8:  // DECARM - Auto repeat (IGNORED)
-                    NYI("DECARM: " << set);
+                case 8:  // DECARM - Auto repeat
+                    _modes.setTo(Mode::AUTO_REPEAT, set);
                     break;
-                case 12: // CVVIS/att610 - Start blinking cursor (IGNORED)
+                case 9:
+                    // Inter lace
+                    break;
+                case 12: // CVVIS/att610 - Cursor Very Visible.
                     //NYI("CVVIS/att610: " << set);
                     break;
                 case 18: // DECPFF - Printer feed (IGNORED)
@@ -1274,7 +1280,10 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     NYI("DECPFF/DECPEX: " << set);
                     break;
                 case 25: // DECTCEM - Text Cursor Enable Mode
-                    _modes.setTo(Mode::HIDE, !set);
+                    _modes.setTo(Mode::SHOW_CURSOR, set);
+                    break;
+                case 40:
+                    // Allow column
                     break;
                 case 42: // DECNRCM - National characters (IGNORED)
                     NYI("Ignored: "  << a << ", " << set);
@@ -1287,17 +1296,27 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     _modes.setTo(Mode::MOUSEMOTION, set);
                     _modes.setTo(Mode::MOUSEBTN, false);
                     break;
+                case 1004:
+                    // ??? tmux REPORT FOCUS
+                    break;
+                case 1005:
+                    // ??? tmux MOUSE FORMAT = XTERM EXT
+                    break;
                 case 1006:
+                    // MOUSE FORMAT = STR
                     _modes.setTo(Mode::MOUSESGR, set);
+                    break;
+                case 1015:
+                    // MOUSE FORMAT = URXVT
                     break;
                 case 1034: // ssm/rrm, meta mode on/off
                     NYI("1034: " << set);
                     break;
                 case 1037: // deleteSendsDel
-                    NYI("1037: " << set);
+                    _modes.setTo(Mode::DELETE_SENDS_DEL, set);
                     break;
                 case 1039: // altSendsEscape
-                    NYI("1039: " << set);
+                    _modes.setTo(Mode::ALT_SENDS_ESC, set);
                     break;
                 case 1049: // rmcup/smcup, alternative screen
                 case 47:    // XXX ???
@@ -1332,13 +1351,16 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     }
                     _buffer->damageAll();
                     break;
+                case 2004:
+                    // Bracketed paste mode.
+                    break;
                 default:
                     ERROR("erresc: unknown private set/reset mode : " << a);
                     break;
             }
         }
         else {
-            switch(a) {
+            switch (a) {
                 case 0:  // Error (IGNORED)
                     break;
                 case 2:  // KAM - keyboard action

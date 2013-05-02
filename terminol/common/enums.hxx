@@ -49,10 +49,14 @@ std::ostream & operator << (std::ostream & ost, ClearLine clear);
 //
 //
 
-// XXX What about SHOW_CURSOR, AUTOREPEAT,
-// ALT_SENDS_ESC, DELETE_SENDS_DEL?
 enum class Mode {
-    WRAP,      // AUTOWRAP? YES!
+    AUTO_WRAP,
+    AUTO_REPEAT,
+    SHOW_CURSOR,
+    ALT_SENDS_ESC,
+    DELETE_SENDS_DEL,
+
+    // Remainder are dubious...
     INSERT,
     APPKEYPAD,
     // ALTSCREEN,
@@ -62,7 +66,6 @@ enum class Mode {
     // MOUSE = MOUSEBTN | MOUSEMOTION
     REVERSE,   // INVERSE ?
     KBDLOCK,
-    HIDE,
     ECHO,
     APPCURSOR,
     MOUSESGR,
@@ -75,13 +78,14 @@ std::ostream & operator << (std::ostream & ost, Mode mode);
 //
 //
 
-enum class Attribute {    // XXX what about CONCEALED?
+enum class Attribute {
     BOLD,
     ITALIC,
     UNDERLINE,
     BLINK,
-    REVERSE,
-    LAST = REVERSE
+    INVERSE,
+    CONCEAL,
+    LAST = CONCEAL
 };
 
 std::ostream & operator << (std::ostream & ost, Attribute attribute);
