@@ -115,6 +115,11 @@ Terminal::Terminal(I_Observer   & observer,
     _savedAttrs(),
     _savedOriginMode(false),
     //
+    _damageRowBegin(0),
+    _damageRowEnd(0),
+    _damageColBegin(0),
+    _damageColEnd(0),
+    //
     _tty(tty),
     _dumpWrites(false),
     _writeBuffer(),
@@ -216,12 +221,20 @@ void Terminal::flush() {
     }
 }
 
+void Terminal::damageCursor() {
+    uint16_t col = _cursorCol;
+    if (col == _buffer->getCols()) { --col; }
+    _buffer->damageCell(_cursorRow, col);
+}
+
 void Terminal::fixDamage(uint16_t rowBegin, uint16_t rowEnd,
                          uint16_t colBegin, uint16_t colEnd,
                          bool internal) {
     if (_observer.terminalBeginFixDamage(internal), "") {
         draw(rowBegin, rowEnd, colBegin, colEnd, internal);
-        _observer.terminalEndFixDamage(internal);
+        _observer.terminalEndFixDamage(internal,
+                                       _damageRowBegin, _damageRowEnd,
+                                       _damageColBegin, _damageColEnd);
 
         if (internal) {
             _buffer->resetDamage();
@@ -251,6 +264,11 @@ utf8::Seq Terminal::translate(utf8::Seq seq) const {
 void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
                     uint16_t colBegin, uint16_t colEnd,
                     bool internal) {
+    _damageRowBegin = 0;
+    _damageRowEnd   = 0;
+    _damageColBegin = 0;
+    _damageColEnd   = 0;
+
     // Declare run at the outer scope (rather than for each row) to
     // minimise alloc/free.
     std::vector<char> run;
@@ -274,6 +292,26 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
             //PRINT("External damage damage, got: " << colBegin2 << ", " << colEnd2);
         }
 
+        // Update _damageColBegin and _damageColEnd.
+        if (_damageColBegin == _damageColEnd) {
+            _damageColBegin = colBegin2;
+            _damageColEnd   = colEnd2;
+        }
+        else if (colBegin2 != colEnd2) {
+            _damageColBegin = std::min(_damageColBegin, colBegin2);
+            _damageColEnd   = std::max(_damageColEnd,   colEnd2);
+        }
+
+        // Update _damageRowBegin and _damageRowEnd.
+        if (colBegin2 != colEnd2) {
+            if (_damageRowBegin == _damageRowEnd) {
+                _damageRowBegin = r;
+            }
+
+            _damageRowEnd = r + 1;
+        }
+
+        // Step through each column, accumulating runs of compatible consecutive cells.
         for (c = colBegin2; c != colEnd2; ++c) {
             const Cell & cell = _buffer->getCell(r, c);
 
@@ -302,8 +340,8 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
             }
         }
 
+        // There may be an unterminated run to flush.
         if (!run.empty()) {
-            // flush run
             run.push_back(NUL);
             _observer.terminalDrawRun(r, c_, fg, bg, attrs, &run.front(), c - c_);
             run.clear();
@@ -322,6 +360,26 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
         else {
             col = _cursorCol;
             offscreen = false;
+        }
+
+        // Update _damageColBegin and _damageColEnd.
+        if (_damageColBegin == _damageColEnd) {
+            _damageColBegin = col;
+            _damageColEnd   = col + 1;
+        }
+        else {
+            _damageColBegin = std::min(_damageColBegin, col);
+            _damageColEnd   = std::max(_damageColEnd,   static_cast<uint16_t>(col + 1));
+        }
+
+        // Update _damageRowBegin and _damageRowEnd.
+        if (_damageRowBegin == _damageRowEnd) {
+            _damageRowBegin = _cursorRow;
+            _damageRowEnd   = _cursorRow + 1;
+        }
+        else {
+            _damageRowBegin = std::min(_damageRowBegin, _cursorRow);
+            _damageRowEnd   = std::max(_damageRowEnd,   static_cast<uint16_t>(_cursorRow + 1));
         }
 
         const Cell & cell = _buffer->getCell(_cursorRow, col);
@@ -580,7 +638,7 @@ void Terminal::processControl(char c) {
             PRINT("BEL!!");
             break;
         case HT:
-            _buffer->damageCursor(_cursorRow, _cursorCol);
+            damageCursor();
 
             // Advance to the next tab or the last column.
             for (; _cursorCol != _buffer->getCols(); ++_cursorCol) {
@@ -595,7 +653,7 @@ void Terminal::processControl(char c) {
             }
             break;
         case BS:
-            _buffer->damageCursor(_cursorRow, _cursorCol);
+            damageCursor();
 
             // XXX check this
             if (_cursorCol == 0) {
@@ -611,12 +669,12 @@ void Terminal::processControl(char c) {
             }
             break;
         case CR:
-            _buffer->damageCursor(_cursorRow, _cursorCol);
+            damageCursor();
             _cursorCol = 0;
             break;
         case LF:
             if (_modes.get(Mode::CRLF)) {
-                _buffer->damageCursor(_cursorRow, _cursorCol);
+                damageCursor();
                 _cursorCol = 0;
             }
             // Fall-through:
@@ -629,7 +687,7 @@ void Terminal::processControl(char c) {
                 _buffer->addLine();
             }
             else {
-                _buffer->damageCursor(_cursorRow, _cursorCol);
+                damageCursor();
                 ++_cursorRow;
             }
 
@@ -667,7 +725,7 @@ void Terminal::processNormal(utf8::Seq seq) {
         std::cerr << Esc::FG_GREEN << Esc::UNDERLINE << seq << Esc::RESET;
     }
 
-    _buffer->damageCursor(_cursorRow, _cursorCol);
+    damageCursor();
 
     if (_cursorCol == _buffer->getCols()) {
         if (_modes.get(Mode::AUTO_WRAP)) {
@@ -712,7 +770,7 @@ void Terminal::processEscape(char c) {
                 _buffer->insertLines(0, 1);
             }
             else {
-                _buffer->damageCursor(_cursorRow, _cursorCol);
+                damageCursor();
                 --_cursorRow;
             }
             break;
@@ -741,7 +799,7 @@ void Terminal::processEscape(char c) {
             _savedOriginMode = _originMode;
             break;
         case '8':   // DECRC - Restore Cursor
-            _buffer->damageCursor(_cursorRow, _cursorCol);
+            damageCursor();
 
             _G0         = _savedG0;
             _G1         = _savedG1;
@@ -824,19 +882,19 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 _buffer->insertCells(_cursorRow, _cursorCol, nthArg(args, 0, 1));
                 break;
             case 'A': // CUU - Cursor Up
-                _buffer->damageCursor(_cursorRow, _cursorCol);
+                damageCursor();
                 _cursorRow = clamp<int32_t>(_cursorRow - nthArg(args, 0, 1), 0, _buffer->getRows() - 1);
                 break;
             case 'B': // CUD - Cursor Down
-                _buffer->damageCursor(_cursorRow, _cursorCol);
+                damageCursor();
                 _cursorRow = clamp<int32_t>(_cursorRow + nthArg(args, 0, 1), 0, _buffer->getRows() - 1);
                 break;
             case 'C': // CUF - Cursor Forward
-                _buffer->damageCursor(_cursorRow, _cursorCol);
+                damageCursor();
                 _cursorCol = clamp<int32_t>(_cursorCol + nthArg(args, 0, 1), 0, _buffer->getCols() - 1);
                 break;
             case 'D': // CUB - Cursor Backward
-                _buffer->damageCursor(_cursorRow, _cursorCol);
+                damageCursor();
                 _cursorCol = clamp<int32_t>(_cursorCol - nthArg(args, 0, 1), 0, _buffer->getCols() - 1);
                 break;
             case 'E': // CNL - Cursor Next Line
@@ -855,7 +913,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                     std::cerr << std::endl;
                 }
 
-                _buffer->damageCursor(_cursorRow, _cursorCol);
+                damageCursor();
 
                 uint16_t row = nthArg(args, 0, 1) - 1;
                 uint16_t col = nthArg(args, 1, 1) - 1;
@@ -995,7 +1053,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 else {
                     if (args.empty()) {
                         _buffer->resetScrollBeginEnd();
-                        _buffer->damageCursor(_cursorRow, _cursorCol);
+                        damageCursor();
                         _cursorRow = _cursorCol = 0;
                     }
                     else {
@@ -1013,7 +1071,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                             _buffer->resetScrollBeginEnd();
                         }
 
-                        _buffer->damageCursor(_cursorRow, _cursorCol);
+                        damageCursor();
 
                         if (_originMode) {
                             _cursorRow = top;
@@ -1034,7 +1092,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 NYI("Window ops");
                 break;
             case 'u': // restore cursor
-                _buffer->damageCursor(_cursorRow, _cursorCol);
+                damageCursor();
                 _cursorRow = _savedCursorRow;
                 _cursorCol = _savedCursorCol;
                 break;
@@ -1389,7 +1447,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                 case 6: // DECOM - Origin
                     _originMode = set;
 
-                    _buffer->damageCursor(_cursorRow, _cursorCol);
+                    damageCursor();
 
                     if (_originMode) {
                         _cursorRow = _buffer->getScrollBegin();
@@ -1478,7 +1536,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                         _savedOriginMode = _originMode;
                     }
                     else {
-                        _buffer->damageCursor(_cursorRow, _cursorCol);
+                        damageCursor();
 
                         _cursorRow  = _savedCursorRow;
                         _cursorCol  = _savedCursorCol;

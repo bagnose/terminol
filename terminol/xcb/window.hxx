@@ -29,9 +29,9 @@ class Window :
     FontSet         & _fontSet;
     xcb_window_t      _window;
     xcb_gcontext_t    _gc;
-    uint16_t          _width;           // Actual width/height of window
+    uint16_t          _width;           // Actual width/height of window.
     uint16_t          _height;
-    uint16_t          _nominalWidth;    // Used width/height of window
+    uint16_t          _nominalWidth;    // Used width/height of window.
     uint16_t          _nominalHeight;
     Tty             * _tty;
     Terminal        * _terminal;
@@ -39,6 +39,7 @@ class Window :
     uint16_t          _pointerRow;
     uint16_t          _pointerCol;
     bool              _mapped;          // Is the window mapped.
+    bool              _focussed;        // Is the window focussed.
 
     bool              _doubleBuffer;
     xcb_pixmap_t      _pixmap;          // Created when mapped, destroyed when unmapped.
@@ -126,7 +127,11 @@ protected:
                             AttributeSet   attrs,
                             const char   * str,
                             bool           special) throw ();
-    void terminalEndFixDamage(bool internal) throw ();
+    void terminalEndFixDamage(bool     internal,
+                              uint16_t rowBegin,
+                              uint16_t rowEnd,
+                              uint16_t colBegin,
+                              uint16_t colEnd) throw ();
     void terminalChildExited(int exitStatus) throw ();
 };
 

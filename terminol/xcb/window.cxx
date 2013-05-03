@@ -47,6 +47,7 @@ Window::Window(Basics             & basics,
     _pointerRow(std::numeric_limits<uint16_t>::max()),
     _pointerCol(std::numeric_limits<uint16_t>::max()),
     _mapped(false),
+    _focussed(false),
     _doubleBuffer(doubleBuffer),
     _pixmap(0),
     _surface(nullptr),
@@ -413,9 +414,11 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 }
 
 void Window::focusIn(xcb_focus_in_event_t * UNUSED(event)) {
+    _focussed = true;
 }
 
 void Window::focusOut(xcb_focus_out_event_t * UNUSED(event)) {
+    _focussed = false;
 }
 
 void Window::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {
@@ -646,8 +649,8 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
         xy2RowCol(x, y, rowBegin, colBegin);
         uint16_t rowEnd, colEnd;
         xy2RowCol(x + w, y + h, rowEnd, colEnd);
-        if (colEnd != _terminal->getCols()) ++colEnd;
-        if (rowEnd != _terminal->getRows()) ++rowEnd;
+        if (colEnd != _terminal->getCols()) { ++colEnd; }
+        if (rowEnd != _terminal->getRows()) { ++rowEnd; }
         _terminal->redraw(rowBegin, rowEnd, colBegin, colEnd);
 
         ASSERT(cairo_status(_cr) == 0,
@@ -836,7 +839,7 @@ void Window::terminalDrawCursor(uint16_t       row,
         int x, y;
         rowCol2XY(row, col, x, y);
 
-        cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
+        cairo_set_source_rgba(_cr, bgValues.r, bgValues.g, bgValues.b, special ? 0.4 : 1.0);
         cairo_rectangle(_cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
         cairo_fill(_cr);
 
@@ -846,13 +849,18 @@ void Window::terminalDrawCursor(uint16_t       row,
 
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
-
-        if (special) {
-        }
     } cairo_restore(_cr);
 }
 
-void Window::terminalEndFixDamage(bool internal) throw () {
+void Window::terminalEndFixDamage(bool     internal,
+                                  uint16_t rowBegin,
+                                  uint16_t rowEnd,
+                                  uint16_t colBegin,
+                                  uint16_t colEnd) throw () {
+    PRINT("Damage: " <<
+          rowBegin << ".." << rowEnd << "  " <<
+          colBegin << ".." << colEnd);
+
     if (internal) {
         cairo_destroy(_cr);
         _cr = nullptr;
@@ -860,15 +868,20 @@ void Window::terminalEndFixDamage(bool internal) throw () {
         cairo_surface_flush(_surface);      // Useful?
 
         if (_doubleBuffer) {
+            int x0, y0;
+            rowCol2XY(rowBegin, colBegin, x0, y0);
+            int x1, y1;
+            rowCol2XY(rowEnd, colEnd, x1, y1);
+
             // FIXME we shouldn't copy the entire pixmap, just the area
             // that's damaged.
             xcb_copy_area(_basics.connection(),
                           _pixmap,
                           _window,
                           _gc,
-                          0, 0, // src
-                          0, 0, // dest
-                          _width, _height);
+                          x0, y0,   // src
+                          x0, y0,   // dst
+                          x1 - x0, y1 - y0);
         }
 
         xcb_flush(_basics.connection());

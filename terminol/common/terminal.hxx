@@ -41,7 +41,11 @@ public:
                                         AttributeSet   attrs,
                                         const char   * str,
                                         bool           special) throw () = 0;
-        virtual void terminalEndFixDamage(bool internal) throw () = 0;
+        virtual void terminalEndFixDamage(bool     internal,
+                                          uint16_t rowBegin,
+                                          uint16_t rowEnd,
+                                          uint16_t colBegin,
+                                          uint16_t colEnd) throw () = 0;
         virtual void terminalChildExited(int exitStatus) throw () = 0;
 
     protected:
@@ -83,6 +87,11 @@ private:
     uint8_t               _savedBg;
     AttributeSet          _savedAttrs;
     bool                  _savedOriginMode;
+
+    uint16_t              _damageRowBegin;
+    uint16_t              _damageRowEnd;
+    uint16_t              _damageColBegin;
+    uint16_t              _damageColEnd;
 
     //
     //
@@ -136,6 +145,8 @@ public:
     void     flush();
 
 protected:
+    void      damageCursor();
+
     void      fixDamage(uint16_t rowBegin, uint16_t rowEnd,
                         uint16_t colBegin, uint16_t colEnd,
                         bool internal);

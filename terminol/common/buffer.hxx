@@ -123,6 +123,8 @@ public:
     uint16_t getScrollEnd()   const { return _scrollEnd;   }
 
     void setScrollBeginEnd(uint16_t begin, uint16_t end) {
+        ASSERT(begin < end, "");
+        ASSERT(end <= getRows(), "");
         _scrollBegin = begin;
         _scrollEnd   = end;
     }
@@ -230,9 +232,9 @@ public:
         }
     }
 
-    void damageCursor(uint16_t row, uint16_t col) {
-        // Cursor can be off the screen.
-        if (col == getCols()) { --col; }
+    void damageCell(uint16_t row, uint16_t col) {
+        ASSERT(row < getRows(), "");
+        ASSERT(col < getCols(), "");
         _lines[row].damageAdd(col, col + 1);
     }
 
