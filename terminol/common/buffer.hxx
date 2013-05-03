@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef COMMON__SIMPLE_BUFFER__HXX
-#define COMMON__SIMPLE_BUFFER__HXX
+#ifndef COMMON__BUFFER__HXX
+#define COMMON__BUFFER__HXX
 
 #include "terminol/common/support.hxx"
 #include "terminol/common/cell.hxx"
@@ -9,7 +9,7 @@
 #include <vector>
 #include <deque>
 
-class SimpleBuffer {
+class Buffer {
     class Line {
         std::vector<Cell> _cells;
         uint16_t          _damageBegin;
@@ -107,7 +107,7 @@ class SimpleBuffer {
     uint16_t         _scrollEnd;
 
 public:
-    SimpleBuffer(uint16_t rows, uint16_t cols) :
+    Buffer(uint16_t rows, uint16_t cols) :
         _lines(rows, Line(cols)),
         _scrollBegin(0),
         _scrollEnd(rows)
@@ -249,6 +249,6 @@ public:
     }
 };
 
-void dump(std::ostream & ost, const SimpleBuffer & buffer);
+void dump(std::ostream & ost, const Buffer & buffer);
 
-#endif // COMMON__SIMPLE_BUFFER__HXX
+#endif // COMMON__BUFFER__HXX

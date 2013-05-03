@@ -1,8 +1,8 @@
 // vi:noai:sw=4
 
-#include "terminol/common/simple_buffer.hxx"
+#include "terminol/common/buffer.hxx"
 
-void dump(std::ostream & ost, const SimpleBuffer & buffer) {
+void dump(std::ostream & ost, const Buffer & buffer) {
     for (uint16_t r = 0; r != buffer.getRows(); ++r) {
         ost << r << ": ";
         for (uint16_t c = 0; c != buffer.getCols(); ++c) {

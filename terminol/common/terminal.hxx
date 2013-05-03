@@ -5,7 +5,7 @@
 
 #include "terminol/common/tty_interface.hxx"
 #include "terminol/common/bit_sets.hxx"
-#include "terminol/common/simple_buffer.hxx"
+#include "terminol/common/buffer.hxx"
 #include "terminol/common/key_map.hxx"
 #include "terminol/common/support.hxx"
 
@@ -57,9 +57,9 @@ private:
     //
 
     const KeyMap        & _keyMap;
-    SimpleBuffer          _priBuffer;
-    SimpleBuffer          _altBuffer;
-    SimpleBuffer        * _buffer;
+    Buffer                _priBuffer;
+    Buffer                _altBuffer;
+    Buffer              * _buffer;
 
     const CharSub       * _G0;
     const CharSub       * _G1;
