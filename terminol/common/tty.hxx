@@ -32,8 +32,8 @@ public:
 
     // I_Tty implementation (Used by Terminal):
 
-    size_t read (char       * buffer, size_t length) throw (Exited);
-    size_t write(const char * buffer, size_t length) throw (Error);
+    size_t read (uint8_t       * buffer, size_t length) throw (Exited);
+    size_t write(const uint8_t * buffer, size_t length) throw (Error);
 
 protected:
     void openPty(uint16_t            rows,

@@ -5,7 +5,7 @@
 
 #include "terminol/common/support.hxx"
 
-#include <string>
+#include <vector>
 
 #include <stdint.h>
 
@@ -15,8 +15,8 @@ class KeyMap : protected Uncopyable {
     struct Map {
         xkb_keysym_t  sym;
         int           num;
-        char          escape;
-        char          code;
+        uint8_t       escape;
+        uint8_t       code;
     };
 
     static const Map MAP_NORMAL[];
@@ -33,16 +33,16 @@ public:
 
     bool convert(xkb_keysym_t keySym, uint8_t state,
                  bool appKey, bool appCursor, bool crlf,
-                 std::string & str) const;
+                 std::vector<uint8_t> & str) const;
 
 protected:
     static void normalise(xkb_keysym_t & keySym);
 
     void functionKeyResponse(char escape, int num, uint8_t state, char code,
-                             std::ostream & response) const;
+                             std::vector<uint8_t> & str) const;
 
     bool applyKeyMap(const Map * mode, xkb_keysym_t sym, uint8_t state,
-                     std::ostream & response) const;
+                     std::vector<uint8_t> & str) const;
 };
 
 #endif // XCB__KEY_MAP__HXX

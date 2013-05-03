@@ -113,20 +113,20 @@ protected:
     void terminalResetTitle() throw ();
     void terminalSetTitle(const std::string & title) throw ();
     bool terminalBeginFixDamage(bool internal) throw ();
-    void terminalDrawRun(uint16_t       row,
-                         uint16_t       col,
-                         uint8_t        fg,
-                         uint8_t        bg,
-                         AttributeSet   attrs,
-                         const char   * str,
-                         size_t         count) throw ();
-    void terminalDrawCursor(uint16_t       row,
-                            uint16_t       col,
-                            uint8_t        fg,
-                            uint8_t        bg,
-                            AttributeSet   attrs,
-                            const char   * str,
-                            bool           special) throw ();
+    void terminalDrawRun(uint16_t        row,
+                         uint16_t        col,
+                         uint8_t         fg,
+                         uint8_t         bg,
+                         AttributeSet    attrs,
+                         const uint8_t * str,
+                         size_t          count) throw ();
+    void terminalDrawCursor(uint16_t        row,
+                            uint16_t        col,
+                            uint8_t         fg,
+                            uint8_t         bg,
+                            AttributeSet    attrs,
+                            const uint8_t * str,
+                            bool            special) throw ();
     void terminalEndFixDamage(bool     internal,
                               uint16_t rowBegin,
                               uint16_t rowEnd,

@@ -7,55 +7,55 @@
 #include <string>
 #include <vector>
 
-const char NUL   = '\x00';  // '\0'
-const char SOH   = '\x01';
-const char STX   = '\x02';
-const char ETX   = '\x03';
-const char EOT   = '\x04';
-const char ENQ   = '\x05';
-const char ACK   = '\x06';
-const char BEL   = '\x07';  // '\a'
-const char BS    = '\x08';  // '\b'
-const char HT    = '\x09';  // '\t'
-const char LF    = '\x0A';  // '\n'
-const char VT    = '\x0B';  // '\v'
-const char FF    = '\x0C';  // '\f'
-const char CR    = '\x0D';  // '\r'
-const char SO    = '\x0E';
-const char SI    = '\x0F';
-const char DLE   = '\x10';
-const char DC1   = '\x11';
-const char DC2   = '\x12';
-const char DC3   = '\x13';
-const char DC4   = '\x14';
-const char NAK   = '\x15';
-const char SYN   = '\x16';
-const char ETB   = '\x17';
-const char CAN   = '\x18';
-const char EM    = '\x19';
-const char SUB   = '\x1A';
-const char ESC   = '\x1B';  // '\E'
-const char FS    = '\x1C';
-const char GS    = '\x1D';
-const char RS    = '\x1E';
-const char US    = '\x1F';
-const char SPACE = '\x20';
+const uint8_t NUL   = '\x00';  // '\0'
+const uint8_t SOH   = '\x01';
+const uint8_t STX   = '\x02';
+const uint8_t ETX   = '\x03';
+const uint8_t EOT   = '\x04';
+const uint8_t ENQ   = '\x05';
+const uint8_t ACK   = '\x06';
+const uint8_t BEL   = '\x07';  // '\a'
+const uint8_t BS    = '\x08';  // '\b'
+const uint8_t HT    = '\x09';  // '\t'
+const uint8_t LF    = '\x0A';  // '\n'
+const uint8_t VT    = '\x0B';  // '\v'
+const uint8_t FF    = '\x0C';  // '\f'
+const uint8_t CR    = '\x0D';  // '\r'
+const uint8_t SO    = '\x0E';
+const uint8_t SI    = '\x0F';
+const uint8_t DLE   = '\x10';
+const uint8_t DC1   = '\x11';
+const uint8_t DC2   = '\x12';
+const uint8_t DC3   = '\x13';
+const uint8_t DC4   = '\x14';
+const uint8_t NAK   = '\x15';
+const uint8_t SYN   = '\x16';
+const uint8_t ETB   = '\x17';
+const uint8_t CAN   = '\x18';
+const uint8_t EM    = '\x19';
+const uint8_t SUB   = '\x1A';
+const uint8_t ESC   = '\x1B';  // '\E'
+const uint8_t FS    = '\x1C';
+const uint8_t GS    = '\x1D';
+const uint8_t RS    = '\x1E';
+const uint8_t US    = '\x1F';
+const uint8_t SPACE = '\x20';
 
 // '\x21'..'\x40': '!'..'@'
 // '\x41'..'\x5A': 'A'..'Z'
 //
 // '\x61'..'\x7A': 'a'..'z'
 
-const char DEL   = '\x7F';
+const uint8_t DEL   = '\x7F';
 
-inline bool isControl(char c) {     // XXX remove me
-    return (c >= NUL && c < SPACE) || c == DEL;
+inline bool isControl(uint8_t c) {     // XXX remove me
+    return (c < SPACE) || c == DEL;
 }
 
 // Streaming helper.
 struct Char {
-    explicit Char(char c_) : c(c_) {}
-    char c;
+    explicit Char(uint8_t c_) : c(c_) {}
+    uint8_t c;
 };
 
 inline std::ostream & operator << (std::ostream & ost, Char ch) {
@@ -84,9 +84,9 @@ inline std::ostream & operator << (std::ostream & ost, Char ch) {
 }
 
 struct Str {
-    std::vector<char> s;
+    std::vector<uint8_t> s;
     explicit Str(std::string s_) : s(s_.begin(), s_.end()) {}
-    explicit Str(std::vector<char> s_) : s(s_) {}     // The C++11 way, right?
+    explicit Str(std::vector<uint8_t> s_) : s(s_) {}     // The C++11 way, right?
 };
 
 inline std::ostream & operator << (std::ostream & ost, const Str & str) {

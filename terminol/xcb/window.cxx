@@ -773,13 +773,13 @@ bool Window::terminalBeginFixDamage(bool internal) throw () {
     }
 }
 
-void Window::terminalDrawRun(uint16_t       row,
-                             uint16_t       col,
-                             uint8_t        fg,
-                             uint8_t        bg,
-                             AttributeSet   attrs,
-                             const char   * str,
-                             size_t         count) throw () {
+void Window::terminalDrawRun(uint16_t        row,
+                             uint16_t        col,
+                             uint8_t         fg,
+                             uint8_t         bg,
+                             AttributeSet    attrs,
+                             const uint8_t * str,
+                             size_t          count) throw () {
     ASSERT(_cr, "");
 
     cairo_save(_cr); {
@@ -807,20 +807,20 @@ void Window::terminalDrawRun(uint16_t       row,
         }
 
         cairo_move_to(_cr, x, y + _fontSet.getAscent());
-        cairo_show_text(_cr, str);
+        cairo_show_text(_cr, reinterpret_cast<const char *>(str));
 
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
     } cairo_restore(_cr);
 }
 
-void Window::terminalDrawCursor(uint16_t       row,
-                                uint16_t       col,
-                                uint8_t        fg,
-                                uint8_t        bg,
-                                AttributeSet   attrs,
-                                const char   * str,
-                                bool           special) throw () {
+void Window::terminalDrawCursor(uint16_t        row,
+                                uint16_t        col,
+                                uint8_t         fg,
+                                uint8_t         bg,
+                                AttributeSet    attrs,
+                                const uint8_t * str,
+                                bool            special) throw () {
     // TODO consult config here.
     const auto & fgValues =
         false ?
@@ -845,7 +845,7 @@ void Window::terminalDrawCursor(uint16_t       row,
 
         cairo_set_source_rgb(_cr, fgValues.r, fgValues.g, fgValues.b);
         cairo_move_to(_cr, x, y + _fontSet.getAscent());
-        cairo_show_text(_cr, str);
+        cairo_show_text(_cr, reinterpret_cast<const char *>(str));
 
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
@@ -857,10 +857,6 @@ void Window::terminalEndFixDamage(bool     internal,
                                   uint16_t rowEnd,
                                   uint16_t colBegin,
                                   uint16_t colEnd) throw () {
-    PRINT("Damage: " <<
-          rowBegin << ".." << rowEnd << "  " <<
-          colBegin << ".." << colEnd);
-
     if (internal) {
         cairo_destroy(_cr);
         _cr = nullptr;

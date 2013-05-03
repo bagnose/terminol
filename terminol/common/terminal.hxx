@@ -27,20 +27,20 @@ public:
         virtual void terminalResetTitle() throw () = 0;
         virtual void terminalSetTitle(const std::string & title) throw () = 0;
         virtual bool terminalBeginFixDamage(bool internal) throw () = 0;
-        virtual void terminalDrawRun(uint16_t       row,
-                                     uint16_t       col,
-                                     uint8_t        fg,
-                                     uint8_t        bg,
-                                     AttributeSet   attrs,
-                                     const char   * str,       // nul-terminated
-                                     size_t         count) throw () = 0;
-        virtual void terminalDrawCursor(uint16_t       row,
-                                        uint16_t       col,
-                                        uint8_t        fg,
-                                        uint8_t        bg,
-                                        AttributeSet   attrs,
-                                        const char   * str,
-                                        bool           special) throw () = 0;
+        virtual void terminalDrawRun(uint16_t        row,
+                                     uint16_t        col,
+                                     uint8_t         fg,
+                                     uint8_t         bg,
+                                     AttributeSet    attrs,
+                                     const uint8_t * str,       // nul-terminated
+                                     size_t          count) throw () = 0;
+        virtual void terminalDrawCursor(uint16_t        row,
+                                        uint16_t        col,
+                                        uint8_t         fg,
+                                        uint8_t         bg,
+                                        AttributeSet    attrs,
+                                        const uint8_t * str,
+                                        bool            special) throw () = 0;
         virtual void terminalEndFixDamage(bool     internal,
                                           uint16_t rowBegin,
                                           uint16_t rowEnd,
@@ -111,12 +111,12 @@ private:
     I_Tty               & _tty;
 
     bool                  _dumpWrites;
-    std::vector<char>     _writeBuffer;      // Spillover if the TTY would block.
+    std::vector<uint8_t>  _writeBuffer;      // Spillover if the TTY would block.
 
     State                 _state;
     State                 _outerState;
     utf8::Machine         _utf8Machine;
-    std::vector<char>     _escSeq;
+    std::vector<uint8_t>  _escSeq;
 
     bool                  _trace;
     bool                  _sync;
@@ -157,19 +157,19 @@ protected:
                    uint16_t colBegin, uint16_t colEnd,
                    bool internal);
 
-    void      write(const char * data, size_t size);
+    void      write(const uint8_t * data, size_t size);
 
     void      resetAll();
 
-    void      processRead(const char * data, size_t size);
+    void      processRead(const uint8_t * data, size_t size);
     void      processChar(utf8::Seq seq, utf8::Length length);
-    void      processControl(char c);
+    void      processControl(uint8_t c);
     void      processNormal(utf8::Seq seq);
-    void      processEscape(char c);
-    void      processCsi(const std::vector<char> & seq);
-    void      processDcs(const std::vector<char> & seq);
-    void      processOsc(const std::vector<char> & seq);
-    void      processSpecial(const std::vector<char> & seq);
+    void      processEscape(uint8_t c);
+    void      processCsi(const std::vector<uint8_t> & seq);
+    void      processDcs(const std::vector<uint8_t> & seq);
+    void      processOsc(const std::vector<uint8_t> & seq);
+    void      processSpecial(const std::vector<uint8_t> & seq);
     void      processAttributes(const std::vector<int32_t> & args);
     void      processModes(bool priv, bool set, const std::vector<int32_t> & args);
 };

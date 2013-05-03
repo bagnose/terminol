@@ -33,7 +33,7 @@ void Tty::resize(uint16_t rows, uint16_t cols) {
     ENFORCE_SYS(::ioctl(_fd, TIOCSWINSZ, &winsize) != -1, "");
 }
 
-size_t Tty::read(char * buffer, size_t length) throw (Exited) {
+size_t Tty::read(uint8_t * buffer, size_t length) throw (Exited) {
     ASSERT(_fd != -1, "");
     ASSERT(length != 0, "");
 
@@ -57,7 +57,7 @@ size_t Tty::read(char * buffer, size_t length) throw (Exited) {
     }
 }
 
-size_t Tty::write(const char * buffer, size_t length) throw (Error) {
+size_t Tty::write(const uint8_t * buffer, size_t length) throw (Error) {
     ASSERT(_fd != -1, "");
     ASSERT(length != 0, "");
 

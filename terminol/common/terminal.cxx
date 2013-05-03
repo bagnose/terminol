@@ -162,13 +162,13 @@ void Terminal::redraw(uint16_t rowBegin, uint16_t rowEnd,
 }
 
 void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
-    std::string str;
+    std::vector<uint8_t> str;
     if (_keyMap.convert(keySym, state,
                         _modes.get(Mode::APPKEYPAD),
                         _modes.get(Mode::APPCURSOR),
                         _modes.get(Mode::CRLF),
                         str)) {
-        write(str.data(), str.size());
+        write(&str.front(), str.size());
     }
 }
 
@@ -178,8 +178,8 @@ void Terminal::read() {
     _dispatch = true;
 
     try {
-        Timer timer(50);
-        char  buf[BUFSIZ];        // 8192 last time I looked.
+        Timer   timer(50);
+        uint8_t buf[BUFSIZ];        // 8192 last time I looked.
         do {
             size_t rval = _tty.read(buf, sizeof buf);
             if (rval == 0) { /*PRINT("Would block");*/ break; }
@@ -271,7 +271,7 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
 
     // Declare run at the outer scope (rather than for each row) to
     // minimise alloc/free.
-    std::vector<char> run;
+    std::vector<uint8_t> run;
     // Reserve the largest amount of memory we could require.
     run.reserve(_buffer->getCols() * utf8::LMAX + 1);
 
@@ -393,7 +393,7 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
     }
 }
 
-void Terminal::write(const char * data, size_t size) {
+void Terminal::write(const uint8_t * data, size_t size) {
     if (_dumpWrites) { return; }
 
     if (_writeBuffer.empty()) {
@@ -458,7 +458,7 @@ void Terminal::resetAll() {
     _observer.terminalResetTitle();
 }
 
-void Terminal::processRead(const char * data, size_t size) {
+void Terminal::processRead(const uint8_t * data, size_t size) {
     for (size_t i = 0; i != size; ++i) {
         switch (_utf8Machine.next(data[i])) {
             case utf8::Machine::State::ACCEPT: {
@@ -475,7 +475,7 @@ void Terminal::processRead(const char * data, size_t size) {
 }
 
 void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
-    char lead = seq.bytes[0];
+    uint8_t lead = seq.bytes[0];
 
     switch (_state) {
         case State::NORMAL:
@@ -485,7 +485,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
                 _outerState = State::NORMAL;
                 ASSERT(_escSeq.empty(), "");
             }
-            else if (lead >= NUL && lead < SPACE) {
+            else if (lead < SPACE) {
                 ASSERT(len == utf8::Length::L1, "");
                 processControl(lead);
             }
@@ -527,7 +527,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
             break;
         case State::CSI:
             ASSERT(!_escSeq.empty(), "");
-            if (lead >= NUL && lead < SPACE) {
+            if (lead < SPACE) {
                 ASSERT(len == utf8::Length::L1, "");
                 processControl(lead);
             }
@@ -628,7 +628,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
     }
 }
 
-void Terminal::processControl(char c) {
+void Terminal::processControl(uint8_t c) {
     if (_trace) {
         std::cerr << Esc::FG_YELLOW << Char(c) << Esc::RESET;
     }
@@ -749,7 +749,7 @@ void Terminal::processNormal(utf8::Seq seq) {
     ++_cursorCol;
 }
 
-void Terminal::processEscape(char c) {
+void Terminal::processEscape(uint8_t c) {
     if (_trace) {
         std::cerr << Esc::FG_MAGENTA << "ESC" << Char(c) << Esc::RESET << " ";
     }
@@ -817,7 +817,7 @@ void Terminal::processEscape(char c) {
     }
 }
 
-void Terminal::processCsi(const std::vector<char> & seq) {
+void Terminal::processCsi(const std::vector<uint8_t> & seq) {
     ASSERT(seq.size() >= 2, "");
 
     if (_trace) {
@@ -843,7 +843,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
     bool inArg = false;
 
     while (i != seq.size()) {
-        char c = seq[i];
+        uint8_t c = seq[i];
 
         if (c >= '0' && c <= '9') {
             if (!inArg) {
@@ -875,7 +875,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
         ERROR("Bad CSI: " << Str(seq));
     }
     else {
-        char mode = seq[i];
+        uint8_t mode = seq[i];
 
         switch (mode) {
             case '@': // ICH - Insert Character
@@ -994,7 +994,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 NYI("REP");
                 break;
             case 'c': // Primary DA
-                write("\x1B[?6c", 5);
+                write(reinterpret_cast<const uint8_t *>("\x1B[?6c"), 5);
                 break;
             case 'd': // VPA
                 _cursorRow = clamp<uint16_t>(nthArg(args, 0, 1), 1, _buffer->getRows()) - 1;
@@ -1104,13 +1104,13 @@ default_:
     }
 }
 
-void Terminal::processDcs(const std::vector<char> & seq) {
+void Terminal::processDcs(const std::vector<uint8_t> & seq) {
     if (_trace) {
         std::cerr << Esc::FG_RED << "ESC" << Str(seq) << Esc::RESET << " ";
     }
 }
 
-void Terminal::processOsc(const std::vector<char> & seq) {
+void Terminal::processOsc(const std::vector<uint8_t> & seq) {
     if (_trace) {
         std::cerr << Esc::FG_MAGENTA << "ESC" << Str(seq) << Esc::RESET << " ";
     }
@@ -1129,7 +1129,7 @@ void Terminal::processOsc(const std::vector<char> & seq) {
 
     bool next = true;
     while (i != seq.size()) {
-        char c = seq[i];
+        uint8_t c = seq[i];
 
         if (next) { args.push_back(std::string()); next = false; }
 
@@ -1157,14 +1157,14 @@ void Terminal::processOsc(const std::vector<char> & seq) {
     }
 }
 
-void Terminal::processSpecial(const std::vector<char> & seq) {
+void Terminal::processSpecial(const std::vector<uint8_t> & seq) {
     if (_trace) {
         std::cerr << Esc::FG_BLUE << "ESC" << Str(seq) << Esc::RESET << " ";
     }
 
     ASSERT(seq.size() == 2, "");
-    char special = seq.front();
-    char code    = seq.back();
+    uint8_t special = seq.front();
+    uint8_t code    = seq.back();
 
     switch (special) {
         case '#':
