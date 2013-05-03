@@ -8,11 +8,11 @@
 
 Basics::Basics() throw (Error) {
     // FIXME this isn't right :(
-    const char * hostname = std::getenv("HOSTNAME");
-    if (hostname) {
-        PRINT("Hostname: " << hostname);
+    const char * h = std::getenv("HOSTNAME");
+    if (h) {
+        PRINT("Hostname: " << h);
     }
-    _hostname = hostname ? hostname : "";
+    _hostname = h ? h : "";
 
     int screenNum;
     _connection = xcb_connect(nullptr, &screenNum);

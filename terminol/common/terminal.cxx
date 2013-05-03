@@ -31,12 +31,12 @@ T nthArg(const std::vector<T> & args, size_t n, const T & fallback = T()) {
 } // namespace {anonymous}
 
 const Terminal::CharSub Terminal::CS_US[] = {
-    { }
+    { {}, {} }
 };
 
 const Terminal::CharSub Terminal::CS_UK[] = {
     { {'#' }, { 0xC2, 0xA3, 0 } }, // POUND: £
-    { }
+    { {}, {} }
 };
 
 const Terminal::CharSub Terminal::CS_SPECIAL[] = {
@@ -71,7 +71,7 @@ const Terminal::CharSub Terminal::CS_SPECIAL[] = {
     { {'|', 0, }, { 0xE2, 0x89, 0xA0, 0 } }, // NEQ: ≠
     { {'}', 0, }, { 0xC2, 0xA3, 0,      } }, // POUND: £
     { {'~', 0, }, { 0xE2, 0x8B, 0x85, 0 } }, // DOT: ⋅
-    { }
+    { {}, {} }
 };
 
 //
@@ -177,15 +177,15 @@ utf8::Seq Terminal::translate(utf8::Seq seq) const {
 void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
                     uint16_t colBegin, uint16_t colEnd,
                     bool internal) {
-    // Declare buffer at the outer scope (rather than for each row) to
+    // Declare run at the outer scope (rather than for each row) to
     // minimise alloc/free.
-    std::vector<char> buffer;
+    std::vector<char> run;
     // Reserve the largest amount of memory we could require.
-    buffer.reserve(_buffer->getCols() * utf8::LMAX + 1);
+    run.reserve(_buffer->getCols() * utf8::LMAX + 1);
 
     for (uint16_t r = rowBegin; r != rowEnd; ++r) {
-        uint16_t     c_;        // Accumulation start column.
-        uint8_t      fg, bg;
+        uint16_t     c_ = 0;    // Accumulation start column.
+        uint8_t      fg = 0, bg = 0;
         AttributeSet attrs;
         uint16_t     c;
         uint16_t     colBegin2, colEnd2;
@@ -203,12 +203,12 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
         for (c = colBegin2; c != colEnd2; ++c) {
             const Cell & cell = _buffer->getCell(r, c);
 
-            if (buffer.empty() || fg != cell.fg() || bg != cell.bg() || attrs != cell.attrs()) {
-                if (!buffer.empty()) {
-                    // flush buffer
-                    buffer.push_back(NUL);
-                    _observer.terminalDrawRun(r, c_, fg, bg, attrs, &buffer.front(), c - c_);
-                    buffer.clear();
+            if (run.empty() || fg != cell.fg() || bg != cell.bg() || attrs != cell.attrs()) {
+                if (!run.empty()) {
+                    // flush run
+                    run.push_back(NUL);
+                    _observer.terminalDrawRun(r, c_, fg, bg, attrs, &run.front(), c - c_);
+                    run.clear();
                 }
 
                 c_    = c;
@@ -217,22 +217,22 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
                 attrs = cell.attrs();
 
                 utf8::Length len = utf8::leadLength(cell.lead());
-                buffer.resize(len);
-                std::copy(cell.bytes(), cell.bytes() + len, &buffer.front());
+                run.resize(len);
+                std::copy(cell.bytes(), cell.bytes() + len, &run.front());
             }
             else {
-                size_t oldSize = buffer.size();
+                size_t oldSize = run.size();
                 utf8::Length len = utf8::leadLength(cell.lead());
-                buffer.resize(buffer.size() + len);
-                std::copy(cell.bytes(), cell.bytes() + len, &buffer[oldSize]);
+                run.resize(run.size() + len);
+                std::copy(cell.bytes(), cell.bytes() + len, &run[oldSize]);
             }
         }
 
-        if (!buffer.empty()) {
-            // flush buffer
-            buffer.push_back(NUL);
-            _observer.terminalDrawRun(r, c_, fg, bg, attrs, &buffer.front(), c - c_);
-            buffer.clear();
+        if (!run.empty()) {
+            // flush run
+            run.push_back(NUL);
+            _observer.terminalDrawRun(r, c_, fg, bg, attrs, &run.front(), c - c_);
+            run.clear();
         }
     }
 
@@ -243,11 +243,11 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
 
         const Cell & cell = _buffer->getCell(_cursorRow, col);
         utf8::Length len  = utf8::leadLength(cell.lead());
-        buffer.resize(len);
-        std::copy(cell.bytes(), cell.bytes() + len, &buffer.front());
-        buffer.push_back(NUL);
+        run.resize(len);
+        std::copy(cell.bytes(), cell.bytes() + len, &run.front());
+        run.push_back(NUL);
         _observer.terminalDrawCursor(_cursorRow, col,
-                                     cell.fg(), cell.bg(), cell.attrs(), &buffer.front());
+                                     cell.fg(), cell.bg(), cell.attrs(), &run.front());
     }
 }
 
@@ -269,12 +269,12 @@ void Terminal::read() {
 
     try {
         Timer timer(50);
-        char buffer[BUFSIZ];        // 8192 last time I looked.
+        char buf[BUFSIZ];        // 8192 last time I looked.
         do {
-            size_t rval = _tty.read(buffer, sizeof buffer);
+            size_t rval = _tty.read(buf, sizeof buf);
             if (rval == 0) { /*PRINT("Would block");*/ break; }
             //PRINT("Read: " << rval);
-            processRead(buffer, rval);
+            processRead(buf, rval);
         } while (!timer.expired());
     }
     catch (I_Tty::Exited & ex) {

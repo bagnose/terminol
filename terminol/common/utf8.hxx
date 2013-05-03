@@ -56,8 +56,10 @@ struct Seq {
 
 inline bool operator == (Seq lhs, Seq rhs) {
     return
-        *reinterpret_cast<const int32_t *>(&lhs.bytes[0]) ==
-        *reinterpret_cast<const int32_t *>(&rhs.bytes[0]);
+        lhs.bytes[0] == rhs.bytes[0] &&
+        lhs.bytes[1] == rhs.bytes[1] &&
+        lhs.bytes[2] == rhs.bytes[2] &&
+        lhs.bytes[3] == rhs.bytes[3];
 }
 
 inline bool operator != (Seq lhs, Seq rhs) {

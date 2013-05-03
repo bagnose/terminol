@@ -39,9 +39,9 @@ Length leadLength(uint8_t lead) throw (Error) {
 }
 
 CodePoint decode(const uint8_t * sequence) throw (Error) {
-    CodePoint codePoint;
-    auto      lead   = sequence[0];
-    auto      length = leadLength(lead);
+    CodePoint codePoint = 0;
+    auto      lead      = sequence[0];
+    auto      length    = leadLength(lead);
 
     // Handle lead.
 
