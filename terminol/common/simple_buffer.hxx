@@ -230,10 +230,10 @@ public:
         }
     }
 
-    void damageCell(uint16_t row, uint16_t col) {
-        if (col != getCols()) {     // Tolerant of cursor damage.
-            _lines[row].damageAdd(col, col + 1);
-        }
+    void damageCursor(uint16_t row, uint16_t col) {
+        // Cursor can be off the screen.
+        if (col == getCols()) { --col; }
+        _lines[row].damageAdd(col, col + 1);
     }
 
     void resetDamage() {

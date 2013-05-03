@@ -167,6 +167,7 @@ utf8::Seq Terminal::translate(utf8::Seq seq) const {
                     << '/' << cs->match << '/' << cs->replace << '/'
                     << Esc::RESET;
             }
+            FATAL("Match occurred");
             return cs->replace;
         }
     }
@@ -235,13 +236,17 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
         }
     }
 
-    if (_modes.get(Mode::SHOW_CURSOR) && _cursorCol != _buffer->getCols()) {
-        const Cell & cell = _buffer->getCell(_cursorRow, _cursorCol);
+    if (_modes.get(Mode::SHOW_CURSOR)) {
+        // If the cursor is off the screen then draw it at the edge.
+        uint16_t col =
+            _cursorCol != _buffer->getCols() ? _cursorCol : _buffer->getCols() - 1;
+
+        const Cell & cell = _buffer->getCell(_cursorRow, col);
         utf8::Length len  = utf8::leadLength(cell.lead());
         buffer.resize(len);
         std::copy(cell.bytes(), cell.bytes() + len, &buffer.front());
         buffer.push_back(NUL);
-        _observer.terminalDrawCursor(_cursorRow, _cursorCol,
+        _observer.terminalDrawCursor(_cursorRow, col,
                                      cell.fg(), cell.bg(), cell.attrs(), &buffer.front());
     }
 }
@@ -559,7 +564,7 @@ void Terminal::processControl(char c) {
             PRINT("BEL!!");
             break;
         case HT:
-            _buffer->damageCell(_cursorRow, _cursorCol);
+            _buffer->damageCursor(_cursorRow, _cursorCol);
 
             // Advance to the next tab or the last column.
             for (; _cursorCol != _buffer->getCols(); ++_cursorCol) {
@@ -574,7 +579,7 @@ void Terminal::processControl(char c) {
             }
             break;
         case BS:
-            _buffer->damageCell(_cursorRow, _cursorCol);
+            _buffer->damageCursor(_cursorRow, _cursorCol);
 
             // XXX check this
             if (_cursorCol == 0) {
@@ -590,12 +595,12 @@ void Terminal::processControl(char c) {
             }
             break;
         case CR:
-            _buffer->damageCell(_cursorRow, _cursorCol);
+            _buffer->damageCursor(_cursorRow, _cursorCol);
             _cursorCol = 0;
             break;
         case LF:
             if (_modes.get(Mode::CRLF)) {
-                _buffer->damageCell(_cursorRow, _cursorCol);
+                _buffer->damageCursor(_cursorRow, _cursorCol);
                 _cursorCol = 0;
             }
             // Fall-through:
@@ -608,7 +613,7 @@ void Terminal::processControl(char c) {
                 _buffer->addLine();
             }
             else {
-                _buffer->damageCell(_cursorRow, _cursorCol);
+                _buffer->damageCursor(_cursorRow, _cursorCol);
                 ++_cursorRow;
             }
 
@@ -617,9 +622,11 @@ void Terminal::processControl(char c) {
             }
             break;
         case SO:
+            PRINT("\n *** G1");
             _CS = _G1;
             break;
         case SI:
+            PRINT("\n *** G0");
             _CS = _G0;
             break;
         case CAN:
@@ -643,6 +650,8 @@ void Terminal::processNormal(utf8::Seq seq) {
     if (_trace) {
         std::cerr << Esc::FG_GREEN << Esc::UNDERLINE << seq << Esc::RESET;
     }
+
+    _buffer->damageCursor(_cursorRow, _cursorCol);
 
     if (_cursorCol == _buffer->getCols()) {
         if (_modes.get(Mode::AUTO_WRAP)) {
@@ -687,7 +696,7 @@ void Terminal::processEscape(char c) {
                 _buffer->insertLines(0, 1);
             }
             else {
-                _buffer->damageCell(_cursorRow, _cursorCol);
+                _buffer->damageCursor(_cursorRow, _cursorCol);
                 --_cursorRow;
             }
             break;
@@ -714,10 +723,9 @@ void Terminal::processEscape(char c) {
             _savedBg         = _bg;
             _savedAttrs      = _attrs;
             _savedOriginMode = _originMode;
-            // TODO save character sets (cs/g0/g1)
             break;
         case '8':   // DECRC - Restore Cursor
-            _buffer->damageCell(_cursorRow, _cursorCol);
+            _buffer->damageCursor(_cursorRow, _cursorCol);
 
             _G0         = _savedG0;
             _G1         = _savedG1;
@@ -728,7 +736,6 @@ void Terminal::processEscape(char c) {
             _bg         = _savedBg;
             _attrs      = _savedAttrs;
             _originMode = _savedOriginMode;
-            // TODO restore character sets (cs/g0/g1)
             break;
         default:
             ERROR("Unknown escape sequence: ESC" << Char(c));
@@ -801,19 +808,19 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 _buffer->insertCells(_cursorRow, _cursorCol, nthArg(args, 0, 1));
                 break;
             case 'A': // CUU - Cursor Up
-                _buffer->damageCell(_cursorRow, _cursorCol);
+                _buffer->damageCursor(_cursorRow, _cursorCol);
                 _cursorRow = clamp<int32_t>(_cursorRow - nthArg(args, 0, 1), 0, _buffer->getRows() - 1);
                 break;
             case 'B': // CUD - Cursor Down
-                _buffer->damageCell(_cursorRow, _cursorCol);
+                _buffer->damageCursor(_cursorRow, _cursorCol);
                 _cursorRow = clamp<int32_t>(_cursorRow + nthArg(args, 0, 1), 0, _buffer->getRows() - 1);
                 break;
             case 'C': // CUF - Cursor Forward
-                _buffer->damageCell(_cursorRow, _cursorCol);
+                _buffer->damageCursor(_cursorRow, _cursorCol);
                 _cursorCol = clamp<int32_t>(_cursorCol + nthArg(args, 0, 1), 0, _buffer->getCols() - 1);
                 break;
             case 'D': // CUB - Cursor Backward
-                _buffer->damageCell(_cursorRow, _cursorCol);
+                _buffer->damageCursor(_cursorRow, _cursorCol);
                 _cursorCol = clamp<int32_t>(_cursorCol - nthArg(args, 0, 1), 0, _buffer->getCols() - 1);
                 break;
             case 'E': // CNL - Cursor Next Line
@@ -832,7 +839,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                     std::cerr << std::endl;
                 }
 
-                _buffer->damageCell(_cursorRow, _cursorCol);
+                _buffer->damageCursor(_cursorRow, _cursorCol);
 
                 uint16_t row = nthArg(args, 0, 1) - 1;
                 uint16_t col = nthArg(args, 1, 1) - 1;
@@ -972,7 +979,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 else {
                     if (args.empty()) {
                         _buffer->resetScrollBeginEnd();
-                        _buffer->damageCell(_cursorRow, _cursorCol);
+                        _buffer->damageCursor(_cursorRow, _cursorCol);
                         _cursorRow = _cursorCol = 0;
                     }
                     else {
@@ -990,7 +997,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                             _buffer->resetScrollBeginEnd();
                         }
 
-                        _buffer->damageCell(_cursorRow, _cursorCol);
+                        _buffer->damageCursor(_cursorRow, _cursorCol);
 
                         if (_originMode) {
                             _cursorRow = top;
@@ -1011,7 +1018,7 @@ void Terminal::processCsi(const std::vector<char> & seq) {
                 NYI("Window ops");
                 break;
             case 'u': // restore cursor
-                _buffer->damageCell(_cursorRow, _cursorCol);
+                _buffer->damageCursor(_cursorRow, _cursorCol);
                 _cursorRow = _savedCursorRow;
                 _cursorCol = _savedCursorCol;
                 break;
@@ -1104,12 +1111,15 @@ void Terminal::processSpecial(const std::vector<char> & seq) {
         case '(':
             switch (code) {
                 case '0':
+                    PRINT("\nG0 = SPECIAL");
                     _G0 = CS_SPECIAL;
                     break;
                 case 'A':
+                    PRINT("\nG0 = UK");
                     _G0 = CS_UK;
                     break;
                 case 'B':
+                    PRINT("\nG0 = US");
                     _G0 = CS_US;
                     break;
                 default:
@@ -1120,13 +1130,16 @@ void Terminal::processSpecial(const std::vector<char> & seq) {
         case ')':
             switch (code) {
                 case '0':
+                    PRINT("\nG1 = SPECIAL");
                     _G1 = CS_SPECIAL;
                     break;
                 case 'A':
+                    PRINT("\nG1 = UK");
                     _G1 = CS_UK;
                     break;
                 case 'B':
-                    _G0 = CS_UK;
+                    PRINT("\nG1 = US");
+                    _G1 = CS_US;
                     break;
                 default:
                     NYI("Unknown character set: " << code);
@@ -1360,7 +1373,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                 case 6: // DECOM - Origin
                     _originMode = set;
 
-                    _buffer->damageCell(_cursorRow, _cursorCol);
+                    _buffer->damageCursor(_cursorRow, _cursorCol);
 
                     if (_originMode) {
                         _cursorRow = _buffer->getScrollBegin();
@@ -1449,7 +1462,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                         _savedOriginMode = _originMode;
                     }
                     else {
-                        _buffer->damageCell(_cursorRow, _cursorCol);
+                        _buffer->damageCursor(_cursorRow, _cursorCol);
 
                         _cursorRow  = _savedCursorRow;
                         _cursorCol  = _savedCursorCol;

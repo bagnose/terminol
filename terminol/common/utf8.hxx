@@ -66,7 +66,8 @@ inline bool operator != (Seq lhs, Seq rhs) {
     return !(lhs == rhs);
 }
 
-const Seq REPLACEMENT(0xEF, 0xBF, 0xBD, 0x00);
+// FIXME uint8_t
+const Seq REPLACEMENT((char)0xEF, (char)0xBF, (char)0xBD, (char)0x00);
 
 std::ostream & operator << (std::ostream & ost, Seq seq);
 

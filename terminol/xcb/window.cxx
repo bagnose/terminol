@@ -542,19 +542,27 @@ bool Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
 }
 
 void Window::setTitle(const std::string & title) {
+    std::string t;
+
+#if DEBUG
+    t = "<DEBUG> - " + title;
+#else
+    t = title;
+#endif
+
     xcb_icccm_set_wm_name(_basics.connection(),
                           _window,
                           XCB_ATOM_STRING,
                           8,
-                          title.size(),
-                          title.data());
+                          t.size(),
+                          t.data());
 
     xcb_icccm_set_wm_icon_name(_basics.connection(),
                                _window,
                                XCB_ATOM_STRING,
                                8,
-                               title.size(),
-                               title.data());
+                               t.size(),
+                               t.data());
 }
 
 void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {

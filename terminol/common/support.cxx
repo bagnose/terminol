@@ -32,9 +32,7 @@ bool Timer::expired() const {
     uint32_t  sec = tv.tv_sec;
     uint32_t usec = tv.tv_usec;
 
-    bool expired = sec > _sec || (sec == _sec && usec >= _usec);
-
-    return expired;
+    return sec > _sec || (sec == _sec && usec >= _usec);
 }
 
 namespace {
