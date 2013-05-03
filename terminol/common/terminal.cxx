@@ -151,11 +151,85 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     }
 }
 
-void Terminal::damage(uint16_t rowBegin, uint16_t rowEnd,
+void Terminal::redraw(uint16_t rowBegin, uint16_t rowEnd,
                       uint16_t colBegin, uint16_t colEnd) {
-    ENFORCE(_observer.terminalBeginFixDamage(false), "");
-    draw(rowBegin, rowEnd, colBegin, colEnd, false);
-    _observer.terminalEndFixDamage(false);
+    fixDamage(rowBegin, rowEnd, colBegin, colEnd, false);
+}
+
+void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
+    std::string str;
+    if (_keyMap.convert(keySym, state,
+                        _modes.get(Mode::APPKEYPAD),
+                        _modes.get(Mode::APPCURSOR),
+                        _modes.get(Mode::CRLF),
+                        str)) {
+        write(str.data(), str.size());
+    }
+}
+
+void Terminal::read() {
+    ASSERT(!_dispatch, "");
+
+    _dispatch = true;
+
+    try {
+        Timer timer(50);
+        char  buf[BUFSIZ];        // 8192 last time I looked.
+        do {
+            size_t rval = _tty.read(buf, sizeof buf);
+            if (rval == 0) { /*PRINT("Would block");*/ break; }
+            //PRINT("Read: " << rval);
+            processRead(buf, rval);
+        } while (!timer.expired());
+    }
+    catch (I_Tty::Exited & ex) {
+        _observer.terminalChildExited(ex.exitCode);
+    }
+
+    if (!_sync) {
+        fixDamage(0, _buffer->getRows(), 0, _buffer->getCols(), true);
+    }
+
+    _dispatch = false;
+}
+
+bool Terminal::needsFlush() const {
+    ASSERT(!_dispatch, "");
+    return !_writeBuffer.empty();
+}
+
+void Terminal::flush() {
+    ASSERT(!_dispatch, "");
+    ASSERT(needsFlush(), "No writes queued.");
+    ASSERT(!_dumpWrites, "Dump writes is set.");
+
+    try {
+        while (!_writeBuffer.empty()) {
+            size_t rval = _tty.write(&_writeBuffer.front(), _writeBuffer.size());
+            if (rval == 0) { break; }
+            _writeBuffer.erase(_writeBuffer.begin(), _writeBuffer.begin() + rval);
+        }
+    }
+    catch (I_Tty::Error & ex) {
+        _dumpWrites = true;
+        _writeBuffer.clear();
+    }
+}
+
+void Terminal::fixDamage(uint16_t rowBegin, uint16_t rowEnd,
+                         uint16_t colBegin, uint16_t colEnd,
+                         bool internal) {
+    if (_observer.terminalBeginFixDamage(internal), "") {
+        draw(rowBegin, rowEnd, colBegin, colEnd, internal);
+        _observer.terminalEndFixDamage(internal);
+
+        if (internal) {
+            _buffer->resetDamage();
+        }
+    }
+    else {
+        ENFORCE(internal, "");
+    }
 }
 
 utf8::Seq Terminal::translate(utf8::Seq seq) const {
@@ -238,8 +312,17 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
 
     if (_modes.get(Mode::SHOW_CURSOR)) {
         // If the cursor is off the screen then draw it at the edge.
-        uint16_t col =
-            _cursorCol != _buffer->getCols() ? _cursorCol : _buffer->getCols() - 1;
+        bool     offscreen;
+        uint16_t col;
+
+        if (_cursorCol == _buffer->getCols()) {
+            col = _cursorCol - 1;
+            offscreen = true;
+        }
+        else {
+            col = _cursorCol;
+            offscreen = false;
+        }
 
         const Cell & cell = _buffer->getCell(_cursorRow, col);
         utf8::Length len  = utf8::leadLength(cell.lead());
@@ -247,71 +330,8 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
         std::copy(cell.bytes(), cell.bytes() + len, &run.front());
         run.push_back(NUL);
         _observer.terminalDrawCursor(_cursorRow, col,
-                                     cell.fg(), cell.bg(), cell.attrs(), &run.front());
-    }
-}
-
-void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
-    std::string str;
-    if (_keyMap.convert(keySym, state,
-                        _modes.get(Mode::APPKEYPAD),
-                        _modes.get(Mode::APPCURSOR),
-                        _modes.get(Mode::CRLF),
-                        str)) {
-        write(str.data(), str.size());
-    }
-}
-
-void Terminal::read() {
-    ASSERT(!_dispatch, "");
-
-    _dispatch = true;
-
-    try {
-        Timer timer(50);
-        char buf[BUFSIZ];        // 8192 last time I looked.
-        do {
-            size_t rval = _tty.read(buf, sizeof buf);
-            if (rval == 0) { /*PRINT("Would block");*/ break; }
-            //PRINT("Read: " << rval);
-            processRead(buf, rval);
-        } while (!timer.expired());
-    }
-    catch (I_Tty::Exited & ex) {
-        _observer.terminalChildExited(ex.exitCode);
-    }
-
-    if (!_sync) {
-        if (_observer.terminalBeginFixDamage(true)) {
-            draw(0, _buffer->getRows(), 0, _buffer->getCols(), true);
-            _observer.terminalEndFixDamage(true);
-            _buffer->resetDamage();
-        }
-    }
-
-    _dispatch = false;
-}
-
-bool Terminal::needsFlush() const {
-    ASSERT(!_dispatch, "");
-    return !_writeBuffer.empty();
-}
-
-void Terminal::flush() {
-    ASSERT(!_dispatch, "");
-    ASSERT(needsFlush(), "No writes queued.");
-    ASSERT(!_dumpWrites, "Dump writes is set.");
-
-    try {
-        while (!_writeBuffer.empty()) {
-            size_t rval = _tty.write(&_writeBuffer.front(), _writeBuffer.size());
-            if (rval == 0) { break; }
-            _writeBuffer.erase(_writeBuffer.begin(), _writeBuffer.begin() + rval);
-        }
-    }
-    catch (I_Tty::Error & ex) {
-        _dumpWrites = true;
-        _writeBuffer.clear();
+                                     cell.fg(), cell.bg(), cell.attrs(), &run.front(),
+                                     offscreen);
     }
 }
 
@@ -546,11 +566,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
     }
 
     if (_sync) {
-        if (_observer.terminalBeginFixDamage(true)) {
-            draw(0, _buffer->getRows(), 0, _buffer->getCols(), true);
-            _observer.terminalEndFixDamage(true);
-            _buffer->resetDamage();
-        }
+        fixDamage(0, _buffer->getRows(), 0, _buffer->getCols(), true);
     }
 }
 

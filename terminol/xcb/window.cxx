@@ -514,11 +514,11 @@ bool Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
     }
     else if (x < _nominalWidth - BORDER_THICKNESS - SCROLLBAR_WIDTH) {
         col = (x - BORDER_THICKNESS) / _fontSet.getWidth();
-        ASSERT(col < _terminal->buffer().getCols(),
-               "col is: " << col << ", getCols() is: " << _terminal->buffer().getCols());
+        ASSERT(col < _terminal->getCols(),
+               "col is: " << col << ", getCols() is: " << _terminal->getCols());
     }
     else {
-        col = _terminal->buffer().getCols();
+        col = _terminal->getCols();
         within = false;
     }
 
@@ -530,11 +530,11 @@ bool Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
     }
     else if (y < _nominalHeight - BORDER_THICKNESS) {
         row = (y - BORDER_THICKNESS) / _fontSet.getHeight();
-        ASSERT(row < _terminal->buffer().getRows(),
-               "row is: " << row << ", getRows() is: " << _terminal->buffer().getRows());
+        ASSERT(row < _terminal->getRows(),
+               "row is: " << row << ", getRows() is: " << _terminal->getRows());
     }
     else {
-        row = _terminal->buffer().getRows();
+        row = _terminal->getRows();
         within = false;
     }
 
@@ -572,6 +572,7 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     }
     ASSERT(_surface, "");
     _cr = cairo_create(_surface);
+    cairo_set_line_width(_cr, 1.0);
 
 #if DEBUG
     // Clear the damaged area so that we know we are completely drawing to it.
@@ -645,9 +646,9 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
         xy2RowCol(x, y, rowBegin, colBegin);
         uint16_t rowEnd, colEnd;
         xy2RowCol(x + w, y + h, rowEnd, colEnd);
-        if (colEnd != _terminal->buffer().getCols()) ++colEnd;
-        if (rowEnd != _terminal->buffer().getRows()) ++rowEnd;
-        _terminal->damage(rowBegin, rowEnd, colBegin, colEnd);
+        if (colEnd != _terminal->getCols()) ++colEnd;
+        if (rowEnd != _terminal->getRows()) ++rowEnd;
+        _terminal->redraw(rowBegin, rowEnd, colBegin, colEnd);
 
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
@@ -751,6 +752,7 @@ bool Window::terminalBeginFixDamage(bool internal) throw () {
                            0, 0, _width, _height);
 #endif
             _cr = cairo_create(_surface);
+            cairo_set_line_width(_cr, 1.0);
             return true;
         }
         else {
@@ -794,6 +796,13 @@ void Window::terminalDrawRun(uint16_t       row,
 
         const auto & fgValues = _colorSet.getIndexedColor(fg);
         cairo_set_source_rgb(_cr, fgValues.r, fgValues.g, fgValues.b);
+
+        if (attrs.get(Attribute::UNDERLINE)) {
+            cairo_move_to(_cr, x, y + _fontSet.getHeight() - 0.5);
+            cairo_line_to(_cr, x + count * _fontSet.getWidth(), y + _fontSet.getHeight() - 0.5);
+            cairo_stroke(_cr);
+        }
+
         cairo_move_to(_cr, x, y + _fontSet.getAscent());
         cairo_show_text(_cr, str);
 
@@ -807,7 +816,8 @@ void Window::terminalDrawCursor(uint16_t       row,
                                 uint8_t        fg,
                                 uint8_t        bg,
                                 AttributeSet   attrs,
-                                const char   * str) throw () {
+                                const char   * str,
+                                bool           special) throw () {
     // TODO consult config here.
     const auto & fgValues =
         false ?
@@ -836,6 +846,9 @@ void Window::terminalDrawCursor(uint16_t       row,
 
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
+
+        if (special) {
+        }
     } cairo_restore(_cr);
 }
 

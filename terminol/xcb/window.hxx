@@ -124,7 +124,8 @@ protected:
                             uint8_t        fg,
                             uint8_t        bg,
                             AttributeSet   attrs,
-                            const char   * str) throw ();
+                            const char   * str,
+                            bool           special) throw ();
     void terminalEndFixDamage(bool internal) throw ();
     void terminalChildExited(int exitStatus) throw ();
 };

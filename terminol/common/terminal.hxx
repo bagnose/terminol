@@ -39,7 +39,8 @@ public:
                                         uint8_t        fg,
                                         uint8_t        bg,
                                         AttributeSet   attrs,
-                                        const char   * str) throw () = 0;
+                                        const char   * str,
+                                        bool           special) throw () = 0;
         virtual void terminalEndFixDamage(bool internal) throw () = 0;
         virtual void terminalChildExited(int exitStatus) throw () = 0;
 
@@ -121,43 +122,45 @@ public:
              bool           sync);
     virtual ~Terminal();
 
-    // FIXME Get rid of the following three accessors.
-    const SimpleBuffer & buffer()    const { return *_buffer;   }
-    uint16_t             cursorRow() const { return _cursorRow; }
-    uint16_t             cursorCol() const { return _cursorCol; }
+    uint16_t getRows() const { return _buffer->getRows(); }
+    uint16_t getCols() const { return _buffer->getCols(); }
 
-    void                 resize(uint16_t rows, uint16_t cols);
+    void     resize(uint16_t rows, uint16_t cols);
 
-    void                 damage(uint16_t rowBegin, uint16_t rowEnd,
-                                uint16_t colBegin, uint16_t colEnd);
+    void     redraw(uint16_t rowBegin, uint16_t rowEnd,
+                    uint16_t colBegin, uint16_t colEnd);
 
-    void                 keyPress(xkb_keysym_t keySym, uint8_t state);
-    void                 read();
-    bool                 needsFlush() const;
-    void                 flush();
+    void     keyPress(xkb_keysym_t keySym, uint8_t state);
+    void     read();
+    bool     needsFlush() const;
+    void     flush();
 
 protected:
+    void      fixDamage(uint16_t rowBegin, uint16_t rowEnd,
+                        uint16_t colBegin, uint16_t colEnd,
+                        bool internal);
+
     utf8::Seq translate(utf8::Seq seq) const;
 
-    void draw(uint16_t rowBegin, uint16_t rowEnd,
-              uint16_t colBegin, uint16_t colEnd,
-              bool internal);
+    void      draw(uint16_t rowBegin, uint16_t rowEnd,
+                   uint16_t colBegin, uint16_t colEnd,
+                   bool internal);
 
-    void write(const char * data, size_t size);
+    void      write(const char * data, size_t size);
 
-    void resetAll();
+    void      resetAll();
 
-    void processRead(const char * data, size_t size);
-    void processChar(utf8::Seq seq, utf8::Length length);
-    void processControl(char c);
-    void processNormal(utf8::Seq seq);
-    void processEscape(char c);
-    void processCsi(const std::vector<char> & seq);
-    void processDcs(const std::vector<char> & seq);
-    void processOsc(const std::vector<char> & seq);
-    void processSpecial(const std::vector<char> & seq);
-    void processAttributes(const std::vector<int32_t> & args);
-    void processModes(bool priv, bool set, const std::vector<int32_t> & args);
+    void      processRead(const char * data, size_t size);
+    void      processChar(utf8::Seq seq, utf8::Length length);
+    void      processControl(char c);
+    void      processNormal(utf8::Seq seq);
+    void      processEscape(char c);
+    void      processCsi(const std::vector<char> & seq);
+    void      processDcs(const std::vector<char> & seq);
+    void      processOsc(const std::vector<char> & seq);
+    void      processSpecial(const std::vector<char> & seq);
+    void      processAttributes(const std::vector<int32_t> & args);
+    void      processModes(bool priv, bool set, const std::vector<int32_t> & args);
 };
 
 #endif // COMMON__TERMINAL__HXX
