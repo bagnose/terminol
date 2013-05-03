@@ -15,7 +15,7 @@ const uint8_t B6 = 1 << 6;
 const uint8_t B7 = 1 << 7;
 
 // Just inspect the lead octect to determine the length.
-Length leadLength(char lead) throw (Error) {
+Length leadLength(uint8_t lead) throw (Error) {
     if ((lead & B7) == 0) {
         // 0xxxxxxx
         return L1;
@@ -38,7 +38,7 @@ Length leadLength(char lead) throw (Error) {
     }
 }
 
-CodePoint decode(const char * sequence) throw (Error) {
+CodePoint decode(const uint8_t * sequence) throw (Error) {
     CodePoint codePoint;
     auto      lead   = sequence[0];
     auto      length = leadLength(lead);
@@ -128,7 +128,7 @@ Length codePointLength(CodePoint codePoint) throw (Error) {
     }
 }
 
-Length encode(CodePoint codePoint, char * sequence) throw (Error) {
+Length encode(CodePoint codePoint, uint8_t * sequence) throw (Error) {
     Length length = codePointLength(codePoint);
 
     // Lead char.
@@ -136,19 +136,19 @@ Length encode(CodePoint codePoint, char * sequence) throw (Error) {
     switch (length) {
         case L1:
             // 0xxxxxxx
-            sequence[0] = static_cast<char>(codePoint);
+            sequence[0] = static_cast<uint8_t>(codePoint);
             break;
         case L2:
             // 110xxxxx
-            sequence[0] = static_cast<char>(codePoint >>  6) | (B7|B6);
+            sequence[0] = static_cast<uint8_t>(codePoint >>  6) | (B7|B6);
             break;
         case L3:
             // 1110xxxx
-            sequence[0] = static_cast<char>(codePoint >> 12) | (B7|B6|B5);
+            sequence[0] = static_cast<uint8_t>(codePoint >> 12) | (B7|B6|B5);
             break;
         case L4:
             // 11110xxx
-            sequence[0] = static_cast<char>(codePoint >> 18) | (B7|B6|B5|B4);
+            sequence[0] = static_cast<uint8_t>(codePoint >> 18) | (B7|B6|B5|B4);
             break;
     }
 
@@ -179,7 +179,7 @@ std::ostream & operator << (std::ostream & ost, Seq seq) {
 //
 //
 
-Machine::State Machine::next(char c) {
+Machine::State Machine::next(uint8_t c) {
     switch (_state) {
         case State::START:
         case State::ACCEPT:

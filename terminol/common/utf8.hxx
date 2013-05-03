@@ -26,26 +26,24 @@ typedef int32_t CodePoint;
 //
 //
 
-// FIXME use uint8_t instead of char.
 // Given a lead character, what is the length of the sequence?
-Length    leadLength(char lead) throw (Error);
+Length    leadLength(uint8_t lead) throw (Error);
 
 // Decode a sequence into a code point. Assumes sequence is complete.
-CodePoint decode(const char * sequence) throw (Error);
+CodePoint decode(const uint8_t * sequence) throw (Error);
 
 // Given a code point, what is the length of the sequence?
 Length    codePointLength(CodePoint codePoint) throw (Error);
 
 // Encode a code point into a sequence. Assumes sequence has sufficient allocation.
-Length    encode(CodePoint codePoint, char * sequence) throw (Error);
+Length    encode(CodePoint codePoint, uint8_t * sequence) throw (Error);
 
 //
 //
 //
 
 struct Seq {
-    // FIXME use uint8_t instead of char.
-    Seq(char b0 = '\0', char b1 = '\0', char b2 = '\0', char b3 = '\0') {
+    Seq(uint8_t b0 = '\0', uint8_t b1 = '\0', uint8_t b2 = '\0', uint8_t b3 = '\0') {
         bytes[0] = b0; bytes[1] = b1; bytes[2] = b2; bytes[3] = b3;
     }
 
@@ -53,7 +51,7 @@ struct Seq {
         bytes[0] = bytes[1] = bytes[2] = bytes[3] = '\0';
     }
 
-    char bytes[LMAX];
+    uint8_t bytes[LMAX];
 };
 
 inline bool operator == (Seq lhs, Seq rhs) {
@@ -66,8 +64,7 @@ inline bool operator != (Seq lhs, Seq rhs) {
     return !(lhs == rhs);
 }
 
-// FIXME uint8_t
-const Seq REPLACEMENT((char)0xEF, (char)0xBF, (char)0xBD, (char)0x00);
+const Seq REPLACEMENT(0xEF, 0xBF, 0xBD, 0x00);
 
 std::ostream & operator << (std::ostream & ost, Seq seq);
 
@@ -104,7 +101,7 @@ public:
         return _seq;
     }
 
-    State next(char c);
+    State next(uint8_t c);
 };
 
 } // namespace utf8

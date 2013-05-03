@@ -3,14 +3,14 @@
 #include "terminol/common/utf8.hxx"
 #include "terminol/common/support.hxx"
 
-const char B0 = 1 << 0;
-const char B1 = 1 << 1;
-const char B2 = 1 << 2;
-const char B3 = 1 << 3;
-const char B4 = 1 << 4;
-const char B5 = 1 << 5;
-const char B6 = 1 << 6;
-const char B7 = char(1 << 7);       // XXX
+const uint8_t B0 = 1 << 0;
+const uint8_t B1 = 1 << 1;
+const uint8_t B2 = 1 << 2;
+const uint8_t B3 = 1 << 3;
+const uint8_t B4 = 1 << 4;
+const uint8_t B5 = 1 << 5;
+const uint8_t B6 = 1 << 6;
+const uint8_t B7 = 1 << 7;
 
 using namespace utf8;
 
@@ -33,13 +33,13 @@ std::ostream & showCodePointBits(std::ostream & ost, CodePoint cp) {
     return ost;
 }
 
-std::ostream & showSeqBytes(std::ostream & ost, const char * seq) {
+std::ostream & showSeqBytes(std::ostream & ost, const uint8_t * seq) {
     Length l = leadLength(seq[0]);
     bool space = false;
 
     for (size_t i = 0; i != l; ++i) {
         if (space) { ost << " "; }
-        unsigned char byte = seq[i];
+        uint8_t byte = seq[i];
         ost << nibbleToHex(byte >> 4) << nibbleToHex(byte & 0x0F);
         space = true;
     }
@@ -47,14 +47,14 @@ std::ostream & showSeqBytes(std::ostream & ost, const char * seq) {
     return ost;
 }
 
-std::ostream & showSeqBits(std::ostream & ost, const char * seq) {
+std::ostream & showSeqBits(std::ostream & ost, const uint8_t * seq) {
     Length l = leadLength(seq[0]);
     bool space = false;
 
     for (size_t i = 0; i != l; ++i) {
         if (space) { ost << " "; }
         else       { space = true; }
-        char byte = seq[i];
+        uint8_t byte = seq[i];
         ost << toBinary(byte);
     }
 
@@ -66,7 +66,7 @@ void forwardReverse(CodePoint cp) {
     std::cout << toHex(cp) << std::endl;
     std::cout << toBinary(cp) << std::endl;
 
-    char seq[LMAX];
+    uint8_t seq[LMAX];
     encode(cp, seq);
 
     std::cout << "Converted to sequence: ";
@@ -88,7 +88,7 @@ void forwardReverse(CodePoint cp) {
 int main() {
     ENFORCE(leadLength(B1) == L1, "");
     ENFORCE(leadLength(B1 | B2) == L1, "");
-    ENFORCE(leadLength(~B7) == L1, "");
+    ENFORCE(leadLength(static_cast<uint8_t>(~B7)) == L1, "");
     ENFORCE(leadLength('a') == L1, "");
     ENFORCE(leadLength('z') == L1, "");
     ENFORCE(leadLength('\x7F') == L1, "");

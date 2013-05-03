@@ -25,7 +25,7 @@ class Cell {
         _fg(fg_),
         _bg(bg_) {}
 
-    static const char BLANK = SPACE;
+    static const uint8_t BLANK = SPACE;
 
 public:
     static uint8_t      defaultFg()    { return 7; }
@@ -36,7 +36,7 @@ public:
         return ascii(BLANK);
     }
 
-    static Cell ascii(char c) {
+    static Cell ascii(uint8_t c) {
         ASSERT((c & 0x80) == 0, "");
         return Cell(utf8::Seq(c), defaultAttrs(), defaultFg(), defaultBg());
     }
@@ -48,14 +48,12 @@ public:
         return Cell(seq_, attrs_, fg_, bg_);
     }
 
-    char         lead()  const { return _seq.bytes[0]; }
-    const char * bytes() const { return &_seq.bytes[0]; }
-    //utf8::Seq    seq()   const { return _seq; }
-    AttributeSet attrs() const { return _attrs; }
-    uint8_t      fg()    const { return _fg; }
-    uint8_t      bg()    const { return _bg; }
-
-    //bool         isBlank() const { return _seq.bytes[0] == BLANK; }
+    uint8_t         lead()  const { return _seq.bytes[0]; }
+    const uint8_t * bytes() const { return &_seq.bytes[0]; }
+    //utf8::Seq       seq()   const { return _seq; }
+    AttributeSet    attrs() const { return _attrs; }
+    uint8_t         fg()    const { return _fg; }
+    uint8_t         bg()    const { return _bg; }
 };
 
 std::ostream & operator << (std::ostream & ost, const Cell & cell);
