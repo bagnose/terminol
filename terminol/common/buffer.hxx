@@ -37,15 +37,16 @@ class Buffer {
                     &_cells[_cells.size()]);
             std::fill(&_cells[beforeCol], &_cells[beforeCol + n], Cell::blank());
 
-            damageAdd(beforeCol, beforeCol + n);
+            damageAdd(beforeCol, getCols());
         }
 
         void erase(uint16_t col, uint16_t n) {
-            ASSERT(col + n < getCols(), "");
-            std::copy(&_cells[col], &_cells[_cells.size()], &_cells[col] - n);
+            ASSERT(col + n <= getCols(), "");
+
+            std::copy(&_cells[col] + n, &_cells[_cells.size()], &_cells[col]);
             std::fill(&_cells[_cells.size()] - n, &_cells[_cells.size()], Cell::blank());
 
-            damageAdd(col, col + n);
+            damageAdd(col, getCols());
         }
 
         void setCell(uint16_t col, const Cell & cell) {
