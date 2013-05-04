@@ -14,15 +14,14 @@ Basics::Basics() throw (Error) {
     }
     _hostname = h ? h : "";
 
-    int screenNum;
-    _connection = xcb_connect(nullptr, &screenNum);
+    _connection = xcb_connect(nullptr, &_screenNum);
     if (xcb_connection_has_error(_connection)) {
         throw Error("Couldn't open display.");
     }
 
     const xcb_setup_t * setup = xcb_get_setup(_connection);
     xcb_screen_iterator_t screenIter = xcb_setup_roots_iterator(setup);
-    for (int i = 0; i != screenNum; ++i) {
+    for (int i = 0; i != _screenNum; ++i) {
         xcb_screen_next(&screenIter);
     }
     _screen = screenIter.data;
@@ -49,6 +48,8 @@ Basics::Basics() throw (Error) {
     _keySymbols = xcb_key_symbols_alloc(_connection);
     ENFORCE(_keySymbols, "");
 
+    xcb_ewmh_init_atoms(_connection, &_ewmhConnection);
+
     determineMasks();
 
     /*
@@ -65,6 +66,7 @@ Basics::Basics() throw (Error) {
 
 Basics::~Basics() {
     xcb_key_symbols_free(_keySymbols);
+    xcb_ewmh_connection_wipe(&_ewmhConnection);
     xcb_disconnect(_connection);
 }
 

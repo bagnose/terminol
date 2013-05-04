@@ -741,6 +741,25 @@ void Window::terminalSetTitle(const std::string & title) throw () {
     setTitle(title);
 }
 
+void Window::terminalResize(uint16_t rows, uint16_t cols) throw () {
+    NYI("Terminal resize: rows=" << rows << ", cols=" << cols);
+    // Thoughts: this is tricky because we are at the mercy of the window
+    // manager and our resize request requires a round trip to the X server.
+    // Do we need to try to complete the resize before we return? i.e. handle
+    // the configure event, etc...
+
+    xcb_ewmh_request_moveresize_window(_basics.ewmhConnection(),
+                                       _basics.screenNum(),
+                                       _window,
+                                       XCB_GRAVITY_NORTH_WEST,
+                                       XCB_EWMH_CLIENT_SOURCE_TYPE_NORMAL,
+                                       static_cast<xcb_ewmh_moveresize_window_opt_flags_t>
+                                       (XCB_EWMH_MOVERESIZE_WINDOW_WIDTH |
+                                        XCB_EWMH_MOVERESIZE_WINDOW_HEIGHT),
+                                       0, 0,        // x,y
+                                       100, 100);
+}
+
 bool Window::terminalBeginFixDamage(bool internal) throw () {
     //PRINT("Damage begin, internal: " << std::boolalpha << internal);
 
