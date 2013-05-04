@@ -789,7 +789,7 @@ void Terminal::processEscape(uint8_t c) {
         case 'H':   // HTS - Horizontal tab stop.
             _tabs[_cursorCol] = true;
             break;
-        case 'M':   // RI - Reverse index.
+        case 'M':   // RI - Reverse Line Feed
             if (_cursorRow == 0) {
                 // FIXME
                 _buffer->insertLines(0, 1);
