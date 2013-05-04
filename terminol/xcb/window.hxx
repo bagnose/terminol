@@ -48,6 +48,8 @@ class Window :
 
     cairo_t         * _cr;
 
+    std::string       _title;
+
 public:
     struct Error {
         explicit Error(const std::string & message_) : message(message_) {}
@@ -102,7 +104,7 @@ protected:
     void rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const;
     bool xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const;
 
-    void setTitle(const std::string & title);
+    void updateTitle();
 
     void draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
     void drawBorder();

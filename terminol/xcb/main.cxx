@@ -52,6 +52,7 @@ public:
                 trace,
                 sync)
     {
+        xcb_flush(_basics.connection());
         loop();
     }
 

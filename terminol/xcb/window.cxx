@@ -51,7 +51,8 @@ Window::Window(Basics             & basics,
     _doubleBuffer(doubleBuffer),
     _pixmap(0),
     _surface(nullptr),
-    _cr(nullptr)
+    _cr(nullptr),
+    _title(DEFAULT_TITLE)
 {
     xcb_void_cookie_t cookie;
 
@@ -114,8 +115,6 @@ Window::Window(Basics             & basics,
 
     icccmConfigure();
 
-    setTitle(DEFAULT_TITLE);
-
     _gc = xcb_generate_id(_basics.connection());
     uint32_t vals[] = {
         _basics.screen()->white_pixel /*_colorSet.getBackgroundPixel()*/,
@@ -132,13 +131,14 @@ Window::Window(Basics             & basics,
         FATAL("");
     }
 
-    xcb_map_window(_basics.connection(), _window);
-    xcb_flush(_basics.connection());
-
     _tty = new Tty(rows, cols, stringify(_window), term, command);
     _terminal = new Terminal(*this, keyMap, *_tty, rows, cols, trace, sync);
     _isOpen = true;
     //PRINT("Created");
+
+    updateTitle();
+
+    xcb_map_window(_basics.connection(), _window);
 }
 
 Window::~Window() {
@@ -404,6 +404,8 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
     _terminal->resize(rows, cols);      // Ok to resize if not open?
 
+    updateTitle();
+
     if (_mapped) {
         if (_doubleBuffer) {
             ASSERT(_pixmap, "");
@@ -544,28 +546,31 @@ bool Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
     return within;
 }
 
-void Window::setTitle(const std::string & title) {
-    std::string t;
+void Window::updateTitle() {
+    std::ostringstream ost;
 
 #if DEBUG
-    t = "<DEBUG> - " + title;
-#else
-    t = title;
+    ost << "<DEBUG> ";
 #endif
+
+    ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
+    ost << _title;
+
+    std::string fullTitle = ost.str();
 
     xcb_icccm_set_wm_name(_basics.connection(),
                           _window,
                           XCB_ATOM_STRING,
                           8,
-                          t.size(),
-                          t.data());
+                          fullTitle.size(),
+                          fullTitle.data());
 
     xcb_icccm_set_wm_icon_name(_basics.connection(),
                                _window,
                                XCB_ATOM_STRING,
                                8,
-                               t.size(),
-                               t.data());
+                               fullTitle.size(),
+                               fullTitle.data());
 }
 
 void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
@@ -733,12 +738,14 @@ void Window::drawScrollBar() {
 // Terminal::I_Observer implementation:
 
 void Window::terminalResetTitle() throw () {
-    setTitle(DEFAULT_TITLE);
+    _title = DEFAULT_TITLE;
+    updateTitle();
 }
 
 void Window::terminalSetTitle(const std::string & title) throw () {
     //PRINT("Set title: " << title);
-    setTitle(title);
+    _title = title;
+    updateTitle();
 }
 
 void Window::terminalResize(uint16_t rows, uint16_t cols) throw () {
