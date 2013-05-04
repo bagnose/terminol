@@ -925,7 +925,7 @@ void Terminal::processCsi(const std::vector<uint8_t> & seq) {
             case 'E': // CNL - Cursor Next Line
                 NYI("CNL");
                 break;
-            case 'F': // CPL - Cursor Previous Line
+            case 'F': // CPL - Cursor Preceding Line
                 NYI("CPL");
                 break;
             case 'G': // CHA - Cursor Horizontal Absolute
