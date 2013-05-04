@@ -30,6 +30,8 @@ T nthArg(const std::vector<T> & args, size_t n, const T & fallback = T()) {
 
 } // namespace {anonymous}
 
+const uint16_t Terminal::TAB_SIZE = 8;
+
 const Terminal::CharSub Terminal::CS_US[] = {
     { {}, {} }
 };
@@ -130,7 +132,7 @@ Terminal::Terminal(I_Observer   & observer,
     _sync(sync)
 {
     for (size_t i = 0; i != _tabs.size(); ++i) {
-        _tabs[i] = (i + 1) % 8 == 0;
+        _tabs[i] = (i + 1) % TAB_SIZE == 0;
     }
 
     _modes.set(Mode::AUTO_WRAP);
@@ -146,13 +148,15 @@ Terminal::~Terminal() {
 void Terminal::resize(uint16_t rows, uint16_t cols) {
     ASSERT(!_dispatch, "");
     ASSERT(rows > 0 && cols > 0, "");
+
     _cursorRow = std::min<uint16_t>(_cursorRow, rows - 1);
     _cursorCol = std::min<uint16_t>(_cursorCol, cols - 1);
     _priBuffer.resize(rows, cols);
     _altBuffer.resize(rows, cols);
+
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {
-        _tabs[i] = (i + 1) % 8 == 0;
+        _tabs[i] = (i + 1) % TAB_SIZE == 0;
     }
 }
 
@@ -443,7 +447,7 @@ void Terminal::resetAll() {
     _modes.set(Mode::ALT_SENDS_ESC);
 
     for (size_t i = 0; i != _tabs.size(); ++i) {
-        _tabs[i] = (i + 1) % 8 == 0;
+        _tabs[i] = (i + 1) % TAB_SIZE == 0;
     }
 
     _savedCursorRow  = _cursorRow;

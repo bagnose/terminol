@@ -17,9 +17,10 @@ class Terminal : protected Uncopyable {
         utf8::Seq replace;
     };
 
-    static const CharSub CS_US[];
-    static const CharSub CS_UK[];
-    static const CharSub CS_SPECIAL[];
+    static const uint16_t TAB_SIZE;
+    static const CharSub  CS_US[];
+    static const CharSub  CS_UK[];
+    static const CharSub  CS_SPECIAL[];
 
 public:
     class I_Observer {
