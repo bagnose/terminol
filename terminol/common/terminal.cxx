@@ -759,10 +759,32 @@ void Terminal::processEscape(uint8_t c) {
 
     switch (c) {
         case 'D':   // IND - linefeed
-            NYI("st.c:2169");
+            // XXX are IND and NEL the same?
+            damageCursor();
+            _cursorCol = 0;
+            if (_cursorRow == _buffer->getScrollEnd() - 1) {
+                if (_trace) {
+                    std::cerr << "(ADDLINE1)" << std::endl;
+                }
+                _buffer->addLine();
+            }
+            else {
+                ++_cursorRow;
+            }
             break;
         case 'E':   // NEL - next line
-            NYI("st.c:2177");
+            // XXX are IND and NEL the same?
+            damageCursor();
+            _cursorCol = 0;
+            if (_cursorRow == _buffer->getScrollEnd() - 1) {
+                if (_trace) {
+                    std::cerr << "(ADDLINE1)" << std::endl;
+                }
+                _buffer->addLine();
+            }
+            else {
+                ++_cursorRow;
+            }
             break;
         case 'H':   // HTS - Horizontal tab stop.
             _tabs[_cursorCol] = true;
