@@ -924,8 +924,22 @@ void Terminal::processCsi(const std::vector<uint8_t> & seq) {
                 _cursorCol = clamp<int32_t>(col, 0, _buffer->getCols() - 1);
             }
                 break;
-            case 'I': // CHT - ??? Horizontal tab?
-                NYI("Advance tab");
+            case 'I': {     // CHT - Cursor Forward Tabulation *
+                int32_t n = nthArg(args, 0, 1);
+
+                while (n != 0) {
+                    ++_cursorCol;
+
+                    if (_cursorCol == _buffer->getCols()) {
+                        --_cursorCol;
+                        break;
+                    }
+
+                    if (_tabs[_cursorCol]) {
+                        --n;
+                    }
+                }
+            }
                 break;
             case 'J': // ED - Erase Data
                 // Clear screen.
@@ -985,8 +999,21 @@ void Terminal::processCsi(const std::vector<uint8_t> & seq) {
             case 'X': // ECH
                 NYI("ECH");
                 break;
-            case 'Z': // CBT
-                NYI("CBT");
+            case 'Z': {     // CBT - Cursor Backward Tabulation
+                int32_t n = nthArg(args, 0, 1);
+
+                while (n != 0) {
+                    if (_cursorCol == 0) {
+                        break;
+                    }
+
+                    --_cursorCol;
+
+                    if (_tabs[_cursorCol]) {
+                        --n;
+                    }
+                }
+            }
                 break;
             case '`': // HPA
                 // TODO damage
@@ -1004,7 +1031,37 @@ void Terminal::processCsi(const std::vector<uint8_t> & seq) {
                 break;
 
             case 'g': // TBC
-                NYI("CSI: Tabulation clear");
+                switch (nthArg(args, 0, 0)) {
+                    case 0:
+                        // "the character tabulation stop at the active presentation"
+                        // "position is cleared"
+                        if (_cursorCol != _buffer->getCols()) {
+                            _tabs[_cursorCol] = false;
+                        }
+                        break;
+                    case 1:
+                        // "the line tabulation stop at the active line is cleared"
+                        NYI("");
+                        break;
+                    case 2:
+                        // "all character tabulation stops in the active line are cleared"
+                        NYI("");
+                        break;
+                    case 3:
+                        // "all character tabulation stops are cleared"
+                        std::fill(_tabs.begin(), _tabs.end(), false);
+                        break;
+                    case 4:
+                        // "all line tabulation stops are cleared"
+                        NYI("");
+                        break;
+                    case 5:
+                        // "all tabulation stops are cleared"
+                        NYI("");
+                        break;
+                    default:
+                        goto default_;
+                }
                 break;
             case 'h': // SM
                 //PRINT("CSI: Set terminal mode: " << strArgs(args));
