@@ -234,7 +234,7 @@ void Terminal::damageCursor() {
 void Terminal::fixDamage(uint16_t rowBegin, uint16_t rowEnd,
                          uint16_t colBegin, uint16_t colEnd,
                          bool internal) {
-    if (_observer.terminalBeginFixDamage(internal), "") {
+    if (_observer.terminalBeginFixDamage(internal)) {
         draw(rowBegin, rowEnd, colBegin, colEnd, internal);
         _observer.terminalEndFixDamage(internal,
                                        _damageRowBegin, _damageRowEnd,
