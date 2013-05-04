@@ -93,9 +93,9 @@ Terminal::Terminal(I_Observer   & observer,
     _altBuffer(rows, cols),
     _buffer(&_priBuffer),
     //
+    _otherCharSet(false),
     _G0(CS_US),
     _G1(CS_US),
-    _CS(_G0),
     _cursorRow(0), _cursorCol(0),
     _bg(Cell::defaultBg()),
     _fg(Cell::defaultFg()),
@@ -105,9 +105,9 @@ Terminal::Terminal(I_Observer   & observer,
     _modes(),
     _tabs(_buffer->getCols()),
     //
+    _savedOtherCharSet(_otherCharSet),
     _savedG0(_G0),
     _savedG1(_G1),
-    _savedCS(_CS),
     _savedCursorRow(0),
     _savedCursorCol(0),
     _savedFg(0),
@@ -246,7 +246,7 @@ void Terminal::fixDamage(uint16_t rowBegin, uint16_t rowEnd,
 }
 
 utf8::Seq Terminal::translate(utf8::Seq seq) const {
-    for (const CharSub * cs = _CS; cs->match.bytes[0]; ++cs) {
+    for (const CharSub * cs = _otherCharSet ? _G1 : _G0; cs->match.bytes[0]; ++cs) {
         if (seq == cs->match) {
             if (_trace) {
                 std::cerr
@@ -254,7 +254,6 @@ utf8::Seq Terminal::translate(utf8::Seq seq) const {
                     << '/' << cs->match << '/' << cs->replace << '/'
                     << Esc::RESET;
             }
-            FATAL("Match occurred");
             return cs->replace;
         }
     }
@@ -696,16 +695,16 @@ void Terminal::processControl(uint8_t c) {
             }
             break;
         case SO:
-            PRINT("\n *** G1");
-            _CS = _G1;
+            // XXX dubious
+            _otherCharSet = true;
             break;
         case SI:
-            PRINT("\n *** G0");
-            _CS = _G0;
+            // XXX dubious
+            _otherCharSet = false;
             break;
         case CAN:
         case SUB:
-            // XXX reset escape states - assertion prevents this
+            // XXX reset escape states - assertion currently prevents us getting here
             break;
         case ENQ:
         case NUL:
@@ -788,28 +787,28 @@ void Terminal::processEscape(uint8_t c) {
             _modes.setTo(Mode::APPKEYPAD, false);
             break;
         case '7':   // DECSC - Save Cursor
-            _savedG0         = _G0;
-            _savedG1         = _G1;
-            _savedCS         = _CS;
-            _savedCursorRow  = _cursorRow;
-            _savedCursorCol  = _cursorCol;
-            _savedFg         = _fg;
-            _savedBg         = _bg;
-            _savedAttrs      = _attrs;
-            _savedOriginMode = _originMode;
+            _savedOtherCharSet = _otherCharSet;
+            _savedG0           = _G0;
+            _savedG1           = _G1;
+            _savedCursorRow    = _cursorRow;
+            _savedCursorCol    = _cursorCol;
+            _savedFg           = _fg;
+            _savedBg           = _bg;
+            _savedAttrs        = _attrs;
+            _savedOriginMode   = _originMode;
             break;
         case '8':   // DECRC - Restore Cursor
             damageCursor();
 
-            _G0         = _savedG0;
-            _G1         = _savedG1;
-            _CS         = _savedCS;
-            _cursorRow  = _savedCursorRow;
-            _cursorCol  = _savedCursorCol;
-            _fg         = _savedFg;
-            _bg         = _savedBg;
-            _attrs      = _savedAttrs;
-            _originMode = _savedOriginMode;
+            _otherCharSet = _savedOtherCharSet;
+            _G0           = _savedG0;
+            _G1           = _savedG1;
+            _cursorRow    = _savedCursorRow;
+            _cursorCol    = _savedCursorCol;
+            _fg           = _savedFg;
+            _bg           = _savedBg;
+            _attrs        = _savedAttrs;
+            _originMode   = _savedOriginMode;
             break;
         default:
             ERROR("Unknown escape sequence: ESC" << Char(c));
@@ -1169,6 +1168,15 @@ void Terminal::processSpecial(const std::vector<uint8_t> & seq) {
     switch (special) {
         case '#':
             switch (code) {
+                case '3':   // Double height/width (top half of char)
+                    NYI("Double height (top)");
+                    break;
+                case '4':   // Double height/width (bottom half of char)
+                    NYI("Double height (bottom)");
+                    break;
+                case '6':   // Double width
+                    NYI("Double width");
+                    break;
                 case '8':
                     // Fill terminal with 'E'
                     for (uint16_t r = 0; r != _buffer->getRows(); ++r) {
@@ -1185,16 +1193,25 @@ void Terminal::processSpecial(const std::vector<uint8_t> & seq) {
         case '(':
             switch (code) {
                 case '0':
-                    PRINT("\nG0 = SPECIAL");
                     _G0 = CS_SPECIAL;
                     break;
                 case 'A':
-                    PRINT("\nG0 = UK");
                     _G0 = CS_UK;
                     break;
                 case 'B':
-                    PRINT("\nG0 = US");
                     _G0 = CS_US;
+                    break;
+                case '<': // Multinational character set
+                    NYI("Multinational character set");
+                    break;
+                case '5': // Finnish
+                    NYI("Finnish 1");
+                    break;
+                case 'C': // Finnish
+                    NYI("Finnish 2");
+                    break;
+                case 'K': // German
+                    NYI("German");
                     break;
                 default:
                     NYI("Unknown character set: " << code);
@@ -1214,6 +1231,18 @@ void Terminal::processSpecial(const std::vector<uint8_t> & seq) {
                 case 'B':
                     PRINT("\nG1 = US");
                     _G1 = CS_US;
+                    break;
+                case '<': // Multinational character set
+                    NYI("Multinational character set");
+                    break;
+                case '5': // Finnish
+                    NYI("Finnish 1");
+                    break;
+                case 'C': // Finnish
+                    NYI("Finnish 2");
+                    break;
+                case 'K': // German
+                    NYI("German");
                     break;
                 default:
                     NYI("Unknown character set: " << code);
@@ -1425,16 +1454,18 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     break;
                 case 2: // DECANM - ANSI/VT52 Mode
                     NYI("DECANM: " << set);
-                    _G0 = CS_US;
-                    _G1 = CS_US;
-                    _CS = _G0;
+                    _otherCharSet = false;  // XXX dubious
+                    _G0           = CS_US;
+                    _G1           = CS_US;
                     break;
                 case 3: // DECCOLM - Column
                     if (set) {
                         // resize 132x24
+                        //_observer.terminalResize(24, 132);
                     }
                     else {
                         // resize 80x24
+                        //_observer.terminalResize(24, 80);
                     }
                     NYI("DECCOLM: " << set);
                     break;

@@ -65,9 +65,9 @@ private:
     Buffer                _altBuffer;
     Buffer              * _buffer;
 
+    bool                  _otherCharSet;
     const CharSub       * _G0;
     const CharSub       * _G1;
-    const CharSub       * _CS;
     uint16_t              _cursorRow;
     uint16_t              _cursorCol;
     uint8_t               _bg;
@@ -78,9 +78,9 @@ private:
     ModeSet               _modes;
     std::vector<bool>     _tabs;
 
+    bool                  _savedOtherCharSet;
     const CharSub       * _savedG0;
     const CharSub       * _savedG1;
-    const CharSub       * _savedCS;
     uint16_t              _savedCursorRow;
     uint16_t              _savedCursorCol;
     uint8_t               _savedFg;
