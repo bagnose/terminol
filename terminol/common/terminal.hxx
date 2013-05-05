@@ -147,6 +147,11 @@ public:
     void     flush();
 
 protected:
+    enum TabDir { FORWARD, BACKWARD };
+
+    void      moveCursor(int32_t row, int32_t col);
+    void      tabCursor(TabDir dir, uint16_t count);
+
     void      damageCursor();
 
     void      fixDamage(uint16_t rowBegin, uint16_t rowEnd,

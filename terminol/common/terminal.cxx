@@ -225,6 +225,47 @@ void Terminal::flush() {
     }
 }
 
+void Terminal::moveCursor(int32_t row, int32_t col) {
+    damageCursor();
+    _cursorRow = clamp<int32_t>(row, 0, _buffer->getRows() - 1);
+    _cursorCol = clamp<int32_t>(col, 0, _buffer->getCols() - 1);
+}
+
+void Terminal::tabCursor(TabDir dir, uint16_t count) {
+    damageCursor();
+
+    if (dir == TabDir::FORWARD) {
+        while (count != 0) {
+            ++_cursorCol;
+
+            if (_cursorCol == _buffer->getCols()) {
+                --_cursorCol;
+                break;
+            }
+
+            if (_tabs[_cursorCol]) {
+                --count;
+            }
+        }
+    }
+    else if (dir == TabDir::BACKWARD) {
+        while (count != 0) {
+            if (_cursorCol == 0) {
+                break;
+            }
+
+            --_cursorCol;
+
+            if (_tabs[_cursorCol]) {
+                --count;
+            }
+        }
+    }
+    else {
+        FATAL("");
+    }
+}
+
 void Terminal::damageCursor() {
     uint16_t col = _cursorCol;
     if (col == _buffer->getCols()) { --col; }
@@ -641,19 +682,7 @@ void Terminal::processControl(uint8_t c) {
             PRINT("BEL!!");
             break;
         case HT:
-            damageCursor();
-
-            // Advance to the next tab or the last column.
-            for (; _cursorCol != _buffer->getCols(); ++_cursorCol) {
-                if (_tabs[_cursorCol]) {
-                    break;
-                }
-            }
-
-            // Back up the cursor if we went past the end.
-            if (_cursorCol == _buffer->getCols()) {
-                --_cursorCol;
-            }
+            tabCursor(TabDir::FORWARD, 1);
             break;
         case BS:
             damageCursor();
@@ -758,8 +787,21 @@ void Terminal::processEscape(uint8_t c) {
     }
 
     switch (c) {
-        case 'D':   // IND - linefeed
-            // XXX are IND and NEL the same?
+        case 'D':   // IND - Line Feed (opposite of RI)
+            // FIXME
+            damageCursor();
+            if (_cursorRow == _buffer->getScrollEnd() - 1) {
+                if (_trace) {
+                    std::cerr << "(ADDLINE1)" << std::endl;
+                }
+                _buffer->addLine();
+            }
+            else {
+                ++_cursorRow;
+            }
+            break;
+        case 'E':   // NEL - Next Line
+            // FIXME
             damageCursor();
             _cursorCol = 0;
             if (_cursorRow == _buffer->getScrollEnd() - 1) {
@@ -772,27 +814,13 @@ void Terminal::processEscape(uint8_t c) {
                 ++_cursorRow;
             }
             break;
-        case 'E':   // NEL - next line
-            // XXX are IND and NEL the same?
-            damageCursor();
-            _cursorCol = 0;
-            if (_cursorRow == _buffer->getScrollEnd() - 1) {
-                if (_trace) {
-                    std::cerr << "(ADDLINE1)" << std::endl;
-                }
-                _buffer->addLine();
-            }
-            else {
-                ++_cursorRow;
-            }
-            break;
-        case 'H':   // HTS - Horizontal tab stop.
+        case 'H':   // HTS - Horizontal Tab Stop
             _tabs[_cursorCol] = true;
             break;
-        case 'M':   // RI - Reverse Line Feed
-            if (_cursorRow == 0) {
-                // FIXME
-                _buffer->insertLines(0, 1);
+        case 'M':   // RI - Reverse Line Feed (opposite of IND)
+            // FIXME dubious
+            if (_cursorRow == _buffer->getScrollBegin()) {
+                _buffer->insertLines(_buffer->getScrollBegin(), 1);
             }
             else {
                 damageCursor();
@@ -807,10 +835,10 @@ void Terminal::processEscape(uint8_t c) {
             resetAll();
             break;
         case '=':   // DECPAM - Application keypad
-            _modes.setTo(Mode::APPKEYPAD, true);
+            _modes.set(Mode::APPKEYPAD);
             break;
         case '>':   // DECPNM - Normal keypad
-            _modes.setTo(Mode::APPKEYPAD, false);
+            _modes.unset(Mode::APPKEYPAD);
             break;
         case '7':   // DECSC - Save Cursor
             _savedOtherCharSet = _otherCharSet;
@@ -907,61 +935,41 @@ void Terminal::processCsi(const std::vector<uint8_t> & seq) {
                 _buffer->insertCells(_cursorRow, _cursorCol, nthArg(args, 0, 1));
                 break;
             case 'A': // CUU - Cursor Up
-                damageCursor();
-                _cursorRow = clamp<int32_t>(_cursorRow - nthArg(args, 0, 1), 0, _buffer->getRows() - 1);
+                moveCursor(_cursorRow - nthArg(args, 0, 1), _cursorCol);
                 break;
             case 'B': // CUD - Cursor Down
-                damageCursor();
-                _cursorRow = clamp<int32_t>(_cursorRow + nthArg(args, 0, 1), 0, _buffer->getRows() - 1);
+                moveCursor(_cursorRow + nthArg(args, 0, 1), _cursorCol);
                 break;
             case 'C': // CUF - Cursor Forward
-                damageCursor();
-                _cursorCol = clamp<int32_t>(_cursorCol + nthArg(args, 0, 1), 0, _buffer->getCols() - 1);
+                moveCursor(_cursorRow, _cursorCol + nthArg(args, 0, 1));
                 break;
             case 'D': // CUB - Cursor Backward
-                damageCursor();
-                _cursorCol = clamp<int32_t>(_cursorCol - nthArg(args, 0, 1), 0, _buffer->getCols() - 1);
+                moveCursor(_cursorRow, _cursorCol - nthArg(args, 0, 1));
                 break;
             case 'E': // CNL - Cursor Next Line
-                NYI("CNL");
+                moveCursor(_cursorRow - nthArg(args, 0, 1), 0);
                 break;
             case 'F': // CPL - Cursor Preceding Line
-                NYI("CPL");
+                moveCursor(_cursorRow + nthArg(args, 0, 1), 0);
                 break;
             case 'G': // CHA - Cursor Horizontal Absolute
-                // TODO damage
-                _cursorCol = clamp<uint16_t>(nthArg(args, 0, 1), 1, _buffer->getCols()) - 1;
+                moveCursor(_cursorRow, nthArg(args, 0, 1) - 1);
                 break;
             case 'f':       // HVP - Horizontal and Vertical Position
-            case 'H': {     // CUP - Cursor Position
-                if (_trace) {
-                    std::cerr << std::endl;
+            case 'H':       // CUP - Cursor Position
+                if (_trace) { std::cerr << std::endl; }
+                if (_originMode) {
+                    int16_t row = clamp<int32_t>(nthArg(args, 0, 1) - 1 + _buffer->getScrollBegin(),
+                                                 _buffer->getScrollBegin(),
+                                                 _buffer->getScrollEnd() - 1);
+                    moveCursor(row, nthArg(args, 1, 1) - 1);
                 }
-
-                damageCursor();
-
-                uint16_t row = nthArg(args, 0, 1) - 1;
-                uint16_t col = nthArg(args, 1, 1) - 1;
-                _cursorRow = clamp<int32_t>(row, 0, _buffer->getRows() - 1);
-                _cursorCol = clamp<int32_t>(col, 0, _buffer->getCols() - 1);
-            }
+                else {
+                    moveCursor(nthArg(args, 0, 1) - 1, nthArg(args, 1, 1) - 1);
+                }
                 break;
-            case 'I': {     // CHT - Cursor Forward Tabulation *
-                int32_t n = nthArg(args, 0, 1);
-
-                while (n != 0) {
-                    ++_cursorCol;
-
-                    if (_cursorCol == _buffer->getCols()) {
-                        --_cursorCol;
-                        break;
-                    }
-
-                    if (_tabs[_cursorCol]) {
-                        --n;
-                    }
-                }
-            }
+            case 'I':       // CHT - Cursor Forward Tabulation *
+                tabCursor(TabDir::FORWARD, nthArg(args, 0, 1));
                 break;
             case 'J': // ED - Erase Data
                 // Clear screen.
@@ -1021,21 +1029,8 @@ void Terminal::processCsi(const std::vector<uint8_t> & seq) {
             case 'X': // ECH
                 NYI("ECH");
                 break;
-            case 'Z': {     // CBT - Cursor Backward Tabulation
-                int32_t n = nthArg(args, 0, 1);
-
-                while (n != 0) {
-                    if (_cursorCol == 0) {
-                        break;
-                    }
-
-                    --_cursorCol;
-
-                    if (_tabs[_cursorCol]) {
-                        --n;
-                    }
-                }
-            }
+            case 'Z':       // CBT - Cursor Backward Tabulation
+                tabCursor(TabDir::BACKWARD, nthArg(args, 0, 1));
                 break;
             case '`': // HPA
                 // TODO damage
