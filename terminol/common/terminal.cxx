@@ -33,47 +33,47 @@ T nthArg(const std::vector<T> & args, size_t n, const T & fallback = T()) {
 const uint16_t Terminal::TAB_SIZE = 8;
 
 const Terminal::CharSub Terminal::CS_US[] = {
-    { {}, {} }
+    { NUL, {} }
 };
 
 const Terminal::CharSub Terminal::CS_UK[] = {
-    { { '#' }, { 0xC2, 0xA3 } }, // POUND: £
-    { {}, {} }
+    { '#', { 0xC2, 0xA3 } }, // POUND: £
+    { NUL, {} }
 };
 
 const Terminal::CharSub Terminal::CS_SPECIAL[] = {
-    { { '`' }, { 0xE2, 0x99, 0xA6 } }, // diamond: ♦
-    { { 'a' }, { 0xE2, 0x96, 0x92 } }, // 50% cell: ▒
-    { { 'b' }, { 0xE2, 0x90, 0x89 } }, // HT: ␉
-    { { 'c' }, { 0xE2, 0x90, 0x8C } }, // FF: ␌
-    { { 'd' }, { 0xE2, 0x90, 0x8D } }, // CR: ␍
-    { { 'e' }, { 0xE2, 0x90, 0x8A } }, // LF: ␊
-    { { 'f' }, { 0xC2, 0xB0       } }, // Degree: °
-    { { 'g' }, { 0xC2, 0xB1       } }, // Plus/Minus: ±
-    { { 'h' }, { 0xE2, 0x90, 0xA4 } }, // NL: ␤
-    { { 'i' }, { 0xE2, 0x90, 0x8B } }, // VT: ␋
-    { { 'j' }, { 0xE2, 0x94, 0x98 } }, // CN_RB: ┘
-    { { 'k' }, { 0xE2, 0x94, 0x90 } }, // CN_RT: ┐
-    { { 'l' }, { 0xE2, 0x94, 0x8C } }, // CN_LT: ┌
-    { { 'm' }, { 0xE2, 0x94, 0x94 } }, // CN_LB: └
-    { { 'n' }, { 0xE2, 0x94, 0xBC } }, // CROSS: ┼
-    { { 'o' }, { 0xE2, 0x8E, 0xBA } }, // Horiz. Scan Line 1: ⎺
-    { { 'p' }, { 0xE2, 0x8E, 0xBB } }, // Horiz. Scan Line 3: ⎻
-    { { 'q' }, { 0xE2, 0x94, 0x80 } }, // Horiz. Scan Line 5: ─
-    { { 'r' }, { 0xE2, 0x8E, 0xBC } }, // Horiz. Scan Line 7: ⎼
-    { { 's' }, { 0xE2, 0x8E, 0xBD } }, // Horiz. Scan Line 9: ⎽
-    { { 't' }, { 0xE2, 0x94, 0x9C } }, // TR: ├
-    { { 'u' }, { 0xE2, 0x94, 0xA4 } }, // TL: ┤
-    { { 'v' }, { 0xE2, 0x94, 0xB4 } }, // TU: ┴
-    { { 'w' }, { 0xE2, 0x94, 0xAC } }, // TD: ┬
-    { { 'x' }, { 0xE2, 0x94, 0x82 } }, // V: │
-    { { 'y' }, { 0xE2, 0x89, 0xA4 } }, // LE: ≤
-    { { 'z' }, { 0xE2, 0x89, 0xA5 } }, // GE: ≥
-    { { '{' }, { 0xCF, 0x80       } }, // PI: π
-    { { '|' }, { 0xE2, 0x89, 0xA0 } }, // NEQ: ≠
-    { { '}' }, { 0xC2, 0xA3       } }, // POUND: £
-    { { '~' }, { 0xE2, 0x8B, 0x85 } }, // DOT: ⋅
-    { {}, {} }
+    { '`', { 0xE2, 0x99, 0xA6 } }, // diamond: ♦
+    { 'a', { 0xE2, 0x96, 0x92 } }, // 50% cell: ▒
+    { 'b', { 0xE2, 0x90, 0x89 } }, // HT: ␉
+    { 'c', { 0xE2, 0x90, 0x8C } }, // FF: ␌
+    { 'd', { 0xE2, 0x90, 0x8D } }, // CR: ␍
+    { 'e', { 0xE2, 0x90, 0x8A } }, // LF: ␊
+    { 'f', { 0xC2, 0xB0       } }, // Degree: °
+    { 'g', { 0xC2, 0xB1       } }, // Plus/Minus: ±
+    { 'h', { 0xE2, 0x90, 0xA4 } }, // NL: ␤
+    { 'i', { 0xE2, 0x90, 0x8B } }, // VT: ␋
+    { 'j', { 0xE2, 0x94, 0x98 } }, // CN_RB: ┘
+    { 'k', { 0xE2, 0x94, 0x90 } }, // CN_RT: ┐
+    { 'l', { 0xE2, 0x94, 0x8C } }, // CN_LT: ┌
+    { 'm', { 0xE2, 0x94, 0x94 } }, // CN_LB: └
+    { 'n', { 0xE2, 0x94, 0xBC } }, // CROSS: ┼
+    { 'o', { 0xE2, 0x8E, 0xBA } }, // Horiz. Scan Line 1: ⎺
+    { 'p', { 0xE2, 0x8E, 0xBB } }, // Horiz. Scan Line 3: ⎻
+    { 'q', { 0xE2, 0x94, 0x80 } }, // Horiz. Scan Line 5: ─
+    { 'r', { 0xE2, 0x8E, 0xBC } }, // Horiz. Scan Line 7: ⎼
+    { 's', { 0xE2, 0x8E, 0xBD } }, // Horiz. Scan Line 9: ⎽
+    { 't', { 0xE2, 0x94, 0x9C } }, // TR: ├
+    { 'u', { 0xE2, 0x94, 0xA4 } }, // TL: ┤
+    { 'v', { 0xE2, 0x94, 0xB4 } }, // TU: ┴
+    { 'w', { 0xE2, 0x94, 0xAC } }, // TD: ┬
+    { 'x', { 0xE2, 0x94, 0x82 } }, // V: │
+    { 'y', { 0xE2, 0x89, 0xA4 } }, // LE: ≤
+    { 'z', { 0xE2, 0x89, 0xA5 } }, // GE: ≥
+    { '{', { 0xCF, 0x80       } }, // PI: π
+    { '|', { 0xE2, 0x89, 0xA0 } }, // NEQ: ≠
+    { '}', { 0xC2, 0xA3       } }, // POUND: £
+    { '~', { 0xE2, 0x8B, 0x85 } }, // DOT: ⋅
+    { NUL, {} }
 };
 
 //
@@ -291,7 +291,7 @@ void Terminal::fixDamage(uint16_t rowBegin, uint16_t rowEnd,
 }
 
 utf8::Seq Terminal::translate(utf8::Seq seq) const {
-    for (const CharSub * cs = _otherCharSet ? _G1 : _G0; cs->match.bytes[0]; ++cs) {
+    for (const CharSub * cs = _otherCharSet ? _G1 : _G0; cs->match != NUL; ++cs) {
         if (seq == cs->match) {
             if (_trace) {
                 std::cerr

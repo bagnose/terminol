@@ -13,7 +13,7 @@
 
 class Terminal : protected Uncopyable {
     struct CharSub {
-        utf8::Seq match;
+        uint8_t   match;        // FIXME check for the 94/96 chars possible
         utf8::Seq replace;
     };
 
