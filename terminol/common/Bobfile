@@ -2,10 +2,12 @@ static-lib common
   :
   support.hxx enums.hxx utf8.hxx terminal.hxx key_map.hxx
   bit_sets.hxx cell.hxx buffer.hxx ascii.hxx tty.hxx
+  vt_state_machine.hxx vt_state_machine2.hxx
   tty_interface.hxx
   :
   support.cxx enums.cxx utf8.cxx terminal.cxx key_map.cxx
   bit_sets.cxx cell.cxx buffer.cxx ascii.cxx tty.cxx
+  vt_state_machine.cxx vt_state_machine2.cxx
   ;
 
 test-exe test-utf8   : test_utf8.cxx;

@@ -103,7 +103,7 @@ public:
         return _seq;
     }
 
-    State next(uint8_t c);
+    State consume(uint8_t c);
 };
 
 } // namespace utf8

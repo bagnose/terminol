@@ -179,7 +179,7 @@ std::ostream & operator << (std::ostream & ost, Seq seq) {
 //
 //
 
-Machine::State Machine::next(uint8_t c) {
+Machine::State Machine::consume(uint8_t c) {
     switch (_state) {
         case State::START:
         case State::ACCEPT:

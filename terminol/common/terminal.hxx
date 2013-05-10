@@ -4,6 +4,7 @@
 #define COMMON__TERMINAL__HXX
 
 #include "terminol/common/tty_interface.hxx"
+#include "terminol/common/vt_state_machine.hxx"
 #include "terminol/common/bit_sets.hxx"
 #include "terminol/common/buffer.hxx"
 #include "terminol/common/key_map.hxx"
@@ -11,7 +12,10 @@
 
 #include <xkbcommon/xkbcommon.h>
 
-class Terminal : protected Uncopyable {
+class Terminal :
+    protected VtStateMachine::I_Observer,
+    protected Uncopyable
+{
     struct CharSub {
         uint8_t   match;        // FIXME check for the 94/96 chars possible
         utf8::Seq replace;
@@ -99,26 +103,13 @@ private:
     //
     //
 
-    enum class State {
-        NORMAL,
-        ESCAPE,
-        DCS,
-        CSI,
-        OSC,
-        INNER,
-        IGNORE,
-        SPECIAL
-    };
-
     I_Tty               & _tty;
 
     bool                  _dumpWrites;
     std::vector<uint8_t>  _writeBuffer;      // Spillover if the TTY would block.
 
-    State                 _state;
-    State                 _outerState;
     utf8::Machine         _utf8Machine;
-    std::vector<uint8_t>  _escSeq;
+    VtStateMachine        _vtMachine;
 
     bool                  _trace;
     bool                  _sync;
@@ -170,15 +161,21 @@ protected:
 
     void      processRead(const uint8_t * data, size_t size);
     void      processChar(utf8::Seq seq, utf8::Length length);
-    void      processControl(uint8_t c);
-    void      processNormal(utf8::Seq seq);
-    void      processEscape(uint8_t c);
-    void      processCsi(const std::vector<uint8_t> & seq);
-    void      processDcs(const std::vector<uint8_t> & seq);
-    void      processOsc(const std::vector<uint8_t> & seq);
-    void      processSpecial(const std::vector<uint8_t> & seq);
+
     void      processAttributes(const std::vector<int32_t> & args);
     void      processModes(bool priv, bool set, const std::vector<int32_t> & args);
+
+    // VtStateMachine::I_Observer overrides:
+
+    void machineNormal(utf8::Seq seq) throw ();
+    void machineControl(uint8_t c) throw ();
+    void machineEscape(uint8_t c) throw ();
+    void machineCsi(bool priv,
+                    const std::vector<int32_t> & args,
+                    uint8_t code) throw ();
+    void machineDcs(const std::vector<uint8_t> & seq) throw ();
+    void machineOsc(const std::vector<std::string> & args) throw ();
+    void machineSpecial(uint8_t special, uint8_t code) throw ();
 };
 
 #endif // COMMON__TERMINAL__HXX
