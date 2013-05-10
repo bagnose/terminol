@@ -3,6 +3,7 @@
 #include "terminol/xcb/window.hxx"
 
 #include <xcb/xcb_icccm.h>
+#include <xcb/xcb_aux.h>
 
 #include <unistd.h>
 
@@ -906,7 +907,8 @@ void Window::terminalEndFixDamage(bool     internal,
                           x1 - x0, y1 - y0);
         }
 
-        xcb_flush(_basics.connection());
+        //xcb_flush(_basics.connection());
+        xcb_aux_sync(_basics.connection());
     }
 }
 
