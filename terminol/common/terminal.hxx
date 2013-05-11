@@ -7,6 +7,7 @@
 #include "terminol/common/vt_state_machine.hxx"
 #include "terminol/common/bit_sets.hxx"
 #include "terminol/common/buffer.hxx"
+#include "terminol/common/buffer2.hxx"
 #include "terminol/common/key_map.hxx"
 #include "terminol/common/support.hxx"
 
@@ -65,6 +66,9 @@ private:
     //
     //
     //
+
+    //typedef ::Buffer Buffer;
+    typedef ::Buffer2 Buffer;
 
     const KeyMap        & _keyMap;
     Buffer                _priBuffer;
