@@ -108,8 +108,11 @@ class Buffer2 {
     size_t           _history;          // Offset of active region.
     size_t           _scroll;           // Offset of visible region.
 
+    bool             _barDamage;        // Scrollbar damage.
+
     uint16_t         _marginBegin;
     uint16_t         _marginEnd;
+
 
 public:
     Buffer2(uint16_t rows, uint16_t cols, size_t maxHistory) :
@@ -117,6 +120,7 @@ public:
         _maxHistory(maxHistory),
         _history(0),
         _scroll(0),
+        _barDamage(true),
         //
         _marginBegin(0),
         _marginEnd(rows)
@@ -134,6 +138,37 @@ public:
 
     uint16_t getMarginBegin() const { return _marginBegin; }
     uint16_t getMarginEnd()   const { return _marginEnd;   }
+
+    bool scrollUp(uint16_t rows) {
+        size_t oldScroll = _scroll;
+
+        if (rows > _scroll) {
+            _scroll = 0;
+        }
+        else {
+            _scroll -= rows;
+        }
+
+        return _scroll != oldScroll;
+    }
+
+    bool scrollDown(uint16_t rows) {
+        size_t oldScroll = _scroll;
+
+        _scroll = std::min(_history, _scroll + rows);
+
+        return _scroll != oldScroll;
+    }
+
+    bool resetScroll() {
+        if (_scroll != _history) {
+            _scroll = _history;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
 
     void setMargins(uint16_t begin, uint16_t end) {
         ASSERT(begin < end, "");
@@ -215,8 +250,10 @@ public:
                 _lines.erase(_lines.begin(), _lines.begin() + _history - _maxHistory);
                 _history = _maxHistory;
             }
-            _scroll = _history;         // XXX presumptuous
         }
+
+        damageAll();
+        _scroll = _history;         // XXX presumptuous
 
         if (cols != getCols()) {
             for (auto & line : _lines) {
@@ -226,6 +263,7 @@ public:
 
         _marginBegin = 0;
         _marginEnd   = rows;
+        _barDamage   = true;
     }
 
     void addLine() {
@@ -247,6 +285,8 @@ public:
                 ++_history;
                 _scroll = _history;     // XXX presumptuous
             }
+
+            _barDamage = true;
         }
     }
 
@@ -275,7 +315,8 @@ public:
                 _lines.erase(_lines.begin(), _lines.begin() + _history - _maxHistory);
                 _history = _maxHistory;
             }
-            _scroll = _history;         // XXX presumptuous
+            _scroll    = _history;         // XXX presumptuous
+            _barDamage = true;
         }
     }
 
@@ -315,12 +356,16 @@ public:
         for (auto i = _lines.begin() + _history; i != _lines.end(); ++i) {
             i->resetDamage();
         }
+
+        _barDamage = false;     // XXX ?
     }
 
     void damageAll() {
         for (auto i = _lines.begin() + _history; i != _lines.end(); ++i) {
             i->damageAll();
         }
+
+        _barDamage = true;      // XXX ?
     }
 };
 

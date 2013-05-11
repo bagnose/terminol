@@ -163,17 +163,25 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
 
 void Terminal::redraw(uint16_t rowBegin, uint16_t rowEnd,
                       uint16_t colBegin, uint16_t colEnd) {
-    fixDamage(rowBegin, rowEnd, colBegin, colEnd, false);
+    fixDamage(rowBegin, rowEnd, colBegin, colEnd, Damage::EXPOSURE);
 }
 
 void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
-    std::vector<uint8_t> str;
-    if (_keyMap.convert(keySym, state,
-                        _modes.get(Mode::APPKEYPAD),
-                        _modes.get(Mode::APPCURSOR),
-                        _modes.get(Mode::CRLF),
-                        str)) {
-        write(&str.front(), str.size());
+    if (!handleKeyBinding(keySym, state)) {
+        if (_buffer->resetScroll() /* && scroll-on-keystroke */) {
+            fixDamage(0, _buffer->getRows(),
+                      0, _buffer->getCols(),
+                      Damage::SCROLL);
+        }
+
+        std::vector<uint8_t> str;
+        if (_keyMap.convert(keySym, state,
+                            _modes.get(Mode::APPKEYPAD),
+                            _modes.get(Mode::APPCURSOR),
+                            _modes.get(Mode::CRLF),
+                            str)) {
+            write(&str.front(), str.size());
+        }
     }
 }
 
@@ -202,7 +210,7 @@ void Terminal::read() {
     }
 
     if (!_sync) {
-        fixDamage(0, _buffer->getRows(), 0, _buffer->getCols(), true);
+        fixDamage(0, _buffer->getRows(), 0, _buffer->getCols(), Damage::TTY);
     }
 
     _dispatch = false;
@@ -229,6 +237,45 @@ void Terminal::flush() {
         _dumpWrites = true;
         _writeBuffer.clear();
     }
+}
+
+bool Terminal::handleKeyBinding(xkb_keysym_t keySym, uint8_t state) {
+    if (state & _keyMap.maskShift()) {
+        switch (keySym) {
+            case XKB_KEY_Up:
+                if (_buffer->scrollUp(1)) {
+                    fixDamage(0, _buffer->getRows(),
+                              0, _buffer->getCols(),
+                              Damage::SCROLL);
+                }
+                return true;
+            case XKB_KEY_Down:
+                if (_buffer->scrollDown(1)) {
+                    fixDamage(0, _buffer->getRows(),
+                              0, _buffer->getCols(),
+                              Damage::SCROLL);
+                }
+                return true;
+            case XKB_KEY_Page_Up:
+                if (_buffer->scrollUp(_buffer->getRows())) {
+                    fixDamage(0, _buffer->getRows(),
+                              0, _buffer->getCols(),
+                              Damage::SCROLL);
+                }
+                return true;
+            case XKB_KEY_Page_Down:
+                if (_buffer->scrollDown(_buffer->getRows())) {
+                    fixDamage(0, _buffer->getRows(),
+                              0, _buffer->getCols(),
+                              Damage::SCROLL);
+                }
+                return true;
+            default:
+                break;
+        }
+    }
+
+    return false;
 }
 
 void Terminal::moveCursor(int32_t row, int32_t col) {
@@ -280,19 +327,21 @@ void Terminal::damageCursor() {
 
 void Terminal::fixDamage(uint16_t rowBegin, uint16_t rowEnd,
                          uint16_t colBegin, uint16_t colEnd,
-                         bool internal) {
-    if (_observer.terminalBeginFixDamage(internal)) {
-        draw(rowBegin, rowEnd, colBegin, colEnd, internal);
-        _observer.terminalEndFixDamage(internal,
+                         Damage damage) {
+    if (_observer.terminalBeginFixDamage(damage != Damage::EXPOSURE)) {
+        draw(rowBegin, rowEnd, colBegin, colEnd, damage);
+        _observer.terminalEndFixDamage(damage != Damage::EXPOSURE,
                                        _damageRowBegin, _damageRowEnd,
                                        _damageColBegin, _damageColEnd);
 
-        if (internal) {
+        if (damage == Damage::TTY) {
             _buffer->resetDamage();
         }
     }
     else {
-        ENFORCE(internal, "");
+        // If we received a redraw() then the observer had better be able
+        // to handle it.
+        ENFORCE(damage != Damage::EXPOSURE, "");
     }
 }
 
@@ -317,7 +366,7 @@ utf8::Seq Terminal::translate(utf8::Seq seq, utf8::Length length) const {
 
 void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
                     uint16_t colBegin, uint16_t colEnd,
-                    bool internal) {
+                    Damage damage) {
     _damageRowBegin = 0;
     _damageRowEnd   = 0;
     _damageColBegin = 0;
@@ -336,7 +385,7 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
         uint16_t     c;
         uint16_t     colBegin2, colEnd2;
 
-        if (internal) {
+        if (damage == Damage::TTY) {
             _buffer->getDamage(r, colBegin2, colEnd2);
             //PRINT("Consulted buffer damage, got: " << colBegin2 << ", " << colEnd2);
         }
@@ -445,6 +494,12 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
                                      cell.fg(), cell.bg(), cell.attrs(), &run.front(),
                                      offscreen);
     }
+
+    if (true /* show scrollbar? */) {
+        _observer.terminalDrawScrollbar(_buffer->getTotalRows(),
+                                        _buffer->getScroll(),
+                                        _buffer->getRows());
+    }
 }
 
 void Terminal::write(const uint8_t * data, size_t size) {
@@ -530,8 +585,8 @@ void Terminal::processRead(const uint8_t * data, size_t size) {
 void Terminal::processChar(utf8::Seq seq, utf8::Length length) {
     _vtMachine.consume(seq, length);
 
-    if (_sync) {        // FIXME too often
-        fixDamage(0, _buffer->getRows(), 0, _buffer->getCols(), true);
+    if (_sync) {        // FIXME too often, may not have been a buffer change.
+        fixDamage(0, _buffer->getRows(), 0, _buffer->getCols(), Damage::TTY);
     }
 }
 

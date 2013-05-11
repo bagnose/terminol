@@ -52,10 +52,11 @@ const Color ColorSet::COLORS16[16] = {
 ColorSet::ColorSet(Basics & basics) :
     _basics(basics)
 {
-    _cursorFgColor  = { 0.0, 0.0,  0.0  };
-    _cursorBgColor  = { 1.0, 0.25, 1.0  };
-    _borderColor    = { 0.0, 0.0,  0.08 };
-    _scrollBarColor = { 0.4, 0.4,  0.4  };
+    _cursorFgColor    = { 0.0, 0.0,  0.0 };
+    _cursorBgColor    = { 1.0, 0.25, 1.0 };
+    _borderColor      = { 0.1, 0.1,  0.1 };
+    _scrollBarFgColor = { 0.5, 0.5,  0.5 };
+    _scrollBarBgColor = _borderColor;
 
     // 0..7     normal colors
     // 8..15    bright colors
@@ -86,11 +87,11 @@ ColorSet::ColorSet(Basics & basics) :
 
     const Color & background = _indexedColors[0];
 
-    const uint16_t max = std::numeric_limits<uint16_t>::max();
+    const double MAX = std::numeric_limits<uint16_t>::max();
 
-    uint16_t r = static_cast<uint16_t>(background.r * max + 0.5);
-    uint16_t g = static_cast<uint16_t>(background.g * max + 0.5);
-    uint16_t b = static_cast<uint16_t>(background.b * max + 0.5);
+    uint16_t r = static_cast<uint16_t>(background.r * MAX + 0.5);
+    uint16_t g = static_cast<uint16_t>(background.g * MAX + 0.5);
+    uint16_t b = static_cast<uint16_t>(background.b * MAX + 0.5);
 
     xcb_alloc_color_reply_t * reply =
         xcb_alloc_color_reply(_basics.connection(),

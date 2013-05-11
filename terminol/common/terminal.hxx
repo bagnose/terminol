@@ -48,6 +48,9 @@ public:
                                         AttributeSet    attrs,
                                         const uint8_t * str,
                                         bool            special) throw () = 0;
+        virtual void terminalDrawScrollbar(size_t   totalRows,
+                                           size_t   historyOffset,
+                                           uint16_t visibleRows) throw () = 0;
         virtual void terminalEndFixDamage(bool     internal,
                                           uint16_t rowBegin,
                                           uint16_t rowEnd,
@@ -142,22 +145,24 @@ public:
     void     flush();
 
 protected:
-    enum TabDir { FORWARD, BACKWARD };
+    enum class TabDir { FORWARD, BACKWARD };
+    enum class Damage { TTY, EXPOSURE, SCROLL };
+
+    bool      handleKeyBinding(xkb_keysym_t keySym, uint8_t state);
 
     void      moveCursor(int32_t row, int32_t col);
     void      tabCursor(TabDir dir, uint16_t count);
-
     void      damageCursor();
 
     void      fixDamage(uint16_t rowBegin, uint16_t rowEnd,
                         uint16_t colBegin, uint16_t colEnd,
-                        bool internal);
+                        Damage damage);
 
     utf8::Seq translate(utf8::Seq seq, utf8::Length length) const;
 
     void      draw(uint16_t rowBegin, uint16_t rowEnd,
                    uint16_t colBegin, uint16_t colEnd,
-                   bool internal);
+                   Damage damage);
 
     void      write(const uint8_t * data, size_t size);
 

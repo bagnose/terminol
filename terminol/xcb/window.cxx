@@ -53,13 +53,23 @@ Window::Window(Basics             & basics,
     _cr(nullptr),
     _title(DEFAULT_TITLE)
 {
+    uint16_t rows = 25;
+    uint16_t cols = 80;
+
+    _width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
+    _height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
+
     xcb_void_cookie_t cookie;
 
-    // Note, it is important to set XCB_CW_BACK_PIXEL to the actual
-    // background colour used by the terminal in order to prevent
-    // flicker when the window is exposed.
-    uint32_t values[] = {
+    //
+    // Create the window.
+    //
+
+    uint32_t winValues[] = {
         // XCB_CW_BACK_PIXEL
+        // Note, it is important to set XCB_CW_BACK_PIXEL to the actual
+        // background colour used by the terminal in order to prevent
+        // flicker when the window is exposed.
         _colorSet.getBackgroundPixel(),
         // XCB_CW_BIT_GRAVITY
         XCB_GRAVITY_NORTH_WEST,         // What to do if window is resized.
@@ -82,12 +92,6 @@ Window::Window(Basics             & basics,
         0
     };
 
-    uint16_t rows = 25;
-    uint16_t cols = 80;
-
-    _width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
-    _height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
-
     _window = xcb_generate_id(_basics.connection());
     cookie = xcb_create_window_checked(_basics.connection(),
                                        _basics.screen()->root_depth,
@@ -105,33 +109,47 @@ Window::Window(Basics             & basics,
                                        XCB_CW_SAVE_UNDER |
                                        //XCB_CW_CURSOR |
                                        XCB_CW_EVENT_MASK,
-                                       values);
+                                       winValues);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to create window")) {
         throw Error("Failed to create window.");
     }
 
+    //
+    // Do the ICCC jive.
+    //
+
     icccmConfigure();
 
-    _gc = xcb_generate_id(_basics.connection());
-    uint32_t vals[] = {
-        _basics.screen()->white_pixel /*_colorSet.getBackgroundPixel()*/,
-        _basics.screen()->white_pixel /*_colorSet.getBackgroundPixel()*/,
-        0                               // no exposures
+    //
+    // Create the GC.
+    //
+
+    uint32_t gvValues[] = {
+        0 // no exposures
     };
+
+    _gc = xcb_generate_id(_basics.connection());
     cookie = xcb_create_gc_checked(_basics.connection(),
                                    _gc,
                                    _window,
-                                   XCB_GC_FOREGROUND | XCB_GC_BACKGROUND | XCB_GC_GRAPHICS_EXPOSURES,
-                                   vals);
+                                   XCB_GC_GRAPHICS_EXPOSURES,
+                                   gvValues);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate gc")) {
         xcb_destroy_window(_basics.connection(), _window);
         FATAL("");
     }
 
+    //
+    // Create the TTY and terminal.
+    //
+
     _tty = new Tty(rows, cols, stringify(_window), term, command);
     _terminal = new Terminal(*this, keyMap, *_tty, rows, cols, trace, sync);
     _isOpen = true;
-    //PRINT("Created");
+
+    //
+    // Update the window title the map the window.
+    //
 
     updateTitle();
 
@@ -174,7 +192,6 @@ Window::~Window() {
     if (_window) {
         xcb_destroy_window(_basics.connection(), _window);
     }
-    //PRINT("Destroyed");
 }
 
 void Window::read() {
@@ -541,6 +558,8 @@ bool Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
 }
 
 void Window::updateTitle() {
+    ASSERT(_terminal, "");
+
     std::ostringstream ost;
 
 #if DEBUG
@@ -606,7 +625,6 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
 
         drawBorder();
-        drawScrollBar();
 
         uint16_t rowBegin, colBegin;
         xy2RowCol(x, y, rowBegin, colBegin);
@@ -681,20 +699,6 @@ void Window::drawBorder() {
                         y2 - y1);
         cairo_fill(_cr);
     } cairo_restore(_cr);
-}
-
-void Window::drawScrollBar() {
-    uint16_t x = _width - SCROLLBAR_WIDTH;
-
-    const auto & values = _colorSet.getScrollBarColor();
-    cairo_set_source_rgb(_cr, values.r, values.g, values.b);
-
-    cairo_rectangle(_cr,
-                    static_cast<double>(x) + 1.0,
-                    1.0,
-                    static_cast<double>(SCROLLBAR_WIDTH) - 2.0,
-                    static_cast<double>(_height) - 2.0);
-    cairo_fill(_cr);
 }
 
 // Terminal::I_Observer implementation:
@@ -838,6 +842,42 @@ void Window::terminalDrawCursor(uint16_t        row,
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
     } cairo_restore(_cr);
+}
+
+void Window::terminalDrawScrollbar(size_t   totalRows,
+                                   size_t   historyOffset,
+                                   uint16_t visibleRows) throw () {
+    double x = static_cast<double>(_width - SCROLLBAR_WIDTH);
+    double y = 0.0;
+    double h = static_cast<double>(_height);
+    double w = static_cast<double>(SCROLLBAR_WIDTH);
+
+    // Draw the gutter.
+
+    const auto & bgValues = _colorSet.getScrollBarBgColor();
+    cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
+
+    cairo_rectangle(_cr,
+                    x,
+                    y,
+                    w,
+                    h);
+    cairo_fill(_cr);
+
+    // Draw the bar.
+
+    double yBar = static_cast<double>(historyOffset) / static_cast<double>(totalRows) * h;
+    double hBar = static_cast<double>(visibleRows)   / static_cast<double>(totalRows) * h;
+
+    const auto & fgValues = _colorSet.getScrollBarFgColor();
+    cairo_set_source_rgb(_cr, fgValues.r, fgValues.g, fgValues.b);
+
+    cairo_rectangle(_cr,
+                    x + 1.0,
+                    yBar,
+                    w - 2.0,
+                    hBar);
+    cairo_fill(_cr);
 }
 
 void Window::terminalEndFixDamage(bool     internal,

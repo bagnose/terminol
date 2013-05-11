@@ -106,7 +106,6 @@ protected:
 
     void draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
     void drawBorder();
-    void drawScrollBar();
 
     // Terminal::I_Observer implementation:
 
@@ -128,6 +127,9 @@ protected:
                             AttributeSet    attrs,
                             const uint8_t * str,
                             bool            special) throw ();
+    void terminalDrawScrollbar(size_t   totalRows,
+                               size_t   historyOffset,
+                               uint16_t visibleRows) throw ();
     void terminalEndFixDamage(bool     internal,
                               uint16_t rowBegin,
                               uint16_t rowEnd,
