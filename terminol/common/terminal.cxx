@@ -101,8 +101,8 @@ Terminal::Terminal(I_Observer   & observer,
     _G0(CS_US),
     _G1(CS_US),
     _cursorRow(0), _cursorCol(0),
-    _bg(Cell::defaultBg()),
     _fg(Cell::defaultFg()),
+    _bg(Cell::defaultBg()),
     _attrs(Cell::defaultAttrs()),
     _originMode(false),
     //
@@ -482,8 +482,8 @@ void Terminal::resetAll() {
     _cursorRow  = 0;
     _cursorCol  = 0;
 
-    _bg         = Cell::defaultBg();
     _fg         = Cell::defaultFg();
+    _bg         = Cell::defaultBg();
     _attrs      = Cell::defaultAttrs();
     _originMode = false;
 
@@ -557,6 +557,10 @@ void Terminal::machineNormal(utf8::Seq seq) throw () {
 
     ASSERT(_cursorCol < _buffer->getCols(), "");
     ASSERT(_cursorRow < _buffer->getRows(), "");
+
+    if (_modes.get(Mode::INSERT)) {
+        FATAL("Need to move remainder of line to right.");
+    }
 
     _buffer->setCell(_cursorRow, _cursorCol, Cell::utf8(seq, _attrs, _fg, _bg));
     ++_cursorCol;
@@ -686,6 +690,12 @@ void Terminal::machineEscape(uint8_t c) throw () {
                 --_cursorRow;
             }
             break;
+        case 'N':   // SS2 - Set Single Shift 2
+            NYI("SS2");
+            break;
+        case 'O':   // SS3 - Set Single Shift 3
+            NYI("SS3");
+            break;
         case 'Z':   // DECID - Identify Terminal
             NYI("st.c:2194");
             //ttywrite(VT102ID, sizeof(VT102ID) - 1);
@@ -693,10 +703,10 @@ void Terminal::machineEscape(uint8_t c) throw () {
         case 'c':   // RIS - Reset to initial state
             resetAll();
             break;
-        case '=':   // DECPAM - Application keypad
+        case '=':   // DECKPAM - Keypad Application Mode
             _modes.set(Mode::APPKEYPAD);
             break;
-        case '>':   // DECPNM - Normal keypad
+        case '>':   // DECKPNM - Keypad Numeric Mode
             _modes.unset(Mode::APPKEYPAD);
             break;
         case '7':   // DECSC - Save Cursor
@@ -732,6 +742,13 @@ void Terminal::machineEscape(uint8_t c) throw () {
 void Terminal::machineCsi(bool priv,
                           const std::vector<int32_t> & args,
                           uint8_t mode) throw () {
+    if (_trace) {
+        std::cerr << Esc::FG_CYAN << "ESC[";
+        if (priv) { std::cerr << '?'; }
+        for (auto & a : args) { std::cerr << a << ';'; }
+        std::cerr << mode << Esc::RESET << ' ';
+    }
+
     switch (mode) {
         case '@': // ICH - Insert Character
             _buffer->insertCells(_cursorRow, _cursorCol, nthArg(args, 0, 1));
@@ -761,9 +778,9 @@ void Terminal::machineCsi(bool priv,
         case 'H':       // CUP - Cursor Position
             if (_trace) { std::cerr << std::endl; }
             if (_originMode) {
-                int16_t row = clamp<int32_t>(nthArg(args, 0, 1) - 1 + _buffer->getScrollBegin(),
-                                             _buffer->getScrollBegin(),
-                                             _buffer->getScrollEnd() - 1);
+                uint16_t row = clamp<int32_t>(nthArg(args, 0, 1) - 1 + _buffer->getScrollBegin(),
+                                              _buffer->getScrollBegin(),
+                                              _buffer->getScrollEnd() - 1);
                 moveCursor(row, nthArg(args, 1, 1) - 1);
             }
             else {
@@ -776,18 +793,18 @@ void Terminal::machineCsi(bool priv,
         case 'J': // ED - Erase Data
             // Clear screen.
             switch (nthArg(args, 0)) {
-                default:    // Correct default ??
-                case 0: // below
+                default:
+                case 0: // ED0 - Below
                     for (uint16_t r = _cursorRow + 1; r != _buffer->getRows(); ++r) {
                         _buffer->clearLine(r);
                     }
                     break;
-                case 1: // above
+                case 1: // ED1 - Above
                     for (uint16_t r = 0; r != _cursorRow; ++r) {
                         _buffer->clearLine(r);
                     }
                     break;
-                case 2: // all
+                case 2: // ED2 - All
                     _buffer->clearAll();
                     _cursorRow = _cursorCol = 0;
                     break;
@@ -795,19 +812,18 @@ void Terminal::machineCsi(bool priv,
             break;
         case 'K':   // EL - Erase line
             switch (nthArg(args, 0)) {
-                default:    // Correct default ??
-                case 0: // right      FIXME or >2
-                    // XXX is this right?
+                default:
+                case 0: // EL0 - Right
                     for (uint16_t c = _cursorCol; c != _buffer->getCols(); ++c) {
                         _buffer->setCell(_cursorRow, c, Cell::blank());
                     }
                     break;
-                case 1: // left
+                case 1: // EL1 - Left
                     for (uint16_t c = 0; c != _cursorCol + 1; ++c) {
                         _buffer->setCell(_cursorRow, c, Cell::blank());
                     }
                     break;
-                case 2: // all
+                case 2: // EL2 - All
                     _buffer->clearLine(_cursorRow);
                     break;
             }
@@ -927,6 +943,7 @@ void Terminal::machineCsi(bool priv,
             }
             break;
         case 'q': // DECSCA - Select Character Protection Attribute
+            // OR IS THIS DECLL0/DECLL1/etc
             NYI("DECSCA");
             break;
         case 'r': // DECSTBM - Set Top and Bottom Margins (scrolling)
@@ -979,6 +996,9 @@ void Terminal::machineCsi(bool priv,
             _cursorRow = _savedCursorRow;
             _cursorCol = _savedCursorCol;
             break;
+        case 'y': // DECTST
+            NYI("DECTST");
+            break;
 default_:
         default:
             PRINT("NYI:CSI: ESC  ??? " /*<< Str(seq)*/);
@@ -988,13 +1008,15 @@ default_:
 
 void Terminal::machineDcs(const std::vector<uint8_t> & seq) throw () {
     if (_trace) {
-        std::cerr << Esc::FG_RED << "ESC" << Str(seq) << Esc::RESET << " ";
+        std::cerr << Esc::FG_RED << "ESC" << Str(seq) << Esc::RESET << ' ';
     }
 }
 
 void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
     if (_trace) {
-        //std::cerr << Esc::FG_MAGENTA << "ESC" << Str(seq) << Esc::RESET << " ";
+        std::cerr << Esc::FG_MAGENTA << "ESC";
+        for (auto & a : args) { std::cerr << a << ';'; }
+        std::cerr << Esc::RESET << " ";
     }
 
     switch (unstringify<int>(nthArg(args, 0))) {
@@ -1019,16 +1041,18 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
     switch (special) {
         case '#':
             switch (code) {
-                case '3':   // Double height/width (top half of char)
+                case '3':   // DECDHL - Double height/width (top half of char)
                     NYI("Double height (top)");
                     break;
-                case '4':   // Double height/width (bottom half of char)
+                case '4':   // DECDHL - Double height/width (bottom half of char)
                     NYI("Double height (bottom)");
                     break;
-                case '6':   // Double width
+                case '5':   // DECSWL - Single height/width
+                    break;
+                case '6':   // DECDWL - Double width
                     NYI("Double width");
                     break;
-                case '8':
+                case '8':   // DECALN - Alignment
                     // Fill terminal with 'E'
                     for (uint16_t r = 0; r != _buffer->getRows(); ++r) {
                         for (uint16_t c = 0; c != _buffer->getRows(); ++c) {
@@ -1043,13 +1067,19 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
             break;
         case '(':
             switch (code) {
-                case '0':
+                case '0': // set specg0
                     _G0 = CS_SPECIAL;
                     break;
-                case 'A':
+                case '1': // set altg0
+                    NYI("Alternate Character rom");
+                    break;
+                case '2': // set alt specg0
+                    NYI("Alternate Special Character rom");
+                    break;
+                case 'A': // set ukg0
                     _G0 = CS_UK;
                     break;
-                case 'B':
+                case 'B': // set usg0
                     _G0 = CS_US;
                     break;
                 case '<': // Multinational character set
@@ -1071,15 +1101,21 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
             break;
         case ')':
             switch (code) {
-                case '0':
+                case '0': // set specg1
                     PRINT("\nG1 = SPECIAL");
                     _G1 = CS_SPECIAL;
                     break;
-                case 'A':
+                case '1': // set altg1
+                    NYI("Alternate Character rom");
+                    break;
+                case '2': // set alt specg1
+                    NYI("Alternate Special Character rom");
+                    break;
+                case 'A': // set ukg0
                     PRINT("\nG1 = UK");
                     _G1 = CS_UK;
                     break;
-                case 'B':
+                case 'B': // set usg0
                     PRINT("\nG1 = US");
                     _G1 = CS_US;
                     break;
@@ -1122,7 +1158,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 _attrs.set(Attribute::BOLD);
                 if (_fg < 8) { _fg += 8; }      // Normal -> Bright.
                 break;
-            case 2: // Faint (decreased intensity)
+            case 2: // Faint (low/decreased intensity)
                 _attrs.unset(Attribute::BOLD);
                 if (_fg >= 8 && _fg < 16) { _fg -= 8; } // Bright -> Normal.
                 break;
@@ -1279,7 +1315,6 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                     // bright bg
                     _bg = v - 100 + 8;
                 }
-                // FOLLOWING STUFF UNTESTED:
                 else if (v >= 256 && v < 512) {
                     _fg = v - 256;
                 }
@@ -1300,7 +1335,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
     for (auto a : args) {
         if (priv) {
             switch (a) {
-                case 1: // DECCKM - Cursor Keys Mode
+                case 1: // DECCKM - Cursor Keys Mode - Application / Cursor
                     _modes.setTo(Mode::APPCURSOR, set);
                     break;
                 case 2: // DECANM - ANSI/VT52 Mode
@@ -1309,7 +1344,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     _G0           = CS_US;
                     _G1           = CS_US;
                     break;
-                case 3: // DECCOLM - Column
+                case 3: // DECCOLM - Column Mode
                     if (set) {
                         // resize 132x24
                         _observer.terminalResize(24, 132);
@@ -1319,13 +1354,16 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                         _observer.terminalResize(24, 80);
                     }
                     break;
-                case 4:  // DECSCLM - Scroll (IGNORED)
+                case 4: // DECSCLM - Scroll Mode - Smooth / Jump (IGNORED)
                     NYI("DECSCLM: " << set);
                     break;
-                case 5: // DECSCNM - Screen Mode: Light or Dark background.
-                    NYI("DECSCNM: " << set);
+                case 5: // DECSCNM - Screen Mode - Reverse / Normal
+                    if (_modes.get(Mode::REVERSE) != set) {
+                        _modes.setTo(Mode::REVERSE, set);
+                        _buffer->damageAll();
+                    }
                     break;
-                case 6: // DECOM - Origin
+                case 6: // DECOM - Origin Mode - Relative / Absolute
                     _originMode = set;
 
                     damageCursor();
@@ -1339,14 +1377,14 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
 
                     _cursorCol = 0;
                     break;
-                case 7: // DECAWM - Auto wrap
+                case 7: // DECAWM - Auto Wrap Mode
                     _modes.setTo(Mode::AUTO_WRAP, set);
                     break;
-                case 8:  // DECARM - Auto repeat
+                case 8: // DECARM - Auto Repeat Mode
                     _modes.setTo(Mode::AUTO_REPEAT, set);
                     break;
-                case 9:
-                    // Inter lace
+                case 9: // DECINLM - Interlacing Mode
+                    NYI("DECINLM");
                     break;
                 case 12: // CVVIS/att610 - Cursor Very Visible.
                     //NYI("CVVIS/att610: " << set);
@@ -1447,7 +1485,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     _modes.setTo(Mode::INSERT, set);
                     break;
                 case 12: // SRM - Send/Receive
-                    _modes.setTo(Mode::ECHO, set);
+                    _modes.setTo(Mode::ECHO, set);      // XXX correct sense
                     break;
                 case 20: // LNM - Linefeed/new line
                     _modes.setTo(Mode::CRLF, set);

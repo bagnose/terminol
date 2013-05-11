@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+#include <stdint.h>
+
 const uint8_t NUL   = '\x00';  // '\0'
 const uint8_t SOH   = '\x01';
 const uint8_t STX   = '\x02';
@@ -47,10 +49,6 @@ const uint8_t SPACE = '\x20';
 // '\x61'..'\x7A': 'a'..'z'
 
 const uint8_t DEL   = '\x7F';
-
-inline bool isControl(uint8_t c) {     // XXX remove me
-    return (c < SPACE) || c == DEL;
-}
 
 // Streaming helper.
 struct Char {

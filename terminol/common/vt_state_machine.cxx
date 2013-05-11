@@ -39,14 +39,13 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length len) {
                     _state = State::CSI;
                     break;
                 case ']':
-                    /////case 'k':   // old title set compatibility
                     _state = State::OSC;
                     break;
                 case '#':   // Test?
                 case '(':   // Set primary charset G0
                 case ')':   // Set primary charset G1
-                    //case '*':   // Set secondary charset G2
-                    //case '+':   // Set secondary charset G3
+                case '*':   // Set secondary charset G2
+                case '+':   // Set secondary charset G3
                     _state = State::SPECIAL;
                     break;
                 case 'X':   // SOS
@@ -202,7 +201,7 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
         ++i;
     }
 
-    ASSERT(i == seq.size() - 1, "i=" << i << ", seq.size=" << seq.size() << ", Seq: " << Str(seq));        // XXX replaces following conditional
+    ASSERT(i == seq.size() - 1, "i=" << i << ", seq.size=" << seq.size() << ", Seq: " << Str(seq));
 
     _observer.machineCsi(priv, args, seq[i]);
 }

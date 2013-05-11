@@ -31,10 +31,9 @@ class Buffer {
         }
 
         void insert(uint16_t beforeCol, uint16_t n) {
-            std::copy_backward(
-                    &_cells[beforeCol],
-                    &_cells[_cells.size() - n],
-                    &_cells[_cells.size()]);
+            std::copy_backward(&_cells[beforeCol],
+                               &_cells[_cells.size() - n],
+                               &_cells[_cells.size()]);
             std::fill(&_cells[beforeCol], &_cells[beforeCol + n], Cell::blank());
 
             damageAdd(beforeCol, getCols());

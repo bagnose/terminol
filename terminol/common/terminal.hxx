@@ -76,8 +76,8 @@ private:
     const CharSub       * _G1;
     uint16_t              _cursorRow;
     uint16_t              _cursorCol;
-    uint8_t               _bg;
     uint8_t               _fg;
+    uint8_t               _bg;
     AttributeSet          _attrs;
     bool                  _originMode;
 
