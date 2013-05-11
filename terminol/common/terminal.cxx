@@ -296,18 +296,22 @@ void Terminal::fixDamage(uint16_t rowBegin, uint16_t rowEnd,
     }
 }
 
-utf8::Seq Terminal::translate(utf8::Seq seq, utf8::Length UNUSED(length)) const {
-    for (const CharSub * cs = _otherCharSet ? _G1 : _G0; cs->match != NUL; ++cs) {
-        if (seq.bytes[0] == cs->match) {
-            if (_trace) {
-                std::cerr
-                    << Esc::BG_BLUE << Esc::FG_WHITE
-                    << '/' << cs->match << '/' << cs->replace << '/'
-                    << Esc::RESET;
+utf8::Seq Terminal::translate(utf8::Seq seq, utf8::Length length) const {
+    if (length == utf8::Length::L1) {
+        uint8_t ascii = seq.bytes[0];
+        for (const CharSub * cs = _otherCharSet ? _G1 : _G0; cs->match != NUL; ++cs) {
+            if (ascii == cs->match) {
+                if (_trace) {
+                    std::cerr
+                        << Esc::BG_BLUE << Esc::FG_WHITE
+                        << '/' << cs->match << '/' << cs->replace << '/'
+                        << Esc::RESET;
+                }
+                return cs->replace;
             }
-            return cs->replace;
         }
     }
+
     return seq;
 }
 
@@ -323,7 +327,7 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
     // minimise alloc/free.
     std::vector<uint8_t> run;
     // Reserve the largest amount of memory we could require.
-    run.reserve(_buffer->getCols() * utf8::LMAX + 1);
+    run.reserve(_buffer->getCols() * utf8::Length::LMAX + 1);
 
     for (uint16_t r = rowBegin; r != rowEnd; ++r) {
         uint16_t     c_ = 0;    // Accumulation start column.
@@ -378,15 +382,15 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
                 bg    = cell.bg();
                 attrs = cell.attrs();
 
-                utf8::Length len = utf8::leadLength(cell.lead());
-                run.resize(len);
-                std::copy(cell.bytes(), cell.bytes() + len, &run.front());
+                utf8::Length length = utf8::leadLength(cell.lead());
+                run.resize(length);
+                std::copy(cell.bytes(), cell.bytes() + length, &run.front());
             }
             else {
                 size_t oldSize = run.size();
-                utf8::Length len = utf8::leadLength(cell.lead());
-                run.resize(run.size() + len);
-                std::copy(cell.bytes(), cell.bytes() + len, &run[oldSize]);
+                utf8::Length length = utf8::leadLength(cell.lead());
+                run.resize(run.size() + length);
+                std::copy(cell.bytes(), cell.bytes() + length, &run[oldSize]);
             }
         }
 
@@ -432,10 +436,10 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
             _damageRowEnd   = std::max(_damageRowEnd,   static_cast<uint16_t>(_cursorRow + 1));
         }
 
-        const Cell & cell = _buffer->getCell(_cursorRow, col);
-        utf8::Length len  = utf8::leadLength(cell.lead());
-        run.resize(len);
-        std::copy(cell.bytes(), cell.bytes() + len, &run.front());
+        const Cell & cell   = _buffer->getCell(_cursorRow, col);
+        utf8::Length length = utf8::leadLength(cell.lead());
+        run.resize(length);
+        std::copy(cell.bytes(), cell.bytes() + length, &run.front());
         run.push_back(NUL);
         _observer.terminalDrawCursor(_cursorRow, col,
                                      cell.fg(), cell.bg(), cell.attrs(), &run.front(),
@@ -523,8 +527,8 @@ void Terminal::processRead(const uint8_t * data, size_t size) {
     }
 }
 
-void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
-    _vtMachine.consume(seq, len);
+void Terminal::processChar(utf8::Seq seq, utf8::Length length) {
+    _vtMachine.consume(seq, length);
 
     if (_sync) {        // FIXME too often
         fixDamage(0, _buffer->getRows(), 0, _buffer->getCols(), true);

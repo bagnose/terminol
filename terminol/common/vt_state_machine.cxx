@@ -9,28 +9,28 @@ VtStateMachine::VtStateMachine(I_Observer & observer) :
     _outerState(State::NORMAL),
     _escSeq() {}
 
-void VtStateMachine::consume(utf8::Seq seq, utf8::Length len) {
+void VtStateMachine::consume(utf8::Seq seq, utf8::Length length) {
     uint8_t lead = seq.bytes[0];
 
     switch (_state) {
         case State::NORMAL:
             if (lead == ESC) {
-                ASSERT(len == utf8::Length::L1, "");
+                ASSERT(length == utf8::Length::L1, "");
                 _state = State::ESCAPE;
                 _outerState = State::NORMAL;
                 ASSERT(_escSeq.empty(), "");
             }
             else if (lead < SPACE) {
-                ASSERT(len == utf8::Length::L1, "");
+                ASSERT(length == utf8::Length::L1, "");
                 _observer.machineControl(lead);
             }
             else {
-                _observer.machineNormal(seq, len);
+                _observer.machineNormal(seq, length);
             }
             break;
         case State::ESCAPE:
             ASSERT(_escSeq.empty(), "");
-            std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
+            std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
             switch (lead) {
                 case 'P':
                     _state = State::DCS;
@@ -63,13 +63,13 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length len) {
         case State::CSI:
             ASSERT(!_escSeq.empty(), "");
             if (lead < SPACE) {
-                ASSERT(len == utf8::Length::L1, "");
+                ASSERT(length == utf8::Length::L1, "");
                 _observer.machineControl(lead);
             }
             else if (lead == '?') {
                 // XXX For now put the '?' into _escSeq because
                 // processCsi is expecting it.
-                std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
+                std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
                 //terminal->escape_flags |= ESC_FLAG_WHAT;
             }
             else if (lead == '>') {
@@ -91,7 +91,7 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length len) {
                 //terminal->escape_flags |= ESC_FLAG_SPACE;
             }
             else {
-                std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
+                std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
             }
 
             if (isalpha(lead) || lead == '@' || lead == '`') {
@@ -119,13 +119,13 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length len) {
             else if (lead == ESC) {
                 _state = _outerState;
                 // XXX reset _outerState?
-                std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
+                std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
             }
             else {
                 _state = _outerState;
                 // XXX reset _outerState?
                 _escSeq.push_back(ESC);
-                std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
+                std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
             }
             break;
         case State::DCS:
@@ -142,12 +142,12 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length len) {
                 _state = State::NORMAL;
             }
             else {
-                std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
+                std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
             }
             break;
         case State::SPECIAL:
             ASSERT(!_escSeq.empty(), "");
-            std::copy(seq.bytes, seq.bytes + len, std::back_inserter(_escSeq));
+            std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
             if (isdigit(lead) || isalpha(lead)) {
                 processSpecial(_escSeq);
             }

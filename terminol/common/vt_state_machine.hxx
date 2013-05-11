@@ -50,7 +50,7 @@ private:
 public:
     VtStateMachine(I_Observer & observer);
 
-    void consume(utf8::Seq seq, utf8::Length len);
+    void consume(utf8::Seq seq, utf8::Length length);
 
 protected:
     void processCsi(const std::vector<uint8_t> & seq);

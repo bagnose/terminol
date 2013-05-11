@@ -86,16 +86,16 @@ void forwardReverse(CodePoint cp) {
 }
 
 int main() {
-    ENFORCE(leadLength(B1) == L1, "");
-    ENFORCE(leadLength(B1 | B2) == L1, "");
-    ENFORCE(leadLength(static_cast<uint8_t>(~B7)) == L1, "");
-    ENFORCE(leadLength('a') == L1, "");
-    ENFORCE(leadLength('z') == L1, "");
-    ENFORCE(leadLength('\x7F') == L1, "");
+    ENFORCE(leadLength(B1) == Length::L1, "");
+    ENFORCE(leadLength(B1 | B2) == Length::L1, "");
+    ENFORCE(leadLength(static_cast<uint8_t>(~B7)) == Length::L1, "");
+    ENFORCE(leadLength('a') == Length::L1, "");
+    ENFORCE(leadLength('z') == Length::L1, "");
+    ENFORCE(leadLength('\x7F') == Length::L1, "");
 
-    ENFORCE(leadLength(B7 | B6) == L2, "");
-    ENFORCE(leadLength(B7 | B6 | B5) == L3, "");
-    ENFORCE(leadLength(B7 | B6 | B5 | B4) == L4, "");
+    ENFORCE(leadLength(B7 | B6) == Length::L2, "");
+    ENFORCE(leadLength(B7 | B6 | B5) == Length::L3, "");
+    ENFORCE(leadLength(B7 | B6 | B5 | B4) == Length::L4, "");
 
     // 1 byte sequence
     forwardReverse(0x00);

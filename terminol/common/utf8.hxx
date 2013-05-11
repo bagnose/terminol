@@ -51,7 +51,7 @@ struct Seq {
         bytes[0] = bytes[1] = bytes[2] = bytes[3] = '\0';
     }
 
-    uint8_t bytes[LMAX];
+    uint8_t bytes[Length::LMAX];
 };
 
 inline bool operator == (Seq lhs, Seq rhs) {
