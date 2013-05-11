@@ -14,7 +14,7 @@ class VtStateMachine {
 public:
     class I_Observer {
     public:
-        virtual void machineNormal(utf8::Seq seq) throw () = 0;
+        virtual void machineNormal(utf8::Seq seq, utf8::Length length) throw () = 0;
         virtual void machineControl(uint8_t c) throw () = 0;
         virtual void machineEscape(uint8_t c) throw () = 0;
         virtual void machineCsi(bool priv,

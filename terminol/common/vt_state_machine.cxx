@@ -25,7 +25,7 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length len) {
                 _observer.machineControl(lead);
             }
             else {
-                _observer.machineNormal(seq);
+                _observer.machineNormal(seq, len);
             }
             break;
         case State::ESCAPE:

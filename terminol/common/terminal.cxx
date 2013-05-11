@@ -296,9 +296,9 @@ void Terminal::fixDamage(uint16_t rowBegin, uint16_t rowEnd,
     }
 }
 
-utf8::Seq Terminal::translate(utf8::Seq seq) const {
+utf8::Seq Terminal::translate(utf8::Seq seq, utf8::Length UNUSED(length)) const {
     for (const CharSub * cs = _otherCharSet ? _G1 : _G0; cs->match != NUL; ++cs) {
-        if (seq == cs->match) {
+        if (seq.bytes[0] == cs->match) {
             if (_trace) {
                 std::cerr
                     << Esc::BG_BLUE << Esc::FG_WHITE
@@ -531,8 +531,8 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length len) {
     }
 }
 
-void Terminal::machineNormal(utf8::Seq seq) throw () {
-    seq = translate(seq);
+void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
+    seq = translate(seq, length);
 
     if (_trace) {
         std::cerr << Esc::FG_GREEN << Esc::UNDERLINE << seq << Esc::RESET;

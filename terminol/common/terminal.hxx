@@ -153,7 +153,7 @@ protected:
                         uint16_t colBegin, uint16_t colEnd,
                         bool internal);
 
-    utf8::Seq translate(utf8::Seq seq) const;
+    utf8::Seq translate(utf8::Seq seq, utf8::Length length) const;
 
     void      draw(uint16_t rowBegin, uint16_t rowEnd,
                    uint16_t colBegin, uint16_t colEnd,
@@ -171,7 +171,7 @@ protected:
 
     // VtStateMachine::I_Observer overrides:
 
-    void machineNormal(utf8::Seq seq) throw ();
+    void machineNormal(utf8::Seq seq, utf8::Length length) throw ();
     void machineControl(uint8_t c) throw ();
     void machineEscape(uint8_t c) throw ();
     void machineCsi(bool priv,
