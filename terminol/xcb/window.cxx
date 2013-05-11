@@ -40,8 +40,6 @@ Window::Window(Basics             & basics,
     _gc(0),
     _width(0),
     _height(0),
-    _nominalWidth(0),
-    _nominalHeight(0),
     _tty(nullptr),
     _terminal(nullptr),
     _isOpen(false),
@@ -87,10 +85,8 @@ Window::Window(Basics             & basics,
     uint16_t rows = 25;
     uint16_t cols = 80;
 
-    _nominalWidth  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
-    _nominalHeight = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
-    _width  = _nominalWidth;
-    _height = _nominalHeight;
+    _width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
+    _height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
 
     _window = xcb_generate_id(_basics.connection());
     cookie = xcb_create_window_checked(_basics.connection(),
@@ -98,7 +94,7 @@ Window::Window(Basics             & basics,
                                        _window,
                                        _basics.screen()->root,
                                        -1, -1,       // x, y
-                                       _nominalWidth, _nominalHeight,
+                                       _width, _height,
                                        0,            // border width
                                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
                                        _basics.screen()->root_visual,
@@ -396,9 +392,6 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
     ASSERT(rows > 0 && cols > 0, "");
 
-    _nominalWidth  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
-    _nominalHeight = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
-
     if (_isOpen) {
         _tty->resize(rows, cols);
     }
@@ -518,7 +511,7 @@ bool Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
         col = 0;
         within = false;
     }
-    else if (x < _nominalWidth - BORDER_THICKNESS - SCROLLBAR_WIDTH) {
+    else if (x < BORDER_THICKNESS + _fontSet.getWidth() * _terminal->getCols()) {
         col = (x - BORDER_THICKNESS) / _fontSet.getWidth();
         ASSERT(col < _terminal->getCols(),
                "col is: " << col << ", getCols() is: " << _terminal->getCols());
@@ -534,7 +527,7 @@ bool Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
         row = 0;
         within = false;
     }
-    else if (y < _nominalHeight - BORDER_THICKNESS) {
+    else if (y < BORDER_THICKNESS + _fontSet.getHeight() * _terminal->getRows()) {
         row = (y - BORDER_THICKNESS) / _fontSet.getHeight();
         ASSERT(row < _terminal->getRows(),
                "row is: " << row << ", getRows() is: " << _terminal->getRows());
@@ -605,44 +598,8 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     }
 #endif
 
-    // Top left corner of damage.
-    double x0 = static_cast<double>(x);
-    double y0 = static_cast<double>(y);
-
-    // Bottom right corner of damage, constrained by nominal area.
-    double x1 = static_cast<double>(std::min<uint16_t>(x + w, _nominalWidth));
-    double y1 = static_cast<double>(std::min<uint16_t>(y + h, _nominalHeight));
-
-    if (_width > _nominalWidth || _height > _nominalHeight) {
-        // The window manager didn't honour our size base/increment hints.
-        cairo_save(_cr); {
-            const auto & values = _colorSet.getPaddingColor();
-            cairo_set_source_rgb(_cr, values.r, values.g, values.b);
-
-            if (_width > _nominalWidth) {
-                // Right vertical strip.
-                cairo_rectangle(_cr,
-                                static_cast<double>(_nominalWidth),
-                                0.0,
-                                static_cast<double>(_width - _nominalWidth),
-                                static_cast<double>(_height));
-                cairo_fill(_cr);
-            }
-
-            if (_height > _nominalHeight) {
-                // Bottom horizontal strip.
-                cairo_rectangle(_cr,
-                                0.0,
-                                static_cast<double>(_nominalHeight),
-                                static_cast<double>(_width),
-                                static_cast<double>(_height - _nominalHeight));
-                cairo_fill(_cr);
-            }
-        } cairo_restore(_cr);
-    }
-
     cairo_save(_cr); {
-        cairo_rectangle(_cr, x0, y0, x1 - x0, y1 - y0);
+        cairo_rectangle(_cr, x, y, w, h);       // implicit cast to double
         cairo_clip(_cr);
 
         ASSERT(cairo_status(_cr) == 0,
@@ -682,48 +639,52 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 }
 
 void Window::drawBorder() {
-    if (BORDER_THICKNESS > 0) {
-        cairo_save(_cr); {
-            const auto & bgValues = _colorSet.getBorderColor();
-            cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
+    cairo_save(_cr); {
+        const auto & bgValues = _colorSet.getBorderColor();
+        cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
 
-            // Left edge.
-            cairo_rectangle(_cr,
-                            0.0,
-                            0.0,
-                            static_cast<double>(BORDER_THICKNESS),
-                            static_cast<double>(_nominalHeight));
-            cairo_fill(_cr);
+        double x1 = BORDER_THICKNESS + _fontSet.getWidth() * _terminal->getCols();
+        double x2 = _width - SCROLLBAR_WIDTH;
 
-            // Right edge.
-            cairo_rectangle(_cr,
-                            static_cast<double>(_nominalWidth - BORDER_THICKNESS - SCROLLBAR_WIDTH),
-                            0.0,
-                            static_cast<double>(BORDER_THICKNESS),
-                            static_cast<double>(_nominalHeight));
-            cairo_fill(_cr);
+        double y1 = BORDER_THICKNESS + _fontSet.getHeight() * _terminal->getRows();
+        double y2 = _height;
 
-            // Top edge.
-            cairo_rectangle(_cr,
-                            0.0,
-                            0.0,
-                            static_cast<double>(_nominalWidth - SCROLLBAR_WIDTH),
-                            static_cast<double>(BORDER_THICKNESS));
-            cairo_fill(_cr);
+        // Left edge.
+        cairo_rectangle(_cr,
+                        0.0,
+                        0.0,
+                        static_cast<double>(BORDER_THICKNESS),
+                        static_cast<double>(_height));
+        cairo_fill(_cr);
 
-            // Bottom edge.
-            cairo_rectangle(_cr,
-                            0.0,
-                            static_cast<double>(_nominalHeight - BORDER_THICKNESS),
-                            static_cast<double>(_nominalWidth - SCROLLBAR_WIDTH),
-                            static_cast<double>(BORDER_THICKNESS));
-            cairo_fill(_cr);
-        } cairo_restore(_cr);
-    }
+        // Top edge.
+        cairo_rectangle(_cr,
+                        0.0,
+                        0.0,
+                        x2,
+                        static_cast<double>(BORDER_THICKNESS));
+        cairo_fill(_cr);
+
+        // Right edge.
+        cairo_rectangle(_cr,
+                        x1,
+                        0.0,
+                        x2 - x1,
+                        y2);
+        cairo_fill(_cr);
+
+        // Bottom edge.
+        cairo_rectangle(_cr,
+                        0.0,
+                        y1,
+                        x2,
+                        y2 - y1);
+        cairo_fill(_cr);
+    } cairo_restore(_cr);
 }
 
 void Window::drawScrollBar() {
-    uint16_t x = _nominalWidth - SCROLLBAR_WIDTH;
+    uint16_t x = _width - SCROLLBAR_WIDTH;
 
     const auto & values = _colorSet.getScrollBarColor();
     cairo_set_source_rgb(_cr, values.r, values.g, values.b);
@@ -732,7 +693,7 @@ void Window::drawScrollBar() {
                     static_cast<double>(x) + 1.0,
                     1.0,
                     static_cast<double>(SCROLLBAR_WIDTH) - 2.0,
-                    static_cast<double>(_nominalHeight) - 2.0);
+                    static_cast<double>(_height) - 2.0);
     cairo_fill(_cr);
 }
 

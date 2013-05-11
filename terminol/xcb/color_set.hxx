@@ -18,7 +18,6 @@ class ColorSet {
     Color    _cursorFgColor;
     Color    _cursorBgColor;
     Color    _borderColor;
-    Color    _paddingColor;
     Color    _scrollBarColor;
     Color    _indexedColors[256];
     uint32_t _backgroundPixel;
@@ -31,7 +30,6 @@ public:
     const Color & getCursorBgColor() const { return _cursorBgColor; }
     const Color & getIndexedColor(uint8_t index) const { return _indexedColors[index]; }
     const Color & getBorderColor() const { return _borderColor; }
-    const Color & getPaddingColor() const { return _paddingColor; }
     const Color & getScrollBarColor() const { return _scrollBarColor; }
     const Color & getBackgroundColor() const { return _indexedColors[0]; }
     uint32_t      getBackgroundPixel() const { return _backgroundPixel; }

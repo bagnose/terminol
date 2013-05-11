@@ -29,10 +29,8 @@ class Window :
     FontSet         & _fontSet;
     xcb_window_t      _window;
     xcb_gcontext_t    _gc;
-    uint16_t          _width;           // Actual width/height of window.
+    uint16_t          _width;
     uint16_t          _height;
-    uint16_t          _nominalWidth;    // Used width/height of window.
-    uint16_t          _nominalHeight;
     Tty             * _tty;
     Terminal        * _terminal;
     bool              _isOpen;
