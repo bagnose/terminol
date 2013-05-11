@@ -1,12 +1,12 @@
 static-lib common
   :
   support.hxx enums.hxx utf8.hxx terminal.hxx key_map.hxx
-  bit_sets.hxx cell.hxx buffer.hxx buffer2.hxx ascii.hxx tty.hxx
+  bit_sets.hxx cell.hxx buffer.hxx ascii.hxx tty.hxx
   vt_state_machine.hxx vt_state_machine2.hxx
   tty_interface.hxx
   :
   support.cxx enums.cxx utf8.cxx terminal.cxx key_map.cxx
-  bit_sets.cxx cell.cxx buffer.cxx buffer2.cxx ascii.cxx tty.cxx
+  bit_sets.cxx cell.cxx buffer.cxx ascii.cxx tty.cxx
   vt_state_machine.cxx vt_state_machine2.cxx
   ;
 
