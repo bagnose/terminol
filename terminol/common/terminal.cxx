@@ -93,8 +93,8 @@ Terminal::Terminal(I_Observer   & observer,
     _dispatch(false),
     //
     _keyMap(keyMap),
-    _priBuffer(rows, cols),
-    _altBuffer(rows, cols),
+    _priBuffer(rows, cols, std::numeric_limits<size_t>::max()),
+    _altBuffer(rows, cols, std::numeric_limits<size_t>::max()),
     _buffer(&_priBuffer),
     //
     _otherCharSet(false),
@@ -543,7 +543,7 @@ void Terminal::machineNormal(utf8::Seq seq) throw () {
     if (_cursorCol == _buffer->getCols()) {
         if (_modes.get(Mode::AUTO_WRAP)) {
             _cursorCol = 0;
-            if (_cursorRow == _buffer->getScrollEnd() - 1) {
+            if (_cursorRow == _buffer->getMarginEnd() - 1) {
                 _buffer->addLine();
             }
             else {
@@ -584,7 +584,7 @@ void Terminal::machineControl(uint8_t c) throw () {
             // XXX check this
             if (_cursorCol == 0) {
                 if (_modes.get(Mode::AUTO_WRAP)) {
-                    if (_cursorRow > _buffer->getScrollBegin()) {
+                    if (_cursorRow > _buffer->getMarginBegin()) {
                         _cursorCol = _buffer->getCols() - 1;
                         --_cursorRow;
                     }
@@ -606,7 +606,7 @@ void Terminal::machineControl(uint8_t c) throw () {
             // Fall-through:
         case FF:
         case VT:
-            if (_cursorRow == _buffer->getScrollEnd() - 1) {
+            if (_cursorRow == _buffer->getMarginEnd() - 1) {
                 if (_trace) {
                     std::cerr << "(ADDLINE1)" << std::endl;
                 }
@@ -653,7 +653,7 @@ void Terminal::machineEscape(uint8_t c) throw () {
         case 'D':   // IND - Line Feed (opposite of RI)
             // FIXME
             damageCursor();
-            if (_cursorRow == _buffer->getScrollEnd() - 1) {
+            if (_cursorRow == _buffer->getMarginEnd() - 1) {
                 if (_trace) {
                     std::cerr << "(ADDLINE1)" << std::endl;
                 }
@@ -667,7 +667,7 @@ void Terminal::machineEscape(uint8_t c) throw () {
             // FIXME
             damageCursor();
             _cursorCol = 0;
-            if (_cursorRow == _buffer->getScrollEnd() - 1) {
+            if (_cursorRow == _buffer->getMarginEnd() - 1) {
                 if (_trace) {
                     std::cerr << "(ADDLINE1)" << std::endl;
                 }
@@ -682,8 +682,8 @@ void Terminal::machineEscape(uint8_t c) throw () {
             break;
         case 'M':   // RI - Reverse Line Feed (opposite of IND)
             // FIXME dubious
-            if (_cursorRow == _buffer->getScrollBegin()) {
-                _buffer->insertLines(_buffer->getScrollBegin(), 1);
+            if (_cursorRow == _buffer->getMarginBegin()) {
+                _buffer->insertLines(_buffer->getMarginBegin(), 1);
             }
             else {
                 damageCursor();
@@ -778,9 +778,9 @@ void Terminal::machineCsi(bool priv,
         case 'H':       // CUP - Cursor Position
             if (_trace) { std::cerr << std::endl; }
             if (_originMode) {
-                uint16_t row = clamp<int32_t>(nthArg(args, 0, 1) - 1 + _buffer->getScrollBegin(),
-                                              _buffer->getScrollBegin(),
-                                              _buffer->getScrollEnd() - 1);
+                uint16_t row = clamp<int32_t>(nthArg(args, 0, 1) - 1 + _buffer->getMarginBegin(),
+                                              _buffer->getMarginBegin(),
+                                              _buffer->getMarginEnd() - 1);
                 moveCursor(row, nthArg(args, 1, 1) - 1);
             }
             else {
@@ -952,7 +952,7 @@ void Terminal::machineCsi(bool priv,
             }
             else {
                 if (args.empty()) {
-                    _buffer->resetScrollBeginEnd();
+                    _buffer->resetMargins();
                     damageCursor();
                     _cursorRow = _cursorCol = 0;
                 }
@@ -965,10 +965,10 @@ void Terminal::machineCsi(bool priv,
                     bottom = clamp<int32_t>(bottom, 0, _buffer->getRows() - 1);
 
                     if (bottom > top) {
-                        _buffer->setScrollBeginEnd(top, bottom + 1);
+                        _buffer->setMargins(top, bottom + 1);
                     }
                     else {
-                        _buffer->resetScrollBeginEnd();
+                        _buffer->resetMargins();
                     }
 
                     damageCursor();
@@ -1369,7 +1369,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     damageCursor();
 
                     if (_originMode) {
-                        _cursorRow = _buffer->getScrollBegin();
+                        _cursorRow = _buffer->getMarginBegin();
                     }
                     else {
                         _cursorRow = 0;

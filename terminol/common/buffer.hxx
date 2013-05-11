@@ -83,8 +83,8 @@ class Buffer {
         }
 
         void damageAdd(uint16_t begin, uint16_t end) {
-            ASSERT(begin < end, "");
-            ASSERT(!(end > getCols()), "");
+            ASSERT(begin <  end, "");
+            ASSERT(end   <= getCols(), "");
 
             if (_damageBegin == _damageEnd) {
                 // No damage yet.
@@ -103,35 +103,35 @@ class Buffer {
     //
 
     std::deque<Line> _lines;
-    uint16_t         _scrollBegin;
-    uint16_t         _scrollEnd;
+    uint16_t         _marginBegin;
+    uint16_t         _marginEnd;
 
 public:
-    Buffer(uint16_t rows, uint16_t cols) :
+    Buffer(uint16_t rows, uint16_t cols, size_t UNUSED(maxHistory)) :
         _lines(rows, Line(cols)),
-        _scrollBegin(0),
-        _scrollEnd(rows)
+        _marginBegin(0),
+        _marginEnd(rows)
     {
         ASSERT(rows != 0, "");
         ASSERT(cols != 0, "");
     }
 
-    uint16_t getRows() const { return _lines.size(); }
-    uint16_t getCols() const { ASSERT(!_lines.empty(), ""); return _lines.front().getCols(); }
+    uint16_t getRows()        const { return _lines.size(); }
+    uint16_t getCols()        const { return _lines.front().getCols(); }
 
-    uint16_t getScrollBegin() const { return _scrollBegin; }
-    uint16_t getScrollEnd()   const { return _scrollEnd;   }
+    uint16_t getMarginBegin() const { return _marginBegin; }
+    uint16_t getMarginEnd()   const { return _marginEnd;   }
 
-    void setScrollBeginEnd(uint16_t begin, uint16_t end) {
+    void setMargins(uint16_t begin, uint16_t end) {
         ASSERT(begin < end, "");
         ASSERT(end <= getRows(), "");
-        _scrollBegin = begin;
-        _scrollEnd   = end;
+        _marginBegin = begin;
+        _marginEnd   = end;
     }
 
-    void resetScrollBeginEnd() {
-        _scrollBegin = 0;
-        _scrollEnd   = getRows();
+    void resetMargins() {
+        _marginBegin = 0;
+        _marginEnd   = getRows();
     }
 
     const Cell & getCell(uint16_t row, uint16_t col) const {
@@ -177,16 +177,16 @@ public:
             }
         }
 
-        _scrollBegin = 0;
-        _scrollEnd = rows;
+        _marginBegin = 0;
+        _marginEnd   = rows;
     }
 
     void addLine() {
         //PRINT("Add line");
-        _lines.insert(_lines.begin() + _scrollEnd, Line(getCols()));
-        _lines.erase(_lines.begin() + _scrollBegin);
+        _lines.insert(_lines.begin() + _marginEnd, Line(getCols()));
+        _lines.erase(_lines.begin() + _marginBegin);
 
-        for (uint16_t i = _scrollBegin; i != _scrollEnd; ++i) {
+        for (uint16_t i = _marginBegin; i != _marginEnd; ++i) {
             _lines[i].damageAll();
         }
     }
@@ -194,14 +194,14 @@ public:
     void insertLines(uint16_t beforeRow, uint16_t n) {
         /*
         PRINT("eraseLines. beforeRow=" << beforeRow << ", n=" << n <<
-              ", rows=" << getRows() << ", scrollBegin=" << _scrollBegin <<
-              ", scrollEnd=" << _scrollEnd);
+              ", rows=" << getRows() << ", scrollBegin=" << _marginBegin <<
+              ", scrollEnd=" << _marginEnd);
               */
         ASSERT(beforeRow < getRows() + 1, "");
-        _lines.erase(_lines.begin() + _scrollEnd - n, _lines.begin() + _scrollEnd);
+        _lines.erase(_lines.begin() + _marginEnd - n, _lines.begin() + _marginEnd);
         _lines.insert(_lines.begin() + beforeRow, n, Line(getCols()));
 
-        for (uint16_t i = _scrollBegin; i != _scrollEnd; ++i) {
+        for (uint16_t i = _marginBegin; i != _marginEnd; ++i) {
             _lines[i].damageAll();
         }
     }
@@ -209,14 +209,14 @@ public:
     void eraseLines(uint16_t row, uint16_t n) {
         /*
         PRINT("eraseLines. row=" << row << ", n=" << n << ", rows=" <<
-              getRows() << ", scrollBegin=" << _scrollBegin <<
-              ", scrollEnd=" << _scrollEnd);
+              getRows() << ", scrollBegin=" << _marginBegin <<
+              ", scrollEnd=" << _marginEnd);
               */
         ASSERT(row + n < getRows() + 1, "");
-        _lines.insert(_lines.begin() + _scrollEnd, n, Line(getCols()));
+        _lines.insert(_lines.begin() + _marginEnd, n, Line(getCols()));
         _lines.erase(_lines.begin() + row, _lines.begin() + row + n);
 
-        for (uint16_t i = _scrollBegin; i != _scrollEnd; ++i) {
+        for (uint16_t i = _marginBegin; i != _marginEnd; ++i) {
             _lines[i].damageAll();
         }
     }
