@@ -187,15 +187,15 @@ void Terminal::read() {
         Timer     timer(1000 / FPS);
         uint8_t   buf[BUFSIZ];          // 8192 last time I looked.
         do {
-            static int i = 0;
-            PRINT("Read: " << ++i);
+            //static int i = 0;
+            //PRINT("Read: " << ++i);
             size_t rval = _tty.read(buf, _sync ? 16 : sizeof buf);
-            if (rval == 0) { PRINT("Would block"); break; }
+            if (rval == 0) { /*PRINT("Would block");*/ break; }
             //PRINT("Read: " << rval);
             processRead(buf, rval);
         } while (!timer.expired());
 
-        PRINT("Exit loop");
+        //PRINT("Exit loop");
     }
     catch (I_Tty::Exited & ex) {
         _observer.terminalChildExited(ex.exitCode);
