@@ -466,18 +466,25 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
         }
     }
 
-    if (_modes.get(Mode::SHOW_CURSOR)) {
-        // If the cursor is off the screen then draw it at the edge.
-        bool     offscreen;
+    if (_modes.get(Mode::SHOW_CURSOR) &&
+        _buffer->getHistory() + _cursorRow <
+        _buffer->getScroll()  + _buffer->getRows())
+    {
+        bool     precipitous;       // at the extreme right edge
+        uint16_t row;
         uint16_t col;
+
+        row = _cursorRow + (_buffer->getHistory() - _buffer->getScroll());
+
+        ASSERT(row >= 0 && row < _buffer->getRows(), "");
 
         if (_cursorCol == _buffer->getCols()) {
             col = _cursorCol - 1;
-            offscreen = true;
+            precipitous = true;
         }
         else {
             col = _cursorCol;
-            offscreen = false;
+            precipitous = false;
         }
 
         // Update _damageColBegin and _damageColEnd.
@@ -492,22 +499,22 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
 
         // Update _damageRowBegin and _damageRowEnd.
         if (_damageRowBegin == _damageRowEnd) {
-            _damageRowBegin = _cursorRow;
-            _damageRowEnd   = _cursorRow + 1;
+            _damageRowBegin = row;
+            _damageRowEnd   = row + 1;
         }
         else {
-            _damageRowBegin = std::min(_damageRowBegin, _cursorRow);
-            _damageRowEnd   = std::max(_damageRowEnd,   static_cast<uint16_t>(_cursorRow + 1));
+            _damageRowBegin = std::min(_damageRowBegin, row);
+            _damageRowEnd   = std::max(_damageRowEnd,   static_cast<uint16_t>(row + 1));
         }
 
-        const Cell & cell   = _buffer->getCell(_cursorRow, col);
+        const Cell & cell   = _buffer->getCell(row, col);
         utf8::Length length = utf8::leadLength(cell.lead());
         run.resize(length);
         std::copy(cell.bytes(), cell.bytes() + length, &run.front());
         run.push_back(NUL);
-        _observer.terminalDrawCursor(_cursorRow, col,
+        _observer.terminalDrawCursor(row, col,
                                      cell.fg(), cell.bg(), cell.attrs(), &run.front(),
-                                     offscreen);
+                                     precipitous);
     }
 
     if (true /* show scrollbar? */) {
