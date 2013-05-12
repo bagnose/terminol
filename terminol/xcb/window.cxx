@@ -358,10 +358,11 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
         ASSERT(_surface, "");
 
-        cairo_surface_destroy(_surface);
-        _surface = nullptr;
-
         if (_doubleBuffer) {
+            cairo_surface_finish(_surface);
+            cairo_surface_destroy(_surface);
+            _surface = nullptr;
+
             xcb_void_cookie_t cookie;
             cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
             if (xcb_request_failed(_basics.connection(), cookie,
@@ -383,13 +384,17 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
                                    "Failed to create pixmap")) {
                 FATAL("");
             }
-        }
 
-        _surface = cairo_xcb_surface_create(_basics.connection(),
-                                            _doubleBuffer ? _pixmap : _window,
-                                            _basics.visual(),
-                                            _width,
-                                            _height);
+            cairo_surface_finish(_surface);
+            _surface = cairo_xcb_surface_create(_basics.connection(),
+                                                _doubleBuffer ? _pixmap : _window,
+                                                _basics.visual(),
+                                                _width,
+                                                _height);
+        }
+        else {
+            cairo_xcb_surface_set_size(_surface, _width, _height);
+        }
     }
 
     uint16_t rows, cols;
