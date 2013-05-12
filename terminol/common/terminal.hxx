@@ -127,8 +127,14 @@ public:
              bool           sync);
     virtual ~Terminal();
 
+    // Geometry:
+
     uint16_t getRows() const { return _buffer->getRows(); }
     uint16_t getCols() const { return _buffer->getCols(); }
+
+    // Events:
+
+    enum class ScrollDir { UP, DOWN };
 
     void     resize(uint16_t rows, uint16_t cols);
 
@@ -136,6 +142,11 @@ public:
                     uint16_t colBegin, uint16_t colEnd);
 
     void     keyPress(xkb_keysym_t keySym, uint8_t state);
+
+    void     scrollWheel(ScrollDir dir);
+
+    // I/O:
+
     void     read();
     bool     needsFlush() const;
     void     flush();

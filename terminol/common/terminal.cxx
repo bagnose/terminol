@@ -185,6 +185,26 @@ void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
     }
 }
 
+void Terminal::scrollWheel(ScrollDir dir) {
+    switch (dir) {
+        case ScrollDir::UP:
+            // TODO consolidate scroll operations with method.
+            if (_buffer->scrollUp(std::max(1, _buffer->getRows() / 4))) {
+                fixDamage(0, _buffer->getRows(),
+                          0, _buffer->getCols(),
+                          Damage::SCROLL);
+            }
+            break;
+        case ScrollDir::DOWN:
+            if (_buffer->scrollDown(std::max(1, _buffer->getRows() / 4))) {
+                fixDamage(0, _buffer->getRows(),
+                          0, _buffer->getCols(),
+                          Damage::SCROLL);
+            }
+            break;
+    }
+}
+
 void Terminal::read() {
     ASSERT(!_dispatch, "");
 

@@ -226,6 +226,16 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
     //PRINT("Button-press: " << event->event_x << " " << event->event_y);
     if (!_isOpen) { return; }
+
+    switch (event->detail) {
+        case XCB_BUTTON_INDEX_4:
+            _terminal->scrollWheel(Terminal::ScrollDir::UP);
+            break;
+        case XCB_BUTTON_INDEX_5:
+            _terminal->scrollWheel(Terminal::ScrollDir::DOWN);
+            // Scroll wheel
+            break;
+    }
 }
 
 void Window::buttonRelease(xcb_button_release_event_t * event) {
