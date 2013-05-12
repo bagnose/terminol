@@ -302,35 +302,34 @@ void Terminal::moveCursor(int32_t row, int32_t col) {
 void Terminal::tabCursor(TabDir dir, uint16_t count) {
     damageCursor();
 
-    if (dir == TabDir::FORWARD) {
-        while (count != 0) {
-            ++_cursorCol;
+    switch (dir) {
+        case TabDir::FORWARD:
+            while (count != 0) {
+                ++_cursorCol;
 
-            if (_cursorCol == _buffer->getCols()) {
+                if (_cursorCol == _buffer->getCols()) {
+                    --_cursorCol;
+                    break;
+                }
+
+                if (_tabs[_cursorCol]) {
+                    --count;
+                }
+            }
+            break;
+        case TabDir::BACKWARD:
+            while (count != 0) {
+                if (_cursorCol == 0) {
+                    break;
+                }
+
                 --_cursorCol;
-                break;
-            }
 
-            if (_tabs[_cursorCol]) {
-                --count;
+                if (_tabs[_cursorCol]) {
+                    --count;
+                }
             }
-        }
-    }
-    else if (dir == TabDir::BACKWARD) {
-        while (count != 0) {
-            if (_cursorCol == 0) {
-                break;
-            }
-
-            --_cursorCol;
-
-            if (_tabs[_cursorCol]) {
-                --count;
-            }
-        }
-    }
-    else {
-        FATAL("");
+            break;
     }
 }
 
