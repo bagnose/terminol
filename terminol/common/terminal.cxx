@@ -94,7 +94,7 @@ Terminal::Terminal(I_Observer   & observer,
     //
     _keyMap(keyMap),
     _priBuffer(rows, cols, std::numeric_limits<size_t>::max()),
-    _altBuffer(rows, cols, std::numeric_limits<size_t>::max()),
+    _altBuffer(rows, cols, 0),
     _buffer(&_priBuffer),
     //
     _otherCharSet(false),
