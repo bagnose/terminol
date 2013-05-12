@@ -167,8 +167,8 @@ void Terminal::redraw(uint16_t rowBegin, uint16_t rowEnd,
 }
 
 void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
-    if (!handleKeyBinding(keySym, state)) {
-        if (_buffer->resetScroll() /* && scroll-on-keystroke */) {
+    if (!handleKeyBinding(keySym, state) && _keyMap.isPotent(keySym)) {
+        if (/* scroll on keystroke && */ _buffer->scrollBottom()) {
             fixDamage(0, _buffer->getRows(),
                       0, _buffer->getCols(),
                       Damage::SCROLL);
@@ -270,12 +270,27 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, uint8_t state) {
                               Damage::SCROLL);
                 }
                 return true;
+            case XKB_KEY_Home:
+                if (_buffer->scrollTop()) {
+                    fixDamage(0, _buffer->getRows(),
+                              0, _buffer->getCols(),
+                              Damage::SCROLL);
+                }
+                return true;
+            case XKB_KEY_End:
+                if (_buffer->scrollBottom()) {
+                    fixDamage(0, _buffer->getRows(),
+                              0, _buffer->getCols(),
+                              Damage::SCROLL);
+                }
+                return true;
             default:
-                break;
+                return false;
         }
     }
-
-    return false;
+    else {
+        return false;
+    }
 }
 
 void Terminal::moveCursor(int32_t row, int32_t col) {

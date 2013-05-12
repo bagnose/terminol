@@ -160,7 +160,17 @@ public:
         return _scroll != oldScroll;
     }
 
-    bool resetScroll() {
+    bool scrollTop() {
+        if (_scroll != 0) {
+            _scroll = 0;
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    bool scrollBottom() {
         if (_scroll != _history) {
             _scroll = _history;
             return true;
