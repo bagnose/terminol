@@ -6,13 +6,13 @@
 
 #include <cstdlib>
 
+#include <unistd.h>
+
 Basics::Basics() throw (Error) {
-    // FIXME this isn't right :(
-    const char * h = std::getenv("HOSTNAME");
-    if (h) {
-        PRINT("Hostname: " << h);
+    char h[256];
+    if (::gethostname(h, sizeof h) == 0) {
+        _hostname = h;
     }
-    _hostname = h ? h : "";
 
     _connection = xcb_connect(nullptr, &_screenNum);
     if (xcb_connection_has_error(_connection)) {
