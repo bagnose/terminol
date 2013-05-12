@@ -60,7 +60,7 @@ Basics::Basics() throw (Error) {
     PRINT("Mask: Shift: " << int(_maskShift));
     PRINT("Mask: Alt: " << int(_maskAlt));
     PRINT("Mask: Control: " << int(_maskControl));
-
+    PRINT("Mask: Super: " << int(_maskSuper));
     PRINT("Mask: Num lock: " << int(_maskNumLock));
     PRINT("Mask: Shift lock: " << int(_maskShiftLock));
     PRINT("Mask: Caps lock: " << int(_maskCapsLock));
@@ -159,6 +159,8 @@ void Basics::determineMasks() {
         xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Alt_L);
     xcb_keycode_t * controlCodes =
         xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Control_L);
+    xcb_keycode_t * superCodes =
+        xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Super_L);
     xcb_keycode_t * numLockCodes =
         xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Num_Lock);
     xcb_keycode_t * shiftLockCodes =
@@ -195,6 +197,7 @@ void Basics::determineMasks() {
             LOOK_FOR(_maskShift,      shiftCodes);
             LOOK_FOR(_maskAlt,        altCodes);
             LOOK_FOR(_maskControl,    controlCodes);
+            LOOK_FOR(_maskSuper,      superCodes);
             LOOK_FOR(_maskNumLock,    numLockCodes);
             LOOK_FOR(_maskShiftLock,  shiftLockCodes);
             LOOK_FOR(_maskCapsLock,   capsLockCodes);
@@ -209,6 +212,7 @@ void Basics::determineMasks() {
     std::free(capsLockCodes);
     std::free(shiftLockCodes);
     std::free(numLockCodes);
+    std::free(superCodes);
     std::free(controlCodes);
     std::free(altCodes);
     std::free(shiftCodes);
@@ -219,6 +223,7 @@ std::string Basics::stateToString(uint8_t state) const {
     if (state & _maskShift)      { ost << "|SHIFT"; }
     if (state & _maskAlt)        { ost << "|ALT"; }
     if (state & _maskControl)    { ost << "|CONTROL"; }
+    if (state & _maskSuper)      { ost << "|SUPER"; }
     if (state & _maskNumLock)    { ost << "|NUM_LOCK"; }
     if (state & _maskShiftLock)  { ost << "|SHIFT_LOCK"; }
     if (state & _maskCapsLock)   { ost << "|CAPS_LOCK"; }

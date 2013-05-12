@@ -23,6 +23,7 @@ class Basics : protected Uncopyable {
     uint8_t                 _maskShift;
     uint8_t                 _maskAlt;
     uint8_t                 _maskControl;
+    uint8_t                 _maskSuper;
     uint8_t                 _maskNumLock;
     uint8_t                 _maskShiftLock;
     uint8_t                 _maskCapsLock;
@@ -49,6 +50,7 @@ public:
     uint8_t                 maskShift()      const { return _maskShift;       }
     uint8_t                 maskAlt()        const { return _maskAlt;         }
     uint8_t                 maskControl()    const { return _maskControl;     }
+    uint8_t                 maskSuper()      const { return _maskSuper;       }
     uint8_t                 maskNumLock()    const { return _maskNumLock;     }
     uint8_t                 maskShiftLock()  const { return _maskShiftLock;   }
     uint8_t                 maskCapsLock()   const { return _maskCapsLock;    }
