@@ -48,7 +48,11 @@ Basics::Basics() throw (Error) {
     _keySymbols = xcb_key_symbols_alloc(_connection);
     ENFORCE(_keySymbols, "");
 
-    xcb_ewmh_init_atoms(_connection, &_ewmhConnection);
+    if (xcb_ewmh_init_atoms_replies(&_ewmhConnection,
+                                    xcb_ewmh_init_atoms(_connection, &_ewmhConnection),
+                                    nullptr) == 0) {
+        FATAL("Can't initialise EWMH atoms");
+    }
 
     determineMasks();
 
