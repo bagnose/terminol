@@ -213,6 +213,28 @@ bool KeyMap::convert(xkb_keysym_t keySym, uint8_t state,
     return !str.empty();
 }
 
+bool KeyMap::isPotent(xkb_keysym_t keySym) const {
+    normalise(keySym);
+
+    switch (keySym) {
+        case XKB_KEY_Shift_L:
+        case XKB_KEY_Shift_R:
+        case XKB_KEY_Control_L:
+        case XKB_KEY_Control_R:
+        case XKB_KEY_Alt_L:
+        case XKB_KEY_Alt_R:
+        case XKB_KEY_Meta_L:
+        case XKB_KEY_Meta_R:
+        case XKB_KEY_Super_L:
+        case XKB_KEY_Super_R:
+        case XKB_KEY_Hyper_L:
+        case XKB_KEY_Hyper_R:
+            return false;
+        default:
+            return true;
+    }
+}
+
 void KeyMap::normalise(xkb_keysym_t & keySym) {
     switch (keySym) {
         case XKB_KEY_KP_Space:

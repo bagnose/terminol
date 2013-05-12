@@ -35,6 +35,8 @@ public:
                  bool appKey, bool appCursor, bool crlf,
                  std::vector<uint8_t> & str) const;
 
+    bool isPotent(xkb_keysym_t keySym) const;
+
     uint8_t maskShift()   const { return _maskShift; }
     uint8_t maskAlt()     const { return _maskAlt; }
     uint8_t maskControl() const { return _maskControl; }
