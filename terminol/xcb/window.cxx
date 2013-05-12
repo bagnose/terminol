@@ -7,7 +7,7 @@
 
 #include <unistd.h>
 
-const int         Window::BORDER_THICKNESS = 2;
+const int         Window::BORDER_THICKNESS = 0;
 const int         Window::SCROLLBAR_WIDTH  = 8;
 const std::string Window::DEFAULT_TITLE    = "terminol";
 
@@ -163,6 +163,7 @@ Window::~Window() {
         }
         ASSERT(_surface, "");
 
+        cairo_surface_finish(_surface);
         cairo_surface_destroy(_surface);
 
         if (_doubleBuffer) {
@@ -307,6 +308,7 @@ void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     ASSERT(_mapped, "");
 
     ASSERT(_surface, "");
+    cairo_surface_finish(_surface);
     cairo_surface_destroy(_surface);
     _surface = nullptr;
 
@@ -586,6 +588,7 @@ void Window::updateTitle() {
 
     std::string fullTitle = ost.str();
 
+#if 1
     xcb_icccm_set_wm_name(_basics.connection(),
                           _window,
                           XCB_ATOM_STRING,
@@ -599,6 +602,12 @@ void Window::updateTitle() {
                                8,
                                fullTitle.size(),
                                fullTitle.data());
+#else
+    xcb_ewmh_set_wm_name(_basics.ewmhConnection(),
+                         _window,
+                         fullTitle.size(),
+                         fullTitle.data());
+#endif
 }
 
 void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {

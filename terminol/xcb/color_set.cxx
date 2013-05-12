@@ -54,7 +54,7 @@ ColorSet::ColorSet(Basics & basics) :
 {
     _cursorFgColor    = { 0.0, 0.0,  0.0 };
     _cursorBgColor    = { 1.0, 0.25, 1.0 };
-    _borderColor      = { 0.1, 0.1,  0.1 };
+    _borderColor      = COLORS16[0];
     _scrollBarFgColor = { 0.5, 0.5,  0.5 };
     _scrollBarBgColor = _borderColor;
 
