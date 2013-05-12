@@ -1499,7 +1499,9 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     }
 
                     _buffer = set ? &_altBuffer : &_priBuffer;
-                    _buffer->damageAll();
+                    fixDamage(0, _buffer->getRows(),
+                              0, _buffer->getCols(),
+                              Damage::SCROLL);
                     if (a != 1049) {
                         break;
                     }
