@@ -1022,24 +1022,39 @@ void Terminal::machineCsi(bool priv,
                 // RDC - Report Device Code: <ESC>[{code}0c
                 NYI("What code should I send?");
             }
-            else if (nthArg(args, 0) == 5) {
-                // QDS - Query Device Status
-                // RDO - Report Device OK: <ESC>[0n
-                std::ostringstream ost;
-                ost << ESC << "[0n";
-                std::string str = ost.str();
-                _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
-            }
-            else if (nthArg(args, 0) == 6) {
-                // QCP - Query Cursor Position
-                // RCP - Report Cursor Position
-                std::ostringstream ost;
-                ost << ESC << '[' << _cursorRow << ';' << _cursorCol << 'R';
-                std::string str = ost.str();
-                _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
-            }
             else {
-                ERROR("FIXME");
+                switch (nthArg(args, 0)) {
+                    case 5: {
+                        // QDS - Query Device Status
+                        // RDO - Report Device OK: <ESC>[0n
+                        std::ostringstream ost;
+                        ost << ESC << "[0n";
+                        std::string str = ost.str();
+                        _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
+                        break;
+                    }
+                    case 6: {
+                        // QCP - Query Cursor Position
+                        // RCP - Report Cursor Position
+                        std::ostringstream ost;
+                        ost << ESC << '[' << _cursorRow << ';' << _cursorCol << 'R';
+                        std::string str = ost.str();
+                        _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
+                    }
+                    case 7: {
+                        // Ps = 7   Request Display Name
+                        NYI("");
+                        break;
+                    }
+                    case 8: {
+                        // Ps = 8   Request Version Number (place in window title)
+                        NYI("");
+                        break;
+                    }
+                    default:
+                        NYI("");
+                        break;
+                }
             }
             break;
         case 'q': // DECSCA - Select Character Protection Attribute
