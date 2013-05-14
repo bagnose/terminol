@@ -263,7 +263,7 @@ public:
         }
 
         damageAll();
-        _scroll = _history;         // XXX presumptuous
+        _scroll = _history;         // XXX Scroll to bottom on resize? Most terminals do
 
         if (cols != getCols()) {
             for (auto & line : _lines) {
@@ -288,10 +288,19 @@ public:
             damageAll();
             if (_history == _maxHistory) {
                 _lines.pop_front();
+
+                if (_scroll != _history && _scroll != 0) {
+                    --_scroll;
+                }
             }
             else {
-                ++_history;
-                _scroll = _history;     // XXX presumptuous
+                if (_scroll == _history) {
+                    ++_history;
+                    ++_scroll;
+                }
+                else {
+                    ++_history;
+                }
             }
 
             _barDamage = true;
