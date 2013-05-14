@@ -1495,12 +1495,19 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 break;
             case 55: // Not overlined
                 NYI("Not overlined");
+            case 99:
+                NYI("Default BRIGHT fg");
                 break;
+            case 109:
+                NYI("Default BRIGHT bg");
+                break;
+
+            default:
                 // 56..59 Reserved
                 // 60..64 (ideogram stuff - hardly ever supported)
-                // 90..99 Set foreground colour high intensity - handled separately
-                // 100..109 Set background colour high intensity - handled separately
-            default:
+                // 90..97 Set foreground colour high intensity - handled separately
+                // 100..107 Set background colour high intensity - handled separately
+
                 if (v >= 30 && v < 38) {
                     // normal fg
                     _fg = v - 30;
