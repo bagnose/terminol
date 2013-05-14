@@ -46,13 +46,25 @@
         std::terminate(); \
     } while (false)
 
-#define NYI(output) \
+// Perform the action exactly once
+#define DO_ONCE(action) \
     do { \
-        std::cerr \
-            << __FILE__ << ":" << __LINE__ << " " \
-            << "NYI: " << output  \
-            << std::endl; \
+        static bool done_DEBUG = false; \
+        if (!done_DEBUG) { \
+            done_DEBUG = true; \
+            action; \
+        } \
     } while (false)
+
+#define NYI(output) \
+    DO_ONCE( \
+        do { \
+            std::cerr \
+                << __FILE__ << ":" << __LINE__ << " " \
+                << "NYI: " << output  \
+                << std::endl; \
+        } while (false) \
+    )
 
 // ENFORCE (and its variants) never get compiled out.
 #define ENFORCE(condition, output) \
