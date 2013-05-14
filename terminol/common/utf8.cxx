@@ -33,7 +33,7 @@ Length leadLength(uint8_t lead) throw (Error) {
         return Length::L4;
     }
     else {
-        FATAL("Cannot determine lead length: " << toBinary(lead));
+        FATAL("Cannot determine lead length: " << toBinaryString(lead));
         throw Error();
     }
 }
@@ -70,7 +70,7 @@ CodePoint decode(const uint8_t * sequence) throw (Error) {
         // 10xxxxxx
         auto cont = sequence[i];
         if ((cont & (B7|B6)) != B7) {
-            FATAL("Illegal continuation: " << toBinary(cont));
+            FATAL("Illegal continuation: " << toBinaryString(cont));
             throw Error();
         }
         codePoint = (codePoint << 6) | (cont & (B5|B4|B3|B2|B1|B0));

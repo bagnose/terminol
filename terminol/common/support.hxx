@@ -178,7 +178,7 @@ inline uint8_t hexToByte(char hex0, char hex1) {
     return (hexToNibble(hex0) << 4) + hexToNibble(hex1);
 }
 
-template <typename T> std::string toHex(T t) {
+template <typename T> std::string toHexString(T t) {
     std::string str;
     for (size_t i = 0; i < sizeof(T); ++i) {
         str.push_back(nibbleToHex(t >> (8 * (sizeof(T) - i - 1) + 4) & 0x0F));
@@ -187,7 +187,7 @@ template <typename T> std::string toHex(T t) {
     return str;
 }
 
-template <typename T> std::string toBinary(T t) {
+template <typename T> std::string toBinaryString(T t) {
     std::string str;
     for (size_t i = 0; i < 8 * sizeof(T); ++i) {
         str.push_back(((t >> (8 * sizeof(T) - i - 1)) & 0x1) ? '1' : '0');

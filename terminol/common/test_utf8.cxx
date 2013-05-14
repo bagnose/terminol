@@ -24,7 +24,7 @@ std::ostream & showCodePointBits(std::ostream & ost, CodePoint cp) {
         uint8_t byte = static_cast<uint8_t>(cp >> (8 * (3 - i)));
         active = active || (byte != 0) || i == s - 1;
         if (active) {
-            ost << toBinary(byte);
+            ost << toBinaryString(byte);
             //showBits(ost, byte);
         }
         space = active;
@@ -55,7 +55,7 @@ std::ostream & showSeqBits(std::ostream & ost, const uint8_t * seq) {
         if (space) { ost << " "; }
         else       { space = true; }
         uint8_t byte = seq[i];
-        ost << toBinary(byte);
+        ost << toBinaryString(byte);
     }
 
     return ost;
@@ -63,8 +63,8 @@ std::ostream & showSeqBits(std::ostream & ost, const uint8_t * seq) {
 
 void forwardReverse(CodePoint cp) {
     std::cout << "Original code point: ";
-    std::cout << toHex(cp) << std::endl;
-    std::cout << toBinary(cp) << std::endl;
+    std::cout << toHexString(cp) << std::endl;
+    std::cout << toBinaryString(cp) << std::endl;
 
     uint8_t seq[LMAX];
     encode(cp, seq);
@@ -79,8 +79,8 @@ void forwardReverse(CodePoint cp) {
     CodePoint cp2 = decode(seq);
 
     std::cout << "Back to code point: ";
-    std::cout << toHex(cp2) << std::endl;
-    std::cout << toBinary(cp2) << std::endl << std::endl;
+    std::cout << toHexString(cp2) << std::endl;
+    std::cout << toBinaryString(cp2) << std::endl << std::endl;
 
     ENFORCE(cp == cp2, cp << " = " << cp2);
 }
