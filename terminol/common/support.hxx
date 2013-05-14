@@ -201,16 +201,19 @@ enum class Esc {
     RESET,
 
     BOLD,
-    DIM,
+    FAINT,
+    ITALIC,
     UNDERLINE,
     BLINK,
-    REVERSE,
-    HIDDEN,
+    INVERSE,
+    CONCEAL,
 
-    CL_BOLD,
+    CL_WEIGHT,      // remove bold/faint
+    CL_SLANT,       // remove italic/fraktur
     CL_UNDERLINE,
     CL_BLINK,
-    CL_REVERSE,
+    CL_INVERSE,
+    CL_CONCEAL,
     CL_COLOR,
 
     FG_BLACK,
