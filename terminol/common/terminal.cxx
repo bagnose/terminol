@@ -1345,24 +1345,68 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 NYI("Crossed-out");
                 break;
                 // 30..37 (set foreground colour - handled separately)
-            case 38: // Set xterm-256 text color (wikipedia: dubious???)
-                if (i + 4 < args.size() && args[i + 1] == 2) {
-                    // 24-bit foreground support
-                    // ESC[ … 38;2;<r>;<g>;<b> … m Select RGB foreground color
-                    NYI("24-bit foreground");
-                }
-                else if (i + 2 < args.size() && args[i + 1] == 5) {
-                    i += 2;
-                    int32_t v2 = args[i];
-                    if (v2 >= 0 && v2 < 256) {
-                        _fg = v2;
+            case 38:
+                // https://github.com/robertknight/konsole/blob/master/user-doc/README.moreColors
+                if (i + 1 < args.size()) {
+                    i += 1;
+                    switch (args[i]) {
+                        case 0:
+                            NYI("User defined foreground");
+                            break;
+                        case 1:
+                            NYI("Transparent foreground");
+                            break;
+                        case 2:
+                            if (i + 3 < args.size()) {
+                                // 24-bit foreground support
+                                // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB foreground color
+                                NYI("24-bit RGB foreground");
+                                i += 3;
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        case 3:
+                            if (i + 3 < args.size()) {
+                                NYI("24-bit CMY foreground");
+                                i += 3;
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        case 4:
+                            if (i + 4 < args.size()) {
+                                NYI("24-bit CMYK foreground");
+                                i += 4;
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        case 5:
+                            if (i + 1 < args.size()) {
+                                i += 1;
+                                int32_t v2 = args[i];
+                                if (v2 >= 0 && v2 < 256) {
+                                    _fg = v2;
+                                }
+                                else {
+                                    ERROR("Colour out of range: " << v2);
+                                }
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        default:
+                            NYI("Unknown?");
                     }
-                    else {
-                        ERROR("Colour out of range: " << v2);
-                    }
-                }
-                else {
-                    ERROR("Unrecognised foreground attributes");
                 }
                 break;
             case 39:
@@ -1370,23 +1414,67 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 break;
                 // 40..47 (set background colour - handled separately)
             case 48:
-                if (i + 4 < args.size() && args[i + 1] == 2) {
-                    // 24-bit background support
-                    // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB foreground color
-                    NYI("24-bit background");
-                }
-                else if (i + 2 < args.size() && args[i + 1] == 5) {
-                    i += 2;
-                    int32_t v2 = args[i];
-                    if (v2 >= 0 && v2 < 256) {
-                        _bg = v2;
+                // https://github.com/robertknight/konsole/blob/master/user-doc/README.moreColors
+                if (i + 1 < args.size()) {
+                    i += 1;
+                    switch (args[i]) {
+                        case 0:
+                            NYI("User defined background");
+                            break;
+                        case 1:
+                            NYI("Transparent background");
+                            break;
+                        case 2:
+                            if (i + 3 < args.size()) {
+                                // 24-bit background support
+                                // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB foreground color
+                                NYI("24-bit RGB background");
+                                i += 3;
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        case 3:
+                            if (i + 3 < args.size()) {
+                                NYI("24-bit CMY background");
+                                i += 3;
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        case 4:
+                            if (i + 4 < args.size()) {
+                                NYI("24-bit CMYK background");
+                                i += 4;
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        case 5:
+                            if (i + 1 < args.size()) {
+                                i += 1;
+                                int32_t v2 = args[i];
+                                if (v2 >= 0 && v2 < 256) {
+                                    _bg = v2;
+                                }
+                                else {
+                                    ERROR("Colour out of range: " << v2);
+                                }
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        default:
+                            NYI("Unknown?");
                     }
-                    else {
-                        ERROR("Colour out of range: " << v2);
-                    }
-                }
-                else {
-                    ERROR("Unrecognised background attributes");
                 }
                 break;
             case 49:
