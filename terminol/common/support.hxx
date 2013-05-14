@@ -181,11 +181,11 @@ template <typename T> std::string toBinary(T t) {
 
 // Inherit from this to be uncopyable.
 class Uncopyable {
-    Uncopyable(const Uncopyable &) {}
-    Uncopyable & operator = (const Uncopyable &) { return *this; }
-
 public:
     Uncopyable() {}
+
+    Uncopyable              (const Uncopyable &) = delete;
+    Uncopyable & operator = (const Uncopyable &) = delete;
 };
 
 class Timer {
