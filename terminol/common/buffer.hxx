@@ -281,9 +281,7 @@ public:
             _lines.insert(_lines.begin() + _history + _marginEnd, Line(getCols()));
             _lines.erase(_lines.begin() + _history + _marginBegin);
 
-            for (uint16_t i = _marginBegin; i != _marginEnd; ++i) {
-                _lines[_history + i].damageAll();
-            }
+            damageMargin();
         }
         else {
             _lines.push_back(Line(getCols()));
@@ -314,9 +312,7 @@ public:
                          _lines.begin() + _history + _marginEnd);
             _lines.insert(_lines.begin() + _history + beforeRow, n, Line(getCols()));
 
-            for (uint16_t i = _marginBegin; i != _marginEnd; ++i) {
-                _lines[_history + i].damageAll();
-            }
+            damageMargin();
         }
         else {
             _lines.insert(_lines.begin() + _history + beforeRow, n, Line(getCols()));
@@ -340,9 +336,7 @@ public:
         _lines.insert(_lines.begin() + _history + _marginEnd, n, Line(getCols()));
         _lines.erase(_lines.begin() + _history + row, _lines.begin() + _history + row + n);
 
-        for (uint16_t i = _marginBegin; i != _marginEnd; ++i) {
-            _lines[_history + i].damageAll();
-        }
+        damageMargin();
     }
 
     void clearLine(uint16_t row) {
@@ -376,6 +370,19 @@ public:
         }
 
         _barDamage = true;      // XXX ?
+    }
+
+    void damageMargin() {
+        for (auto i = _lines.begin() + _history + _marginBegin;
+             i != _lines.begin() + _history + _marginEnd; ++i)
+        {
+            i->damageAll();
+        }
+        /*
+        for (uint16_t i = _marginBegin; i != _marginEnd; ++i) {
+            _lines[_history + i].damageAll();
+        }
+        */
     }
 };
 
