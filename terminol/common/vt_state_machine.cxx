@@ -14,15 +14,23 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length length) {
 
     switch (_state) {
         case State::NORMAL:
-            if (lead == ESC) {
-                ASSERT(length == utf8::Length::L1, "");
-                _state = State::ESCAPE;
-                _outerState = State::NORMAL;
-                ASSERT(_escSeq.empty(), "");
-            }
-            else if (lead < SPACE) {
-                ASSERT(length == utf8::Length::L1, "");
-                _observer.machineControl(lead);
+            if (length == utf8::Length::L1) {
+                if (lead == ESC) {
+                    ASSERT(length == utf8::Length::L1, "");
+                    _state = State::ESCAPE;
+                    _outerState = State::NORMAL;
+                    ASSERT(_escSeq.empty(), "");
+                }
+                else if (lead <= ETB || lead == EM || (lead >= FS && lead <= US)) {
+                    ASSERT(length == utf8::Length::L1, "");
+                    _observer.machineControl(lead);
+                }
+                else if (lead >= SPACE && lead <= DEL) {
+                    _observer.machineNormal(seq, length);
+                }
+                else {
+                    PRINT("Ignored char: " << lead);
+                }
             }
             else {
                 _observer.machineNormal(seq, length);
@@ -30,74 +38,99 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length length) {
             break;
         case State::ESCAPE:
             ASSERT(_escSeq.empty(), "");
-            std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
-            switch (lead) {
-                case 'P':
-                    _state = State::DCS;
-                    break;
-                case '[':
-                    _state = State::CSI;
-                    break;
-                case ']':
-                    _state = State::OSC;
-                    break;
-                case '#':   // Test?
-                case '(':   // Set primary charset G0
-                case ')':   // Set primary charset G1
-                case '*':   // Set secondary charset G2
-                case '+':   // Set secondary charset G3
-                    _state = State::SPECIAL;
-                    break;
-                case 'X':   // SOS
-                case '^':   // PM
-                case '_':   // APC
-                    _state = State::IGNORE;
-                    break;
-                default:
-                    _observer.machineEscape(lead);
-                    _escSeq.clear();
-                    _state = State::NORMAL;
-                    break;
+            if (length == utf8::Length::L1) {
+                std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
+                switch (lead) {
+                    case 'P':
+                        _state = State::DCS;
+                        break;
+                    case '[':
+                        _state = State::CSI;
+                        break;
+                    case ']':
+                        _state = State::OSC;
+                        break;
+                    default:
+                        if (lead == 'X' || lead == '^' || lead == '_') {
+                            // SOS/PM/APC
+                            _state = State::IGNORE;
+                        }
+                        if (lead >= SPACE && lead <= '/') {
+                            _state = State::SPECIAL;
+                        }
+                        else if ((lead >= '0' && lead <= 'O') ||
+                            (lead >= 'Q' && lead <= 'W') ||
+                            lead == 'Y' ||
+                            lead == 'Z' ||
+                            lead == '\\' ||
+                            (lead >= '`' && lead <= '~'))
+                        {
+                            _observer.machineEscape(lead);
+                            _escSeq.clear();
+                            _state = State::NORMAL;
+                        }
+                        else if (lead == DEL) {
+                            // Ignore
+                        }
+                        else if (lead <= ETB ||
+                                 lead == EM ||
+                                 (lead >= FS && lead <= US))
+                        {
+                            _observer.machineControl(lead);
+                        }
+                        else {
+                            FATAL("Unreachable");
+                        }
+                        break;
+                }
+            }
+            else {
+                PRINT("Unexpected UTF-8: " << seq);
             }
             break;
         case State::CSI:
             ASSERT(!_escSeq.empty(), "");
-            if (lead < SPACE) {
-                ASSERT(length == utf8::Length::L1, "");
-                _observer.machineControl(lead);
-            }
-            else if (lead == '?') {
-                // XXX For now put the '?' into _escSeq because
-                // processCsi is expecting it.
-                std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
-                //terminal->escape_flags |= ESC_FLAG_WHAT;
-            }
-            else if (lead == '>') {
-                //terminal->escape_flags |= ESC_FLAG_GT;
-            }
-            else if (lead == '!') {
-                //terminal->escape_flags |= ESC_FLAG_BANG;
-            }
-            else if (lead == '$') {
-                //terminal->escape_flags |= ESC_FLAG_CASH;
-            }
-            else if (lead == '\'') {
-                //terminal->escape_flags |= ESC_FLAG_SQUOTE;
-            }
-            else if (lead == '"') {
-                //terminal->escape_flags |= ESC_FLAG_DQUOTE;
-            }
-            else if (lead == ' ') {
-                //terminal->escape_flags |= ESC_FLAG_SPACE;
+            if (length == utf8::Length::L1) {
+                if (lead < SPACE) {
+                    ASSERT(length == utf8::Length::L1, "");
+                    _observer.machineControl(lead);
+                }
+                else if (lead == '?') {
+                    // XXX For now put the '?' into _escSeq because
+                    // processCsi is expecting it.
+                    std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
+                    //terminal->escape_flags |= ESC_FLAG_WHAT;
+                }
+                else if (lead == '>') {
+                    //terminal->escape_flags |= ESC_FLAG_GT;
+                }
+                else if (lead == '!') {
+                    //terminal->escape_flags |= ESC_FLAG_BANG;
+                }
+                else if (lead == '$') {
+                    //terminal->escape_flags |= ESC_FLAG_CASH;
+                }
+                else if (lead == '\'') {
+                    //terminal->escape_flags |= ESC_FLAG_SQUOTE;
+                }
+                else if (lead == '"') {
+                    //terminal->escape_flags |= ESC_FLAG_DQUOTE;
+                }
+                else if (lead == ' ') {
+                    //terminal->escape_flags |= ESC_FLAG_SPACE;
+                }
+                else {
+                    std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
+                }
+
+                if (isalpha(lead) || lead == '@' || lead == '`') {
+                    processCsi(_escSeq);
+                    _escSeq.clear();
+                    _state = State::NORMAL;
+                }
             }
             else {
-                std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
-            }
-
-            if (isalpha(lead) || lead == '@' || lead == '`') {
-                processCsi(_escSeq);
-                _escSeq.clear();
-                _state = State::NORMAL;
+                PRINT("Unexpected UTF-8: " << seq);
             }
             break;
         case State::INNER:
