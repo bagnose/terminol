@@ -4,6 +4,7 @@
 #include "terminol/xcb/color_set.hxx"
 #include "terminol/xcb/font_set.hxx"
 #include "terminol/xcb/basics.hxx"
+#include "terminol/common/config.hxx"
 #include "terminol/common/key_map.hxx"
 #include "terminol/common/support.hxx"
 
@@ -29,28 +30,21 @@ public:
         std::string message;
     };
 
-    EventLoop(const std::string  & fontName,
-              const std::string  & term,
-              const Tty::Command & command,
-              bool                 doubleBuffer,
-              bool                 trace,
-              bool                 sync)
+    EventLoop(const Config       & config,
+              const Tty::Command & command)
         throw (Basics::Error, FontSet::Error, Window::Error, Error) :
         _basics(),
-        _colorSet(_basics),
-        _fontSet(fontName),
+        _colorSet(config, _basics),
+        _fontSet(config),
         _keyMap(_basics.maskShift(),
                 _basics.maskAlt(),
                 _basics.maskControl()),
-        _window(_basics,
+        _window(config,
+                _basics,
                 _colorSet,
                 _fontSet,
                 _keyMap,
-                term,
-                command,
-                doubleBuffer,
-                trace,
-                sync)
+                command)
     {
         xcb_flush(_basics.connection());
         loop();
@@ -218,52 +212,65 @@ bool argMatch(const std::string & arg, const std::string & opt, std::string & va
     }
 }
 
+void showHelp(const std::string & progName, std::ostream & ost) {
+    ost << "Usage:" << std::endl
+        << "  " << progName << " \\" << std::endl
+        << "    " << "--font=FONT --term=TERM --geometry=GEOMETRY \\" << std::endl
+        << "    " << "--double-buffer --trace --sync --execute ARG0 ARG1..."
+        << std::endl;
+}
+
 int main(int argc, char * argv[]) {
     // Command line
 
-    std::string  fontName          = "inconsolata:pixelsize=18";
-    std::string  geometryStr;
-    std::string  term              = "xterm";
-    bool         doubleBuffer      = false;
-    bool         trace             = false;
-    bool         sync              = false;
+    Config       config;
     Tty::Command command;
     bool         accumulateCommand = false;
 
     for (int i = 1; i != argc; ++i) {
         std::string arg = argv[i];
-        if      (accumulateCommand)                      { command.push_back(arg);   }
-        else if (arg == "--execute")                     { accumulateCommand = true; }
-        else if (arg == "--double-buffer")               { doubleBuffer = true; }
-        else if (arg == "--trace")                       { trace = true;             }
-        else if (arg == "--sync")                        { sync  = true;             }
-        else if (argMatch(arg, "font", fontName))        {}
-        else if (argMatch(arg, "term", term))            {}
-        else if (argMatch(arg, "geometry", geometryStr)) {}
+        std::string val;
+
+        if (accumulateCommand) {
+            command.push_back(arg);
+        }
+        else if (arg == "--execute") {
+            accumulateCommand = true;
+        }
+        else if (arg == "--double-buffer") {
+            config.setDoubleBuffer(true);
+        }
+        else if (arg == "--trace") {
+            config.setTraceTty(true);
+        }
+        else if (arg == "--sync") {
+            config.setSyncTty(true);
+        }
+        else if (argMatch(arg, "font", val)) {
+            config.setFontName(val);
+        }
+        else if (argMatch(arg, "term", val)) {
+            config.setTermName(val);
+        }
+        else if (argMatch(arg, "geometry", val)) {
+            // WidthxHeight+XPos+YPos
+            config.setGeometryString(val);
+        }
+        else if (arg == "--help") {
+            showHelp(argv[0], std::cout);
+            return 0;
+        }
         else {
-            if (arg != "--help") {
-                std::cerr
-                    << "Unrecognised argument '" << arg << "'" << std::endl;
-            }
-            std::cerr
-                << "Usage:" << std::endl
-                << "  " << argv[0] << " \\" << std::endl
-                << "    " << "--font=FONT --term=TERM --geometry=GEOMETRY \\" << std::endl
-                << "    " << "--double-buffer --trace --sync --execute ARG0 ARG1..."
-                << std::endl;
-            if (arg != "--help") {
-                return 2;
-            }
-            else {
-                return 0;
-            }
+            std::cerr << "Unrecognised argument '" << arg << "'" << std::endl;
+            showHelp(argv[0], std::cerr);
+            return 2;
         }
     }
 
     FcInit();
 
     try {
-        EventLoop eventLoop(fontName, term, command, doubleBuffer, trace, sync);
+        EventLoop eventLoop(config, command);
     }
     catch (EventLoop::Error & ex) {
         FATAL(ex.message);

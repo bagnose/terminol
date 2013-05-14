@@ -5,6 +5,7 @@
 
 #include "terminol/common/tty_interface.hxx"
 #include "terminol/common/vt_state_machine.hxx"
+#include "terminol/common/config.hxx"
 #include "terminol/common/bit_sets.hxx"
 #include "terminol/common/buffer.hxx"
 #include "terminol/common/key_map.hxx"
@@ -69,6 +70,8 @@ private:
     //
     //
 
+    const Config        & _config;
+
     const KeyMap        & _keyMap;
     Buffer                _priBuffer;
     Buffer                _altBuffer;
@@ -114,17 +117,13 @@ private:
     utf8::Machine         _utf8Machine;
     VtStateMachine        _vtMachine;
 
-    bool                  _trace;
-    bool                  _sync;
-
 public:
     Terminal(I_Observer   & observer,
-             const KeyMap & keyMap,
-             I_Tty        & tty,
+             const Config & config,
              uint16_t       rows,
              uint16_t       cols,
-             bool           trace,
-             bool           sync);
+             const KeyMap & keyMap,
+             I_Tty        & tty);
     virtual ~Terminal();
 
     // Geometry:

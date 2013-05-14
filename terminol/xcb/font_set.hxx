@@ -6,8 +6,10 @@
 #include <cairo-ft.h>
 
 #include "terminol/common/support.hxx"
+#include "terminol/common/config.hxx"
 
 class FontSet : protected Uncopyable {
+    const Config        & _config;
     cairo_scaled_font_t * _normal;
     cairo_scaled_font_t * _bold;
     cairo_scaled_font_t * _italic;
@@ -21,7 +23,7 @@ public:
         std::string message;
     };
 
-    explicit FontSet(const std::string & fontName) throw (Error);
+    explicit FontSet(const Config & config) throw (Error);
     ~FontSet();
 
     // Font accessors:

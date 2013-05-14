@@ -10,15 +10,16 @@
 #include <sys/types.h>
 #include <sys/fcntl.h>
 
-Tty::Tty(uint16_t            rows,
+Tty::Tty(const Config      & config,
+         uint16_t            rows,
          uint16_t            cols,
          const std::string & windowId,
-         const std::string & term,
          const Command     & command) :
+    _config(config),
     _pid(0),
     _fd(-1)
 {
-    openPty(rows, cols, windowId, term, command);
+    openPty(rows, cols, windowId, command);
 }
 
 Tty::~Tty() {
@@ -85,7 +86,6 @@ size_t Tty::write(const uint8_t * buffer, size_t length) throw (Error) {
 void Tty::openPty(uint16_t            rows,
                   uint16_t            cols,
                   const std::string & windowId,
-                  const std::string & term,
                   const Command     & command) {
     ASSERT(_fd == -1, "");
 
@@ -123,12 +123,11 @@ void Tty::openPty(uint16_t            rows,
         ENFORCE_SYS(::ioctl(slave, TIOCSCTTY, nullptr) != -1, "");
         ENFORCE_SYS(::close(slave) != -1, "");
         ENFORCE_SYS(::close(master) != -1, "");
-        execShell(windowId, term, command);
+        execShell(windowId, command);
     }
 }
 
 void Tty::execShell(const std::string & windowId,
-                    const std::string & term,
                     const Command     & command) {
     ::unsetenv("COLUMNS");
     ::unsetenv("LINES");
@@ -143,7 +142,7 @@ void Tty::execShell(const std::string & windowId,
     }
 
     ::setenv("WINDOWID", windowId.c_str(), 1);
-    ::setenv("TERM", term.c_str(), 1);
+    ::setenv("TERM", _config.getTermName().c_str(), 1);
 
     ::signal(SIGCHLD, SIG_DFL);
     ::signal(SIGHUP,  SIG_DFL);

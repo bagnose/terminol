@@ -5,21 +5,23 @@
 
 #include "terminol/common/tty_interface.hxx"
 #include "terminol/common/support.hxx"
+#include "terminol/common/config.hxx"
 
 #include <vector>
 #include <string>
 
 class Tty : public I_Tty {
-    pid_t _pid;
-    int   _fd;
+    const Config & _config;
+    pid_t          _pid;
+    int            _fd;
 
 public:
     typedef std::vector<std::string> Command;
 
-    Tty(uint16_t            rows,
+    Tty(const Config      & config,
+        uint16_t            rows,
         uint16_t            cols,
         const std::string & windowId,
-        const std::string & term,
         const Command     & command);
 
     virtual ~Tty();
@@ -39,11 +41,9 @@ protected:
     void openPty(uint16_t            rows,
                  uint16_t            cols,
                  const std::string & windowId,
-                 const std::string & term,
                  const Command     & command);
-    static void execShell(const std::string & windowId,
-                          const std::string & term,
-                          const Command     & command);
+    void execShell(const std::string & windowId,
+                   const Command     & command);
 
     bool pollReap(int & exitCode, int msec);
     int  waitReap();

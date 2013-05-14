@@ -28,8 +28,13 @@ class Cell {
     static const uint8_t BLANK = SPACE;
 
 public:
+#if 1
+    static uint8_t      defaultFg()    { return 12; }
+    static uint8_t      defaultBg()    { return 8;  }
+#else
     static uint8_t      defaultFg()    { return 7; }
     static uint8_t      defaultBg()    { return 0; }
+#endif
     static AttributeSet defaultAttrs() { return AttributeSet(); }
 
     static Cell blank() {

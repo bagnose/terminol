@@ -6,6 +6,7 @@
 #include "terminol/xcb/basics.hxx"
 #include "terminol/xcb/color_set.hxx"
 #include "terminol/xcb/font_set.hxx"
+#include "terminol/common/config.hxx"
 #include "terminol/common/key_map.hxx"
 #include "terminol/common/tty.hxx"
 #include "terminol/common/terminal.hxx"
@@ -24,6 +25,7 @@ class Window :
     static const int         SCROLLBAR_WIDTH;
     static const std::string DEFAULT_TITLE;
 
+    const Config    & _config;
     Basics          & _basics;
     const ColorSet  & _colorSet;
     FontSet         & _fontSet;
@@ -39,7 +41,6 @@ class Window :
     bool              _mapped;          // Is the window mapped.
     bool              _focussed;        // Is the window focussed.
 
-    bool              _doubleBuffer;
     xcb_pixmap_t      _pixmap;          // Created when mapped, destroyed when unmapped.
 
     cairo_surface_t * _surface;
@@ -54,15 +55,12 @@ public:
         std::string message;
     };
 
-    Window(Basics             & basics,
+    Window(const Config       & config,
+           Basics             & basics,
            const ColorSet     & colorSet,
            FontSet            & fontSet,
            const KeyMap       & keyMap,
-           const std::string  & term,
-           const Tty::Command & command,
-           bool                 doubleBuffer,
-           bool                 trace,
-           bool                 sync) throw (Error);
+           const Tty::Command & command) throw (Error);
 
     virtual ~Window();
 

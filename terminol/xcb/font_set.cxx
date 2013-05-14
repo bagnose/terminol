@@ -2,7 +2,8 @@
 
 #include "terminol/xcb/font_set.hxx"
 
-FontSet::FontSet(const std::string & fontName) throw (Error) :
+FontSet::FontSet(const Config & config) throw (Error) :
+    _config(config),
     _normal(nullptr),
     _bold(nullptr),
     _italic(nullptr),
@@ -12,6 +13,8 @@ FontSet::FontSet(const std::string & fontName) throw (Error) :
     _ascent(0)
 {
     FcPattern * pattern;
+
+    const std::string & fontName = _config.getFontName();
 
     pattern = FcNameParse(reinterpret_cast<const FcChar8 *>(fontName.c_str()));
     if (!pattern) {

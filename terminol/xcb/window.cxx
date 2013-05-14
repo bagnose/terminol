@@ -24,15 +24,13 @@ int _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
 }
 } // namespace {anonymous}
 
-Window::Window(Basics             & basics,
+Window::Window(const Config       & config,
+               Basics             & basics,
                const ColorSet     & colorSet,
                FontSet            & fontSet,
                const KeyMap       & keyMap,
-               const std::string  & term,
-               const Tty::Command & command,
-               bool                 doubleBuffer,
-               bool                 trace,
-               bool                 sync) throw (Error) :
+               const Tty::Command & command) throw (Error) :
+    _config(config),
     _basics(basics),
     _colorSet(colorSet),
     _fontSet(fontSet),
@@ -47,14 +45,13 @@ Window::Window(Basics             & basics,
     _pointerCol(std::numeric_limits<uint16_t>::max()),
     _mapped(false),
     _focussed(false),
-    _doubleBuffer(doubleBuffer),
     _pixmap(0),
     _surface(nullptr),
     _cr(nullptr),
     _title(DEFAULT_TITLE)
 {
-    uint16_t rows = 25;
-    uint16_t cols = 80;
+    uint16_t rows = _config.getRows();
+    uint16_t cols = _config.getCols();
 
     _width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
     _height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
@@ -97,7 +94,7 @@ Window::Window(Basics             & basics,
                                        _basics.screen()->root_depth,
                                        _window,
                                        _basics.screen()->root,
-                                       -1, -1,       // x, y
+                                       _config.getX(), config.getY(),
                                        _width, _height,
                                        0,            // border width
                                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
@@ -143,8 +140,8 @@ Window::Window(Basics             & basics,
     // Create the TTY and terminal.
     //
 
-    _tty = new Tty(rows, cols, stringify(_window), term, command);
-    _terminal = new Terminal(*this, keyMap, *_tty, rows, cols, trace, sync);
+    _tty = new Tty(_config, rows, cols, stringify(_window), command);
+    _terminal = new Terminal(*this, _config, rows, cols, keyMap, *_tty);
     _isOpen = true;
 
     //
@@ -158,7 +155,7 @@ Window::Window(Basics             & basics,
 
 Window::~Window() {
     if (_mapped) {
-        if (_doubleBuffer) {
+        if (_config.getDoubleBuffer()) {
             ASSERT(_pixmap, "");
         }
         ASSERT(_surface, "");
@@ -166,7 +163,7 @@ Window::~Window() {
         cairo_surface_finish(_surface);
         cairo_surface_destroy(_surface);
 
-        if (_doubleBuffer) {
+        if (_config.getDoubleBuffer()) {
             xcb_void_cookie_t cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
             if (xcb_request_failed(_basics.connection(), cookie,
                                    "Failed to free pixmap"))
@@ -177,7 +174,7 @@ Window::~Window() {
     }
     else {
         ASSERT(!_surface, "");
-        if (_doubleBuffer) {
+        if (_config.getDoubleBuffer()) {
             ASSERT(!_pixmap, "");
         }
     }
@@ -281,7 +278,7 @@ void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
     //PRINT("Map");
     ASSERT(!_mapped, "");
 
-    if (_doubleBuffer) {
+    if (_config.getDoubleBuffer()) {
         _pixmap = xcb_generate_id(_basics.connection());
         xcb_void_cookie_t cookie = xcb_create_pixmap_checked(_basics.connection(),
                                                              _basics.screen()->root_depth,
@@ -295,7 +292,7 @@ void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
     }
 
     _surface = cairo_xcb_surface_create(_basics.connection(),
-                                        _doubleBuffer ? _pixmap : _window,
+                                        _config.getDoubleBuffer() ? _pixmap : _window,
                                         _basics.visual(),
                                         _width,
                                         _height);
@@ -312,7 +309,7 @@ void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     cairo_surface_destroy(_surface);
     _surface = nullptr;
 
-    if (_doubleBuffer) {
+    if (_config.getDoubleBuffer()) {
         ASSERT(_pixmap, "");
         xcb_void_cookie_t cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
         if (xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap")) {
@@ -337,7 +334,7 @@ void Window::expose(xcb_expose_event_t * event) {
           */
 
     if (_mapped) {
-        if (_doubleBuffer) {
+        if (_config.getDoubleBuffer()) {
             ASSERT(_pixmap, "");
         }
 
@@ -364,13 +361,13 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
     _height = event->height;
 
     if (_mapped) {
-        if (_doubleBuffer) {
+        if (_config.getDoubleBuffer()) {
             ASSERT(_pixmap, "");
         }
 
         ASSERT(_surface, "");
 
-        if (_doubleBuffer) {
+        if (_config.getDoubleBuffer()) {
             cairo_surface_finish(_surface);
             cairo_surface_destroy(_surface);
             _surface = nullptr;
@@ -399,7 +396,7 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
             cairo_surface_finish(_surface);
             _surface = cairo_xcb_surface_create(_basics.connection(),
-                                                _doubleBuffer ? _pixmap : _window,
+                                                _config.getDoubleBuffer() ? _pixmap : _window,
                                                 _basics.visual(),
                                                 _width,
                                                 _height);
@@ -435,7 +432,7 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
     updateTitle();
 
     if (_mapped) {
-        if (_doubleBuffer) {
+        if (_config.getDoubleBuffer()) {
             ASSERT(_pixmap, "");
         }
         ASSERT(_surface, "");
@@ -612,7 +609,7 @@ void Window::updateTitle() {
 
 void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     ASSERT(_mapped, "");
-    if (_doubleBuffer) {
+    if (_config.getDoubleBuffer()) {
         ASSERT(_pixmap, "");
     }
     ASSERT(_surface, "");
@@ -622,7 +619,7 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 #if DEBUG
     // Clear the damaged area so that we know we are completely drawing to it.
 
-    if (_doubleBuffer) {
+    if (_config.getDoubleBuffer()) {
         xcb_rectangle_t rect = {
             static_cast<int16_t>(x), static_cast<int16_t>(y), w, h
         };
@@ -667,7 +664,7 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 
     cairo_surface_flush(_surface);      // Useful?
 
-    if (_doubleBuffer) {
+    if (_config.getDoubleBuffer()) {
         xcb_copy_area(_basics.connection(),
                       _pixmap,
                       _window,
@@ -780,7 +777,7 @@ bool Window::terminalBeginFixDamage(bool internal) throw () {
     }
     else {
         ASSERT(_mapped, "");
-        if (_doubleBuffer) {
+        if (_config.getDoubleBuffer()) {
             ASSERT(_pixmap, "");
         }
         ASSERT(_surface, "");
@@ -915,7 +912,7 @@ void Window::terminalEndFixDamage(bool     internal,
 
         cairo_surface_flush(_surface);      // Useful?
 
-        if (_doubleBuffer) {
+        if (_config.getDoubleBuffer()) {
             int x0, y0;
             rowCol2XY(rowBegin, colBegin, x0, y0);
             int x1, y1;

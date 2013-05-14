@@ -83,17 +83,18 @@ const Terminal::CharSub Terminal::CS_SPECIAL[] = {
 //
 
 Terminal::Terminal(I_Observer   & observer,
-                   const KeyMap & keyMap,
-                   I_Tty        & tty,
+                   const Config & config,
                    uint16_t       rows,
                    uint16_t       cols,
-                   bool           trace,
-                   bool           sync) :
+                   const KeyMap & keyMap,
+                   I_Tty        & tty) :
     _observer(observer),
     _dispatch(false),
     //
+    _config(config),
+    //
     _keyMap(keyMap),
-    _priBuffer(rows, cols, std::numeric_limits<size_t>::max()),
+    _priBuffer(rows, cols, _config.getScrollBackHistory()),
     _altBuffer(rows, cols, 0),
     _buffer(&_priBuffer),
     //
@@ -128,9 +129,7 @@ Terminal::Terminal(I_Observer   & observer,
     _dumpWrites(false),
     _writeBuffer(),
     _utf8Machine(),
-    _vtMachine(*this),
-    _trace(trace),
-    _sync(sync)
+    _vtMachine(*this)
 {
     for (size_t i = 0; i != _tabs.size(); ++i) {
         _tabs[i] = (i + 1) % TAB_SIZE == 0;
@@ -168,7 +167,7 @@ void Terminal::redraw(uint16_t rowBegin, uint16_t rowEnd,
 
 void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
     if (!handleKeyBinding(keySym, state) && _keyMap.isPotent(keySym)) {
-        if (/* scroll on keystroke && */ _buffer->scrollBottom()) {
+        if (_config.getScrollOnTtyKeyPress() && _buffer->scrollBottom()) {
             fixDamage(0, _buffer->getRows(),
                       0, _buffer->getCols(),
                       Damage::SCROLL);
@@ -217,7 +216,7 @@ void Terminal::read() {
         do {
             //static int i = 0;
             //PRINT("Read: " << ++i);
-            size_t rval = _tty.read(buf, _sync ? 16 : sizeof buf);
+            size_t rval = _tty.read(buf, _config.getSyncTty() ? 16 : sizeof buf);
             if (rval == 0) { /*PRINT("Would block");*/ break; }
             //PRINT("Read: " << rval);
             processRead(buf, rval);
@@ -229,7 +228,7 @@ void Terminal::read() {
         _observer.terminalChildExited(ex.exitCode);
     }
 
-    if (!_sync) {
+    if (!_config.getSyncTty()) {
         fixDamage(0, _buffer->getRows(), 0, _buffer->getCols(), Damage::TTY);
     }
 
@@ -384,7 +383,7 @@ utf8::Seq Terminal::translate(utf8::Seq seq, utf8::Length length) const {
         uint8_t ascii = seq.bytes[0];
         for (const CharSub * cs = _otherCharSet ? _G1 : _G0; cs->match != NUL; ++cs) {
             if (ascii == cs->match) {
-                if (_trace) {
+                if (_config.getTraceTty()) {
                     std::cerr
                         << Esc::BG_BLUE << Esc::FG_WHITE
                         << '/' << cs->match << '/' << cs->replace << '/'
@@ -626,7 +625,7 @@ void Terminal::processRead(const uint8_t * data, size_t size) {
 void Terminal::processChar(utf8::Seq seq, utf8::Length length) {
     _vtMachine.consume(seq, length);
 
-    if (_sync) {        // FIXME too often, may not have been a buffer change.
+    if (_config.getSyncTty()) {        // FIXME too often, may not have been a buffer change.
         fixDamage(0, _buffer->getRows(), 0, _buffer->getCols(), Damage::TTY);
     }
 }
@@ -634,7 +633,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length length) {
 void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
     seq = translate(seq, length);
 
-    if (_trace) {
+    if (_config.getTraceTty()) {
         std::cerr << Esc::FG_GREEN << Esc::UNDERLINE << seq << Esc::RESET;
     }
 
@@ -667,7 +666,7 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
 }
 
 void Terminal::machineControl(uint8_t c) throw () {
-    if (_trace) {
+    if (_config.getTraceTty()) {
         std::cerr << Esc::FG_YELLOW << Char(c) << Esc::RESET;
     }
 
@@ -707,7 +706,7 @@ void Terminal::machineControl(uint8_t c) throw () {
         case FF:
         case VT:
             if (_cursorRow == _buffer->getMarginEnd() - 1) {
-                if (_trace) {
+                if (_config.getTraceTty()) {
                     std::cerr << "(ADDLINE1)" << std::endl;
                 }
                 _buffer->addLine();
@@ -717,7 +716,7 @@ void Terminal::machineControl(uint8_t c) throw () {
                 ++_cursorRow;
             }
 
-            if (_trace) {
+            if (_config.getTraceTty()) {
                 std::cerr << std::endl;
             }
             break;
@@ -745,7 +744,7 @@ void Terminal::machineControl(uint8_t c) throw () {
 }
 
 void Terminal::machineEscape(uint8_t c) throw () {
-    if (_trace) {
+    if (_config.getTraceTty()) {
         std::cerr << Esc::FG_MAGENTA << "ESC" << Char(c) << Esc::RESET << " ";
     }
 
@@ -754,7 +753,7 @@ void Terminal::machineEscape(uint8_t c) throw () {
             // FIXME
             damageCursor();
             if (_cursorRow == _buffer->getMarginEnd() - 1) {
-                if (_trace) {
+                if (_config.getTraceTty()) {
                     std::cerr << "(ADDLINE1)" << std::endl;
                 }
                 _buffer->addLine();
@@ -768,7 +767,7 @@ void Terminal::machineEscape(uint8_t c) throw () {
             damageCursor();
             _cursorCol = 0;
             if (_cursorRow == _buffer->getMarginEnd() - 1) {
-                if (_trace) {
+                if (_config.getTraceTty()) {
                     std::cerr << "(ADDLINE1)" << std::endl;
                 }
                 _buffer->addLine();
@@ -842,7 +841,7 @@ void Terminal::machineEscape(uint8_t c) throw () {
 void Terminal::machineCsi(bool priv,
                           const std::vector<int32_t> & args,
                           uint8_t mode) throw () {
-    if (_trace) {
+    if (_config.getTraceTty()) {
         std::cerr << Esc::FG_CYAN << "ESC[";
         if (priv) { std::cerr << '?'; }
         for (auto & a : args) { std::cerr << a << ';'; }
@@ -876,7 +875,7 @@ void Terminal::machineCsi(bool priv,
             break;
         case 'f':       // HVP - Horizontal and Vertical Position
         case 'H':       // CUP - Cursor Position
-            if (_trace) { std::cerr << std::endl; }
+            if (_config.getTraceTty()) { std::cerr << std::endl; }
             if (_originMode) {
                 uint16_t row = clamp<int32_t>(nthArg(args, 0, 1) - 1 + _buffer->getMarginBegin(),
                                               _buffer->getMarginBegin(),
@@ -1122,13 +1121,13 @@ default_:
 }
 
 void Terminal::machineDcs(const std::vector<uint8_t> & seq) throw () {
-    if (_trace) {
+    if (_config.getTraceTty()) {
         std::cerr << Esc::FG_RED << "ESC" << Str(seq) << Esc::RESET << ' ';
     }
 }
 
 void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
-    if (_trace) {
+    if (_config.getTraceTty()) {
         std::cerr << Esc::FG_MAGENTA << "ESC";
         for (auto & a : args) { std::cerr << a << ';'; }
         std::cerr << Esc::RESET << " ";
@@ -1149,7 +1148,7 @@ void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
 }
 
 void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
-    if (_trace) {
+    if (_config.getTraceTty()) {
         //std::cerr << Esc::FG_BLUE << "ESC" << Str(seq) << Esc::RESET << " ";
     }
 

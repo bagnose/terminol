@@ -4,7 +4,9 @@
 #include "terminol/common/support.hxx"
 
 #include <algorithm>
+#include <limits>
 
+#if 0
 #if 0
 const Color ColorSet::COLORS16[16] = {
     // normal
@@ -48,13 +50,20 @@ const Color ColorSet::COLORS16[16] = {
     { 1.0,  1.0,  1.0  }  // white
 };
 #endif
+#endif
 
-ColorSet::ColorSet(Basics & basics) :
+ColorSet::ColorSet(const Config & config,
+                   Basics       & basics) :
+    _config(config),
     _basics(basics)
 {
     _cursorFgColor    = { 0.0, 0.0,  0.0 };
     _cursorBgColor    = { 1.0, 0.25, 1.0 };
-    _borderColor      = COLORS16[0];
+#if 0
+    _borderColor      = _config.getSystemColor(0);
+#else
+    _borderColor      = _config.getSystemColor(8);
+#endif
     _scrollBarFgColor = { 0.5, 0.5,  0.5 };
     _scrollBarBgColor = _borderColor;
 
@@ -63,9 +72,11 @@ ColorSet::ColorSet(Basics & basics) :
     // 16..231  6x6x6 color cube
     // 232..255 grey ramp
 
-    std::copy(COLORS16, COLORS16 + 16, _indexedColors);
+    uint8_t index = 0;
 
-    uint8_t index = 16;
+    for (; index != 16; ++index) {
+        _indexedColors[index] = _config.getSystemColor(index);
+    }
 
     for (auto r = 0; r != 6; ++r) {
         for (auto g = 0; g != 6; ++g) {
@@ -85,7 +96,11 @@ ColorSet::ColorSet(Basics & basics) :
     // Allocate the background pixel.
     //
 
+#if 0
     const Color & background = _indexedColors[0];
+#else
+    const Color & background = _indexedColors[8];
+#endif
 
     const double MAX = std::numeric_limits<uint16_t>::max();
 
@@ -110,5 +125,4 @@ ColorSet::~ColorSet() {
                     0,         // plane_mask - WTF?
                     1,
                     &_backgroundPixel);
-
 }
