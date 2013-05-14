@@ -306,24 +306,11 @@ public:
               */
         ASSERT(beforeRow < getRows(), "");
 
-        // XXX is there any point in the two code-paths ?
-        if (marginsSet()) {
-            _lines.erase(_lines.begin() + _history + _marginEnd - n,
-                         _lines.begin() + _history + _marginEnd);
-            _lines.insert(_lines.begin() + _history + beforeRow, n, Line(getCols()));
+        _lines.erase(_lines.begin() + _history + _marginEnd - n,
+                     _lines.begin() + _history + _marginEnd);
+        _lines.insert(_lines.begin() + _history + beforeRow, n, Line(getCols()));
 
-            damageMargin();
-        }
-        else {
-            _lines.insert(_lines.begin() + _history + beforeRow, n, Line(getCols()));
-            _history += n;
-            if (_history > _maxHistory) {
-                _lines.erase(_lines.begin(), _lines.begin() + _history - _maxHistory);
-                _history = _maxHistory;
-            }
-            _scroll    = _history;         // XXX presumptuous
-            _barDamage = true;
-        }
+        damageMargin();
     }
 
     void eraseLines(uint16_t row, uint16_t n) {
