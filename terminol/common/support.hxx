@@ -162,6 +162,22 @@ inline char nibbleToHex(uint8_t nibble) {
     else              return 'A' + (nibble - 10);
 }
 
+inline uint8_t hexToNibble(char hex) {
+    if      (hex >= '0' && hex <= '9') { return hex - '0';          }
+    else if (hex >= 'A' && hex <= 'F') { return 10 + hex - 'A';     }
+    else if (hex >= 'a' && hex <= 'f') { return 10 + hex - 'a';     }
+    else                               { FATAL("Bad hex: " << hex); }
+}
+
+inline void byteToHex(uint8_t byte, char & hex0, char & hex1) {
+    hex0 = nibbleToHex((byte >> 4) & 0x0F);
+    hex1 = nibbleToHex(byte & 0x0F);
+}
+
+inline uint8_t hexToByte(char hex0, char hex1) {
+    return (hexToNibble(hex0) << 4) + hexToNibble(hex1);
+}
+
 template <typename T> std::string toHex(T t) {
     std::string str;
     for (size_t i = 0; i < sizeof(T); ++i) {
