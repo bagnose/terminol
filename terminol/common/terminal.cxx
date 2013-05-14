@@ -361,6 +361,14 @@ void Terminal::damageCursor() {
 void Terminal::fixDamage(uint16_t rowBegin, uint16_t rowEnd,
                          uint16_t colBegin, uint16_t colEnd,
                          Damage damage) {
+    if (damage == Damage::TTY &&
+        _config.getScrollOnTtyOutput() &&
+        _buffer->scrollBottom())
+    {
+        // Promote the damage from TTY to SCROLL.
+        damage = Damage::SCROLL;
+    }
+
     if (_observer.terminalBeginFixDamage(damage != Damage::EXPOSURE)) {
         draw(rowBegin, rowEnd, colBegin, colEnd, damage);
         _observer.terminalEndFixDamage(damage != Damage::EXPOSURE,
