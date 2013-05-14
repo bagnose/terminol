@@ -304,7 +304,7 @@ public:
               ", rows=" << getRows() << ", scrollBegin=" << _marginBegin <<
               ", scrollEnd=" << _marginEnd);
               */
-        ASSERT(beforeRow < getRows() + 1, "");
+        ASSERT(beforeRow < getRows(), "");
 
         // XXX is there any point in the two code-paths ?
         if (marginsSet()) {
@@ -332,7 +332,8 @@ public:
               getRows() << ", scrollBegin=" << _marginBegin <<
               ", scrollEnd=" << _marginEnd);
               */
-        ASSERT(row + n < getRows() + 1, "");
+        ASSERT(row + n < getRows(), "");
+
         _lines.insert(_lines.begin() + _history + _marginEnd, n, Line(getCols()));
         _lines.erase(_lines.begin() + _history + row, _lines.begin() + _history + row + n);
 
