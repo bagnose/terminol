@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/common/enums.hxx"
-#include "terminol/common/support.hxx"
+#include "terminol/support/debug.hxx"
 
 std::ostream & operator << (std::ostream & ost, Control control) {
     switch (control) {

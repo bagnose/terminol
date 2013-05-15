@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/xcb/color_set.hxx"
-#include "terminol/common/support.hxx"
+#include "terminol/support/debug.hxx"
 
 #include <algorithm>
 #include <limits>

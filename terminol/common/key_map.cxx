@@ -2,8 +2,9 @@
 
 #include "terminol/common/key_map.hxx"
 #include "terminol/common/ascii.hxx"
-#include "terminol/common/support.hxx"
+#include "terminol/support/debug.hxx"
 
+#include <sstream>
 #include <cstring>
 
 #include <xcb/xcb.h>

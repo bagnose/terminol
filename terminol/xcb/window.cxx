@@ -1,9 +1,12 @@
 // vi:noai:sw=4
 
 #include "terminol/xcb/window.hxx"
+#include "terminol/support/conv.hxx"
 
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_aux.h>
+
+#include <limits>
 
 #include <unistd.h>
 

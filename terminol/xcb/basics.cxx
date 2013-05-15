@@ -1,9 +1,11 @@
 // vi:noai:sw=4
 
 #include "terminol/xcb/basics.hxx"
+#include "terminol/support/debug.hxx"
 
 #include <xkbcommon/xkbcommon-keysyms.h>
 
+#include <sstream>
 #include <cstdlib>
 
 #include <unistd.h>

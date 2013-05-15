@@ -3,10 +3,10 @@
 #ifndef XCB__FONT_SET__HXX
 #define XCB__FONT_SET__HXX
 
-#include <cairo-ft.h>
-
-#include "terminol/common/support.hxx"
 #include "terminol/common/config.hxx"
+#include "terminol/support/pattern.hxx"
+
+#include <cairo-ft.h>
 
 class FontSet : protected Uncopyable {
     const Config        & _config;

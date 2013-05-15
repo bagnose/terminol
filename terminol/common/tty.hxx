@@ -4,13 +4,13 @@
 #define COMMON__TTY__H
 
 #include "terminol/common/tty_interface.hxx"
-#include "terminol/common/support.hxx"
 #include "terminol/common/config.hxx"
+#include "terminol/support/pattern.hxx"
 
 #include <vector>
 #include <string>
 
-class Tty : public I_Tty {
+class Tty : public I_Tty, protected Uncopyable {
     const Config & _config;
     pid_t          _pid;
     int            _fd;

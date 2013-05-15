@@ -1,7 +1,8 @@
 // vi:noai:sw=4
 
 #include "terminol/common/bit_sets.hxx"
-#include "terminol/common/support.hxx"
+
+#include <iostream>
 
 std::ostream & operator << (std::ostream & ost, AttributeSet attributeSet) {
     bool first = true;

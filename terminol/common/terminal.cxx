@@ -1,6 +1,9 @@
 // vi:noai:sw=4
 
 #include "terminol/common/terminal.hxx"
+#include "terminol/support/time.hxx"
+#include "terminol/support/conv.hxx"
+#include "terminol/support/escape.hxx"
 
 #include <algorithm>
 

@@ -1,7 +1,8 @@
 // vi:noai:sw=4
 
 #include "terminol/common/utf8.hxx"
-#include "terminol/common/support.hxx"
+#include "terminol/support/debug.hxx"
+#include "terminol/support/conv.hxx"
 
 const uint8_t B0 = 1 << 0;
 const uint8_t B1 = 1 << 1;

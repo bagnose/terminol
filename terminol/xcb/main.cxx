@@ -6,12 +6,10 @@
 #include "terminol/xcb/basics.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/key_map.hxx"
-#include "terminol/common/support.hxx"
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_event.h>
 #include <cairo-ft.h>
-
 #include <fontconfig/fontconfig.h>
 
 #include <unistd.h>

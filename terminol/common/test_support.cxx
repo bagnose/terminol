@@ -1,6 +1,7 @@
 // vi:noai:sw=4
 
-#include "terminol/common/support.hxx"
+#include "terminol/support/debug.hxx"
+#include "terminol/support/conv.hxx"
 
 void test(uint8_t num, const char ascii[2]) {
     char    tmpAscii[2];

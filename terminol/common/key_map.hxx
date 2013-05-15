@@ -3,7 +3,7 @@
 #ifndef XCB__KEY_MAP__HXX
 #define XCB__KEY_MAP__HXX
 
-#include "terminol/common/support.hxx"
+#include "terminol/support/pattern.hxx"
 
 #include <vector>
 

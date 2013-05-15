@@ -1,4 +1,0 @@
-dist-exe query
-  :
-  query.cxx
-  ;

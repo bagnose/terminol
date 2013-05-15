@@ -3,7 +3,6 @@
 #ifndef COMMON__BUFFER__HXX
 #define COMMON__BUFFER__HXX
 
-#include "terminol/common/support.hxx"
 #include "terminol/common/cell.hxx"
 
 #include <vector>

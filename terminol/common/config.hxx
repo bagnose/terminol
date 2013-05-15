@@ -3,7 +3,8 @@
 #ifndef COMMON__CONFIG__HXX
 #define COMMON__CONFIG__HXX
 
-#include "terminol/common/support.hxx"
+#include "terminol/support/debug.hxx"
+#include "terminol/support/pattern.hxx"
 
 class Config : protected Uncopyable {
 public:

@@ -1,6 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/common/config.hxx"
+#include "terminol/support/conv.hxx"
 
 #include <limits>
 

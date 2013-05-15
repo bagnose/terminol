@@ -6,7 +6,6 @@
 #include "terminol/common/bit_sets.hxx"
 #include "terminol/common/utf8.hxx"
 #include "terminol/common/ascii.hxx"
-#include "terminol/common/support.hxx"
 
 #include <algorithm>
 

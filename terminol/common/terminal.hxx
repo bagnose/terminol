@@ -9,7 +9,7 @@
 #include "terminol/common/bit_sets.hxx"
 #include "terminol/common/buffer.hxx"
 #include "terminol/common/key_map.hxx"
-#include "terminol/common/support.hxx"
+#include "terminol/support/pattern.hxx"
 
 #include <xkbcommon/xkbcommon.h>
 

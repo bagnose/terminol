@@ -3,7 +3,7 @@
 #ifndef COMMON__UTF8__HXX
 #define COMMON__UTF8__HXX
 
-#include "terminol/common/support.hxx"
+#include "terminol/support/debug.hxx"
 
 #include <stddef.h>
 #include <stdint.h>

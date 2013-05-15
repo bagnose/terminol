@@ -1,1 +1,1 @@
-contain common misc xcb ;
+contain support common xcb ;

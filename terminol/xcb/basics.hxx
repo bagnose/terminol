@@ -3,7 +3,9 @@
 #ifndef XCB__BASICS__HXX
 #define XCB__BASICS__HXX
 
-#include "terminol/common/support.hxx"
+#include "terminol/support/pattern.hxx"
+
+#include <string>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_ewmh.h>

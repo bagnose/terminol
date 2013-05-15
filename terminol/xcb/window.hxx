@@ -10,7 +10,7 @@
 #include "terminol/common/key_map.hxx"
 #include "terminol/common/tty.hxx"
 #include "terminol/common/terminal.hxx"
-#include "terminol/common/support.hxx"
+#include "terminol/support/pattern.hxx"
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_keysyms.h>
