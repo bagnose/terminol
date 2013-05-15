@@ -178,7 +178,7 @@ void Basics::determineMasks() {
         xcb_get_modifier_mapping_keycodes(modmapReply);
 
     // Clear the masks.
-    _maskShift = _maskAlt = _maskControl =
+    _maskShift = _maskAlt = _maskControl = _maskSuper =
         _maskNumLock = _maskShiftLock = _maskCapsLock = _maskModeSwitch = 0;
 
     for(int i = 0; i != 8; ++i) {
