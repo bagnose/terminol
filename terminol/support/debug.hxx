@@ -81,7 +81,7 @@
     ENFORCE(condition, output << " (" << ::strerror(errno) << ")")
 
 // ASSERT (and its variants) may be compiled out.
-#if 1
+#if DEBUG
 #  define ASSERT(condition, output) \
     do { \
         if (!LIKELY(condition)) { \
@@ -99,6 +99,7 @@
 #else
 #  define ASSERT(condition, output) \
     do { } while (false)
+
 #  define ASSERT_SYS(condition, output) \
     do { } while (false)
 #endif
