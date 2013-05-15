@@ -240,6 +240,12 @@ public:
 
         size_t oldHistory = _history;
 
+        if (cols != getCols()) {
+            for (auto & line : _lines) {
+                line.resize(cols);
+            }
+        }
+
         if (rows > getRows()) {
             // The scrollback history is the first port of call for rows.
             if (_lines.size() >= rows) {
@@ -265,12 +271,6 @@ public:
 
         damageAll();
         _scroll = _history;         // XXX Scroll to bottom on resize? Most terminals do
-
-        if (cols != getCols()) {
-            for (auto & line : _lines) {
-                line.resize(cols);
-            }
-        }
 
         _marginBegin = 0;
         _marginEnd   = rows;
