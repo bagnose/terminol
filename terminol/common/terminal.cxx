@@ -378,9 +378,9 @@ void Terminal::fixDamage(uint16_t rowBegin, uint16_t rowEnd,
         damage = Damage::SCROLL;
     }
 
-    if (_observer.terminalBeginFixDamage(damage != Damage::EXPOSURE)) {
+    if (_observer.terminalFixDamageBegin(damage != Damage::EXPOSURE)) {
         draw(rowBegin, rowEnd, colBegin, colEnd, damage);
-        _observer.terminalEndFixDamage(damage != Damage::EXPOSURE,
+        _observer.terminalFixDamageEnd(damage != Damage::EXPOSURE,
                                        _damageRowBegin, _damageRowEnd,
                                        _damageColBegin, _damageColEnd);
 

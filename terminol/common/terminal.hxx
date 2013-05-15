@@ -34,7 +34,7 @@ public:
         virtual void terminalResetTitle() throw () = 0;
         virtual void terminalSetTitle(const std::string & title) throw () = 0;
         virtual void terminalResize(uint16_t rows, uint16_t cols) throw () = 0;
-        virtual bool terminalBeginFixDamage(bool internal) throw () = 0;
+        virtual bool terminalFixDamageBegin(bool internal) throw () = 0;
         virtual void terminalDrawRun(uint16_t        row,
                                      uint16_t        col,
                                      uint8_t         fg,
@@ -52,7 +52,7 @@ public:
         virtual void terminalDrawScrollbar(size_t   totalRows,
                                            size_t   historyOffset,
                                            uint16_t visibleRows) throw () = 0;
-        virtual void terminalEndFixDamage(bool     internal,
+        virtual void terminalFixDamageEnd(bool     internal,
                                           uint16_t rowBegin,
                                           uint16_t rowEnd,
                                           uint16_t colBegin,

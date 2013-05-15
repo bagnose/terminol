@@ -757,7 +757,7 @@ void Window::terminalResize(uint16_t rows, uint16_t cols) throw () {
                                        100, 100);
 }
 
-bool Window::terminalBeginFixDamage(bool internal) throw () {
+bool Window::terminalFixDamageBegin(bool internal) throw () {
     //PRINT("Damage begin, internal: " << std::boolalpha << internal);
 
     if (internal) {
@@ -904,7 +904,7 @@ void Window::terminalDrawScrollbar(size_t   totalRows,
     cairo_fill(_cr);
 }
 
-void Window::terminalEndFixDamage(bool     internal,
+void Window::terminalFixDamageEnd(bool     internal,
                                   uint16_t rowBegin,
                                   uint16_t rowEnd,
                                   uint16_t colBegin,

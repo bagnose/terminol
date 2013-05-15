@@ -110,7 +110,7 @@ protected:
     void terminalResetTitle() throw ();
     void terminalSetTitle(const std::string & title) throw ();
     void terminalResize(uint16_t rows, uint16_t cols) throw ();
-    bool terminalBeginFixDamage(bool internal) throw ();
+    bool terminalFixDamageBegin(bool internal) throw ();
     void terminalDrawRun(uint16_t        row,
                          uint16_t        col,
                          uint8_t         fg,
@@ -128,7 +128,7 @@ protected:
     void terminalDrawScrollbar(size_t   totalRows,
                                size_t   historyOffset,
                                uint16_t visibleRows) throw ();
-    void terminalEndFixDamage(bool     internal,
+    void terminalFixDamageEnd(bool     internal,
                               uint16_t rowBegin,
                               uint16_t rowEnd,
                               uint16_t colBegin,
