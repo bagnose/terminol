@@ -152,10 +152,16 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     ASSERT(!_dispatch, "");
     ASSERT(rows > 0 && cols > 0, "");
 
-    _cursorRow = std::min<uint16_t>(_cursorRow, rows - 1);
-    _cursorCol = std::min<uint16_t>(_cursorCol, cols - 1);
-    _priBuffer.resize(rows, cols);
-    _altBuffer.resize(rows, cols);
+    int16_t priRowAdjust = _priBuffer.resize(rows, cols);
+    int16_t altRowAdjust = _altBuffer.resize(rows, cols);
+    int16_t rowAdjust = _buffer == &_priBuffer ? priRowAdjust : altRowAdjust;
+
+    _cursorRow = clamp<int16_t>(_cursorRow + rowAdjust, 0, rows - 1);
+    _cursorCol = std::min(_cursorCol, cols);
+
+    // XXX is this correct for the saved cursor row/col?
+    _savedCursorRow = std::min(_savedCursorRow, rows);
+    _savedCursorCol = std::min(_savedCursorRow, rows);
 
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {

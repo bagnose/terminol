@@ -234,9 +234,11 @@ public:
         _lines[_history + row].setCell(col, cell);
     }
 
-    void resize(uint16_t rows, uint16_t cols) {
+    int16_t resize(uint16_t rows, uint16_t cols) {
         ASSERT(rows != 0, "");
         ASSERT(cols != 0, "");
+
+        size_t oldHistory = _history;
 
         if (rows > getRows()) {
             // The scrollback history is the first port of call for rows.
@@ -273,6 +275,8 @@ public:
         _marginBegin = 0;
         _marginEnd   = rows;
         _barDamage   = true;
+
+        return oldHistory - _history;       // FIXME I'm not sure this is quite right.
     }
 
     void addLine() {
