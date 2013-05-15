@@ -72,6 +72,13 @@ class Buffer {
             damageAll();
         }
 
+        bool isBlank() const {
+            for (const auto & c : _cells) {
+                if (c != Cell::blank()) { return false; }
+            }
+            return true;
+        }
+
         void resetDamage() {
             _damageBegin = _damageEnd = 0;
         }
@@ -255,14 +262,26 @@ public:
             else {
                 // Get what we can (if any) from history.
                 _history = 0;
+
                 // And resize the container to obtain the rest.
                 _lines.resize(rows, Line(cols));
             }
         }
         else if (rows < getRows()) {
-            // Push it all into history.
+            // Remove blanks lines from the back.
+            while (getRows() != rows) {
+                if (_lines.back().isBlank()) {
+                    _lines.pop_back();
+                }
+                else {
+                    break;
+                }
+            }
+
+            // And push the rest into history.
             _history = _lines.size() - rows;
-            // And then enforce the maximum.
+
+            // Then enforce the history limit.
             if (_history > _maxHistory) {
                 _lines.erase(_lines.begin(), _lines.begin() + _history - _maxHistory);
                 _history = _maxHistory;

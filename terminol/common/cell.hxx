@@ -58,7 +58,21 @@ public:
     AttributeSet    attrs() const { return _attrs; }
     uint8_t         fg()    const { return _fg; }
     uint8_t         bg()    const { return _bg; }
+
+    friend inline bool operator == (Cell lhs, Cell rhs);
 };
+
+inline bool operator == (Cell lhs, Cell rhs) {
+    return
+        lhs._seq   == rhs._seq   &&
+        lhs._attrs == rhs._attrs &&
+        lhs._fg    == rhs._fg    &&
+        lhs._bg    == rhs._bg;
+}
+
+inline bool operator != (Cell lhs, Cell rhs) {
+    return !(lhs == rhs);
+}
 
 std::ostream & operator << (std::ostream & ost, const Cell & cell);
 
