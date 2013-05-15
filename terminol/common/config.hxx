@@ -31,6 +31,7 @@ private:
     std::string _geometryString;
     std::string _termName;
     bool        _scrollOnTtyOutput;
+    // TODO urxvt scrollWithBuffer?
     bool        _scrollOnTtyKeyPress;
     bool        _doubleBuffer;
     std::string _title;

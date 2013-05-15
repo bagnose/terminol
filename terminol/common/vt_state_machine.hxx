@@ -4,6 +4,7 @@
 #define COMMON__VT_STATE_MACHINE__H
 
 #include "terminol/common/utf8.hxx"
+//#include "terminol/support/support.hxx"
 
 #include <vector>
 

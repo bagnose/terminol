@@ -1120,6 +1120,7 @@ void Terminal::machineCsi(bool priv,
             _savedCursorCol = _cursorCol;
             break;
         case 't': // window ops?
+            // FIXME see 'Window Operations' in man 7 urxvt.
             NYI("Window ops");
             break;
         case 'u': // restore cursor
@@ -1158,8 +1159,15 @@ void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
                 _observer.terminalSetTitle(nthArg(args, 1));
             }
             break;
+        case 55:
+            NYI("Log history to file");
+            break;
         default:
-            PRINT("Unandled: " /*<< Str(seq)*/);
+            // TODO consult http://rtfm.etla.org/xterm/ctlseq.html AND man 7 urxvt.
+            PRINT("Unandled: OSC");
+            for (const auto & a : args) {
+                PRINT(a);
+            }
             break;
     }
 }
@@ -1276,6 +1284,9 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
 void Terminal::processAttributes(const std::vector<int32_t> & args) {
     ASSERT(!args.empty(), "");
 
+    // FIXME check man 7 urxvt:
+
+    // FIXME is it right to loop?
     for (size_t i = 0; i != args.size(); ++i) {
         int32_t v = args[i];
 
@@ -1337,7 +1348,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 break;
             case 22: // Normal color or intensity (neither bold nor faint)
                 _attrs.unset(Attribute::BOLD);
-                if (_fg >= 8 && _fg < 16) { _fg -= 8; } // Bright -> Normal.
+                if (_fg >= 8 && _fg < 16) { _fg -= 8; } // Bright -> Normal.        XXX is this right?
                 break;
             case 23: // Not italic, not Fraktur
                 _attrs.unset(Attribute::ITALIC);

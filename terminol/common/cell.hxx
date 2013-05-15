@@ -28,9 +28,11 @@ class Cell {
 
 public:
 #if 1
+    // For solarized.
     static uint8_t      defaultFg()    { return 12; }
     static uint8_t      defaultBg()    { return 8;  }
 #else
+    // For other themes?
     static uint8_t      defaultFg()    { return 7; }
     static uint8_t      defaultBg()    { return 0; }
 #endif

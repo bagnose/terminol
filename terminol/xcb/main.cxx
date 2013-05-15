@@ -6,6 +6,7 @@
 #include "terminol/xcb/basics.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/key_map.hxx"
+#include "terminol/support/debug.hxx"
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_event.h>
@@ -199,6 +200,8 @@ protected:
 //
 //
 
+namespace {
+
 bool argMatch(const std::string & arg, const std::string & opt, std::string & val) {
     std::string optComposed = "--" + opt + "=";
     if (arg.substr(0, optComposed.size()) ==  optComposed) {
@@ -217,6 +220,8 @@ void showHelp(const std::string & progName, std::ostream & ost) {
         << "    " << "--double-buffer --trace --sync --execute ARG0 ARG1..."
         << std::endl;
 }
+
+} // namespace {anonymous}
 
 int main(int argc, char * argv[]) {
     // Command line

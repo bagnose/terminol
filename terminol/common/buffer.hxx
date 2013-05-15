@@ -4,6 +4,7 @@
 #define COMMON__BUFFER__HXX
 
 #include "terminol/common/cell.hxx"
+#include "terminol/support/debug.hxx"
 
 #include <vector>
 #include <deque>
@@ -397,11 +398,6 @@ public:
         {
             i->damageAll();
         }
-        /*
-        for (uint16_t i = _marginBegin; i != _marginEnd; ++i) {
-            _lines[_history + i].damageAll();
-        }
-        */
     }
 };
 

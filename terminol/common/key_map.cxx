@@ -9,6 +9,8 @@
 
 #include <xcb/xcb.h>
 
+// FIXME see 'Key Codes' in man 7 urxvt.
+
 // The following code was stolen and modified from weston/clients/terminal.c.
 
 // Copyright © 2008 Kristian Høgsberg

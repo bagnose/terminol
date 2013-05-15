@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/common/buffer.hxx"
-#include "terminol/common/support.hxx"
+#include "terminol/support/support.hxx"
 
 void testRawBuffer() {
     size_t size = 4;

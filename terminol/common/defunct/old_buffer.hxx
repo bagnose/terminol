@@ -3,8 +3,8 @@
 #ifndef BUFFER__HXX
 #define BUFFER__HXX
 
-#include "terminol/common/support.hxx"
 #include "terminol/common/cell.hxx"
+#include "terminol/support/support.hxx"
 
 #include <vector>
 #include <deque>

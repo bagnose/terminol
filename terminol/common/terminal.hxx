@@ -5,6 +5,7 @@
 
 #include "terminol/common/tty_interface.hxx"
 #include "terminol/common/vt_state_machine.hxx"
+#include "terminol/common/vt_state_machine2.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/bit_sets.hxx"
 #include "terminol/common/buffer.hxx"
