@@ -882,10 +882,10 @@ void Terminal::machineCsi(bool priv,
             moveCursor(_cursorRow, _cursorCol - nthArg(args, 0, 1));
             break;
         case 'E': // CNL - Cursor Next Line
-            moveCursor(_cursorRow - nthArg(args, 0, 1), 0);
+            moveCursor(_cursorRow + nthArg(args, 0, 1), 0);
             break;
         case 'F': // CPL - Cursor Preceding Line
-            moveCursor(_cursorRow + nthArg(args, 0, 1), 0);
+            moveCursor(_cursorRow - nthArg(args, 0, 1), 0);
             break;
         case 'G': // CHA - Cursor Horizontal Absolute
             moveCursor(_cursorRow, nthArg(args, 0, 1) - 1);
