@@ -132,7 +132,8 @@ protected:
                               uint16_t rowBegin,
                               uint16_t rowEnd,
                               uint16_t colBegin,
-                              uint16_t colEnd) throw ();
+                              uint16_t colEnd,
+                              bool     scrollbar) throw ();
     void terminalChildExited(int exitStatus) throw ();
 };
 

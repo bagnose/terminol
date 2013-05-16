@@ -56,7 +56,8 @@ public:
                                           uint16_t rowBegin,
                                           uint16_t rowEnd,
                                           uint16_t colBegin,
-                                          uint16_t colEnd) throw () = 0;
+                                          uint16_t colEnd,
+                                          bool     scrollbar) throw () = 0;
         virtual void terminalChildExited(int exitStatus) throw () = 0;
 
     protected:

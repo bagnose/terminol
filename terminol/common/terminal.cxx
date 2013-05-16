@@ -380,9 +380,15 @@ void Terminal::fixDamage(uint16_t rowBegin, uint16_t rowEnd,
 
     if (_observer.terminalFixDamageBegin(damage != Damage::EXPOSURE)) {
         draw(rowBegin, rowEnd, colBegin, colEnd, damage);
+
+        bool scrollbar =    // Identical in two places.
+            damage == Damage::SCROLL || damage == Damage::EXPOSURE ||
+            (damage == Damage::TTY && _buffer->getBarDamage());
+
         _observer.terminalFixDamageEnd(damage != Damage::EXPOSURE,
                                        _damageRowBegin, _damageRowEnd,
-                                       _damageColBegin, _damageColEnd);
+                                       _damageColBegin, _damageColEnd,
+                                       scrollbar);
 
         if (damage == Damage::TTY) {
             _buffer->resetDamage();
@@ -552,7 +558,11 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
                                      precipitous);
     }
 
-    if (true /* show scrollbar? */) {
+    bool scrollbar =    // Identical in two places.
+        damage == Damage::SCROLL || damage == Damage::EXPOSURE ||
+        (damage == Damage::TTY && _buffer->getBarDamage());
+
+    if (scrollbar) {
         _observer.terminalDrawScrollbar(_buffer->getTotalRows(),
                                         _buffer->getScroll(),
                                         _buffer->getRows());

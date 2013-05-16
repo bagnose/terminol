@@ -146,6 +146,8 @@ public:
     uint16_t getMarginBegin() const { return _marginBegin; }
     uint16_t getMarginEnd()   const { return _marginEnd;   }
 
+    bool     getBarDamage()   const { return _barDamage; }
+
     bool scrollUp(uint16_t rows) {
         size_t oldScroll = _scroll;
 
