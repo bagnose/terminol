@@ -1204,7 +1204,7 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
                 case '8':   // DECALN - Alignment
                     // Fill terminal with 'E'
                     for (uint16_t r = 0; r != _buffer->getRows(); ++r) {
-                        for (uint16_t c = 0; c != _buffer->getRows(); ++c) {
+                        for (uint16_t c = 0; c != _buffer->getCols(); ++c) {
                             _buffer->setCell(r, c, Cell::utf8(utf8::Seq('E'), _attrs, _fg, _bg));
                         }
                     }
