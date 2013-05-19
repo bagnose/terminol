@@ -26,6 +26,7 @@ class Window :
     const ColorSet  & _colorSet;
     FontSet         & _fontSet;
     xcb_window_t      _window;
+    bool              _destroyed;
     xcb_gcontext_t    _gc;
     uint16_t          _width;
     uint16_t          _height;
@@ -57,9 +58,11 @@ public:
            const ColorSet     & colorSet,
            FontSet            & fontSet,
            const KeyMap       & keyMap,
-           const Tty::Command & command) throw (Error);
+           const Tty::Command & command = Tty::Command()) throw (Error);
 
     virtual ~Window();
+
+    xcb_window_t getWindowId() { return _window; }
 
     // We handle these:
 

@@ -34,6 +34,7 @@ Window::Window(const Config       & config,
     _colorSet(colorSet),
     _fontSet(fontSet),
     _window(0),
+    _destroyed(false),
     _gc(0),
     _width(0),
     _height(0),
@@ -191,7 +192,7 @@ Window::~Window() {
     xcb_free_gc(_basics.connection(), _gc);
 
     // The window may have been destroyed exogenously.
-    if (_window != 0) {
+    if (!_destroyed) {
         xcb_destroy_window(_basics.connection(), _window);
     }
 
@@ -484,8 +485,8 @@ void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
     //PRINT("Destroy notify");
 
     _tty->close();
-    _isOpen = false;
-    _window = 0;        // I assume we don't need to call xcb_destroy_window?
+    _isOpen    = false;
+    _destroyed = true;
 }
 
 void Window::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) {

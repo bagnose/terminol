@@ -7,4 +7,5 @@ static-lib xcb
   window.cxx basics.cxx font_set.cxx color_set.cxx
   ;
 
-dist-exe terminol : main.cxx ;
+dist-exe terminol  : terminol.cxx ;
+dist-exe terminols : terminols.cxx ;
