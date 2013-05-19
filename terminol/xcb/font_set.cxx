@@ -35,6 +35,7 @@ FontSet::FontSet(const Config & config) throw (Error) :
 
     // Italic
     FcPatternDel(pattern, FC_WEIGHT);
+    FcPatternAddInteger(pattern, FC_WEIGHT, FC_WEIGHT_NORMAL);
     FcPatternDel(pattern, FC_SLANT);
     FcPatternAddInteger(pattern, FC_SLANT, FC_SLANT_ITALIC);
     _italic = load(pattern);
