@@ -181,6 +181,14 @@ protected:
                         _window.destroyNotify(
                             reinterpret_cast<xcb_destroy_notify_event_t *>(event));
                         break;
+                    case XCB_SELECTION_CLEAR:
+                        _window.selectionClear(
+                            reinterpret_cast<xcb_selection_clear_event_t *>(event));
+                        break;
+                    case XCB_SELECTION_NOTIFY:
+                        _window.selectionNotify(
+                            reinterpret_cast<xcb_selection_notify_event_t *>(event));
+                        break;
                     default:
                         PRINT("Unrecognised event: " << static_cast<int>(response_type));
                         break;

@@ -90,6 +90,8 @@ public:
     void leaveNotify(xcb_leave_notify_event_t * event);
     void visibilityNotify(xcb_visibility_notify_event_t * event);
     void destroyNotify(xcb_destroy_notify_event_t * event);
+    void selectionClear(xcb_selection_clear_event_t * event);
+    void selectionNotify(xcb_selection_notify_event_t * event);
 
 protected:
     void icccmConfigure();

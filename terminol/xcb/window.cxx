@@ -485,6 +485,14 @@ void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
     _window = 0;        // I assume we don't need to call xcb_destroy_window?
 }
 
+void Window::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) {
+    PRINT("Selection clear");
+}
+
+void Window::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
+    PRINT("Selection notify");
+}
+
 void Window::icccmConfigure() {
     //
     // machine
