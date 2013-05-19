@@ -1052,8 +1052,12 @@ void Terminal::machineCsi(bool priv,
                     case 6: {
                         // QCP - Query Cursor Position
                         // RCP - Report Cursor Position
+
+                        // XXX Is cursor position reported absolute irrespective of
+                        // origin-mode.
+
                         std::ostringstream ost;
-                        ost << ESC << '[' << _cursorRow << ';' << _cursorCol << 'R';
+                        ost << ESC << '[' << _cursorRow + 1 << ';' << _cursorCol + 1 << 'R';
                         std::string str = ost.str();
                         _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
                     }
