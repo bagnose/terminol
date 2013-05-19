@@ -320,7 +320,7 @@ public:
             _lines.insert(_lines.begin() + _history + _marginEnd, Line(getCols()));
             _lines.erase(_lines.begin() + _history + _marginBegin);
 
-            damageMargin();
+            damageRange(_marginBegin, _marginEnd);
         }
         else {
             _lines.push_back(Line(getCols()));
@@ -360,7 +360,7 @@ public:
                      _lines.begin() + _history + _marginEnd);
         _lines.insert(_lines.begin() + _history + beforeRow, n, Line(getCols()));
 
-        damageMargin();
+        damageRange(beforeRow, _marginEnd);
     }
 
     void eraseLines(uint16_t row, uint16_t n) {
@@ -370,7 +370,7 @@ public:
         _lines.insert(_lines.begin() + _history + _marginEnd, n, Line(getCols()));
         _lines.erase(_lines.begin() + _history + row, _lines.begin() + _history + row + n);
 
-        damageMargin();
+        damageRange(row, _marginEnd);
     }
 
     void clearLine(uint16_t row) {
@@ -431,9 +431,9 @@ public:
         _barDamage = true;      // XXX ?
     }
 
-    void damageMargin() {
-        for (auto i = _lines.begin() + _history + _marginBegin;
-             i != _lines.begin() + _history + _marginEnd; ++i)
+    void damageRange(uint16_t begin, uint16_t end) {
+        for (auto i = _lines.begin() + _history + begin;
+             i != _lines.begin() + _history + end; ++i)
         {
             i->damageAll();
         }
