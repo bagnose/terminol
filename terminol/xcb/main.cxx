@@ -283,16 +283,16 @@ int main(int argc, char * argv[]) {
     try {
         EventLoop eventLoop(config, command);
     }
-    catch (EventLoop::Error & ex) {
+    catch (const EventLoop::Error & ex) {
         FATAL(ex.message);
     }
-    catch (Window::Error & ex) {
+    catch (const Window::Error & ex) {
         FATAL(ex.message);
     }
-    catch (FontSet::Error & ex) {
+    catch (const FontSet::Error & ex) {
         FATAL(ex.message);
     }
-    catch (Basics::Error & ex) {
+    catch (const Basics::Error & ex) {
         FATAL(ex.message);
     }
 

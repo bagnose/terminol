@@ -228,7 +228,7 @@ void Terminal::read() {
 
         //PRINT("Exit loop");
     }
-    catch (I_Tty::Exited & ex) {
+    catch (const I_Tty::Exited & ex) {
         _observer.terminalChildExited(ex.exitCode);
     }
 
@@ -256,7 +256,7 @@ void Terminal::flush() {
             _writeBuffer.erase(_writeBuffer.begin(), _writeBuffer.begin() + rval);
         }
     }
-    catch (I_Tty::Error & ex) {
+    catch (const I_Tty::Error & ex) {
         _dumpWrites = true;
         _writeBuffer.clear();
     }
@@ -586,7 +586,7 @@ void Terminal::write(const uint8_t * data, size_t size) {
                 std::copy(data, data + size, &_writeBuffer[oldSize]);
             }
         }
-        catch (I_Tty::Error &) {
+        catch (const I_Tty::Error &) {
             _dumpWrites = true;
             _writeBuffer.clear();
         }
