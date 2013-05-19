@@ -163,6 +163,7 @@ Config::Config() :
     _fontName("MesloLGM:pixelsize=15"),
     _geometryString(),
     _termName("xterm-256color"),
+    _scrollWithHistory(false),
     _scrollOnTtyOutput(false),
     _scrollOnTtyKeyPress(true),
     _doubleBuffer(false),

@@ -97,8 +97,8 @@ Terminal::Terminal(I_Observer   & observer,
     _config(config),
     //
     _keyMap(keyMap),
-    _priBuffer(rows, cols, _config.getScrollBackHistory()),
-    _altBuffer(rows, cols, 0),
+    _priBuffer(_config, rows, cols, _config.getScrollBackHistory()),
+    _altBuffer(_config, rows, cols, 0),
     _buffer(&_priBuffer),
     //
     _otherCharSet(false),

@@ -28,6 +28,7 @@ private:
     std::string _fontName;
     std::string _geometryString;
     std::string _termName;
+    bool        _scrollWithHistory;
     bool        _scrollOnTtyOutput;
     // TODO urxvt scrollWithBuffer?
     bool        _scrollOnTtyKeyPress;
@@ -61,6 +62,7 @@ public:
     const std::string & getFontName() const { return _fontName; }
     const std::string & getGeometryString() const { return _geometryString; }
     const std::string & getTermName() const { return _termName; }
+    bool                getScrollWithHistory() const { return _scrollWithHistory; }
     bool                getScrollOnTtyOutput() const { return _scrollOnTtyOutput; }
     bool                getScrollOnTtyKeyPress() const { return _scrollOnTtyKeyPress; }
     bool                getDoubleBuffer() const { return _doubleBuffer; }

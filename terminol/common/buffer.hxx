@@ -4,6 +4,7 @@
 #define COMMON__BUFFER__HXX
 
 #include "terminol/common/cell.hxx"
+#include "terminol/common/config.hxx"
 #include "terminol/support/debug.hxx"
 
 #include <vector>
@@ -109,20 +110,23 @@ class Buffer {
     //
     //
 
-    std::deque<Line> _lines;
+    const Config     & _config;
 
-    size_t           _maxHistory;
-    size_t           _history;          // Offset of active region.
-    size_t           _scroll;           // Offset of visible region.
+    std::deque<Line>   _lines;
 
-    bool             _barDamage;        // Scrollbar damage.
+    size_t             _maxHistory;
+    size_t             _history;          // Offset of active region.
+    size_t             _scroll;           // Offset of visible region.
 
-    uint16_t         _marginBegin;
-    uint16_t         _marginEnd;
+    bool               _barDamage;        // Scrollbar damage.
+
+    uint16_t           _marginBegin;
+    uint16_t           _marginEnd;
 
 
 public:
-    Buffer(uint16_t rows, uint16_t cols, size_t maxHistory) :
+    Buffer(const Config & config, uint16_t rows, uint16_t cols, size_t maxHistory) :
+        _config(config),
         _lines(rows, Line(cols)),
         _maxHistory(maxHistory),
         _history(0),
@@ -314,18 +318,24 @@ public:
             if (_history == _maxHistory) {
                 _lines.pop_front();
 
-                if (_scroll != _history && _scroll != 0) {
-                    --_scroll;
+                if (_scroll != _history) {
+                    if (!_config.getScrollWithHistory() && _scroll != 0) {
+                        --_scroll;
+                    }
                 }
             }
             else {
-                if (_scroll == _history) {
-                    ++_history;
-                    ++_scroll;
+                if (_scroll != _history) {
+                    if (_config.getScrollWithHistory() && _scroll != 0)
+                    {
+                        --_scroll;
+                    }
                 }
                 else {
-                    ++_history;
+                    ++_scroll;
                 }
+
+                ++_history;
             }
 
             _barDamage = true;
