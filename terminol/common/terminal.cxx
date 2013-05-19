@@ -901,13 +901,9 @@ void Terminal::machineCsi(bool priv,
         case 'f':       // HVP - Horizontal and Vertical Position
         case 'H':       // CUP - Cursor Position
             if (_config.getTraceTty()) { std::cerr << std::endl; }
-            if (_originMode) {
-                int32_t row = _buffer->getMarginBegin() + nthArg(args, 0, 1) - 1;
-                moveCursor(row, nthArg(args, 1, 1) - 1);
-            }
-            else {
-                moveCursor(nthArg(args, 0, 1) - 1, nthArg(args, 1, 1) - 1);
-            }
+            moveCursor(_originMode ? _buffer->getMarginBegin() : 0 +
+                       nthArg(args, 0, 1) - 1,
+                       nthArg(args, 1, 1) - 1);
             break;
         case 'I':       // CHT - Cursor Forward Tabulation *
             tabCursor(TabDir::FORWARD, nthArg(args, 0, 1));
@@ -977,13 +973,9 @@ void Terminal::machineCsi(bool priv,
             write(reinterpret_cast<const uint8_t *>("\x1B[?6c"), 5);
             break;
         case 'd': // VPA - Vertical Position Absolute
-            if (_originMode) {
-                int32_t row = _buffer->getMarginBegin() + nthArg(args, 0, 1) - 1;
-                moveCursor(row, _cursorCol);
-            }
-            else {
-                moveCursor(nthArg(args, 0, 1) - 1, _cursorCol);
-            }
+            moveCursor(_originMode ? _buffer->getMarginBegin() : 0 +
+                       nthArg(args, 0, 1) - 1,
+                       _cursorCol);
             break;
 
         case 'g': // TBC
@@ -1113,13 +1105,7 @@ void Terminal::machineCsi(bool priv,
 
                     damageCursor();
 
-                    if (_originMode) {
-                        _cursorRow = top;
-                    }
-                    else {
-                        _cursorRow = 0;
-                    }
-
+                    _cursorRow = _originMode ? top : 0;
                     _cursorCol = 0;
                 }
             }
