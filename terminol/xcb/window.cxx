@@ -154,6 +154,7 @@ Window::Window(const Config       & config,
     updateTitle();
 
     xcb_map_window(_basics.connection(), _window);
+    xcb_flush(_basics.connection());
 }
 
 Window::~Window() {
@@ -190,9 +191,11 @@ Window::~Window() {
     xcb_free_gc(_basics.connection(), _gc);
 
     // The window may have been destroyed exogenously.
-    if (_window) {
+    if (_window != 0) {
         xcb_destroy_window(_basics.connection(), _window);
     }
+
+    xcb_flush(_basics.connection());
 }
 
 void Window::read() {

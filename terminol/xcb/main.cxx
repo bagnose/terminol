@@ -45,7 +45,6 @@ public:
                 _keyMap,
                 command)
     {
-        xcb_flush(_basics.connection());
         loop();
     }
 
