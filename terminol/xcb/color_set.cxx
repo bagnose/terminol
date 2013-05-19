@@ -2,55 +2,8 @@
 
 #include "terminol/xcb/color_set.hxx"
 #include "terminol/support/debug.hxx"
-
 #include <algorithm>
 #include <limits>
-
-#if 0
-#if 0
-const Color ColorSet::COLORS16[16] = {
-    // normal
-    { 0.0,  0.0,  0.0  }, // black
-    { 0.66, 0.0,  0.0  }, // red
-    { 0.0,  0.66, 0.0  }, // green
-    { 0.66, 0.66, 0.0  }, // orange
-    { 0.0,  0.0,  0.66 }, // blue
-    { 0.66, 0.0,  0.66 }, // magenta
-    { 0.0,  0.66, 0.66 }, // cyan
-    { 0.66, 0.66, 0.66 }, // light grey
-    // bright
-    { 0.33, 0.33, 0.33 }, // dark grey
-    { 1.0,  0.33, 0.33 }, // high red
-    { 0.33, 1.0,  0.33 }, // high green
-    { 1.0,  1.0,  0.33 }, // high yellow
-    { 0.33, 0.33, 1.0  }, // high blue
-    { 1.0,  0.33, 1.0  }, // high magenta
-    { 0.33, 1.0,  1.0  }, // high cyan
-    { 1.0,  1.0,  1.0  }  // white
-};
-#else
-const Color ColorSet::COLORS16[16] = {
-    // normal
-    { 0.0,  0.0,  0.08 }, // black
-    { 0.66, 0.0,  0.0  }, // red
-    { 0.0,  0.66, 0.0  }, // green
-    { 0.66, 0.66, 0.0  }, // orange
-    { 0.33, 0.33, 0.90 }, // blue
-    { 0.66, 0.0,  0.66 }, // magenta
-    { 0.0,  0.66, 0.66 }, // cyan
-    { 0.66, 0.66, 0.66 }, // light grey
-    // bright
-    { 0.33, 0.33, 0.33 }, // dark grey
-    { 1.0,  0.33, 0.33 }, // high red
-    { 0.33, 1.0,  0.33 }, // high green
-    { 1.0,  1.0,  0.33 }, // high yellow
-    { 0.66, 0.66, 1.0  }, // high blue
-    { 1.0,  0.33, 1.0  }, // high magenta
-    { 0.33, 1.0,  1.0  }, // high cyan
-    { 1.0,  1.0,  1.0  }  // white
-};
-#endif
-#endif
 
 ColorSet::ColorSet(const Config & config,
                    Basics       & basics) :

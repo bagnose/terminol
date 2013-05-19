@@ -343,6 +343,9 @@ public:
     }
 
     void insertLines(uint16_t beforeRow, uint16_t n) {
+        ASSERT(beforeRow >= _history + getMarginBegin() &&
+               beforeRow <  _history + getMarginEnd(), "XXX experiment");
+
         /*
         PRINT("eraseLines. beforeRow=" << beforeRow << ", n=" << n <<
               ", rows=" << getRows() << ", scrollBegin=" << _marginBegin <<
@@ -358,6 +361,9 @@ public:
     }
 
     void eraseLines(uint16_t row, uint16_t n) {
+        ASSERT(row >= _history + getMarginBegin() &&
+               row <  _history + getMarginEnd(), "XXX experiment");
+
         /*
         PRINT("eraseLines. row=" << row << ", n=" << n << ", rows=" <<
               getRows() << ", scrollBegin=" << _marginBegin <<

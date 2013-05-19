@@ -30,8 +30,6 @@ struct Color {
 };
 
 class ColorSet {
-    //static const Color COLORS16[16];
-
     const Config & _config;
     Basics       & _basics;
     Color          _cursorFgColor;

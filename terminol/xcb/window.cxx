@@ -459,10 +459,12 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
 void Window::focusIn(xcb_focus_in_event_t * UNUSED(event)) {
     _focussed = true;
+    // TODO damage cursor? Or tell temrinal?
 }
 
 void Window::focusOut(xcb_focus_out_event_t * UNUSED(event)) {
     _focussed = false;
+    // TODO damage cursor? Or tell temrinal?
 }
 
 void Window::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {
@@ -837,7 +839,11 @@ void Window::terminalDrawRun(uint16_t        row,
 
         const auto & bgValues = _colorSet.getIndexedColor(bg);
         cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
-        cairo_rectangle(_cr, x, y, count * _fontSet.getWidth(), _fontSet.getHeight());
+        cairo_rectangle(_cr,
+                        x,
+                        y,
+                        count * _fontSet.getWidth(),
+                        _fontSet.getHeight());
         cairo_fill(_cr);
 
         const auto & fgValues = _colorSet.getIndexedColor(fg);
@@ -845,8 +851,12 @@ void Window::terminalDrawRun(uint16_t        row,
                               attrs.get(Attribute::CONCEAL) ? 0.2 : 1.0);
 
         if (attrs.get(Attribute::UNDERLINE)) {
-            cairo_move_to(_cr, x, y + _fontSet.getHeight() - 0.5);
-            cairo_line_to(_cr, x + count * _fontSet.getWidth(), y + _fontSet.getHeight() - 0.5);
+            cairo_move_to(_cr,
+                          x,
+                          y + _fontSet.getHeight() - 0.5);
+            cairo_line_to(_cr,
+                          x + count * _fontSet.getWidth(),
+                          y + _fontSet.getHeight() - 0.5);
             cairo_stroke(_cr);
         }
 
@@ -882,7 +892,8 @@ void Window::terminalDrawCursor(uint16_t        row,
         int x, y;
         rowCol2XY(row, col, x, y);
 
-        cairo_set_source_rgba(_cr, bgValues.r, bgValues.g, bgValues.b, special ? 0.4 : 1.0);
+        cairo_set_source_rgba(_cr, bgValues.r, bgValues.g, bgValues.b,
+                              special ? 0.4 : 1.0);
         cairo_rectangle(_cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
         cairo_fill(_cr);
 
@@ -948,6 +959,7 @@ void Window::terminalFixDamageEnd(bool     internal,
         if (_config.getDoubleBuffer()) {
             // FIXME It's probably more efficient to do a single copy of the
             // entire buffer...
+            // FIXME No, just expand the region to include the scrollbar
 
             int x0, y0;
             rowCol2XY(rowBegin, colBegin, x0, y0);
