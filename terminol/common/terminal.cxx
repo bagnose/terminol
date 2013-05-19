@@ -10,28 +10,19 @@
 
 namespace {
 
-/*
-template <typename T>
-std::string strArgs(const std::vector<T> & args) {
-    std::ostringstream str;
-    bool first = true;
-    for (auto a : args) {
-        if (first) { first = false; }
-        else       { str << ","; }
-        str << a;
-    }
-    return str.str();
-}
-*/
-
-template <typename T>
-T nthArg(const std::vector<T> & args, size_t n, const T & fallback = T()) {
+int32_t nthArg(const std::vector<int32_t> & args, size_t n, int32_t fallback = 0) {
     if (n < args.size()) {
         return args[n];
     }
     else {
         return fallback;
     }
+}
+
+// Same as nth arg, but use fallback if arg is zero.
+int32_t nthArgNonZero(const std::vector<int32_t> & args, size_t n, int32_t fallback) {
+    int32_t arg = nthArg(args, n, fallback);
+    return arg != 0 ? arg : fallback;
 }
 
 } // namespace {anonymous}
@@ -884,28 +875,28 @@ void Terminal::machineCsi(bool priv,
 
     switch (mode) {
         case '@': // ICH - Insert Character
-            _buffer->insertCells(_cursorRow, _cursorCol, nthArg(args, 0, 1));
+            _buffer->insertCells(_cursorRow, _cursorCol, nthArgNonZero(args, 0, 1));
             break;
         case 'A': // CUU - Cursor Up
-            moveCursor(_cursorRow - nthArg(args, 0, 1), _cursorCol);
+            moveCursor(_cursorRow - nthArgNonZero(args, 0, 1), _cursorCol);
             break;
         case 'B': // CUD - Cursor Down
-            moveCursor(_cursorRow + nthArg(args, 0, 1), _cursorCol);
+            moveCursor(_cursorRow + nthArgNonZero(args, 0, 1), _cursorCol);
             break;
         case 'C': // CUF - Cursor Forward
-            moveCursor(_cursorRow, _cursorCol + nthArg(args, 0, 1));
+            moveCursor(_cursorRow, _cursorCol + nthArgNonZero(args, 0, 1));
             break;
         case 'D': // CUB - Cursor Backward
-            moveCursor(_cursorRow, _cursorCol - nthArg(args, 0, 1));
+            moveCursor(_cursorRow, _cursorCol - nthArgNonZero(args, 0, 1));
             break;
         case 'E': // CNL - Cursor Next Line
-            moveCursor(_cursorRow + nthArg(args, 0, 1), 0);
+            moveCursor(_cursorRow + nthArgNonZero(args, 0, 1), 0);
             break;
         case 'F': // CPL - Cursor Preceding Line
-            moveCursor(_cursorRow - nthArg(args, 0, 1), 0);
+            moveCursor(_cursorRow - nthArgNonZero(args, 0, 1), 0);
             break;
         case 'G': // CHA - Cursor Horizontal Absolute
-            moveCursor(_cursorRow, nthArg(args, 0, 1) - 1);
+            moveCursor(_cursorRow, nthArgNonZero(args, 0, 1) - 1);
             break;
         case 'f':       // HVP - Horizontal and Vertical Position
         case 'H':       // CUP - Cursor Position
@@ -954,13 +945,13 @@ void Terminal::machineCsi(bool priv,
             }
             break;
         case 'L': // IL - Insert Lines
-            _buffer->insertLines(_cursorRow, nthArg(args, 0, 1));
+            _buffer->insertLines(_cursorRow, nthArgNonZero(args, 0, 1));
             break;
         case 'M': // DL - Delete Lines
-            _buffer->eraseLines(_cursorRow, nthArg(args, 0, 1));
+            _buffer->eraseLines(_cursorRow, nthArgNonZero(args, 0, 1));
             break;
-        case 'P': // DCH - ??? Delete Character???
-            _buffer->eraseCells(_cursorRow, _cursorCol, nthArg(args, 0, 1));
+        case 'P': // DCH - Delete Character
+            _buffer->eraseCells(_cursorRow, _cursorCol, nthArgNonZero(args, 0, 1));
             break;
 
         case 'S': // SU - Scroll Up
@@ -973,10 +964,10 @@ void Terminal::machineCsi(bool priv,
             NYI("ECH");
             break;
         case 'Z':       // CBT - Cursor Backward Tabulation
-            tabCursor(TabDir::BACKWARD, nthArg(args, 0, 1));
+            tabCursor(TabDir::BACKWARD, nthArgNonZero(args, 0, 1));
             break;
         case '`': // HPA
-            moveCursor(_cursorRow, nthArg(args, 0, 1) - 1);
+            moveCursor(_cursorRow, nthArgNonZero(args, 0, 1) - 1);
             break;
 
         case 'b': // REP
@@ -1169,24 +1160,26 @@ void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
         std::cerr << Esc::RESET << " ";
     }
 
-    switch (unstringify<int>(nthArg(args, 0))) {
-        case 0: // Icon name and window title
-        case 1: // Icon label
-        case 2: // Window title
-            if (args.size() > 1) {      // XXX need if? we have fallback
-                _observer.terminalSetTitle(nthArg(args, 1));
-            }
-            break;
-        case 55:
-            NYI("Log history to file");
-            break;
-        default:
-            // TODO consult http://rtfm.etla.org/xterm/ctlseq.html AND man 7 urxvt.
-            PRINT("Unandled: OSC");
-            for (const auto & a : args) {
-                PRINT(a);
-            }
-            break;
+    if (!args.empty()) {
+        switch (unstringify<int>(args[0])) {
+            case 0: // Icon name and window title
+            case 1: // Icon label
+            case 2: // Window title
+                if (args.size() > 1) {
+                    _observer.terminalSetTitle(args[1]);
+                }
+                break;
+            case 55:
+                NYI("Log history to file");
+                break;
+            default:
+                // TODO consult http://rtfm.etla.org/xterm/ctlseq.html AND man 7 urxvt.
+                PRINT("Unandled: OSC");
+                for (const auto & a : args) {
+                    PRINT(a);
+                }
+                break;
+        }
     }
 }
 
