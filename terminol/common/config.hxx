@@ -92,7 +92,7 @@ public:
 
     int16_t             getX()    const { return -1; }
     int16_t             getY()    const { return -1; }
-    uint16_t            getRows() const { return 25; }
+    uint16_t            getRows() const { return 24; }
     uint16_t            getCols() const { return 80; }
 
     const Color &       getFgColor() const { return _fgColor; }
