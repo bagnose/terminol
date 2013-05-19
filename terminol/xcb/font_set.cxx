@@ -4,6 +4,7 @@
 
 FontSet::FontSet(const Config & config) throw (Error) :
     _config(config),
+    _firstLoad(true),
     _normal(nullptr),
     _bold(nullptr),
     _italic(nullptr),
@@ -25,23 +26,23 @@ FontSet::FontSet(const Config & config) throw (Error) :
     FcDefaultSubstitute(pattern);
 
     // Normal
-    _normal = load(pattern, true);
+    _normal = load(pattern);
 
     // Bold
     FcPatternDel(pattern, FC_WEIGHT);
     FcPatternAddInteger(pattern, FC_WEIGHT, FC_WEIGHT_BOLD);
-    _bold = load(pattern, false);
+    _bold = load(pattern);
 
     // Italic
     FcPatternDel(pattern, FC_WEIGHT);
     FcPatternDel(pattern, FC_SLANT);
     FcPatternAddInteger(pattern, FC_SLANT, FC_SLANT_ITALIC);
-    _italic = load(pattern, false);
+    _italic = load(pattern);
 
     // Italic bold
     FcPatternDel(pattern, FC_WEIGHT);
     FcPatternAddInteger(pattern, FC_WEIGHT, FC_WEIGHT_BOLD);
-    _italicBold = load(pattern, false);
+    _italicBold = load(pattern);
 
     FcPatternDestroy(pattern);
 }
@@ -53,7 +54,7 @@ FontSet::~FontSet() {
     unload(_normal);
 }
 
-cairo_scaled_font_t * FontSet::load(FcPattern * pattern, bool master) throw (Error) {
+cairo_scaled_font_t * FontSet::load(FcPattern * pattern) throw (Error) {
     FcResult result;
     FcPattern * match = FcFontMatch(nullptr, pattern, &result);
     ENFORCE(match, "");
@@ -107,11 +108,17 @@ cairo_scaled_font_t * FontSet::load(FcPattern * pattern, bool master) throw (Err
        ", height=" << extents.height << ", max_x_advance=" << extents.max_x_advance);
        */
 
-    _width  = std::max(_width,  static_cast<uint16_t>(extents.max_x_advance));
-    _height = std::max(_height, static_cast<uint16_t>(extents.height));
-
-    if (master) {
+    if (_firstLoad) {
+        _width  = extents.max_x_advance;
+        _height = extents.height;
         _ascent = extents.ascent;
+        _firstLoad = false;
+    }
+    else {
+        // FIXME this is way too tough a strategy.
+        ASSERT(_width  == extents.max_x_advance, "");
+        ASSERT(_height == extents.height, "");
+        ASSERT(_ascent == extents.ascent, "");
     }
 
     return scaledFont;

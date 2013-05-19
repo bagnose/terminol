@@ -10,11 +10,13 @@
 
 class FontSet : protected Uncopyable {
     const Config        & _config;
+    bool                  _firstLoad;
     cairo_scaled_font_t * _normal;
     cairo_scaled_font_t * _bold;
     cairo_scaled_font_t * _italic;
     cairo_scaled_font_t * _italicBold;
-    uint16_t              _width, _height;
+    uint16_t              _width;
+    uint16_t              _height;
     uint16_t              _ascent;
 
 public:
@@ -52,7 +54,7 @@ public:
     uint16_t getAscent() const { return _ascent; }
 
 protected:
-    cairo_scaled_font_t * load(FcPattern * pattern, bool master) throw (Error);
+    cairo_scaled_font_t * load(FcPattern * pattern) throw (Error);
     void                  unload(cairo_scaled_font_t * font);
 };
 
