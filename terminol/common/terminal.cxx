@@ -941,13 +941,25 @@ void Terminal::machineCsi(bool priv,
             }
             break;
         case 'L': // IL - Insert Lines
-            _buffer->insertLines(_cursorRow, nthArgNonZero(args, 0, 1));
+            {
+                int32_t count = nthArgNonZero(args, 0, 1);
+                count = clamp(count, 1, _buffer->getMarginEnd() - _cursorRow);
+                _buffer->insertLines(_cursorRow, count);
+            }
             break;
         case 'M': // DL - Delete Lines
-            _buffer->eraseLines(_cursorRow, nthArgNonZero(args, 0, 1));
+            {
+                int32_t count = nthArgNonZero(args, 0, 1);
+                count = clamp(count, 1, _buffer->getMarginEnd() - _cursorRow);
+                _buffer->eraseLines(_cursorRow, nthArgNonZero(args, 0, 1));
+            }
             break;
         case 'P': // DCH - Delete Character
-            _buffer->eraseCells(_cursorRow, _cursorCol, nthArgNonZero(args, 0, 1));
+            {
+                int32_t count = nthArgNonZero(args, 0, 1);
+                count = clamp(count, 1, _buffer->getCols() - _cursorCol);
+                _buffer->eraseCells(_cursorRow, _cursorCol, count);
+            }
             break;
 
         case 'S': // SU - Scroll Up
