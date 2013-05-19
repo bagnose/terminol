@@ -6,6 +6,7 @@
 #include "terminol/support/escape.hxx"
 
 #include <algorithm>
+#include <numeric>
 
 namespace {
 
@@ -97,7 +98,10 @@ Terminal::Terminal(I_Observer   & observer,
     _config(config),
     //
     _keyMap(keyMap),
-    _priBuffer(_config, rows, cols, _config.getScrollBackHistory()),
+    _priBuffer(_config, rows, cols,
+               _config.getUnlimitedScrollBack() ?
+               std::numeric_limits<size_t>::max() :
+               _config.getScrollBackHistory()),
     _altBuffer(_config, rows, cols, 0),
     _buffer(&_priBuffer),
     //

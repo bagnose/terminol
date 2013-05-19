@@ -170,9 +170,17 @@ Config::Config() :
     _title(),
     _chdir(),
     _scrollBackHistory(100),
+    _unlimitedScrollBack(true),
+    //
     _traceTty(false),
     _syncTty(false),
-    _systemColors()
+    //
+    _customCursorFillColor(false),
+    _customCursorTextColor(false),
+    //
+    _scrollbarWidth(8),
+    //
+    _borderThickness(1)
 {
     switch (0) {
         case 0:
@@ -181,6 +189,16 @@ Config::Config() :
             }
             _fgColor = _systemColors[12];
             _bgColor = _systemColors[8];
+
+            _customCursorFillColor = true;
+            _cursorFillColor       = _systemColors[14];
+
+            _customCursorFillColor = false;
+
+            _scrollbarFgColor = { 0.5, 0.5, 0.5 };
+            _scrollbarBgColor = _bgColor;
+
+            _borderColor      = _bgColor;
             break;
         case 1:
             for (size_t i = 0; i != 16; ++i) {
@@ -188,6 +206,16 @@ Config::Config() :
             }
             _fgColor = _systemColors[12];
             _bgColor = _systemColors[8];
+
+            _customCursorFillColor = true;
+            _cursorFillColor       = _systemColors[14];
+
+            _customCursorFillColor = false;
+
+            _scrollbarFgColor = { 0.5, 0.5, 0.5 };
+            _scrollbarBgColor = _bgColor;
+
+            _borderColor      = _bgColor;
             break;
         case 2:
             memcpy(_systemColors, STANDARD_COLORS, sizeof(STANDARD_COLORS));

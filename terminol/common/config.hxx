@@ -19,23 +19,28 @@ private:
     static const Color  TWEAKED_COLORS[16];
 
     // TODO
-    // cursorColor
     // pointerfgColor
     // pointerBgColor
-    // scrollBarFgColor
-    // scrollBarBgColor
+    // scrollbarStrategy: show/hide/auto
+
+    // title
+    // titleUpdateStrategy: replace, append, prepend, ignore
+
+    // allow blink
+
+    // flow control?
 
     std::string _fontName;
     std::string _geometryString;
     std::string _termName;
     bool        _scrollWithHistory;
     bool        _scrollOnTtyOutput;
-    // TODO urxvt scrollWithBuffer?
     bool        _scrollOnTtyKeyPress;
     bool        _doubleBuffer;
     std::string _title;
     std::string _chdir;
     size_t      _scrollBackHistory;
+    bool        _unlimitedScrollBack;
     // Debugging support:
     bool        _traceTty;
     bool        _syncTty;
@@ -43,6 +48,18 @@ private:
     Color       _fgColor;
     Color       _bgColor;
     Color       _systemColors[16];
+
+    bool        _customCursorFillColor;
+    Color       _cursorFillColor;
+    bool        _customCursorTextColor;
+    Color       _cursorTextColor;
+
+    Color       _scrollbarFgColor;
+    Color       _scrollbarBgColor;
+    int         _scrollbarWidth;
+
+    Color       _borderColor;
+    int         _borderThickness;
 
 public:
     Config();
@@ -69,6 +86,7 @@ public:
     const std::string & getTitle() const { return _title; }
     const std::string & getChdir() const { return _chdir; }
     size_t              getScrollBackHistory() const { return _scrollBackHistory; }
+    bool                getUnlimitedScrollBack() const { return _unlimitedScrollBack; }
     bool                getTraceTty() const { return _traceTty; }
     bool                getSyncTty() const { return _syncTty; }
 
@@ -84,6 +102,18 @@ public:
         ASSERT(index <= 16, "");
         return _systemColors[index];
     }
+
+    bool                getCustomCursorFillColor() const { return _customCursorFillColor; }
+    const Color &       getCursorFillColor()       const { return _cursorFillColor; }
+    bool                getCustomCursorTextColor() const { return _customCursorTextColor; }
+    const Color &       getCursorTextColor()       const { return _cursorTextColor; }
+
+    const Color &       getScrollbarFgColor()      const { return _scrollbarFgColor; }
+    const Color &       getScrollbarBgColor()      const { return _scrollbarBgColor; }
+    int                 getScrollbarWidth()        const { return _scrollbarWidth; }
+
+    const Color &       getBorderColor()           const { return _borderColor; }
+    int                 getBorderThickness()       const { return _borderThickness; }
 
 protected:
     static Color decodeHexColor(const std::string & hexColor);

@@ -10,10 +10,6 @@
 
 #include <unistd.h>
 
-const int         Window::BORDER_THICKNESS = 0;
-const int         Window::SCROLLBAR_WIDTH  = 8;
-const std::string Window::DEFAULT_TITLE    = "terminol";
-
 #define xcb_request_failed(connection, cookie, err_msg) _xcb_request_failed(connection, cookie, err_msg, __LINE__)
 namespace {
 int _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
@@ -52,10 +48,13 @@ Window::Window(const Config       & config,
     _pixmap(0),
     _surface(nullptr),
     _cr(nullptr),
-    _title(DEFAULT_TITLE)
+    _title(_config.getTitle())
 {
     uint16_t rows = _config.getRows();
     uint16_t cols = _config.getCols();
+
+    const int BORDER_THICKNESS = _config.getBorderThickness();
+    const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
 
     _width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
     _height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
@@ -423,6 +422,9 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
     uint16_t rows, cols;
 
+    const int BORDER_THICKNESS = _config.getBorderThickness();
+    const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+
     if (_width  > 2 * BORDER_THICKNESS + _fontSet.getWidth() + SCROLLBAR_WIDTH &&
         _height > 2 * BORDER_THICKNESS + _fontSet.getHeight())
     {
@@ -508,6 +510,9 @@ void Window::icccmConfigure() {
     // size
     //
 
+    const int BORDER_THICKNESS = _config.getBorderThickness();
+    const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+
     xcb_size_hints_t sizeHints;
     sizeHints.flags = 0;
     xcb_icccm_size_hints_set_min_size(&sizeHints,
@@ -544,12 +549,16 @@ void Window::icccmConfigure() {
 }
 
 void Window::rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const {
+    const int BORDER_THICKNESS = _config.getBorderThickness();
+
     x = BORDER_THICKNESS + col * _fontSet.getWidth();
     y = BORDER_THICKNESS + row * _fontSet.getHeight();
 }
 
 bool Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
     bool within = true;
+
+    const int BORDER_THICKNESS = _config.getBorderThickness();
 
     // x / cols:
 
@@ -693,6 +702,9 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 }
 
 void Window::drawBorder() {
+    const int BORDER_THICKNESS = _config.getBorderThickness();
+    const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+
     cairo_save(_cr); {
         const auto & bgValues = _colorSet.getBorderColor();
         cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
@@ -740,7 +752,7 @@ void Window::drawBorder() {
 // Terminal::I_Observer implementation:
 
 void Window::terminalResetTitle() throw () {
-    _title = DEFAULT_TITLE;
+    _title = _config.getTitle();
     updateTitle();
 }
 
@@ -849,16 +861,15 @@ void Window::terminalDrawCursor(uint16_t        row,
                                 AttributeSet    attrs,
                                 const uint8_t * str,
                                 bool            special) throw () {
-    // TODO consult config here.
     const auto & fgValues =
-        false ?
-        _colorSet.getIndexedColor(bg) :
-        _colorSet.getCursorFgColor();
+        _config.getCustomCursorTextColor() ?
+        _colorSet.getCursorTextColor() :
+        _colorSet.getIndexedColor(bg);
 
     const auto & bgValues =
-        false ?
-        _colorSet.getIndexedColor(fg) :
-        _colorSet.getCursorBgColor();
+        _config.getCustomCursorFillColor() ?
+        _colorSet.getCursorFillColor() :
+        _colorSet.getIndexedColor(fg);
 
     cairo_save(_cr); {
         cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attribute::ITALIC),
@@ -883,6 +894,8 @@ void Window::terminalDrawCursor(uint16_t        row,
 void Window::terminalDrawScrollbar(size_t   totalRows,
                                    size_t   historyOffset,
                                    uint16_t visibleRows) throw () {
+    const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+
     double x = static_cast<double>(_width - SCROLLBAR_WIDTH);
     double y = 0.0;
     double h = static_cast<double>(_height);
@@ -947,6 +960,8 @@ void Window::terminalFixDamageEnd(bool     internal,
                           x1 - x0, y1 - y0);
 
             if (scrollBar) {
+                const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+
                 // Copy the scroll bar region
                 xcb_copy_area(_basics.connection(),
                               _pixmap,

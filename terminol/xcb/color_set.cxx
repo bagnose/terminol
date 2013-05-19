@@ -57,15 +57,11 @@ ColorSet::ColorSet(const Config & config,
     _config(config),
     _basics(basics)
 {
-    _cursorFgColor    = { 0.0, 0.0,  0.0 };
-    _cursorBgColor    = { 1.0, 0.25, 1.0 };
-#if 0
-    _borderColor      = _config.getSystemColor(0);
-#else
-    _borderColor      = _config.getSystemColor(8);
-#endif
-    _scrollBarFgColor = { 0.5, 0.5,  0.5 };
-    _scrollBarBgColor = _borderColor;
+    _cursorFillColor  = _config.getCursorFillColor();
+    _cursorTextColor  = _config.getCursorTextColor();
+    _borderColor      = _config.getBorderColor();
+    _scrollBarFgColor = _config.getScrollbarFgColor();
+    _scrollBarBgColor = _config.getScrollbarBgColor();
 
     // 0..7     normal colors
     // 8..15    bright colors

@@ -21,10 +21,6 @@ class Window :
     protected Terminal::I_Observer,
     protected Uncopyable
 {
-    static const int         BORDER_THICKNESS;
-    static const int         SCROLLBAR_WIDTH;
-    static const std::string DEFAULT_TITLE;
-
     const Config    & _config;
     Basics          & _basics;
     const ColorSet  & _colorSet;
