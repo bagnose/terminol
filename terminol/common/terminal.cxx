@@ -983,8 +983,14 @@ void Terminal::machineCsi(bool priv,
         case 'c': // Primary DA
             write(reinterpret_cast<const uint8_t *>("\x1B[?6c"), 5);
             break;
-        case 'd': // VPA
-            _cursorRow = clamp<uint16_t>(nthArg(args, 0, 1), 1, _buffer->getRows()) - 1;
+        case 'd': // VPA - Vertical Position Absolute
+            if (_originMode) {
+                int32_t row = _buffer->getMarginBegin() + nthArg(args, 0, 1) - 1;
+                moveCursor(row, _cursorCol);
+            }
+            else {
+                moveCursor(nthArg(args, 0, 1) - 1, _cursorCol);
+            }
             break;
 
         case 'g': // TBC
