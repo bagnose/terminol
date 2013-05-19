@@ -356,9 +356,16 @@ public:
         ASSERT(beforeRow >= _marginBegin && beforeRow < _marginEnd, "");
         ASSERT(beforeRow + n <= _marginEnd, "");
 
+#if 0
         _lines.erase(_lines.begin() + _history + _marginEnd - n,
                      _lines.begin() + _history + _marginEnd);
         _lines.insert(_lines.begin() + _history + beforeRow, n, Line(getCols()));
+#else
+        // This path can handle any value of n
+        _lines.insert(_lines.begin() + _history + beforeRow, n, Line(getCols()));
+        _lines.erase(_lines.begin() + _history + _marginEnd,
+                     _lines.begin() + _history + _marginEnd + n);
+#endif
 
         damageRange(beforeRow, _marginEnd);
     }
