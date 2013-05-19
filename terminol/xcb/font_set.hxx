@@ -30,14 +30,12 @@ public:
 
     // Font accessors:
 
-    cairo_scaled_font_t * get(bool bold, bool italic) {
-        switch ((bold ? 1 : 0) + (italic ? 2 : 0)) {
+    cairo_scaled_font_t * get(bool italic, bool bold) {
+        switch ((italic ? 2 : 0) + (bold ? 1 : 0)) {
             case 0: return getNormal();
-            //case 1: return getBold();
-            case 1: return getNormal();
+            case 1: return getBold();
             case 2: return getItalic();
-            //case 3: return getItalicBold();
-            case 3: return getItalic();
+            case 3: return getItalicBold();
         }
         FATAL("Unreachable");
     }

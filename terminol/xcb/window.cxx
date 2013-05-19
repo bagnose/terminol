@@ -802,8 +802,8 @@ void Window::terminalDrawRun(uint16_t        row,
         if (attrs.get(Attribute::INVERSE) ||
             attrs.get(Attribute::BLINK)) { std::swap(fg, bg); }
 
-        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attribute::BOLD),
-                                                attrs.get(Attribute::ITALIC)));
+        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attribute::ITALIC),
+                                                attrs.get(Attribute::BOLD)));
 
         int x, y;
         rowCol2XY(row, col, x, y);
@@ -849,8 +849,8 @@ void Window::terminalDrawCursor(uint16_t        row,
         _colorSet.getCursorBgColor();
 
     cairo_save(_cr); {
-        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attribute::BOLD),
-                                                attrs.get(Attribute::ITALIC)));
+        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attribute::ITALIC),
+                                                attrs.get(Attribute::BOLD)));
 
         int x, y;
         rowCol2XY(row, col, x, y);
