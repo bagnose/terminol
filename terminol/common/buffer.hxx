@@ -353,15 +353,8 @@ public:
     }
 
     void insertLines(uint16_t beforeRow, uint16_t n) {
-        ASSERT(beforeRow >= getMarginBegin() && beforeRow <  getMarginEnd(),
-               "XXX experiment");
-
-        /*
-        PRINT("eraseLines. beforeRow=" << beforeRow << ", n=" << n <<
-              ", rows=" << getRows() << ", scrollBegin=" << _marginBegin <<
-              ", scrollEnd=" << _marginEnd);
-              */
-        ASSERT(beforeRow < getRows(), "");
+        ASSERT(beforeRow >= _marginBegin && beforeRow < _marginEnd, "");
+        ASSERT(beforeRow + n <= _marginEnd, "");
 
         _lines.erase(_lines.begin() + _history + _marginEnd - n,
                      _lines.begin() + _history + _marginEnd);
@@ -371,15 +364,8 @@ public:
     }
 
     void eraseLines(uint16_t row, uint16_t n) {
-        ASSERT(row >= getMarginBegin() && row <  getMarginEnd(),
-               "XXX experiment");
-
-        /*
-        PRINT("eraseLines. row=" << row << ", n=" << n << ", rows=" <<
-              getRows() << ", scrollBegin=" << _marginBegin <<
-              ", scrollEnd=" << _marginEnd);
-              */
-        ASSERT(row + n < getRows(), "");
+        ASSERT(row >= _marginBegin && row < _marginEnd, "");
+        ASSERT(row + n <= _marginEnd, "");
 
         _lines.insert(_lines.begin() + _history + _marginEnd, n, Line(getCols()));
         _lines.erase(_lines.begin() + _history + row, _lines.begin() + _history + row + n);
