@@ -74,6 +74,14 @@ class Buffer {
             damageAll();
         }
 
+        void clearLeft(uint16_t endCol) {
+            std::fill(_cells.begin(), _cells.begin() + endCol, Cell::blank());
+        }
+
+        void clearRight(uint16_t beginCol) {
+            std::fill(_cells.begin() + beginCol, _cells.end(), Cell::blank());
+        }
+
         bool isBlank() const {
             for (const auto & c : _cells) {
                 if (c != Cell::blank()) { return false; }
@@ -382,18 +390,43 @@ public:
         _lines[_history + row].clear();
     }
 
-    void clearAll() {
+    void clearLineLeft(uint16_t row, uint16_t endCol) {
+        _lines[_history + row].clearLeft(endCol);
+    }
+
+    void clearLineRight(uint16_t row, uint16_t beginCol) {
+        _lines[_history + row].clearRight(beginCol);
+    }
+
+    void clear() {
         for (auto i = _lines.begin() + _history; i != _lines.end(); ++i) {
             i->clear();
         }
     }
 
+    void clearAbove(uint16_t endRow) {
+        for (auto i = _lines.begin() + _history;
+             i != _lines.begin() + _history + endRow; ++i)
+        {
+            i->clear();
+        }
+    }
+
+    void clearBelow(uint16_t beginRow) {
+        for (auto i = _lines.begin() + _history + beginRow; i != _lines.end(); ++i)
+        {
+            i->clear();
+        }
+    }
+
+    // Called by Terminal::damageCursor()
     void damageCell(uint16_t row, uint16_t col) {
         ASSERT(row < getRows(), "");
         ASSERT(col < getCols(), "");
         _lines[_history + row].damageAdd(col, col + 1);
     }
 
+    // Called by Terminal::fixDamage()
     void resetDamage() {
         for (auto i = _lines.begin() + _history; i != _lines.end(); ++i) {
             i->resetDamage();

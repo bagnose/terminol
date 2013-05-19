@@ -607,7 +607,7 @@ void Terminal::write(const uint8_t * data, size_t size) {
 }
 
 void Terminal::resetAll() {
-    _buffer->clearAll();
+    _buffer->clear();
 
     _cursorRow  = 0;
     _cursorCol  = 0;
@@ -925,17 +925,13 @@ void Terminal::machineCsi(bool priv,
             switch (nthArg(args, 0)) {
                 default:
                 case 0: // ED0 - Below
-                    for (uint16_t r = _cursorRow + 1; r != _buffer->getRows(); ++r) {
-                        _buffer->clearLine(r);
-                    }
+                    _buffer->clearBelow(_cursorRow + 1);
                     break;
                 case 1: // ED1 - Above
-                    for (uint16_t r = 0; r != _cursorRow; ++r) {
-                        _buffer->clearLine(r);
-                    }
+                    _buffer->clearAbove(_cursorRow);
                     break;
                 case 2: // ED2 - All
-                    _buffer->clearAll();
+                    _buffer->clear();
                     _cursorRow = _cursorCol = 0;
                     break;
             }
@@ -943,15 +939,11 @@ void Terminal::machineCsi(bool priv,
         case 'K':   // EL - Erase line
             switch (nthArg(args, 0)) {
                 default:
-                case 0: // EL0 - Right
-                    for (uint16_t c = _cursorCol; c != _buffer->getCols(); ++c) {
-                        _buffer->setCell(_cursorRow, c, Cell::blank());
-                    }
+                case 0: // EL0 - Right (inclusive of cursor position)
+                    _buffer->clearLineRight(_cursorRow, _cursorCol);
                     break;
-                case 1: // EL1 - Left
-                    for (uint16_t c = 0; c != _cursorCol + 1; ++c) {
-                        _buffer->setCell(_cursorRow, c, Cell::blank());
-                    }
+                case 1: // EL1 - Left (inclusive of cursor position)
+                    _buffer->clearLineLeft(_cursorRow, _cursorCol + 1);
                     break;
                 case 2: // EL2 - All
                     _buffer->clearLine(_cursorRow);
@@ -1691,7 +1683,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                 case 47:    // XXX ???
                 case 1047:
                     if (_buffer == &_altBuffer) {
-                        _buffer->clearAll();
+                        _buffer->clear();
                     }
 
                     _buffer = set ? &_altBuffer : &_priBuffer;
