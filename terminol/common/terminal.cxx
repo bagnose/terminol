@@ -683,7 +683,7 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
     ASSERT(_cursorRow < _buffer->getRows(), "");
 
     if (_modes.get(Mode::INSERT)) {
-        FATAL("Need to move remainder of line to right.");
+        _buffer->insertCells(_cursorRow, _cursorCol, 1);
     }
 
     _buffer->setCell(_cursorRow, _cursorCol, Cell::utf8(seq, _attrs, _fg, _bg));
