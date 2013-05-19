@@ -156,7 +156,7 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
 
     // XXX is this correct for the saved cursor row/col?
     _savedCursorRow = std::min(_savedCursorRow, rows);
-    _savedCursorCol = std::min(_savedCursorRow, rows);
+    _savedCursorCol = std::min(_savedCursorCol, cols);
 
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {
