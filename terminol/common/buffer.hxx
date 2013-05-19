@@ -76,10 +76,12 @@ class Buffer {
 
         void clearLeft(uint16_t endCol) {
             std::fill(_cells.begin(), _cells.begin() + endCol, Cell::blank());
+            damageAdd(0, endCol);
         }
 
         void clearRight(uint16_t beginCol) {
             std::fill(_cells.begin() + beginCol, _cells.end(), Cell::blank());
+            damageAdd(beginCol, getCols());
         }
 
         bool isBlank() const {
