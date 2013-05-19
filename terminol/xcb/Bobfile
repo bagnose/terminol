@@ -9,3 +9,4 @@ static-lib xcb
 
 dist-exe terminol  : terminol.cxx ;
 dist-exe terminols : terminols.cxx ;
+dist-exe terminolc : terminolc.cxx ;

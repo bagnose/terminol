@@ -17,14 +17,105 @@
 #include <unistd.h>
 #include <sys/select.h>
 
+// For fifo:
+#include <fcntl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+
 class I_Creator {
 public:
     virtual void create() throw () = 0;
+    virtual void shutdown() throw () = 0;
 
 protected:
     I_Creator() {}
     ~I_Creator() {}
 };
+
+//
+// This server will ultimately be replaced with one based on
+// Unix domain sockets.
+//
+
+class Server {
+    I_Creator    & _creator;
+    const Config & _config;
+    int            _fd;
+
+public:
+    struct Error {
+        explicit Error(const std::string & message_) : message(message_) {}
+        std::string message;
+    };
+
+    Server(I_Creator & creator, const Config & config) :
+        _creator(creator),
+        _config(config)
+    {
+        const std::string & socketPath = _config.getSocketPath();
+        if (::mkfifo(socketPath.c_str(), 0600) == -1) {
+            switch (errno) {
+                case EEXIST:
+                    // No problem
+                    break;
+                default:
+                    ERROR("Failed to create fifo: " << socketPath);
+            }
+        }
+
+        open();
+    }
+
+    ~Server() {
+        ENFORCE_SYS(::close(_fd) != -1, "");
+
+        /*
+        const std::string & socketPath = _config.getSocketPath();
+        if (::unlink(socketPath.c_str() == -1)) {
+            ERROR("Failed to remove socket: " << socketPath);
+        }
+        */
+    }
+
+    int getFd() { return _fd; }
+
+    void read() {
+        uint8_t buffer[1024];
+        ssize_t rval = TEMP_FAILURE_RETRY(
+                ::read(_fd, static_cast<void *>(buffer), sizeof buffer));
+
+        ENFORCE_SYS(rval != -1, "::read() failed");
+
+        PRINT("rval: " << rval);
+
+        if (rval == 0) {
+            close();
+            open();
+        }
+        else {
+            _creator.create();
+        }
+    }
+
+protected:
+    void open() throw (Error) {
+        const std::string & socketPath = _config.getSocketPath();
+
+        _fd = ::open(socketPath.c_str(), O_RDONLY | O_NONBLOCK);
+        if (_fd == -1) {
+            ERROR("Failed to open fifo: " << socketPath);
+            throw Error("Failed to open fifo");
+        }
+    }
+
+    void close() {
+        ENFORCE_SYS(::close(_fd) != -1, "::close() failed");
+    }
+};
+
+//
+//
+//
 
 class EventLoop :
     public I_Creator,
@@ -33,11 +124,13 @@ class EventLoop :
     typedef std::map<xcb_window_t, Window *> Windows;
 
     const Config & _config;
+    Server         _server;         // FIXME what order? socket then X, or other way around?
     Basics         _basics;
     ColorSet       _colorSet;
     FontSet        _fontSet;
     KeyMap         _keyMap;
     Windows        _windows;
+    bool           _finished;
 
 public:
     struct Error {
@@ -46,18 +139,17 @@ public:
     };
 
     explicit EventLoop(const Config & config)
-        throw (Basics::Error, FontSet::Error, Error) :
+        throw (Server::Error, Basics::Error, FontSet::Error, Error) :
         _config(config),
+        _server(*this, config),
         _basics(),
         _colorSet(config, _basics),
         _fontSet(config),
         _keyMap(_basics.maskShift(),
                 _basics.maskAlt(),
-                _basics.maskControl())
+                _basics.maskControl()),
+        _finished(false)
     {
-        create();
-        create();
-        create();
         loop();
     }
 
@@ -66,12 +158,17 @@ public:
 
 protected:
     void loop() throw (Error) {
-        for (;;) {
+        while (!_finished) {
             int fdMax = 0;
             fd_set readFds, writeFds;
             FD_ZERO(&readFds); FD_ZERO(&writeFds);
 
             int xFd = xcb_get_file_descriptor(_basics.connection());
+            int sFd = _server.getFd();
+
+            // Select for read on Server
+            FD_SET(sFd, &readFds);
+            fdMax = std::max(fdMax, sFd);
 
             // Select for read on X11
             FD_SET(xFd, &readFds);
@@ -102,6 +199,8 @@ protected:
 
             if (FD_ISSET(xFd, &readFds)) { xevent(); }
             else { /* XXX */ xevent(); }
+
+            if (FD_ISSET(sFd, &readFds)) { _server.read(); }
 
             // Purge the closed windows.
 
@@ -272,6 +371,10 @@ protected:
             PRINT("Failed to create window: " << ex.message);
         }
     }
+
+    void shutdown() throw () {
+        _finished = true;
+    }
 };
 
 //
@@ -304,7 +407,7 @@ void showHelp(const std::string & progName, std::ostream & ost) {
 int main(int argc, char * argv[]) {
     // Command line
 
-    Config       config;
+    Config config;
 
     for (int i = 1; i != argc; ++i) {
         std::string arg = argv[i];
@@ -352,6 +455,9 @@ int main(int argc, char * argv[]) {
         FATAL(ex.message);
     }
     catch (const Basics::Error & ex) {
+        FATAL(ex.message);
+    }
+    catch (const Server::Error & ex) {
         FATAL(ex.message);
     }
 

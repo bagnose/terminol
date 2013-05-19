@@ -61,6 +61,8 @@ private:
     Color       _borderColor;
     int         _borderThickness;
 
+    std::string _socketPath;
+
 public:
     Config();
 
@@ -114,6 +116,8 @@ public:
 
     const Color &       getBorderColor()           const { return _borderColor; }
     int                 getBorderThickness()       const { return _borderThickness; }
+
+    const std::string & getSocketPath()            const { return _socketPath; }
 
 protected:
     static Color decodeHexColor(const std::string & hexColor);

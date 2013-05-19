@@ -199,6 +199,10 @@ Config::Config() :
             _bgColor = _systemColors[0];
             break;
     }
+
+    std::ostringstream ost;
+    ost << "/tmp/terminols-" << ::getenv("USER");
+    _socketPath = ost.str();
 }
 
 Config::Color Config::decodeHexColor(const std::string & hexColor) {
