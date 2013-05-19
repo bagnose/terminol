@@ -943,7 +943,7 @@ void Terminal::machineCsi(bool priv,
             {
                 int32_t count = nthArgNonZero(args, 0, 1);
                 count = clamp(count, 1, _buffer->getMarginEnd() - _cursorRow);
-                _buffer->eraseLines(_cursorRow, nthArgNonZero(args, 0, 1));
+                _buffer->eraseLines(_cursorRow, count);
             }
             break;
         case 'P': // DCH - Delete Character
