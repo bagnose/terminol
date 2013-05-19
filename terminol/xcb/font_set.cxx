@@ -1,6 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/xcb/font_set.hxx"
+#include "terminol/support/pattern.hxx"
 
 FontSet::FontSet(const Config & config) throw (Error) :
     _config(config),
@@ -27,11 +28,13 @@ FontSet::FontSet(const Config & config) throw (Error) :
 
     // Normal
     _normal = load(pattern);
+    auto normalGuard = scopeGuard([&] { unload(_normal); });
 
     // Bold
     FcPatternDel(pattern, FC_WEIGHT);
     FcPatternAddInteger(pattern, FC_WEIGHT, FC_WEIGHT_BOLD);
     _bold = load(pattern);
+    auto boldGuard = scopeGuard([&] { unload(_bold); });
 
     // Italic
     FcPatternDel(pattern, FC_WEIGHT);
@@ -39,11 +42,19 @@ FontSet::FontSet(const Config & config) throw (Error) :
     FcPatternDel(pattern, FC_SLANT);
     FcPatternAddInteger(pattern, FC_SLANT, FC_SLANT_ITALIC);
     _italic = load(pattern);
+    auto italicGuard = scopeGuard([&] { unload(_italic); });
 
     // Italic bold
     FcPatternDel(pattern, FC_WEIGHT);
     FcPatternAddInteger(pattern, FC_WEIGHT, FC_WEIGHT_BOLD);
     _italicBold = load(pattern);
+    auto italicBoldGuard = scopeGuard([&] { unload(_italicBold); });
+
+    // Dismiss the guards
+    italicBoldGuard.dismiss();
+    italicGuard.dismiss();
+    boldGuard.dismiss();
+    normalGuard.dismiss();
 
     FcPatternDestroy(pattern);
 }
