@@ -166,10 +166,10 @@ Config::Config() :
     _scrollWithHistory(false),
     _scrollOnTtyOutput(false),
     _scrollOnTtyKeyPress(true),
-    _doubleBuffer(false),
-    _title(),
+    _doubleBuffer(true),
+    _title("terminol"),
     _chdir(),
-    _scrollBackHistory(100),
+    _scrollBackHistory(1024),
     _unlimitedScrollBack(true),
     //
     _traceTty(false),
