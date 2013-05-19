@@ -926,10 +926,12 @@ void Terminal::machineCsi(bool priv,
             switch (nthArg(args, 0)) {
                 default:
                 case 0: // ED0 - Below
+                    _buffer->clearLineRight(_cursorRow, _cursorCol);
                     _buffer->clearBelow(_cursorRow + 1);
                     break;
                 case 1: // ED1 - Above
                     _buffer->clearAbove(_cursorRow);
+                    _buffer->clearLineLeft(_cursorRow, _cursorCol + 1);
                     break;
                 case 2: // ED2 - All
                     _buffer->clear();
