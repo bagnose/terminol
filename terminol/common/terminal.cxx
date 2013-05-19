@@ -705,7 +705,6 @@ void Terminal::machineControl(uint8_t c) throw () {
         case BS:
             damageCursor();
 
-            // XXX check this
             if (_cursorCol == 0) {
                 if (_modes.get(Mode::AUTO_WRAP)) {
                     if (_cursorRow > _buffer->getMarginBegin()) {
@@ -775,12 +774,9 @@ void Terminal::machineEscape(uint8_t c) throw () {
 
     switch (c) {
         case 'D':   // IND - Line Feed (opposite of RI)
-            // FIXME
             damageCursor();
             if (_cursorRow == _buffer->getMarginEnd() - 1) {
-                if (_config.getTraceTty()) {
-                    std::cerr << "(ADDLINE1)" << std::endl;
-                }
+                if (_config.getTraceTty()) { std::cerr << "(ADDLINE1)" << std::endl; }
                 _buffer->addLine();
             }
             else {
@@ -788,13 +784,10 @@ void Terminal::machineEscape(uint8_t c) throw () {
             }
             break;
         case 'E':   // NEL - Next Line
-            // FIXME
             damageCursor();
             _cursorCol = 0;
             if (_cursorRow == _buffer->getMarginEnd() - 1) {
-                if (_config.getTraceTty()) {
-                    std::cerr << "(ADDLINE1)" << std::endl;
-                }
+                if (_config.getTraceTty()) { std::cerr << "(ADDLINE1)" << std::endl; }
                 _buffer->addLine();
             }
             else {
@@ -805,7 +798,6 @@ void Terminal::machineEscape(uint8_t c) throw () {
             _tabs[_cursorCol] = true;
             break;
         case 'M':   // RI - Reverse Line Feed (opposite of IND)
-            // FIXME dubious
             if (_cursorRow == _buffer->getMarginBegin()) {
                 _buffer->insertLines(_buffer->getMarginBegin(), 1);
             }
@@ -961,7 +953,6 @@ void Terminal::machineCsi(bool priv,
                 _buffer->eraseCells(_cursorRow, _cursorCol, count);
             }
             break;
-
         case 'S': // SU - Scroll Up
             NYI("SU");
             break;
@@ -977,7 +968,6 @@ void Terminal::machineCsi(bool priv,
         case '`': // HPA
             moveCursor(_cursorRow, nthArgNonZero(args, 0, 1) - 1);
             break;
-
         case 'b': // REP
             NYI("REP");
             break;
@@ -989,7 +979,6 @@ void Terminal::machineCsi(bool priv,
                        nthArg(args, 0, 1) - 1,
                        _cursorCol);
             break;
-
         case 'g': // TBC
             switch (nthArg(args, 0, 0)) {
                 case 0:

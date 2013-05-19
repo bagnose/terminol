@@ -324,7 +324,6 @@ public:
         }
         else {
             _lines.push_back(Line(getCols()));
-            damageAll();
             if (_history == _maxHistory) {
                 _lines.pop_front();
 
@@ -348,6 +347,7 @@ public:
                 ++_history;
             }
 
+            damageAll();
             _barDamage = true;
         }
     }

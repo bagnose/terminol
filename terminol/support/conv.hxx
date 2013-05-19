@@ -1,3 +1,5 @@
+// vi:noai:sw=4
+
 #ifndef SUPPORT__CONV__HXX
 #define SUPPORT__CONV__HXX
 
@@ -7,6 +9,7 @@
 #include <sstream>
 
 template <typename T> T clamp(T t, T min, T max) {
+    ASSERT(min < max, "");
     if      (t < min) { return min; }
     else if (t > max) { return max; }
     else              { return t;   }
