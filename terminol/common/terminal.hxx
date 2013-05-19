@@ -31,9 +31,10 @@ class Terminal :
 public:
     class I_Observer {
     public:
+        virtual void terminalResizeFont(int delta) throw () = 0;
         virtual void terminalResetTitle() throw () = 0;
         virtual void terminalSetTitle(const std::string & title) throw () = 0;
-        virtual void terminalResize(uint16_t rows, uint16_t cols) throw () = 0;
+        virtual void terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () = 0;
         virtual bool terminalFixDamageBegin(bool internal) throw () = 0;
         virtual void terminalDrawRun(uint16_t        row,
                                      uint16_t        col,

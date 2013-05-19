@@ -1602,11 +1602,11 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                 case 3: // DECCOLM - Column Mode
                     if (set) {
                         // resize 132x24
-                        _observer.terminalResize(24, 132);
+                        _observer.terminalResizeBuffer(24, 132);
                     }
                     else {
                         // resize 80x24
-                        _observer.terminalResize(24, 80);
+                        _observer.terminalResizeBuffer(24, 80);
                     }
                     break;
                 case 4: // DECSCLM - Scroll Mode - Smooth / Jump (IGNORED)

@@ -104,9 +104,10 @@ protected:
 
     // Terminal::I_Observer implementation:
 
+    void terminalResizeFont(int delta) throw ();
     void terminalResetTitle() throw ();
     void terminalSetTitle(const std::string & title) throw ();
-    void terminalResize(uint16_t rows, uint16_t cols) throw ();
+    void terminalResizeBuffer(uint16_t rows, uint16_t cols) throw ();
     bool terminalFixDamageBegin(bool internal) throw ();
     void terminalDrawRun(uint16_t        row,
                          uint16_t        col,

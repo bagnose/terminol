@@ -751,6 +751,10 @@ void Window::drawBorder() {
 
 // Terminal::I_Observer implementation:
 
+void Window::terminalResizeFont(int delta) throw () {
+    PRINT("Resize font: " << delta);
+}
+
 void Window::terminalResetTitle() throw () {
     _title = _config.getTitle();
     updateTitle();
@@ -762,7 +766,7 @@ void Window::terminalSetTitle(const std::string & title) throw () {
     updateTitle();
 }
 
-void Window::terminalResize(uint16_t rows, uint16_t cols) throw () {
+void Window::terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () {
     NYI("Terminal resize: rows=" << rows << ", cols=" << cols);
     // Thoughts: this is tricky because we are at the mercy of the window
     // manager and our resize request requires a round trip to the X server.
