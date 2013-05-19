@@ -1102,8 +1102,8 @@ void Terminal::machineCsi(bool priv,
                 }
                 else {
                     // http://www.vt100.net/docs/vt510-rm/DECSTBM
-                    int32_t top    = nthArg(args, 0, 1) - 1;
-                    int32_t bottom = nthArg(args, 1, 1) - 1;
+                    int32_t top    = nthArgNonZero(args, 0, 1) - 1;
+                    int32_t bottom = nthArgNonZero(args, 1, _cursorRow + 1) - 1;
 
                     top    = clamp<int32_t>(top,    0, _buffer->getRows() - 1);
                     bottom = clamp<int32_t>(bottom, 0, _buffer->getRows() - 1);
