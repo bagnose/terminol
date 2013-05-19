@@ -19,8 +19,6 @@ private:
     static const Color  TWEAKED_COLORS[16];
 
     // TODO
-    // fgColor
-    // bgColor
     // cursorColor
     // pointerfgColor
     // pointerBgColor
@@ -41,6 +39,8 @@ private:
     bool        _traceTty;
     bool        _syncTty;
 
+    Color       _fgColor;
+    Color       _bgColor;
     Color       _systemColors[16];
 
 public:
@@ -74,6 +74,9 @@ public:
     int16_t             getY()    const { return -1; }
     uint16_t            getRows() const { return 25; }
     uint16_t            getCols() const { return 80; }
+
+    const Color &       getFgColor() const { return _fgColor; }
+    const Color &       getBgColor() const { return _bgColor; }
 
     const Color &       getSystemColor(uint8_t index) const {
         ASSERT(index <= 16, "");

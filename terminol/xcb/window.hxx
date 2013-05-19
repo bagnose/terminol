@@ -114,15 +114,15 @@ protected:
     bool terminalFixDamageBegin(bool internal) throw ();
     void terminalDrawRun(uint16_t        row,
                          uint16_t        col,
-                         uint8_t         fg,
-                         uint8_t         bg,
+                         uint16_t        fg,
+                         uint16_t        bg,
                          AttributeSet    attrs,
                          const uint8_t * str,
                          size_t          count) throw ();
     void terminalDrawCursor(uint16_t        row,
                             uint16_t        col,
-                            uint8_t         fg,
-                            uint8_t         bg,
+                            uint16_t        fg,
+                            uint16_t        bg,
                             AttributeSet    attrs,
                             const uint8_t * str,
                             bool            special) throw ();

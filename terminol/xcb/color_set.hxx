@@ -11,7 +11,16 @@
 struct Color {
     double r, g, b;
 
-    // XXX DODGY
+    // XXX DODGY:
+
+    Color() {}
+
+    Color(const Config::Color & color) {
+        r = color.r;
+        g = color.g;
+        b = color.b;
+    }
+
     Color & operator = (const Config::Color & color) {
         r = color.r;
         g = color.g;
@@ -30,7 +39,7 @@ class ColorSet {
     Color          _borderColor;
     Color          _scrollBarFgColor;
     Color          _scrollBarBgColor;
-    Color          _indexedColors[256];
+    Color          _indexedColors[258];
     uint32_t       _backgroundPixel;
 
 public:
@@ -43,8 +52,12 @@ public:
     const Color & getBorderColor()      const { return _borderColor; }
     const Color & getScrollBarFgColor() const { return _scrollBarFgColor; }
     const Color & getScrollBarBgColor() const { return _scrollBarBgColor; }
-    const Color & getIndexedColor(uint8_t index) const { return _indexedColors[index]; }
-    //const Color & getBackgroundColor()  const { return _indexedColors[0]; }
+    const Color & getIndexedColor(uint16_t index) const {
+        ASSERT(index < 258, "Index out of range: " << index);
+        return _indexedColors[index];
+    }
+    const Color & getForegroundColor()  const { return _indexedColors[256]; }
+    const Color & getBackgroundColor()  const { return _indexedColors[257]; }
     uint32_t      getBackgroundPixel()  const { return _backgroundPixel; }
 };
 

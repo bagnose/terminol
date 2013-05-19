@@ -178,18 +178,25 @@ Config::Config() :
             for (size_t i = 0; i != 16; ++i) {
                 _systemColors[i] = decodeHexColor(SOLARIZED_DARK_COLORS[i]);
             }
+            _fgColor = _systemColors[12];
+            _bgColor = _systemColors[8];
             break;
         case 1:
             for (size_t i = 0; i != 16; ++i) {
                 _systemColors[i] = decodeHexColor(SOLARIZED_LIGHT_COLORS[i]);
             }
+            _fgColor = _systemColors[12];
+            _bgColor = _systemColors[8];
             break;
         case 2:
             memcpy(_systemColors, STANDARD_COLORS, sizeof(STANDARD_COLORS));
+            _fgColor = _systemColors[7];
+            _bgColor = _systemColors[0];
             break;
         case 3:
-            PRINT(sizeof(STANDARD_COLORS));
-            memcpy(_systemColors, TWEAKED_COLORS, sizeof(STANDARD_COLORS));
+            memcpy(_systemColors, TWEAKED_COLORS, sizeof(TWEAKED_COLORS));
+            _fgColor = _systemColors[7];
+            _bgColor = _systemColors[0];
             break;
     }
 }

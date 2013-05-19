@@ -436,7 +436,7 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
 
     for (uint16_t r = rowBegin; r != rowEnd; ++r) {
         uint16_t     c_ = 0;    // Accumulation start column.
-        uint8_t      fg = 0, bg = 0;
+        uint16_t     fg = 0, bg = 0;
         AttributeSet attrs;
         uint16_t     c;
         uint16_t     colBegin2, colEnd2;

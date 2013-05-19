@@ -37,15 +37,15 @@ public:
         virtual bool terminalFixDamageBegin(bool internal) throw () = 0;
         virtual void terminalDrawRun(uint16_t        row,
                                      uint16_t        col,
-                                     uint8_t         fg,
-                                     uint8_t         bg,
+                                     uint16_t        fg,
+                                     uint16_t        bg,
                                      AttributeSet    attrs,
                                      const uint8_t * str,       // nul-terminated
                                      size_t          count) throw () = 0;
         virtual void terminalDrawCursor(uint16_t        row,
                                         uint16_t        col,
-                                        uint8_t         fg,
-                                        uint8_t         bg,
+                                        uint16_t        fg,
+                                        uint16_t        bg,
                                         AttributeSet    attrs,
                                         const uint8_t * str,
                                         bool            special) throw () = 0;
@@ -84,8 +84,8 @@ private:
     const CharSub       * _G1;
     uint16_t              _cursorRow;
     uint16_t              _cursorCol;
-    uint8_t               _fg;
-    uint8_t               _bg;
+    uint16_t              _fg;
+    uint16_t              _bg;
     AttributeSet          _attrs;
     bool                  _originMode;
 
@@ -97,8 +97,8 @@ private:
     const CharSub       * _savedG1;
     uint16_t              _savedCursorRow;
     uint16_t              _savedCursorCol;
-    uint8_t               _savedFg;
-    uint8_t               _savedBg;
+    uint16_t              _savedFg;
+    uint16_t              _savedBg;
     AttributeSet          _savedAttrs;
     bool                  _savedOriginMode;
 

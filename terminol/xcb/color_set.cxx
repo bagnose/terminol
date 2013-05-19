@@ -71,8 +71,10 @@ ColorSet::ColorSet(const Config & config,
     // 8..15    bright colors
     // 16..231  6x6x6 color cube
     // 232..255 grey ramp
+    // 256      foreground
+    // 257      background
 
-    uint8_t index = 0;
+    uint16_t index = 0;
 
     for (; index != 16; ++index) {
         _indexedColors[index] = _config.getSystemColor(index);
@@ -90,17 +92,16 @@ ColorSet::ColorSet(const Config & config,
         _indexedColors[index++] = { v / 23.0, v / 23.0, v / 23.0 };
     }
 
-    ASSERT(index == 0, "Should have wrapped to zero.");
+    _indexedColors[index++] = _config.getFgColor();
+    _indexedColors[index++] = _config.getBgColor();
+
+    ASSERT(index == 258, "");
 
     //
     // Allocate the background pixel.
     //
 
-#if 0
-    const Color & background = _indexedColors[0];
-#else
-    const Color & background = _indexedColors[8];
-#endif
+    Color background = _config.getBgColor();
 
     const double MAX = std::numeric_limits<uint16_t>::max();
 
