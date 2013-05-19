@@ -48,6 +48,7 @@ Window::Window(const Config       & config,
     _pointerCol(std::numeric_limits<uint16_t>::max()),
     _mapped(false),
     _focussed(false),
+    _hadExpose(false),
     _pixmap(0),
     _surface(nullptr),
     _cr(nullptr),
@@ -337,13 +338,24 @@ void Window::expose(xcb_expose_event_t * event) {
           */
 
     if (_mapped) {
-        if (_config.getDoubleBuffer()) {
+        if (_config.getDoubleBuffer() && _hadExpose) {
             ASSERT(_pixmap, "");
+            xcb_copy_area(_basics.connection(),
+                          _pixmap,
+                          _window,
+                          _gc,
+                          event->x, event->y,
+                          event->x, event->y,
+                          event->width, event->height);
+            xcb_flush(_basics.connection());
         }
-
-        ASSERT(_surface, "");
-        draw(event->x, event->y, event->width, event->height);
+        else {
+            ASSERT(_surface, "");
+            draw(event->x, event->y, event->width, event->height);
+        }
     }
+
+    _hadExpose = true;
 }
 
 void Window::configureNotify(xcb_configure_notify_event_t * event) {

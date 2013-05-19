@@ -41,6 +41,7 @@ class Window :
     bool              _mapped;          // Is the window mapped.
     bool              _focussed;        // Is the window focussed.
 
+    bool              _hadExpose;
     xcb_pixmap_t      _pixmap;          // Created when mapped, destroyed when unmapped.
 
     cairo_surface_t * _surface;
