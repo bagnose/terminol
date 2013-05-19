@@ -41,10 +41,10 @@ const KeyMap::Map KeyMap::MAP_APPLICATION[] = {
     { 0, 0, 0, 0 }
 };
 
-KeyMap::KeyMap(uint8_t maskShift, uint8_t maskAlt, uint8_t maskControl) :
-    _maskShift(maskShift),
-    _maskAlt(maskAlt),
-    _maskControl(maskControl) {}
+KeyMap::KeyMap(uint8_t maskShift_, uint8_t maskAlt_, uint8_t maskControl_) :
+    _maskShift(maskShift_),
+    _maskAlt(maskAlt_),
+    _maskControl(maskControl_) {}
 
 KeyMap::~KeyMap() {}
 

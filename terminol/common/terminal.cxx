@@ -511,7 +511,7 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
 
         row = _cursorRow + (_buffer->getHistory() - _buffer->getScroll());
 
-        ASSERT(row >= 0 && row < _buffer->getRows(), "");
+        ASSERT(row < _buffer->getRows(), "");
 
         if (_cursorCol == _buffer->getCols()) {
             col = _cursorCol - 1;
