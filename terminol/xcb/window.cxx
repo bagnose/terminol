@@ -827,8 +827,7 @@ void Window::terminalDrawRun(uint16_t        row,
     ASSERT(_cr, "");
 
     cairo_save(_cr); {
-        if (attrs.get(Attribute::INVERSE) ||
-            attrs.get(Attribute::BLINK)) { std::swap(fg, bg); }
+        if (attrs.get(Attribute::INVERSE)) { std::swap(fg, bg); }
 
         cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attribute::ITALIC),
                                                 attrs.get(Attribute::BOLD)));
@@ -842,7 +841,8 @@ void Window::terminalDrawRun(uint16_t        row,
         cairo_fill(_cr);
 
         const auto & fgValues = _colorSet.getIndexedColor(fg);
-        cairo_set_source_rgb(_cr, fgValues.r, fgValues.g, fgValues.b);
+        cairo_set_source_rgba(_cr, fgValues.r, fgValues.g, fgValues.b,
+                              attrs.get(Attribute::CONCEAL) ? 0.2 : 1.0);
 
         if (attrs.get(Attribute::UNDERLINE)) {
             cairo_move_to(_cr, x, y + _fontSet.getHeight() - 0.5);
