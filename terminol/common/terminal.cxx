@@ -327,7 +327,10 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, uint8_t state) {
 
 void Terminal::moveCursor(int32_t row, int32_t col) {
     damageCursor();
-    _cursorRow = clamp<int32_t>(row, 0, _buffer->getRows() - 1);
+
+    _cursorRow = clamp<int32_t>(row,
+                                _buffer->getMarginBegin(),
+                                _buffer->getMarginEnd() - 1);
     _cursorCol = clamp<int32_t>(col, 0, _buffer->getCols() - 1);
 }
 
@@ -908,9 +911,7 @@ void Terminal::machineCsi(bool priv,
         case 'H':       // CUP - Cursor Position
             if (_config.getTraceTty()) { std::cerr << std::endl; }
             if (_originMode) {
-                uint16_t row = clamp<int32_t>(nthArg(args, 0, 1) - 1 + _buffer->getMarginBegin(),
-                                              _buffer->getMarginBegin(),
-                                              _buffer->getMarginEnd() - 1);
+                int32_t row = _buffer->getMarginBegin() + nthArg(args, 0, 1) - 1;
                 moveCursor(row, nthArg(args, 1, 1) - 1);
             }
             else {
@@ -973,8 +974,7 @@ void Terminal::machineCsi(bool priv,
             tabCursor(TabDir::BACKWARD, nthArg(args, 0, 1));
             break;
         case '`': // HPA
-            // TODO damage
-            _cursorCol = clamp<uint16_t>(nthArg(args, 0, 1), 1, _buffer->getCols()) - 1;
+            moveCursor(_cursorRow, nthArg(args, 0, 1) - 1);
             break;
 
         case 'b': // REP
