@@ -971,14 +971,17 @@ void Window::terminalFixDamageEnd(bool     internal,
         cairo_surface_flush(_surface);      // Useful?
 
         if (_config.getDoubleBuffer()) {
-            // FIXME It's probably more efficient to do a single copy of the
-            // entire buffer...
-            // FIXME No, just expand the region to include the scrollbar
-
             int x0, y0;
             rowCol2XY(rowBegin, colBegin, x0, y0);
             int x1, y1;
             rowCol2XY(rowEnd, colEnd, x1, y1);
+
+            if (scrollBar) {
+                // Expand the region to include the scroll bar
+                y0 = 0;
+                x1 = _width;
+                y1 = _height;
+            }
 
             // Copy the buffer region
             xcb_copy_area(_basics.connection(),
@@ -988,22 +991,6 @@ void Window::terminalFixDamageEnd(bool     internal,
                           x0, y0,   // src
                           x0, y0,   // dst
                           x1 - x0, y1 - y0);
-
-            if (scrollBar) {
-                const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
-
-                // Copy the scroll bar region
-                xcb_copy_area(_basics.connection(),
-                              _pixmap,
-                              _window,
-                              _gc,
-                              _width - SCROLLBAR_WIDTH,
-                              0,
-                              _width - SCROLLBAR_WIDTH,
-                              0,
-                              SCROLLBAR_WIDTH,
-                              _height);
-            }
         }
 
         //xcb_flush(_basics.connection());
