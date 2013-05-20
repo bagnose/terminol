@@ -99,7 +99,7 @@ Terminal::Terminal(I_Observer   & observer,
     _otherCharSet(false),
     _G0(CS_US),
     _G1(CS_US),
-    _cursorRow(0), _cursorCol(0),
+    _cursorRow(0), _cursorCol(0), _cursorWrapNext(false),
     _fg(Cell::defaultFg()),
     _bg(Cell::defaultBg()),
     _attrs(Cell::defaultAttrs()),
@@ -149,14 +149,14 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
 
     int16_t priRowAdjust = _priBuffer.resize(rows, cols);
     int16_t altRowAdjust = _altBuffer.resize(rows, cols);
-    int16_t rowAdjust = _buffer == &_priBuffer ? priRowAdjust : altRowAdjust;
+    int16_t rowAdjust    = _buffer == &_priBuffer ? priRowAdjust : altRowAdjust;
 
-    _cursorRow = clamp<int16_t>(_cursorRow + rowAdjust, 0, rows - 1);
-    _cursorCol = std::min(_cursorCol, cols);
+    _cursorRow = clamp< int16_t>(_cursorRow + rowAdjust, 0, rows - 1);
+    _cursorCol = clamp<uint16_t>(_cursorCol,             0, cols - 1);
 
     // XXX is this correct for the saved cursor row/col?
-    _savedCursorRow = std::min(_savedCursorRow, rows);
-    _savedCursorCol = std::min(_savedCursorCol, cols);
+    _savedCursorRow = std::min<uint16_t>(_savedCursorRow, rows - 1);
+    _savedCursorCol = std::min<uint16_t>(_savedCursorCol, cols - 1);
 
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {
@@ -318,13 +318,24 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, uint8_t state) {
     }
 }
 
+void Terminal::moveCursorOriginMode(int32_t row, int32_t col) {
+    moveCursor(row + (_originMode ? _buffer->getMarginBegin() : 0), col);
+}
+
 void Terminal::moveCursor(int32_t row, int32_t col) {
     damageCursor();
 
-    _cursorRow = clamp<int32_t>(row,
-                                _buffer->getMarginBegin(),
-                                _buffer->getMarginEnd() - 1);
-    _cursorCol = clamp<int32_t>(col, 0, _buffer->getCols() - 1);
+    if (_originMode) {
+        _cursorRow = clamp<int32_t>(row,
+                                    _buffer->getMarginBegin(),
+                                    _buffer->getMarginEnd() - 1);
+    }
+    else {
+        _cursorRow = clamp<int32_t>(row, 0, _buffer->getRows() - 1);
+    }
+
+    _cursorCol      = clamp<int32_t>(col, 0, _buffer->getCols() - 1);
+    _cursorWrapNext = false;
 }
 
 void Terminal::tabCursor(TabDir dir, uint16_t count) {
@@ -362,9 +373,9 @@ void Terminal::tabCursor(TabDir dir, uint16_t count) {
 }
 
 void Terminal::damageCursor() {
-    uint16_t col = _cursorCol;
-    if (col == _buffer->getCols()) { --col; }
-    _buffer->damageCell(_cursorRow, col);
+    ASSERT(_cursorRow < _buffer->getRows(), "");
+    ASSERT(_cursorCol < _buffer->getCols(), "");
+    _buffer->damageCell(_cursorRow, _cursorCol);
 }
 
 void Terminal::fixDamage(uint16_t rowBegin, uint16_t rowEnd,
@@ -511,22 +522,14 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
         _buffer->getHistory() + _cursorRow <
         _buffer->getScroll()  + _buffer->getRows())
     {
-        bool     precipitous;       // at the extreme right edge
         uint16_t row;
         uint16_t col;
 
         row = _cursorRow + (_buffer->getHistory() - _buffer->getScroll());
-
         ASSERT(row < _buffer->getRows(), "");
 
-        if (_cursorCol == _buffer->getCols()) {
-            col = _cursorCol - 1;
-            precipitous = true;
-        }
-        else {
-            col = _cursorCol;
-            precipitous = false;
-        }
+        col = _cursorCol;
+        ASSERT(col < _buffer->getCols(), "");
 
         // Update _damageColBegin and _damageColEnd.
         if (_damageColBegin == _damageColEnd) {
@@ -555,7 +558,7 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
         run.push_back(NUL);
         _observer.terminalDrawCursor(row, col,
                                      cell.fg(), cell.bg(), cell.attrs(), &run.front(),
-                                     precipitous);
+                                     _cursorWrapNext);
     }
 
     bool scrollbar =    // Identical in two places.
@@ -664,20 +667,14 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
         std::cerr << Esc::FG_GREEN << Esc::UNDERLINE << seq << Esc::RESET;
     }
 
-    damageCursor();
+    if (_cursorWrapNext && _modes.get(Mode::AUTO_WRAP)) {
+        moveCursor(_cursorRow, 0);
 
-    if (_cursorCol == _buffer->getCols()) {
-        if (_modes.get(Mode::AUTO_WRAP)) {
-            _cursorCol = 0;
-            if (_cursorRow == _buffer->getMarginEnd() - 1) {
-                _buffer->addLine();
-            }
-            else {
-                ++_cursorRow;
-            }
+        if (_cursorRow == _buffer->getMarginEnd() - 1) {
+            _buffer->addLine();
         }
         else {
-            --_cursorCol;
+            moveCursor(_cursorRow + 1, _cursorCol);
         }
     }
 
@@ -689,7 +686,15 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
     }
 
     _buffer->setCell(_cursorRow, _cursorCol, Cell::utf8(seq, _attrs, _fg, _bg));
-    ++_cursorCol;
+
+    if (_cursorCol == _buffer->getCols() - 1) {
+        _cursorWrapNext = true;
+    }
+    else {
+        moveCursor(_cursorRow, _cursorCol + 1);
+    }
+
+    ASSERT(_cursorCol < _buffer->getCols(), "");
 }
 
 void Terminal::machineControl(uint8_t c) throw () {
@@ -707,16 +712,21 @@ void Terminal::machineControl(uint8_t c) throw () {
         case BS:
             damageCursor();
 
-            if (_cursorCol == 0) {
-                if (_modes.get(Mode::AUTO_WRAP)) {
-                    if (_cursorRow > _buffer->getMarginBegin()) {
-                        _cursorCol = _buffer->getCols() - 1;
-                        --_cursorRow;
-                    }
-                }
+            if (_cursorWrapNext) {
+                _cursorWrapNext = false;
             }
             else {
-                --_cursorCol;
+                if (_cursorCol == 0) {
+                    if (_modes.get(Mode::AUTO_WRAP)) {
+                        if (_cursorRow > _buffer->getMarginBegin()) {
+                            _cursorCol = _buffer->getCols() - 1;
+                            --_cursorRow;
+                        }
+                    }
+                }
+                else {
+                    --_cursorCol;
+                }
             }
             break;
         case CR:
@@ -738,8 +748,7 @@ void Terminal::machineControl(uint8_t c) throw () {
                 _buffer->addLine();
             }
             else {
-                damageCursor();
-                ++_cursorRow;
+                moveCursor(_cursorRow + 1, _cursorCol);
             }
 
             if (_config.getTraceTty()) {
@@ -776,24 +785,22 @@ void Terminal::machineEscape(uint8_t c) throw () {
 
     switch (c) {
         case 'D':   // IND - Line Feed (opposite of RI)
-            damageCursor();
             if (_cursorRow == _buffer->getMarginEnd() - 1) {
-                if (_config.getTraceTty()) { std::cerr << "(ADDLINE1)" << std::endl; }
+                if (_config.getTraceTty()) { std::cerr << "(ADDLINE2)" << std::endl; }
                 _buffer->addLine();
             }
             else {
-                ++_cursorRow;
+                moveCursor(_cursorRow + 1, _cursorCol);
             }
             break;
         case 'E':   // NEL - Next Line
-            damageCursor();
-            _cursorCol = 0;
+            moveCursor(_cursorRow, 0);
             if (_cursorRow == _buffer->getMarginEnd() - 1) {
-                if (_config.getTraceTty()) { std::cerr << "(ADDLINE1)" << std::endl; }
+                if (_config.getTraceTty()) { std::cerr << "(ADDLINE3)" << std::endl; }
                 _buffer->addLine();
             }
             else {
-                ++_cursorRow;
+                moveCursor(_cursorRow + 1, _cursorCol);
             }
             break;
         case 'H':   // HTS - Horizontal Tab Stop
@@ -804,8 +811,7 @@ void Terminal::machineEscape(uint8_t c) throw () {
                 _buffer->insertLines(_buffer->getMarginBegin(), 1);
             }
             else {
-                damageCursor();
-                --_cursorRow;
+                moveCursor(_cursorRow - 1, _cursorCol);
             }
             break;
         case 'N':   // SS2 - Set Single Shift 2
@@ -868,9 +874,13 @@ void Terminal::machineCsi(bool priv,
     }
 
     switch (mode) {
-        case '@': // ICH - Insert Character
-            _buffer->insertCells(_cursorRow, _cursorCol, nthArgNonZero(args, 0, 1));
+        case '@': { // ICH - Insert Character
+            // XXX what about _cursorWrapNext
+            int32_t count = nthArgNonZero(args, 0, 1);
+            count = clamp(count, 1, _buffer->getCols() - _cursorCol);
+            _buffer->insertCells(_cursorRow, _cursorCol, count);
             break;
+        }
         case 'A': // CUU - Cursor Up
             moveCursor(_cursorRow - nthArgNonZero(args, 0, 1), _cursorCol);
             break;
@@ -895,9 +905,7 @@ void Terminal::machineCsi(bool priv,
         case 'f':       // HVP - Horizontal and Vertical Position
         case 'H':       // CUP - Cursor Position
             if (_config.getTraceTty()) { std::cerr << std::endl; }
-            moveCursor(_originMode ? _buffer->getMarginBegin() : 0 +
-                       nthArg(args, 0, 1) - 1,
-                       nthArg(args, 1, 1) - 1);
+            moveCursorOriginMode(nthArg(args, 0, 1) - 1, nthArg(args, 1, 1) - 1);
             break;
         case 'I':       // CHT - Cursor Forward Tabulation *
             tabCursor(TabDir::FORWARD, nthArg(args, 0, 1));
@@ -935,6 +943,8 @@ void Terminal::machineCsi(bool priv,
             }
             break;
         case 'L': // IL - Insert Lines
+            if (_cursorRow >= _buffer->getMarginBegin() &&
+                _cursorRow <  _buffer->getMarginEnd())
             {
                 int32_t count = nthArgNonZero(args, 0, 1);
                 count = clamp(count, 1, _buffer->getMarginEnd() - _cursorRow);
@@ -942,19 +952,21 @@ void Terminal::machineCsi(bool priv,
             }
             break;
         case 'M': // DL - Delete Lines
+            if (_cursorRow >= _buffer->getMarginBegin() &&
+                _cursorRow <  _buffer->getMarginEnd())
             {
                 int32_t count = nthArgNonZero(args, 0, 1);
                 count = clamp(count, 1, _buffer->getMarginEnd() - _cursorRow);
                 _buffer->eraseLines(_cursorRow, count);
             }
             break;
-        case 'P': // DCH - Delete Character
-            {
-                int32_t count = nthArgNonZero(args, 0, 1);
-                count = clamp(count, 1, _buffer->getCols() - _cursorCol);
-                _buffer->eraseCells(_cursorRow, _cursorCol, count);
-            }
+        case 'P': { // DCH - Delete Character
+            // FIXME what about wrap-next?
+            int32_t count = nthArgNonZero(args, 0, 1);
+            count = clamp(count, 1, _buffer->getCols() - _cursorCol);
+            _buffer->eraseCells(_cursorRow, _cursorCol, count);
             break;
+        }
         case 'S': // SU - Scroll Up
             NYI("SU");
             break;
@@ -977,18 +989,15 @@ void Terminal::machineCsi(bool priv,
             write(reinterpret_cast<const uint8_t *>("\x1B[?6c"), 5);
             break;
         case 'd': // VPA - Vertical Position Absolute
-            moveCursor(_originMode ? _buffer->getMarginBegin() : 0 +
-                       nthArg(args, 0, 1) - 1,
-                       _cursorCol);
+            moveCursorOriginMode(nthArg(args, 0, 1) - 1, _cursorCol);
             break;
         case 'g': // TBC
             switch (nthArg(args, 0, 0)) {
                 case 0:
                     // "the character tabulation stop at the active presentation"
                     // "position is cleared"
-                    if (_cursorCol != _buffer->getCols()) {
-                        _tabs[_cursorCol] = false;
-                    }
+                    // FIXME what about wrap-next?
+                    _tabs[_cursorCol] = false;
                     break;
                 case 1:
                     // "the line tabulation stop at the active line is cleared"
@@ -1088,8 +1097,7 @@ void Terminal::machineCsi(bool priv,
             else {
                 if (args.empty()) {
                     _buffer->resetMargins();
-                    damageCursor();
-                    _cursorRow = _cursorCol = 0;
+                    moveCursorOriginMode(0, 0);
                 }
                 else {
                     // http://www.vt100.net/docs/vt510-rm/DECSTBM
@@ -1106,10 +1114,7 @@ void Terminal::machineCsi(bool priv,
                         _buffer->resetMargins();
                     }
 
-                    damageCursor();
-
-                    _cursorRow = _originMode ? top : 0;
-                    _cursorCol = 0;
+                    moveCursorOriginMode(0, 0);
                 }
             }
             break;
@@ -1602,17 +1607,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     break;
                 case 6: // DECOM - Origin Mode - Relative / Absolute
                     _originMode = set;
-
-                    damageCursor();
-
-                    if (_originMode) {
-                        _cursorRow = _buffer->getMarginBegin();
-                    }
-                    else {
-                        _cursorRow = 0;
-                    }
-
-                    _cursorCol = 0;
+                    moveCursorOriginMode(0, 0);
                     break;
                 case 7: // DECAWM - Auto Wrap Mode
                     _modes.setTo(Mode::AUTO_WRAP, set);

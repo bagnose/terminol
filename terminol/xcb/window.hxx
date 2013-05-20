@@ -127,7 +127,7 @@ protected:
                             uint16_t        bg,
                             AttributeSet    attrs,
                             const uint8_t * str,
-                            bool            special) throw ();
+                            bool            wrapNext) throw ();
     void terminalDrawScrollbar(size_t   totalRows,
                                size_t   historyOffset,
                                uint16_t visibleRows) throw ();

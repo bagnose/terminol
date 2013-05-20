@@ -886,7 +886,7 @@ void Window::terminalDrawCursor(uint16_t        row,
                                 uint16_t        bg,
                                 AttributeSet    attrs,
                                 const uint8_t * str,
-                                bool            special) throw () {
+                                bool            wrapNext) throw () {
     if (attrs.get(Attribute::INVERSE)) { std::swap(fg, bg); }
 
     const auto & fgValues =
@@ -907,7 +907,7 @@ void Window::terminalDrawCursor(uint16_t        row,
         rowCol2XY(row, col, x, y);
 
         cairo_set_source_rgba(_cr, bgValues.r, bgValues.g, bgValues.b,
-                              special ? 0.4 : 1.0);
+                              wrapNext ? 0.4 : 1.0);
         cairo_rectangle(_cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
         cairo_fill(_cr);
 

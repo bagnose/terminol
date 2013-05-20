@@ -101,7 +101,7 @@ class Buffer {
         }
 
         void damageAdd(uint16_t begin, uint16_t end) {
-            ASSERT(begin <  end, "");
+            ASSERT(begin <= end, "");
             ASSERT(end   <= getCols(), "");
 
             if (_damageBegin == _damageEnd) {
@@ -306,12 +306,13 @@ public:
             }
         }
 
-        damageAll();
         _scroll = _history;         // XXX Scroll to bottom on resize? Most terminals do
 
         _marginBegin = 0;
         _marginEnd   = rows;
         _barDamage   = true;
+
+        damageAll();
 
         return oldHistory - _history;       // FIXME I'm not sure this is quite right.
     }

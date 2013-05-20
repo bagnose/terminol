@@ -49,7 +49,7 @@ public:
                                         uint16_t        bg,
                                         AttributeSet    attrs,
                                         const uint8_t * str,
-                                        bool            special) throw () = 0;
+                                        bool            wrapNext) throw () = 0;
         virtual void terminalDrawScrollbar(size_t   totalRows,
                                            size_t   historyOffset,
                                            uint16_t visibleRows) throw () = 0;
@@ -85,6 +85,7 @@ private:
     const CharSub       * _G1;
     uint16_t              _cursorRow;
     uint16_t              _cursorCol;
+    bool                  _cursorWrapNext;
     uint16_t              _fg;
     uint16_t              _bg;
     AttributeSet          _attrs;
@@ -159,6 +160,7 @@ protected:
 
     bool      handleKeyBinding(xkb_keysym_t keySym, uint8_t state);
 
+    void      moveCursorOriginMode(int32_t row, int32_t col);
     void      moveCursor(int32_t row, int32_t col);
     void      tabCursor(TabDir dir, uint16_t count);
     void      damageCursor();
