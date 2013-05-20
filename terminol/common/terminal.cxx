@@ -498,6 +498,8 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
                 bg    = cell.bg();
                 attrs = cell.attrs();
 
+                if (_modes.get(Mode::REVERSE)) { std::swap(fg, bg); }
+
                 utf8::Length length = utf8::leadLength(cell.lead());
                 run.resize(length);
                 std::copy(cell.bytes(), cell.bytes() + length, &run.front());
