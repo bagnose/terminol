@@ -31,13 +31,13 @@ class Buffer {
             colEnd   = _damageEnd;
         }
 
-        void insert(uint16_t beforeCol, uint16_t n) {
-            std::copy_backward(&_cells[beforeCol],
+        void insert(uint16_t col, uint16_t n) {
+            std::copy_backward(&_cells[col],
                                &_cells[_cells.size() - n],
                                &_cells[_cells.size()]);
-            std::fill(&_cells[beforeCol], &_cells[beforeCol + n], Cell::blank());
+            std::fill(&_cells[col], &_cells[col + n], Cell::blank());
 
-            damageAdd(beforeCol, getCols());
+            damageAdd(col, getCols());
         }
 
         void erase(uint16_t col, uint16_t n) {
@@ -240,10 +240,11 @@ public:
     // Incoming / history-relative operations.
     //
 
-    void insertCells(uint16_t row, uint16_t beforeCol, uint16_t n) {
+    void insertCells(uint16_t row, uint16_t col, uint16_t n) {
         ASSERT(row < getRows(), "");
-        ASSERT(beforeCol <= getCols(), "");
-        _lines[_history + row].insert(beforeCol, n);
+        ASSERT(col <= getCols(), "");
+        ASSERT(col + n <= getCols(), "");
+        _lines[_history + row].insert(col, n);
     }
 
     void eraseCells(uint16_t row, uint16_t col, uint16_t n) {
@@ -352,22 +353,22 @@ public:
         }
     }
 
-    void insertLines(uint16_t beforeRow, uint16_t n) {
-        ASSERT(beforeRow >= _marginBegin && beforeRow < _marginEnd, "");
-        ASSERT(beforeRow + n <= _marginEnd, "");
+    void insertLines(uint16_t row, uint16_t n) {
+        ASSERT(row >= _marginBegin && row < _marginEnd, "");
+        ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n << ", margin-end=" << _marginEnd);
 
 #if 0
-        _lines.erase(_lines.begin() + _history + _marginEnd - n,
-                     _lines.begin() + _history + _marginEnd);
-        _lines.insert(_lines.begin() + _history + beforeRow, n, Line(getCols()));
+        _lines.erase (_lines.begin() + _history + _marginEnd - n,
+                      _lines.begin() + _history + _marginEnd);
+        _lines.insert(_lines.begin() + _history + row, n, Line(getCols()));
 #else
         // This path can handle any value of n
-        _lines.insert(_lines.begin() + _history + beforeRow, n, Line(getCols()));
-        _lines.erase(_lines.begin() + _history + _marginEnd,
-                     _lines.begin() + _history + _marginEnd + n);
+        _lines.insert(_lines.begin() + _history + row, n, Line(getCols()));
+        _lines.erase (_lines.begin() + _history + _marginEnd,
+                      _lines.begin() + _history + _marginEnd + n);
 #endif
 
-        damageRange(beforeRow, _marginEnd);
+        damageRange(row, _marginEnd);
     }
 
     void eraseLines(uint16_t row, uint16_t n) {
