@@ -26,18 +26,18 @@ const KeyMap::Map KeyMap::MAP_NORMAL[] = {
 };
 
 const KeyMap::Map KeyMap::MAP_APPLICATION[] = {
-    { XKB_KEY_Left,          1, 'O', 'D' },
-    { XKB_KEY_Right,         1, 'O', 'C' },
-    { XKB_KEY_Up,            1, 'O', 'A' },
-    { XKB_KEY_Down,          1, 'O', 'B' },
-    { XKB_KEY_Home,          1, 'O', 'H' },
-    { XKB_KEY_End,           1, 'O', 'F' },
-    { XKB_KEY_KP_Enter,      1, 'O', 'M' },
-    { XKB_KEY_KP_Multiply,   1, 'O', 'j' },
-    { XKB_KEY_KP_Add,        1, 'O', 'k' },
-    { XKB_KEY_KP_Separator,  1, 'O', 'l' },
-    { XKB_KEY_KP_Subtract,   1, 'O', 'm' },
-    { XKB_KEY_KP_Divide,     1, 'O', 'o' },
+    { XKB_KEY_Left,         1, 'O', 'D' },
+    { XKB_KEY_Right,        1, 'O', 'C' },
+    { XKB_KEY_Up,           1, 'O', 'A' },
+    { XKB_KEY_Down,         1, 'O', 'B' },
+    { XKB_KEY_Home,         1, 'O', 'H' },
+    { XKB_KEY_End,          1, 'O', 'F' },
+    { XKB_KEY_KP_Enter,     1, 'O', 'M' },
+    { XKB_KEY_KP_Multiply,  1, 'O', 'j' },
+    { XKB_KEY_KP_Add,       1, 'O', 'k' },
+    { XKB_KEY_KP_Separator, 1, 'O', 'l' },
+    { XKB_KEY_KP_Subtract,  1, 'O', 'm' },
+    { XKB_KEY_KP_Divide,    1, 'O', 'o' },
     { 0, 0, 0, 0 }
 };
 
@@ -311,17 +311,13 @@ void KeyMap::functionKeyResponse(char escape, int num, uint8_t state, char code,
         ost << ESC << escape << num << code;
     }
 
-    std::string s = ost.str();
+    const std::string & s = ost.str();
     std::copy(s.begin(), s.end(), std::back_inserter(str));
 }
 
 bool KeyMap::applyKeyMap(const Map * mode, xkb_keysym_t sym, uint8_t state,
                          std::vector<uint8_t> & str) const {
-    const Map * map;
-    int i = 0;
-
-    while (mode[i].sym) {
-        map = &mode[i++];
+    for (const Map * map = mode; map->sym; ++map) {
         if (sym == map->sym) {
             functionKeyResponse(map->escape, map->num, state, map->code, str);
             return true;
