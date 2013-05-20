@@ -152,9 +152,7 @@ xcb_keysym_t Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
 }
 
 void Basics::determineMasks() {
-    xcb_get_modifier_mapping_cookie_t cookie =
-        xcb_get_modifier_mapping_unchecked(_connection);
-
+    // Note, xcb_key_symbols_get_keycode() may return nullptr.
     xcb_keycode_t * shiftCodes =
         xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Shift_L);
     xcb_keycode_t * altCodes =
@@ -172,29 +170,31 @@ void Basics::determineMasks() {
     xcb_keycode_t * modeSwitchCodes =
         xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Mode_switch);
 
+    xcb_get_modifier_mapping_cookie_t cookie =
+        xcb_get_modifier_mapping_unchecked(_connection);
     xcb_get_modifier_mapping_reply_t * modmapReply =
         xcb_get_modifier_mapping_reply(_connection, cookie, nullptr);
-    xcb_keycode_t * modmap =
-        xcb_get_modifier_mapping_keycodes(modmapReply);
+    ASSERT(modmapReply, "");
+    xcb_keycode_t * modmap = xcb_get_modifier_mapping_keycodes(modmapReply);
+    ASSERT(modmap, "");
 
     // Clear the masks.
     _maskShift = _maskAlt = _maskControl = _maskSuper =
         _maskNumLock = _maskShiftLock = _maskCapsLock = _maskModeSwitch = 0;
 
-    for(int i = 0; i != 8; ++i) {
-        for(int j = 0; j != modmapReply->keycodes_per_modifier; j++) {
+    for (int i = 0; i != 8; ++i) {
+        for (int j = 0; j != modmapReply->keycodes_per_modifier; j++) {
             xcb_keycode_t kc = modmap[i * modmapReply->keycodes_per_modifier + j];
 
 #define LOOK_FOR(mask, codes) \
-            do { \
-                if (mask == 0 && codes) { \
-                    for (xcb_keycode_t * ktest = codes; *ktest; ++ktest) \
+            if (mask == 0 && codes) { \
+                for (xcb_keycode_t * ktest = codes; *ktest; ++ktest) { \
                     if (*ktest == kc) { \
                         mask = (1 << i); \
                         break; \
                     } \
                 } \
-            } while (false)
+            }
 
             LOOK_FOR(_maskShift,      shiftCodes);
             LOOK_FOR(_maskAlt,        altCodes);
@@ -210,14 +210,14 @@ void Basics::determineMasks() {
 
     std::free(modmapReply);
 
-    std::free(modeSwitchCodes);
-    std::free(capsLockCodes);
-    std::free(shiftLockCodes);
-    std::free(numLockCodes);
-    std::free(superCodes);
-    std::free(controlCodes);
-    std::free(altCodes);
-    std::free(shiftCodes);
+    if (modeSwitchCodes) { std::free(modeSwitchCodes); }
+    if (capsLockCodes)   { std::free(capsLockCodes); }
+    if (shiftLockCodes)  { std::free(shiftLockCodes); }
+    if (numLockCodes)    { std::free(numLockCodes); }
+    if (superCodes)      { std::free(superCodes); }
+    if (controlCodes)    { std::free(controlCodes); }
+    if (altCodes)        { std::free(altCodes); }
+    if (shiftCodes)      { std::free(shiftCodes); }
 }
 
 std::string Basics::stateToString(uint8_t state) const {
