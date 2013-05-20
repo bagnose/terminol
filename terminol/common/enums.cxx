@@ -66,28 +66,26 @@ std::ostream & operator << (std::ostream & ost, Mode mode) {
             return ost << "ALT_SENDS_ESC";
         case Mode::DELETE_SENDS_DEL:
             return ost << "DELETE_SENDS_DEL";
-
-            // Remainder are dubious...
+        case Mode::CR_ON_LF:
+            return ost << "CR_ON_LF";
         case Mode::INSERT:
             return ost << "INSERT";
+        case Mode::ECHO:
+            return ost << "ECHO";
+        case Mode::KBDLOCK:
+            return ost << "KBDLOCK";
         case Mode::APPKEYPAD:
             return ost << "APPKEYPAD";
-        //case Mode::ALTSCREEN:
-            //return ost << "ALTSCREEN";
-        case Mode::CRLF:
-            return ost << "CRLF";
+        case Mode::APPCURSOR:
+            return ost << "APPCURSOR";
+        case Mode::REVERSE:
+            return ost << "REVERSE";
+
+        // Remainder are dubious...
         case Mode::MOUSEBTN:
             return ost << "MOUSEBTN";
         case Mode::MOUSEMOTION:
             return ost << "MOUSEMOTION";
-        case Mode::REVERSE:
-            return ost << "REVERSE";
-        case Mode::KBDLOCK:
-            return ost << "KBDLOCK";
-        case Mode::ECHO:
-            return ost << "ECHO";
-        case Mode::APPCURSOR:
-            return ost << "APPCURSOR";
         case Mode::MOUSESGR:
             return ost << "MOUSESGR";
     }

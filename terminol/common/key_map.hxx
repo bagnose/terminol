@@ -32,7 +32,11 @@ public:
     ~KeyMap();
 
     bool convert(xkb_keysym_t keySym, uint8_t state,
-                 bool appKey, bool appCursor, bool crlf,
+                 bool appKeypad,
+                 bool appCursor,
+                 bool crOnLf,
+                 bool deleteSendsDel,
+                 bool altSendsEsc,
                  std::vector<uint8_t> & str) const;
 
     bool isPotent(xkb_keysym_t keySym) const;

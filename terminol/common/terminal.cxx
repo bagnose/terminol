@@ -181,7 +181,9 @@ void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
         if (_keyMap.convert(keySym, state,
                             _modes.get(Mode::APPKEYPAD),
                             _modes.get(Mode::APPCURSOR),
-                            _modes.get(Mode::CRLF),
+                            _modes.get(Mode::CR_ON_LF),
+                            _modes.get(Mode::DELETE_SENDS_DEL),
+                            _modes.get(Mode::ALT_SENDS_ESC),
                             str)) {
             write(&str.front(), str.size());
         }
@@ -722,7 +724,7 @@ void Terminal::machineControl(uint8_t c) throw () {
             _cursorCol = 0;
             break;
         case LF:
-            if (_modes.get(Mode::CRLF)) {
+            if (_modes.get(Mode::CR_ON_LF)) {
                 damageCursor();
                 _cursorCol = 0;
             }
@@ -1728,7 +1730,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     _modes.setTo(Mode::ECHO, set);      // XXX correct sense
                     break;
                 case 20: // LNM - Linefeed/new line
-                    _modes.setTo(Mode::CRLF, set);
+                    _modes.setTo(Mode::CR_ON_LF, set);
                     break;
                 default:
                     ERROR("erresc: unknown set/reset mode: " <<  a);

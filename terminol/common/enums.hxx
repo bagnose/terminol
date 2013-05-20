@@ -55,19 +55,18 @@ enum class Mode {
     SHOW_CURSOR,
     ALT_SENDS_ESC,
     DELETE_SENDS_DEL,
+    CR_ON_LF,
+    INSERT,
+    ECHO,
+    KBDLOCK,
+    APPKEYPAD,
+    APPCURSOR,
+    REVERSE,
 
     // Remainder are dubious...
-    INSERT,
-    APPKEYPAD,
-    // ALTSCREEN,
-    CRLF,      // CR_ON_LF?
     MOUSEBTN,
     MOUSEMOTION,
     // MOUSE = MOUSEBTN | MOUSEMOTION
-    REVERSE,   // INVERSE ?
-    KBDLOCK,
-    ECHO,
-    APPCURSOR,
     MOUSESGR,
     LAST = MOUSESGR
 };

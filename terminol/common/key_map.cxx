@@ -49,17 +49,17 @@ KeyMap::KeyMap(uint8_t maskShift_, uint8_t maskAlt_, uint8_t maskControl_) :
 KeyMap::~KeyMap() {}
 
 bool KeyMap::convert(xkb_keysym_t keySym, uint8_t state,
-                     bool UNUSED(appKey),  // Mode::APPKEYPAD - DECPAM
-                     bool appCursor,       // Mode::APPCURSOR - DECCKM
-                     bool crlf,
+                     bool UNUSED(appKeypad),
+                     bool appCursor,
+                     bool crOnLf,
+                     bool deleteSendsDel,
+                     bool altSendsEsc,
                      std::vector<uint8_t> & str) const {
     normalise(keySym);
 
     switch (keySym) {
         case XKB_KEY_BackSpace:
-            if (state & _maskAlt) {
-                str.push_back(ESC);
-            }
+            if (state & _maskAlt) { str.push_back(ESC); }
             str.push_back(DEL);
             break;
 
@@ -75,9 +75,7 @@ bool KeyMap::convert(xkb_keysym_t keySym, uint8_t state,
 
         case XKB_KEY_Return:
             str.push_back(CR);
-            if (crlf /* terminal->mode & MODE_LF_NEWLINE */) {
-                str.push_back(LF);
-            }
+            if (crOnLf) { str.push_back(LF); }
             break;
 
         case XKB_KEY_Shift_L:
@@ -99,12 +97,8 @@ bool KeyMap::convert(xkb_keysym_t keySym, uint8_t state,
             break;
 
         case XKB_KEY_Delete:
-            if (false /*terminal->mode & MODE_DELETE_SENDS_DEL */) {
-                str.push_back(EOT);
-            }
-            else {
-                functionKeyResponse('[', 3, state, '~', str);
-            }
+            if (deleteSendsDel) { str.push_back(EOT); }
+            else { functionKeyResponse('[', 3, state, '~', str); }
             break;
 
         case XKB_KEY_Page_Up:
@@ -183,13 +177,8 @@ bool KeyMap::convert(xkb_keysym_t keySym, uint8_t state,
             }
 
             if (state & _maskAlt) {
-                if (false /* terminal->mode & MODE_ALT_SENDS_ESC */) {
-                    str.push_back(ESC);
-                }
-                else {
-                    keySym = keySym | 0x80;
-                    convertUtf8 = false;
-                }
+                if (altSendsEsc) { str.push_back(ESC); }
+                else { keySym = keySym | 0x80; convertUtf8 = false; }
             }
 
             if ((keySym < 0x80 ) || (!convertUtf8 && keySym < 0x100)) {
