@@ -887,6 +887,8 @@ void Window::terminalDrawCursor(uint16_t        row,
                                 AttributeSet    attrs,
                                 const uint8_t * str,
                                 bool            special) throw () {
+    if (attrs.get(Attribute::INVERSE)) { std::swap(fg, bg); }
+
     const auto & fgValues =
         _config.getCustomCursorTextColor() ?
         _colorSet.getCursorTextColor() :
