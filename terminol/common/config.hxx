@@ -118,6 +118,7 @@ public:
     int                 getBorderThickness()       const { return _borderThickness; }
 
     const std::string & getSocketPath()            const { return _socketPath; }
+    bool                getServerFork()            const { return true; }
 
 protected:
     static Color decodeHexColor(const std::string & hexColor);
