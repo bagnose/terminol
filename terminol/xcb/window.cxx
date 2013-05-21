@@ -52,7 +52,11 @@ Window::Window(const Config       & config,
     _cr(nullptr),
     _title(_config.getTitle()),
     _primarySelection(),
-    _clipboardSelection()
+    _clipboardSelection(),
+    _pressed(false),
+    _pressCount(0),
+    _lastPressTime(0),
+    _button(XCB_BUTTON_INDEX_ANY)
 {
     uint16_t rows = _config.getInitialRows();
     uint16_t cols = _config.getInitialCols();
@@ -235,15 +239,37 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
     //PRINT("Button-press: " << event->event_x << " " << event->event_y);
     if (!_isOpen) { return; }
 
+    if (_pressed) {
+        ASSERT(event->detail != _button, "Already pressed!");
+        return;
+    }
+
+    _pressed = true;
+
+    if (_button != event->detail ||
+        event->time - _lastPressTime > _config.getDoubleClickTimeout())
+    {
+        _pressCount = 1;
+    }
+    else {
+        ++_pressCount;
+    }
+
+    _button        = event->detail;
+    _lastPressTime = event->time;
+
+    uint16_t row, col;
+    bool within = xy2RowCol(event->event_x, event->event_y, row, col);
+
     switch (event->detail) {
         case XCB_BUTTON_INDEX_1:
-            _terminal->buttonPress(Terminal::Button::LEFT);
+            _terminal->buttonPress(Terminal::Button::LEFT, _pressCount, within, row, col);
             break;
         case XCB_BUTTON_INDEX_2:
-            _terminal->buttonPress(Terminal::Button::MIDDLE);
+            _terminal->buttonPress(Terminal::Button::MIDDLE, _pressCount, within, row, col);
             break;
         case XCB_BUTTON_INDEX_3:
-            _terminal->buttonPress(Terminal::Button::RIGHT);
+            _terminal->buttonPress(Terminal::Button::RIGHT, _pressCount, within, row, col);
             break;
         case XCB_BUTTON_INDEX_4:
             _terminal->scrollWheel(Terminal::ScrollDir::UP);
@@ -259,12 +285,18 @@ void Window::buttonRelease(xcb_button_release_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
     //PRINT("Button-release: " << event->event_x << " " << event->event_y);
     if (!_isOpen) { return; }
+
+    if (_pressed && _button == event->detail) {
+        _terminal->buttonRelease(false);
+        _pressed = false;
+    }
 }
 
 void Window::motionNotify(xcb_motion_notify_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
     //PRINT("Motion-notify: " << event->event_x << " " << event->event_y);
     if (!_isOpen) { return; }
+    if (!_pressed) { return; }
 
     int16_t x, y;
 
@@ -283,12 +315,12 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
     }
 
     uint16_t row, col;
-    xy2RowCol(x, y, row, col);
+    bool within = xy2RowCol(x, y, row, col);
 
     if (_pointerRow != row || _pointerCol != col) {
         _pointerRow = row;
         _pointerCol = col;
-        PRINT("Pointer: " << _pointerRow << ", " << _pointerCol);
+        _terminal->motionNotify(within, row, col);
     }
 
 }
@@ -476,17 +508,33 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 void Window::focusIn(xcb_focus_in_event_t * UNUSED(event)) {
     _focussed = true;
     // TODO damage cursor? Or tell temrinal?
+
+    //PRINT("Focus in");
 }
 
-void Window::focusOut(xcb_focus_out_event_t * UNUSED(event)) {
+void Window::focusOut(xcb_focus_out_event_t * event) {
     _focussed = false;
     // TODO damage cursor? Or tell temrinal?
+
+    PRINT("Focus out: " << int(event->mode));
+
 }
 
 void Window::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {
+    //PRINT("enter");
 }
 
-void Window::leaveNotify(xcb_leave_notify_event_t * UNUSED(event)) {
+void Window::leaveNotify(xcb_leave_notify_event_t * event) {
+    PRINT("leave: " << int(event->mode));
+
+    // XXX total guess that this is how we ensure we release
+    // the button...
+    if (event->mode == 2) {
+        if (_pressed) {
+            _terminal->buttonRelease(true);
+            _pressed = false;
+        }
+    }
 }
 
 void Window::visibilityNotify(xcb_visibility_notify_event_t * UNUSED(event)) {

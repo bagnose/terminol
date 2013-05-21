@@ -117,6 +117,8 @@ public:
     const Color &       getBorderColor()           const { return _borderColor; }
     int                 getBorderThickness()       const { return _borderThickness; }
 
+    uint32_t            getDoubleClickTimeout()    const { return 400; }
+
     const std::string & getSocketPath()            const { return _socketPath; }
     bool                getServerFork()            const { return true; }
 

@@ -50,6 +50,11 @@ class Window :
     std::string       _primarySelection;
     std::string       _clipboardSelection;
 
+    bool              _pressed;
+    int               _pressCount;
+    xcb_timestamp_t   _lastPressTime;
+    xcb_button_t      _button;
+
 public:
     struct Error {
         explicit Error(const std::string & message_) : message(message_) {}

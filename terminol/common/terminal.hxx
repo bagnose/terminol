@@ -148,7 +148,10 @@ public:
                     uint16_t colBegin, uint16_t colEnd);
 
     void     keyPress(xkb_keysym_t keySym, uint8_t state);
-    void     buttonPress(Button button);
+    void     buttonPress(Button button, int count,
+                         bool within, uint16_t row, uint16_t col);
+    void     motionNotify(bool within, uint16_t row, uint16_t col);
+    void     buttonRelease(bool broken);
     void     scrollWheel(ScrollDir dir);
 
     void     paste(const uint8_t * data, size_t size);
@@ -202,5 +205,8 @@ protected:
     void machineOsc(const std::vector<std::string> & args) throw ();
     void machineSpecial(uint8_t special, uint8_t code) throw ();
 };
+
+std::ostream & operator << (std::ostream & ost, Terminal::Button button);
+std::ostream & operator << (std::ostream & ost, Terminal::ScrollDir dir);
 
 #endif // COMMON__TERMINAL__HXX

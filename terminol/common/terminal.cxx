@@ -190,10 +190,24 @@ void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
     }
 }
 
-void Terminal::buttonPress(Button button) {
-    if (button == Button::MIDDLE) {
+void Terminal::buttonPress(Button button, int count,
+                           bool within, uint16_t row, uint16_t col) {
+    PRINT("press: " << button << ", count=" << count <<
+          ", within=" << within << ", " << row << 'x' << col);
+
+    if (button == Button::LEFT) {
+    }
+    else if (button == Button::MIDDLE) {
         _observer.terminalPaste(false);
     }
+}
+
+void Terminal::motionNotify(bool within, uint16_t row, uint16_t col) {
+    //PRINT("motion: within=" << within << ", " << row << 'x' << col);
+}
+
+void Terminal::buttonRelease(bool broken) {
+    //PRINT("release, grabbed=" << grabbed);
 }
 
 void Terminal::scrollWheel(ScrollDir dir) {
@@ -1771,4 +1785,28 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
             }
         }
     }
+}
+
+std::ostream & operator << (std::ostream & ost, Terminal::Button button) {
+    switch (button) {
+        case Terminal::Button::LEFT:
+            return ost << "left";
+        case Terminal::Button::MIDDLE:
+            return ost << "middle";
+        case Terminal::Button::RIGHT:
+            return ost << "right";
+    }
+
+    FATAL("Unreachable");
+}
+
+std::ostream & operator << (std::ostream & ost, Terminal::ScrollDir dir) {
+    switch (dir) {
+        case Terminal::ScrollDir::UP:
+            return ost << "up";
+        case Terminal::ScrollDir::DOWN:
+            return ost << "down";
+    }
+
+    FATAL("Unreachable");
 }
