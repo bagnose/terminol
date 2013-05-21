@@ -15,4 +15,4 @@ static-lib common
 test-exe test-utf8    : test_utf8.cxx ;
 test-exe test-support : test_support.cxx ;
 
-dist-exe abuse        : abuse.cxx ;
+priv-exe abuse        : abuse.cxx ;

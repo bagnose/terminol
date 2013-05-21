@@ -151,13 +151,7 @@ public:
         _finished(false)
     {
         if (config.getServerFork()) {
-            pid_t pid = ::fork();
-            ENFORCE_SYS(pid != -1, "::fork() failed.");
-
-            if (pid == 0) {
-                // parent
-                exit(0);
-            }
+            ENFORCE_SYS(::daemon(0, 0) != -1, "daemon()");
         }
 
         loop();

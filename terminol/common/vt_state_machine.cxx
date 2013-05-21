@@ -14,6 +14,7 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length length) {
 
     switch (_state) {
         case State::NORMAL:
+            ASSERT(_escSeq.empty(), "");
             if (length == utf8::Length::L1) {
                 if (lead == ESC) {
                     ASSERT(length == utf8::Length::L1, "");
@@ -79,7 +80,7 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length length) {
                             _observer.machineControl(lead);
                         }
                         else {
-                            FATAL("Unreachable");
+                            ERROR("Unreachable");
                         }
                         break;
                 }
@@ -123,7 +124,7 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length length) {
                     std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
                 }
 
-                if (isalpha(lead) || lead == '@' || lead == '`') {
+                if (lead >= 0x40 && lead < 0x7F) {
                     processCsi(_escSeq);
                     _escSeq.clear();
                     _state = State::NORMAL;

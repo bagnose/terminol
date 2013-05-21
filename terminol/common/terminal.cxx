@@ -644,6 +644,8 @@ void Terminal::processRead(const uint8_t * data, size_t size) {
         switch (_utf8Machine.consume(data[i])) {
             case utf8::Machine::State::ACCEPT:
                 processChar(_utf8Machine.seq(), _utf8Machine.length());
+                ASSERT(_cursorRow < _buffer->getRows(), "");
+                ASSERT(_cursorCol < _buffer->getCols(), "");
                 break;
             case utf8::Machine::State::REJECT:
                 ERROR("Rejecting UTF-8 data.");
@@ -871,7 +873,12 @@ void Terminal::machineCsi(bool priv,
     if (_config.getTraceTty()) {
         std::cerr << Esc::FG_CYAN << "ESC[";
         if (priv) { std::cerr << '?'; }
-        for (auto & a : args) { std::cerr << a << ';'; }
+        bool first = true;
+        for (auto & a : args) {
+            if (first) { first = false; }
+            else       { std::cerr << ';'; }
+            std::cerr << a;
+        }
         std::cerr << mode << Esc::RESET << ' ';
     }
 
@@ -998,7 +1005,6 @@ void Terminal::machineCsi(bool priv,
                 case 0:
                     // "the character tabulation stop at the active presentation"
                     // "position is cleared"
-                    // FIXME what about wrap-next?
                     _tabs[_cursorCol] = false;
                     break;
                 case 1:
@@ -1056,7 +1062,7 @@ void Terminal::machineCsi(bool priv,
                         // RDO - Report Device OK: <ESC>[0n
                         std::ostringstream ost;
                         ost << ESC << "[0n";
-                        std::string str = ost.str();
+                        const std::string & str = ost.str();
                         _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
                         break;
                     }
@@ -1069,7 +1075,7 @@ void Terminal::machineCsi(bool priv,
 
                         std::ostringstream ost;
                         ost << ESC << '[' << _cursorRow + 1 << ';' << _cursorCol + 1 << 'R';
-                        std::string str = ost.str();
+                        const std::string & str = ost.str();
                         _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
                     }
                     case 7: {

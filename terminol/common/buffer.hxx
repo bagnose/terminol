@@ -356,28 +356,24 @@ public:
 
     void insertLines(uint16_t row, uint16_t n) {
         ASSERT(row >= _marginBegin && row < _marginEnd, "");
-        ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n << ", margin-end=" << _marginEnd);
+        ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n
+               << ", margin-end=" << _marginEnd);
 
-#if 0
         _lines.erase (_lines.begin() + _history + _marginEnd - n,
                       _lines.begin() + _history + _marginEnd);
         _lines.insert(_lines.begin() + _history + row, n, Line(getCols()));
-#else
-        // This path can handle any value of n
-        _lines.insert(_lines.begin() + _history + row, n, Line(getCols()));
-        _lines.erase (_lines.begin() + _history + _marginEnd,
-                      _lines.begin() + _history + _marginEnd + n);
-#endif
 
         damageRange(row, _marginEnd);
     }
 
     void eraseLines(uint16_t row, uint16_t n) {
         ASSERT(row >= _marginBegin && row < _marginEnd, "");
-        ASSERT(row + n <= _marginEnd, "");
+        ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n
+               << ", margin-end=" << _marginEnd);
 
         _lines.insert(_lines.begin() + _history + _marginEnd, n, Line(getCols()));
-        _lines.erase(_lines.begin() + _history + row, _lines.begin() + _history + row + n);
+        _lines.erase (_lines.begin() + _history + row,
+                      _lines.begin() + _history + row + n);
 
         damageRange(row, _marginEnd);
     }
@@ -441,6 +437,9 @@ public:
     }
 
     void damageRange(uint16_t begin, uint16_t end) {
+        ASSERT(begin <= end, "");
+        ASSERT(end <= _marginEnd, "");
+
         for (auto i = _lines.begin() + _history + begin;
              i != _lines.begin() + _history + end; ++i)
         {

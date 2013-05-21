@@ -15,7 +15,21 @@ int main() {
     ENFORCE_SYS(fd != -1, "Failed to open: " << socketPath);
 
     char c;
-    ENFORCE_SYS(::write(fd, &c, 1) != -1, "");
+    ssize_t rval = ::write(fd, &c, 1) != -1;
+
+    if (rval == -1) {
+        switch (errno) {
+            case EAGAIN:
+                // The server does not have the socket open for
+                // read. Note, this can be caused by a race condition
+                // due to the el-cheapo FIFO scheme.
+                FATAL("Would block");
+                break;
+            default:
+                FATAL("");
+                break;
+        }
+    }
 
     ENFORCE_SYS(::close(fd) != -1, "");
 

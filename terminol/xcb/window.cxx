@@ -2,6 +2,7 @@
 
 #include "terminol/xcb/window.hxx"
 #include "terminol/support/conv.hxx"
+#include "terminol/support/pattern.hxx"
 
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_aux.h>
@@ -125,7 +126,7 @@ Window::Window(const Config       & config,
     // Create the GC.
     //
 
-    uint32_t gvValues[] = {
+    uint32_t gcValues[] = {
         0 // no exposures
     };
 
@@ -134,7 +135,7 @@ Window::Window(const Config       & config,
                                    _gc,
                                    _window,
                                    XCB_GC_GRAPHICS_EXPOSURES,
-                                   gvValues);
+                                   gcValues);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate gc")) {
         xcb_destroy_window(_basics.connection(), _window);
         FATAL("");
@@ -621,7 +622,7 @@ void Window::updateTitle() {
     ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
     ost << _title;
 
-    std::string fullTitle = ost.str();
+    const std::string & fullTitle = ost.str();
 
 #if 1
     xcb_icccm_set_wm_name(_basics.connection(),
