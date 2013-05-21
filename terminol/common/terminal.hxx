@@ -31,6 +31,8 @@ class Terminal :
 public:
     class I_Observer {
     public:
+        virtual void terminalCopy(const std::string & text, bool clipboard) throw () = 0;
+        virtual void terminalPaste(bool clipboard) throw () = 0;
         virtual void terminalResizeFont(int delta) throw () = 0;
         virtual void terminalResetTitle() throw () = 0;
         virtual void terminalSetTitle(const std::string & title) throw () = 0;
@@ -137,6 +139,7 @@ public:
 
     // Events:
 
+    enum class Button    { LEFT, MIDDLE, RIGHT };
     enum class ScrollDir { UP, DOWN };
 
     void     resize(uint16_t rows, uint16_t cols);
@@ -145,8 +148,10 @@ public:
                     uint16_t colBegin, uint16_t colEnd);
 
     void     keyPress(xkb_keysym_t keySym, uint8_t state);
-
+    void     buttonPress(Button button);
     void     scrollWheel(ScrollDir dir);
+
+    void     paste(const uint8_t * data, size_t size);
 
     // I/O:
 

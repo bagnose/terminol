@@ -358,6 +358,12 @@ protected:
                 if (i != _windows.end()) { i->second->selectionNotify(e); } // XXX
                 break;
             }
+            case XCB_SELECTION_REQUEST: {
+                auto e = reinterpret_cast<xcb_selection_request_event_t *>(event);
+                auto i = _windows.find(e->owner);
+                if (i != _windows.end()) { i->second->selectionRequest(e); } // XXX
+                break;
+            }
             default:
                 PRINT("Unrecognised event: " << static_cast<int>(response_type));
                 break;

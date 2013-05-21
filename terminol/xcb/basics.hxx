@@ -49,6 +49,14 @@ public:
 
     xcb_ewmh_connection_t * ewmhConnection()       { return &_ewmhConnection; }
 
+    // FIXME make these const and return local member data
+    xcb_atom_t              atomPrimary() { return XCB_ATOM_PRIMARY; }
+    xcb_atom_t              atomClipboard() { return lookupAtom("CLIPBOARD"); }
+    xcb_atom_t              atomUtf8String() { return lookupAtom("UTF8_STRING"); }  // TODO fallback on XCB_ATOM_STRING
+    xcb_atom_t              atomTargets() { return lookupAtom("TARGETS"); }
+
+    // FIXME don't expose these, provide a getter that normalises
+    // to xkbcommon and terminol-defined masks
     uint8_t                 maskShift()      const { return _maskShift;       }
     uint8_t                 maskAlt()        const { return _maskAlt;         }
     uint8_t                 maskControl()    const { return _maskControl;     }
@@ -60,10 +68,12 @@ public:
 
     xcb_keysym_t            getKeySym(xcb_keycode_t keyCode, uint8_t state);
 
+    // FIXME don't want this, should use terminol-defined state/mask
     std::string             stateToString(uint8_t state) const;
 
 protected:
-    void determineMasks();
+    xcb_atom_t lookupAtom(const std::string & name) throw (Error);
+    void       determineMasks();
 };
 
 #endif // XCB__BASICS__HXX

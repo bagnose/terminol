@@ -151,6 +151,23 @@ xcb_keysym_t Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
     return XCB_NO_SYMBOL;
 }
 
+xcb_atom_t Basics::lookupAtom(const std::string & name) throw (Error) {
+    xcb_intern_atom_cookie_t cookie =
+        xcb_intern_atom(_connection, 0, name.length(), name.data());
+
+    xcb_intern_atom_reply_t * reply =
+        xcb_intern_atom_reply(_connection, cookie, nullptr);
+
+    if (reply) {
+        xcb_atom_t atom = reply->atom;
+        std::free(reply);
+        return atom;
+    }
+    else {
+        throw Error("Failed to get atom: " + name);
+    }
+}
+
 void Basics::determineMasks() {
     // Note, xcb_key_symbols_get_keycode() may return nullptr.
     xcb_keycode_t * shiftCodes =

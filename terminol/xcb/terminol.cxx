@@ -179,6 +179,10 @@ protected:
                 _window.selectionNotify(
                         reinterpret_cast<xcb_selection_notify_event_t *>(event));
                 break;
+            case XCB_SELECTION_REQUEST:
+                _window.selectionRequest(
+                        reinterpret_cast<xcb_selection_request_event_t *>(event));
+                break;
             default:
                 PRINT("Unrecognised event: " << static_cast<int>(response_type));
                 break;

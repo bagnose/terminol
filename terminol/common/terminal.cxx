@@ -190,6 +190,12 @@ void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
     }
 }
 
+void Terminal::buttonPress(Button button) {
+    if (button == Button::MIDDLE) {
+        _observer.terminalPaste(false);
+    }
+}
+
 void Terminal::scrollWheel(ScrollDir dir) {
     switch (dir) {
         case ScrollDir::UP:
@@ -208,6 +214,10 @@ void Terminal::scrollWheel(ScrollDir dir) {
             }
             break;
     }
+}
+
+void Terminal::paste(const uint8_t * data, size_t size) {
+    write(data, size);
 }
 
 void Terminal::read() {
@@ -265,6 +275,26 @@ void Terminal::flush() {
 }
 
 bool Terminal::handleKeyBinding(xkb_keysym_t keySym, uint8_t state) {
+    // FIXME no hard-coded keybindings. Use config.
+
+    if (state & _keyMap.maskShift() &&
+        state & _keyMap.maskControl())
+    {
+        switch (keySym) {
+            case XKB_KEY_X:
+                _observer.terminalCopy("PRIMARY SELECTION", false);
+                return true;
+            case XKB_KEY_C:
+                _observer.terminalCopy("CLIPBOARD SELECTION", true);
+                return true;
+            case XKB_KEY_V: {
+                std::string text;
+                _observer.terminalPaste(true);
+                return true;
+            }
+        }
+    }
+
     if (state & _keyMap.maskShift()) {
         switch (keySym) {
             case XKB_KEY_Up:

@@ -47,6 +47,9 @@ class Window :
 
     std::string       _title;
 
+    std::string       _primarySelection;
+    std::string       _clipboardSelection;
+
 public:
     struct Error {
         explicit Error(const std::string & message_) : message(message_) {}
@@ -95,6 +98,7 @@ public:
     void destroyNotify(xcb_destroy_notify_event_t * event);
     void selectionClear(xcb_selection_clear_event_t * event);
     void selectionNotify(xcb_selection_notify_event_t * event);
+    void selectionRequest(xcb_selection_request_event_t * event);
 
 protected:
     void icccmConfigure();
@@ -109,6 +113,8 @@ protected:
 
     // Terminal::I_Observer implementation:
 
+    void terminalCopy(const std::string & text, bool clipboard) throw ();
+    void terminalPaste(bool clipboard) throw ();
     void terminalResizeFont(int delta) throw ();
     void terminalResetTitle() throw ();
     void terminalSetTitle(const std::string & title) throw ();

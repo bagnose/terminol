@@ -50,7 +50,9 @@ Window::Window(const Config       & config,
     _pixmap(0),
     _surface(nullptr),
     _cr(nullptr),
-    _title(_config.getTitle())
+    _title(_config.getTitle()),
+    _primarySelection(),
+    _clipboardSelection()
 {
     uint16_t rows = _config.getRows();
     uint16_t cols = _config.getCols();
@@ -234,6 +236,15 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
     if (!_isOpen) { return; }
 
     switch (event->detail) {
+        case XCB_BUTTON_INDEX_1:
+            _terminal->buttonPress(Terminal::Button::LEFT);
+            break;
+        case XCB_BUTTON_INDEX_2:
+            _terminal->buttonPress(Terminal::Button::MIDDLE);
+            break;
+        case XCB_BUTTON_INDEX_3:
+            _terminal->buttonPress(Terminal::Button::RIGHT);
+            break;
         case XCB_BUTTON_INDEX_4:
             _terminal->scrollWheel(Terminal::ScrollDir::UP);
             break;
@@ -491,11 +502,96 @@ void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
 }
 
 void Window::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) {
-    PRINT("Selection clear");
+    //PRINT("Selection clear");
+
+    // TODO clear the selected region AND clear the selection copy buffer
 }
 
 void Window::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
-    PRINT("Selection notify");
+    //PRINT("Selection notify");
+    if (_isOpen) {
+        uint32_t offset = 0;        // 32-bit quantities
+
+        for (;;) {
+            xcb_get_property_cookie_t cookie =
+                xcb_get_property(_basics.connection(),
+                                 false,     // delete
+                                 _window,
+                                 XCB_ATOM_PRIMARY,
+                                 XCB_GET_PROPERTY_TYPE_ANY,
+                                 offset,
+                                 8192 / 4);
+
+            xcb_get_property_reply_t * reply =
+                xcb_get_property_reply(_basics.connection(), cookie, nullptr);
+            if (!reply) { break; }
+
+            auto guard = scopeGuard([reply] { std::free(reply); });
+
+            void * value  = xcb_get_property_value(reply);
+            int    length = xcb_get_property_value_length(reply);
+            if (length == 0) { break; }
+
+            _terminal->paste(reinterpret_cast<const uint8_t *>(value), length);
+            offset += (length + 3) / 4;
+        }
+    }
+}
+
+void Window::selectionRequest(xcb_selection_request_event_t * event) {
+    ASSERT(event->owner == _window, "Which window?");
+
+    xcb_selection_notify_event_t response;
+    response.response_type = XCB_SELECTION_NOTIFY;
+    response.time          = event->time;
+    response.requestor     = event->requestor;
+    response.selection     = event->selection;
+    response.target        = event->target;
+    response.property      = XCB_ATOM_NONE;        // reject by default
+
+    if (event->target == _basics.atomTargets()) {
+        xcb_atom_t atomUtf8String = _basics.atomUtf8String();
+        xcb_change_property(_basics.connection(),
+                            XCB_PROP_MODE_REPLACE,
+                            event->requestor,
+                            event->property,
+                            XCB_ATOM_ATOM,
+                            32,
+                            1,
+                            &atomUtf8String);
+        response.property = event->property;
+    }
+    else if (event->target == _basics.atomUtf8String()) {
+        std::string text;
+
+        if (event->selection == _basics.atomPrimary()) {
+            text = _primarySelection;
+        }
+        else if (event->selection == _basics.atomClipboard()) {
+            text = _clipboardSelection;
+        }
+        else {
+            ERROR("Unexpected selection");
+        }
+
+        xcb_change_property(_basics.connection(),
+                            XCB_PROP_MODE_REPLACE,
+                            event->requestor,
+                            event->property,
+                            event->target,
+                            8,
+                            text.length(),
+                            text.data());
+        response.property = event->property;
+    }
+
+    xcb_send_event(_basics.connection(),
+                   true,
+                   event->requestor,
+                   0,
+                   reinterpret_cast<const char *>(&response));
+
+    xcb_flush(_basics.connection());        // Required?
 }
 
 void Window::icccmConfigure() {
@@ -765,6 +861,40 @@ void Window::drawBorder() {
 }
 
 // Terminal::I_Observer implementation:
+
+void Window::terminalCopy(const std::string & text, bool clipboard) throw () {
+    //PRINT("Copy: '" << text << "', clipboard: " << clipboard);
+
+    xcb_atom_t atom;
+
+    if (clipboard) {
+        atom = _basics.atomClipboard();
+        _clipboardSelection = text;
+    }
+    else {
+        atom = _basics.atomPrimary();
+        _primarySelection = text;
+    }
+
+    xcb_set_selection_owner(_basics.connection(), _window,
+                            atom, XCB_CURRENT_TIME);
+    xcb_flush(_basics.connection());
+}
+
+void Window::terminalPaste(bool clipboard) throw () {
+    //PRINT("Copy clipboard: " << clipboard);
+
+    xcb_atom_t atom = clipboard ? _basics.atomClipboard() : _basics.atomPrimary();
+
+    xcb_convert_selection(_basics.connection(),
+                          _window,
+                          atom,
+                          _basics.atomUtf8String(),
+                          XCB_ATOM_PRIMARY, // property
+                          XCB_CURRENT_TIME);
+
+    xcb_flush(_basics.connection());
+}
 
 void Window::terminalResizeFont(int delta) throw () {
     PRINT("Resize font: " << delta);
