@@ -92,10 +92,10 @@ public:
     bool                getTraceTty() const { return _traceTty; }
     bool                getSyncTty() const { return _syncTty; }
 
-    int16_t             getX()    const { return -1; }
-    int16_t             getY()    const { return -1; }
-    uint16_t            getRows() const { return 24; }
-    uint16_t            getCols() const { return 80; }
+    int16_t             getInitialX()    const { return -1; }
+    int16_t             getInitialY()    const { return -1; }
+    uint16_t            getInitialRows() const { return 24; }
+    uint16_t            getInitialCols() const { return 80; }
 
     const Color &       getFgColor() const { return _fgColor; }
     const Color &       getBgColor() const { return _bgColor; }

@@ -54,8 +54,8 @@ Window::Window(const Config       & config,
     _primarySelection(),
     _clipboardSelection()
 {
-    uint16_t rows = _config.getRows();
-    uint16_t cols = _config.getCols();
+    uint16_t rows = _config.getInitialRows();
+    uint16_t cols = _config.getInitialCols();
 
     const int BORDER_THICKNESS = _config.getBorderThickness();
     const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
@@ -101,7 +101,7 @@ Window::Window(const Config       & config,
                                        _basics.screen()->root_depth,
                                        _window,
                                        _basics.screen()->root,
-                                       _config.getX(), config.getY(),
+                                       _config.getInitialX(), config.getInitialY(),
                                        _width, _height,
                                        0,            // border width
                                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
