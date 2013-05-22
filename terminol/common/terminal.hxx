@@ -82,29 +82,38 @@ private:
     Buffer                _altBuffer;
     Buffer              * _buffer;
 
-    bool                  _otherCharSet;
-    const CharSub       * _G0;
-    const CharSub       * _G1;
-    uint16_t              _cursorRow;
-    uint16_t              _cursorCol;
-    bool                  _cursorWrapNext;
-    uint16_t              _fg;
-    uint16_t              _bg;
-    AttributeSet          _attrs;
-    bool                  _originMode;
-
     ModeSet               _modes;
     std::vector<bool>     _tabs;
 
-    bool                  _savedOtherCharSet;
-    const CharSub       * _savedG0;
-    const CharSub       * _savedG1;
-    uint16_t              _savedCursorRow;
-    uint16_t              _savedCursorCol;
-    uint16_t              _savedFg;
-    uint16_t              _savedBg;
-    AttributeSet          _savedAttrs;
-    bool                  _savedOriginMode;
+    struct Cursor {
+        Cursor() :
+            otherCharSet(false),
+            G0(CS_US),
+            G1(CS_US),
+            row(0),
+            col(0),
+            wrapNext(false),
+            fg(Cell::defaultFg()),
+            bg(Cell::defaultBg()),
+            attrs(),
+            originMode(false) {}
+
+        void reset() { *this = Cursor(); }
+
+        bool            otherCharSet;
+        const CharSub * G0;
+        const CharSub * G1;
+        uint16_t        row;
+        uint16_t        col;
+        bool            wrapNext;
+        uint16_t        fg;
+        uint16_t        bg;
+        AttributeSet    attrs;
+        bool            originMode;
+    };
+
+    Cursor _cursor;
+    Cursor _savedCursor;
 
     uint16_t              _damageRowBegin;
     uint16_t              _damageRowEnd;
