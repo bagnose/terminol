@@ -73,26 +73,30 @@ private:
             otherCharSet(false),
             G0(CS_US),
             G1(CS_US),
+            //
             row(0),
             col(0),
             wrapNext(false),
+            originMode(false),
+            //
+            attrs(Cell::defaultAttrs()),
             fg(Cell::defaultFg()),
-            bg(Cell::defaultBg()),
-            attrs(),
-            originMode(false) {}
+            bg(Cell::defaultBg()) {}
 
         void reset() { *this = Cursor(); }
 
         bool            otherCharSet;
         const CharSub * G0;
         const CharSub * G1;
+        //
         uint16_t        row;
         uint16_t        col;
         bool            wrapNext;
+        bool            originMode;
+        //
+        AttributeSet    attrs;
         uint16_t        fg;
         uint16_t        bg;
-        AttributeSet    attrs;
-        bool            originMode;
     };
 
     struct Damage {
@@ -113,11 +117,9 @@ private:
     I_Observer          & _observer;
     bool                  _dispatch;
 
-    //
-
     const Config        & _config;
-
     const KeyMap        & _keyMap;
+
     Buffer                _priBuffer;
     Buffer                _altBuffer;
     Buffer              * _buffer;

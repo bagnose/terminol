@@ -1066,6 +1066,8 @@ void Window::terminalDrawCursor(uint16_t        row,
                                 AttributeSet    attrs,
                                 const uint8_t * str,
                                 bool            wrapNext) throw () {
+    ASSERT(_cr, "");
+
     if (attrs.get(Attribute::INVERSE)) { std::swap(fg, bg); }
 
     const auto & fgValues =
@@ -1102,6 +1104,8 @@ void Window::terminalDrawCursor(uint16_t        row,
 void Window::terminalDrawScrollbar(size_t   totalRows,
                                    size_t   historyOffset,
                                    uint16_t visibleRows) throw () {
+    ASSERT(_cr, "");
+
     const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
 
     double x = static_cast<double>(_width - SCROLLBAR_WIDTH);
@@ -1143,6 +1147,8 @@ void Window::terminalFixDamageEnd(bool     internal,
                                   uint16_t colBegin,
                                   uint16_t colEnd,
                                   bool     scrollBar) throw () {
+    ASSERT(_cr, "");
+
     if (internal) {
         cairo_destroy(_cr);
         _cr = nullptr;

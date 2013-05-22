@@ -32,7 +32,7 @@ class Window :
     uint16_t          _height;
     Tty             * _tty;
     Terminal        * _terminal;
-    bool              _isOpen;
+    bool              _isOpen;  // FIXME rename to _open?
     uint16_t          _pointerRow;
     uint16_t          _pointerCol;
     bool              _mapped;          // Is the window mapped.

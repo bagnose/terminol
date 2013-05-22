@@ -87,8 +87,8 @@ Terminal::Terminal(I_Observer   & observer,
     _dispatch(false),
     //
     _config(config),
-    //
     _keyMap(keyMap),
+    //
     _priBuffer(_config, rows, cols,
                _config.getUnlimitedScrollBack() ?
                std::numeric_limits<size_t>::max() :
@@ -257,11 +257,11 @@ void Terminal::flush() {
     ASSERT(!_dumpWrites, "Dump writes is set.");
 
     try {
-        while (!_writeBuffer.empty()) {
+        do {
             size_t rval = _tty.write(&_writeBuffer.front(), _writeBuffer.size());
             if (rval == 0) { break; }
             _writeBuffer.erase(_writeBuffer.begin(), _writeBuffer.begin() + rval);
-        }
+        } while (!_writeBuffer.empty());
     }
     catch (const I_Tty::Error & ex) {
         _dumpWrites = true;
@@ -701,7 +701,8 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
         _buffer->insertCells(_cursor.row, _cursor.col, 1);
     }
 
-    _buffer->setCell(_cursor.row, _cursor.col, Cell::utf8(seq, _cursor.attrs, _cursor.fg, _cursor.bg));
+    _buffer->setCell(_cursor.row, _cursor.col,
+                     Cell::utf8(seq, _cursor.attrs, _cursor.fg, _cursor.bg));
 
     if (_cursor.col == _buffer->getCols() - 1) {
         _cursor.wrapNext = true;
@@ -825,6 +826,7 @@ void Terminal::machineEscape(uint8_t c) throw () {
             _tabs[_cursor.col] = true;
             break;
         case 'M':   // RI - Reverse Line Feed (opposite of IND)
+            // FIXME still dubious
             if (_cursor.row == _buffer->getMarginBegin()) {
                 _buffer->insertLines(_buffer->getMarginBegin(), 1);
             }
@@ -1132,9 +1134,7 @@ void Terminal::machineCsi(bool priv,
             NYI("Window ops");
             break;
         case 'u': // restore cursor
-            damageCursor();
-            _cursor.row = _savedCursor.row;
-            _cursor.col = _savedCursor.col;
+            moveCursor(_savedCursor.row, _savedCursor.col);
             break;
         case 'y': // DECTST
             NYI("DECTST");
@@ -1184,7 +1184,7 @@ void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
 
 void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
     if (_config.getTraceTty()) {
-        //std::cerr << Esc::FG_BLUE << "ESC" << Str(seq) << Esc::RESET << " ";
+        std::cerr << Esc::FG_BLUE << "ESC" << Char(special) << Char(code) << Esc::RESET << " ";
     }
 
     switch (special) {
@@ -1201,14 +1201,17 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
                 case '6':   // DECDWL - Double width
                     NYI("Double width");
                     break;
-                case '8':   // DECALN - Alignment
+                case '8': { // DECALN - Alignment
                     // Fill terminal with 'E'
+                    Cell cell = Cell::utf8(utf8::Seq('E'),
+                                           _cursor.attrs, _cursor.fg, _cursor.bg);
                     for (uint16_t r = 0; r != _buffer->getRows(); ++r) {
                         for (uint16_t c = 0; c != _buffer->getCols(); ++c) {
-                            _buffer->setCell(r, c, Cell::utf8(utf8::Seq('E'), _cursor.attrs, _cursor.fg, _cursor.bg));
+                            _buffer->setCell(r, c, cell);
                         }
                     }
                     break;
+                }
                 default:
                     NYI("?");
                     break;
@@ -1308,11 +1311,13 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 break;
             case 1: // Bold
                 _cursor.attrs.set(Attribute::BOLD);
-                if (_cursor.fg < 8) { _cursor.fg += 8; }      // Normal -> Bright.
+                // Normal -> Bright.
+                if (_cursor.fg < 8) { _cursor.fg += 8; }
                 break;
             case 2: // Faint (low/decreased intensity)
                 _cursor.attrs.unset(Attribute::BOLD);
-                if (_cursor.fg >= 8 && _cursor.fg < 16) { _cursor.fg -= 8; } // Bright -> Normal.
+                // Bright -> Normal.
+                if (_cursor.fg >= 8 && _cursor.fg < 16) { _cursor.fg -= 8; }
                 break;
             case 3: // Italic: on
                 _cursor.attrs.set(Attribute::ITALIC);
@@ -1354,11 +1359,13 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 // Bold: off or Underline: Double (bold off not widely supported,
                 //                                 double underline hardly ever)
                 _cursor.attrs.unset(Attribute::BOLD);
-                if (_cursor.fg >= 8 && _cursor.fg < 16) { _cursor.fg -= 8; } // Bright -> Normal.
+                // Bright -> Normal.
+                if (_cursor.fg >= 8 && _cursor.fg < 16) { _cursor.fg -= 8; }
                 break;
             case 22: // Normal color or intensity (neither bold nor faint)
                 _cursor.attrs.unset(Attribute::BOLD);
-                if (_cursor.fg >= 8 && _cursor.fg < 16) { _cursor.fg -= 8; } // Bright -> Normal.        XXX is this right?
+                // Bright -> Normal.        XXX is this right?
+                if (_cursor.fg >= 8 && _cursor.fg < 16) { _cursor.fg -= 8; }
                 break;
             case 23: // Not italic, not Fraktur
                 _cursor.attrs.unset(Attribute::ITALIC);
@@ -1464,7 +1471,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                         case 2:
                             if (i + 3 < args.size()) {
                                 // 24-bit background support
-                                // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB foreground color
+                                // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB background color
                                 NYI("24-bit RGB background");
                                 i += 3;
                             }
@@ -1670,7 +1677,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     _modes.setTo(Mode::ALT_SENDS_ESC, set);
                     break;
                 case 1049: // rmcup/smcup, alternative screen
-                case 47:    // XXX ???
+                case 47:   // XXX ???
                 case 1047:
                     if (_buffer == &_altBuffer) {
                         _buffer->clear();
