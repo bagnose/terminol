@@ -68,23 +68,6 @@ public:
     };
 
 private:
-    I_Observer          & _observer;
-    bool                  _dispatch;
-
-    //
-    //
-    //
-
-    const Config        & _config;
-
-    const KeyMap        & _keyMap;
-    Buffer                _priBuffer;
-    Buffer                _altBuffer;
-    Buffer              * _buffer;
-
-    ModeSet               _modes;
-    std::vector<bool>     _tabs;
-
     struct Cursor {
         Cursor() :
             otherCharSet(false),
@@ -112,16 +95,41 @@ private:
         bool            originMode;
     };
 
-    Cursor _cursor;
-    Cursor _savedCursor;
+    struct Damage {
+        Damage() : rowBegin(0), rowEnd(0), colBegin(0), colEnd(0) {}
 
-    uint16_t              _damageRowBegin;
-    uint16_t              _damageRowEnd;
-    uint16_t              _damageColBegin;
-    uint16_t              _damageColEnd;
+        void reset() { *this = Damage(); }
+
+        uint16_t rowBegin;
+        uint16_t rowEnd;
+        uint16_t colBegin;
+        uint16_t colEnd;
+    };
 
     //
     //
+    //
+
+    I_Observer          & _observer;
+    bool                  _dispatch;
+
+    //
+
+    const Config        & _config;
+
+    const KeyMap        & _keyMap;
+    Buffer                _priBuffer;
+    Buffer                _altBuffer;
+    Buffer              * _buffer;
+
+    ModeSet               _modes;
+    std::vector<bool>     _tabs;
+
+    Cursor                _cursor;
+    Cursor                _savedCursor;
+
+    Damage                _damage;
+
     //
 
     I_Tty               & _tty;
@@ -173,7 +181,7 @@ public:
 
 protected:
     enum class TabDir { FORWARD, BACKWARD };
-    enum class Damage { TTY, EXPOSURE, SCROLL };
+    enum class Damager { TTY, EXPOSURE, SCROLL };
 
     bool      handleKeyBinding(xkb_keysym_t keySym, uint8_t state);
 
@@ -184,13 +192,13 @@ protected:
 
     void      fixDamage(uint16_t rowBegin, uint16_t rowEnd,
                         uint16_t colBegin, uint16_t colEnd,
-                        Damage damage);
+                        Damager damage);
 
     utf8::Seq translate(utf8::Seq seq, utf8::Length length) const;
 
     void      draw(uint16_t rowBegin, uint16_t rowEnd,
                    uint16_t colBegin, uint16_t colEnd,
-                   Damage damage);
+                   Damager damage);
 
     void      write(const uint8_t * data, size_t size);
 
