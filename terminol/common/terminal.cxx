@@ -1685,9 +1685,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
 
                     _buffer = set ? &_altBuffer : &_priBuffer;
                     if (a != 1049) {
-                        fixDamage(0, _buffer->getRows(),
-                                  0, _buffer->getCols(),
-                                  Damager::SCROLL);
+                        _buffer->damageAll();
                         break;
                     }
                     // Fall-through:
@@ -1700,9 +1698,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                         _cursor = _savedCursor;
                     }
 
-                    fixDamage(0, _buffer->getRows(),
-                              0, _buffer->getCols(),
-                              Damager::SCROLL);
+                    _buffer->damageAll();
                     break;
                 case 2004:
                     // Bracketed paste mode.
