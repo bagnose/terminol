@@ -139,6 +139,12 @@ protected:
                             AttributeSet    attrs,
                             const uint8_t * str,
                             bool            wrapNext) throw ();
+    void terminalDrawSelection(uint16_t rowBegin,
+                               uint16_t colBegin,
+                               uint16_t rowEnd,
+                               uint16_t colEnd,
+                               bool     topless,
+                               bool     bottomless) throw ();
     void terminalDrawScrollbar(size_t   totalRows,
                                size_t   historyOffset,
                                uint16_t visibleRows) throw ();

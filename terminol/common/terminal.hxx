@@ -52,6 +52,12 @@ public:
                                         AttributeSet    attrs,
                                         const uint8_t * str,
                                         bool            wrapNext) throw () = 0;
+        virtual void terminalDrawSelection(uint16_t rowBegin,
+                                           uint16_t colBegin,
+                                           uint16_t rowEnd,
+                                           uint16_t colEnd,
+                                           bool     topless,
+                                           bool     bottomless) throw () = 0;
         virtual void terminalDrawScrollbar(size_t   totalRows,
                                            size_t   historyOffset,
                                            uint16_t visibleRows) throw () = 0;
@@ -167,11 +173,11 @@ public:
                     uint16_t colBegin, uint16_t colEnd);
 
     void     keyPress(xkb_keysym_t keySym, uint8_t state);
-    void     buttonPress(Button button, int count,
-                         bool within, uint16_t row, uint16_t col);
+    void     buttonPress(Button button, uint8_t state,
+                         int count, bool within, uint16_t row, uint16_t col);
     void     motionNotify(bool within, uint16_t row, uint16_t col);
     void     buttonRelease(bool broken);
-    void     scrollWheel(ScrollDir dir);
+    void     scrollWheel(ScrollDir dir, uint8_t state);
 
     void     paste(const uint8_t * data, size_t size);
 

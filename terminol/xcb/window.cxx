@@ -263,19 +263,22 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
 
     switch (event->detail) {
         case XCB_BUTTON_INDEX_1:
-            _terminal->buttonPress(Terminal::Button::LEFT, _pressCount, within, row, col);
+            _terminal->buttonPress(Terminal::Button::LEFT, event->state,
+                                   _pressCount, within, row, col);
             break;
         case XCB_BUTTON_INDEX_2:
-            _terminal->buttonPress(Terminal::Button::MIDDLE, _pressCount, within, row, col);
+            _terminal->buttonPress(Terminal::Button::MIDDLE, event->state,
+                                   _pressCount, within, row, col);
             break;
         case XCB_BUTTON_INDEX_3:
-            _terminal->buttonPress(Terminal::Button::RIGHT, _pressCount, within, row, col);
+            _terminal->buttonPress(Terminal::Button::RIGHT, event->state,
+                                   _pressCount, within, row, col);
             break;
         case XCB_BUTTON_INDEX_4:
-            _terminal->scrollWheel(Terminal::ScrollDir::UP);
+            _terminal->scrollWheel(Terminal::ScrollDir::UP, event->state);
             break;
         case XCB_BUTTON_INDEX_5:
-            _terminal->scrollWheel(Terminal::ScrollDir::DOWN);
+            _terminal->scrollWheel(Terminal::ScrollDir::DOWN, event->state);
             // Scroll wheel
             break;
     }
@@ -1099,6 +1102,138 @@ void Window::terminalDrawCursor(uint16_t        row,
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
     } cairo_restore(_cr);
+}
+
+void drawLineSelection1(cairo_t * cr, double x, double y, double w, double h, double c) {
+#if 0
+    cairo_move_to   (cr, x + c    , y);
+    cairo_line_to   (cr, x + w - c, y);
+    cairo_curve_to  (cr, x + w    , y    , x + w, y, x + w, y + c);
+    cairo_line_to   (cr, x + w    , y + h - c);
+    cairo_curve_to  (cr, x + w    , y + h, x + w, y + h, x + w - c, y + h);
+    cairo_line_to   (cr, x + c    , y + h);
+    cairo_curve_to  (cr, x        , y + h, x,     y + h, x,         y + h - c);
+    cairo_line_to   (cr, x        , y + c);
+    cairo_curve_to  (cr, x        , y    , x,     y    , x + c,       y);
+    cairo_close_path(cr);
+#else
+    cairo_move_to   (cr, x + c    , y);
+    cairo_line_to   (cr, x + w, y);
+    cairo_line_to   (cr, x + w    , y + h - c);
+    cairo_curve_to  (cr, x + w    , y + h, x + w, y + h, x + w - c, y + h);
+    cairo_line_to   (cr, x    , y + h);
+    cairo_line_to   (cr, x        , y + c);
+    cairo_curve_to  (cr, x        , y    , x,     y    , x + c,       y);
+    cairo_close_path(cr);
+#endif
+}
+
+void drawLineSelection2(cairo_t * cr, double x, double y, double w, double h, double c) {
+    c = std::min(c, std::min(w, h) / 3.0);
+
+    double d = M_PI / 180.0;
+
+#if 0
+    cairo_new_sub_path(cr);
+    cairo_arc(cr, x + c, y + c, c, 180 * d, 270 * d);
+    cairo_arc(cr, x + w - c, y + c, c, -90 * d, 0 * d);
+    cairo_arc(cr, x + w - c, y + h - c, c, 0 * d, 90 * d);
+    cairo_arc(cr, x + c, y + h - c, c, 90 * d, 180 * d);
+    cairo_close_path(cr);
+#else
+    cairo_new_sub_path(cr);
+    cairo_arc(cr, x + c, y + c, c, 180 * d, 270 * d);
+    cairo_line_to(cr, x + w, y);
+    cairo_arc(cr, x + w - c, y + h - c, c, 0 * d, 90 * d);
+    cairo_line_to(cr, x, y + h);
+    cairo_close_path(cr);
+#endif
+}
+
+void Window::terminalDrawSelection(uint16_t rowBegin,
+                                   uint16_t colBegin,
+                                   uint16_t rowEnd,
+                                   uint16_t colEnd,
+                                   bool     topless,
+                                   bool     bottomless) throw () {
+    ASSERT(!topless    || rowBegin == 0, "");
+    ASSERT(!bottomless || rowEnd   == _terminal->getRows(), "");
+    ASSERT(rowBegin < rowEnd, "");
+
+    ASSERT(_cr, "");
+
+    double lineWidth = 1.0;
+    double halfWidth = lineWidth / 2.0;
+    double curve = 4.0;
+
+    if (rowBegin + 1 == rowEnd) {
+        ASSERT(colBegin < colEnd, "");
+
+        int x0, y0;
+        rowCol2XY(rowBegin, colBegin, x0, y0);
+        int x1, y1;
+        rowCol2XY(rowEnd, colEnd, x1, y1);
+
+        drawLineSelection2(_cr,
+                           x0 + halfWidth, y0 + halfWidth,
+                           x1 - x0 - lineWidth, y1 - y0 - lineWidth,
+                           curve);
+
+        cairo_set_source_rgba(_cr, 0.3, 0.1, 0.8, 0.2);
+        cairo_fill_preserve(_cr);
+
+        cairo_set_source_rgba(_cr, 0.7, 0.5, 0.8, 1.0);
+        cairo_stroke(_cr);
+    }
+    else {
+        // There are 8 distinct points, but there are defined by
+        // 8 coordinates (not 16).
+        // The general shape is:
+        //
+        //      0       1      2           3
+        //
+        //   0          0------------------1
+        //   1  6-------7                  |
+        //      |                          |
+        //   2  |              3-----------2
+        //   3  5--------------4
+        //
+        // Points are:
+        //
+        //   #: x, y
+        //   -------
+        //   0: 1, 0
+        //   1: 3, 0
+        //   2: 3, 2
+        //   3: 2, 2
+        //   4: 2, 3
+        //   5: 0, 3
+        //   6: 0, 1
+        //   7: 1, 1
+
+        int x0, x1, x2, x3;
+        int y0, y1, y2, y3;
+
+        uint16_t numCols = _terminal->getCols();
+
+        rowCol2XY(rowBegin,     0,        x0, y0);  // top left
+        rowCol2XY(rowBegin + 1, colBegin, x1, y1);  // #7
+        rowCol2XY(rowEnd - 1,   colEnd,   x2, y2);  // #3
+        rowCol2XY(rowEnd,       numCols,  x3, y3);  // bottom right
+
+        cairo_move_to  (_cr, x1, y0);
+        cairo_line_to(_cr, x3, y0);
+        cairo_line_to(_cr, x3, y2);
+        cairo_line_to(_cr, x2, y2);
+        cairo_line_to(_cr, x2, y3);
+        cairo_line_to(_cr, x0, y3);
+        cairo_line_to(_cr, x0, y1);
+        cairo_line_to(_cr, x1, y1);
+        cairo_close_path(_cr);
+
+        cairo_set_source_rgba(_cr, 0.3, 0.1, 0.8, 0.2);
+        cairo_fill(_cr);
+    }
 }
 
 void Window::terminalDrawScrollbar(size_t   totalRows,
