@@ -14,19 +14,19 @@
 #define PACK_CELL 1
 
 class Cell {
-    utf8::Seq    _seq;      // 4 bytes
-    AttributeSet _attrs;    // 1 byte
+    utf8::Seq _seq;      // 4 bytes
+    AttrSet   _attrs;    // 1 byte
 #if !PACK_CELL
-    uint16_t     _fg;
-    uint16_t     _bg;
+    uint16_t  _fg;
+    uint16_t  _bg;
 #else
-    uint8_t      _col[3];   // 3 bytes
+    uint8_t   _col[3];   // 3 bytes
 #endif
 
-    Cell(utf8::Seq      seq_,
-         AttributeSet   attrs_,
-         uint16_t       fg_,
-         uint16_t       bg_) :
+    Cell(utf8::Seq seq_,
+         AttrSet   attrs_,
+         uint16_t  fg_,
+         uint16_t  bg_) :
         _seq(seq_),
         _attrs(attrs_)
 #if !PACK_CELL
@@ -44,9 +44,9 @@ class Cell {
     static const uint8_t BLANK = SPACE;
 
 public:
-    static uint16_t     defaultFg()    { return 256; }
-    static uint16_t     defaultBg()    { return 257; }
-    static AttributeSet defaultAttrs() { return AttributeSet(); }
+    static uint16_t defaultFg()    { return 256; }
+    static uint16_t defaultBg()    { return 257; }
+    static AttrSet  defaultAttrs() { return AttrSet(); }
 
     static Cell blank() {
         return ascii(BLANK);
@@ -57,17 +57,17 @@ public:
         return Cell(utf8::Seq(c), defaultAttrs(), defaultFg(), defaultBg());
     }
 
-    static Cell utf8(utf8::Seq    seq_,
-                     AttributeSet attrs_,
-                     uint16_t     fg_,
-                     uint16_t     bg_) {
+    static Cell utf8(utf8::Seq seq_,
+                     AttrSet   attrs_,
+                     uint16_t  fg_,
+                     uint16_t  bg_) {
         return Cell(seq_, attrs_, fg_, bg_);
     }
 
     uint8_t         lead()  const { return _seq.bytes[0]; }
     const uint8_t * bytes() const { return &_seq.bytes[0]; }
     //utf8::Seq       seq()   const { return _seq; }
-    AttributeSet    attrs() const { return _attrs; }
+    AttrSet         attrs() const { return _attrs; }
 #if !PACK_CELL
     uint16_t        fg()    const { return _fg; }
     uint16_t        bg()    const { return _bg; }

@@ -1017,16 +1017,16 @@ void Window::terminalDrawRun(uint16_t        row,
                              uint16_t        col,
                              uint16_t        fg,
                              uint16_t        bg,
-                             AttributeSet    attrs,
+                             AttrSet         attrs,
                              const uint8_t * str,
                              size_t          count) throw () {
     ASSERT(_cr, "");
 
     cairo_save(_cr); {
-        if (attrs.get(Attribute::INVERSE)) { std::swap(fg, bg); }
+        if (attrs.get(Attr::INVERSE)) { std::swap(fg, bg); }
 
-        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attribute::ITALIC),
-                                                attrs.get(Attribute::BOLD)));
+        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attr::ITALIC),
+                                                attrs.get(Attr::BOLD)));
 
         int x, y;
         rowCol2XY(row, col, x, y);
@@ -1042,9 +1042,9 @@ void Window::terminalDrawRun(uint16_t        row,
 
         const auto & fgValues = _colorSet.getIndexedColor(fg);
         cairo_set_source_rgba(_cr, fgValues.r, fgValues.g, fgValues.b,
-                              attrs.get(Attribute::CONCEAL) ? 0.2 : 1.0);
+                              attrs.get(Attr::CONCEAL) ? 0.2 : 1.0);
 
-        if (attrs.get(Attribute::UNDERLINE)) {
+        if (attrs.get(Attr::UNDERLINE)) {
             cairo_move_to(_cr,
                           x,
                           y + _fontSet.getHeight() - 0.5);
@@ -1066,12 +1066,12 @@ void Window::terminalDrawCursor(uint16_t        row,
                                 uint16_t        col,
                                 uint16_t        fg,
                                 uint16_t        bg,
-                                AttributeSet    attrs,
+                                AttrSet         attrs,
                                 const uint8_t * str,
                                 bool            wrapNext) throw () {
     ASSERT(_cr, "");
 
-    if (attrs.get(Attribute::INVERSE)) { std::swap(fg, bg); }
+    if (attrs.get(Attr::INVERSE)) { std::swap(fg, bg); }
 
     const auto & fgValues =
         _config.getCustomCursorTextColor() ?
@@ -1084,8 +1084,8 @@ void Window::terminalDrawCursor(uint16_t        row,
         _colorSet.getIndexedColor(fg);
 
     cairo_save(_cr); {
-        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attribute::ITALIC),
-                                                attrs.get(Attribute::BOLD)));
+        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attr::ITALIC),
+                                                attrs.get(Attr::BOLD)));
 
         int x, y;
         rowCol2XY(row, col, x, y);

@@ -8,33 +8,33 @@
 #include <iosfwd>
 #include <stdint.h>
 
-class AttributeSet {
+class AttrSet {
     uint8_t _bits;
-    static uint8_t bit(Attribute attribute) { return 1 << static_cast<int>(attribute); }
+    static uint8_t bit(Attr attr) { return 1 << static_cast<int>(attr); }
 
 public:
-    AttributeSet() : _bits(0) {}
+    AttrSet() : _bits(0) {}
 
-    void clear()                        { _bits  =  0;                   }
-    void set(Attribute attribute)       { _bits |=  bit(attribute);      }
-    void unset(Attribute attribute)     { _bits &= ~bit(attribute);      }
-    bool get(Attribute attribute) const { return _bits & bit(attribute); }
+    void clear()              { _bits  =  0;              }
+    void set(Attr attr)       { _bits |=  bit(attr);      }
+    void unset(Attr attr)     { _bits &= ~bit(attr);      }
+    bool get(Attr attr) const { return _bits & bit(attr); }
 
-    void setTo(Attribute attribute, bool to) {
-        if (to) { set(attribute);   }
-        else    { unset(attribute); }
+    void setTo(Attr attr, bool to) {
+        if (to) { set(attr);   }
+        else    { unset(attr); }
     }
 
-    friend inline bool operator == (AttributeSet lhs, AttributeSet rhs);
+    friend inline bool operator == (AttrSet lhs, AttrSet rhs);
 };
 
-std::ostream & operator << (std::ostream & ost, AttributeSet attributeSet);
+std::ostream & operator << (std::ostream & ost, AttrSet attributeSet);
 
-inline bool operator == (AttributeSet lhs, AttributeSet rhs) {
+inline bool operator == (AttrSet lhs, AttrSet rhs) {
     return lhs._bits == rhs._bits;
 }
 
-inline bool operator != (AttributeSet lhs, AttributeSet rhs) {
+inline bool operator != (AttrSet lhs, AttrSet rhs) {
     return !(lhs == rhs);
 }
 

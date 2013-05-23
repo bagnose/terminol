@@ -93,21 +93,21 @@ std::ostream & operator << (std::ostream & ost, Mode mode) {
     FATAL("Invalid mode: " << static_cast<int>(mode));
 }
 
-std::ostream & operator << (std::ostream & ost, Attribute attribute) {
-    switch (attribute) {
-        case Attribute::BOLD:
+std::ostream & operator << (std::ostream & ost, Attr attr) {
+    switch (attr) {
+        case Attr::BOLD:
             return ost << "BOLD";
-        case Attribute::ITALIC:
+        case Attr::ITALIC:
             return ost << "ITALIC";
-        case Attribute::UNDERLINE:
+        case Attr::UNDERLINE:
             return ost << "UNDERLINE";
-        case Attribute::BLINK:
+        case Attr::BLINK:
             return ost << "BLINK";
-        case Attribute::INVERSE:
+        case Attr::INVERSE:
             return ost << "INVERSE";
-        case Attribute::CONCEAL:
+        case Attr::CONCEAL:
             return ost << "CONCEAL";
     }
 
-    FATAL("Invalid attribute: " << static_cast<int>(attribute));
+    FATAL("Invalid attr: " << static_cast<int>(attr));
 }

@@ -471,11 +471,11 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
     run.reserve(_buffer->getCols() * utf8::Length::LMAX + 1);
 
     for (uint16_t r = rowBegin; r != rowEnd; ++r) {
-        uint16_t     c_ = 0;    // Accumulation start column.
-        uint16_t     fg = 0, bg = 0;
-        AttributeSet attrs;
-        uint16_t     c;
-        uint16_t     colBegin2, colEnd2;
+        uint16_t c_ = 0;    // Accumulation start column.
+        uint16_t fg = 0, bg = 0;
+        AttrSet  attrs;
+        uint16_t c;
+        uint16_t colBegin2, colEnd2;
 
         if (damage == Damager::TTY) {
             _buffer->getDamage(r, colBegin2, colEnd2);
@@ -1310,30 +1310,30 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 _cursor.attrs = Cell::defaultAttrs();
                 break;
             case 1: // Bold
-                _cursor.attrs.set(Attribute::BOLD);
+                _cursor.attrs.set(Attr::BOLD);
                 // Normal -> Bright.
                 if (_cursor.fg < 8) { _cursor.fg += 8; }
                 break;
             case 2: // Faint (low/decreased intensity)
-                _cursor.attrs.unset(Attribute::BOLD);
+                _cursor.attrs.unset(Attr::BOLD);
                 // Bright -> Normal.
                 if (_cursor.fg >= 8 && _cursor.fg < 16) { _cursor.fg -= 8; }
                 break;
             case 3: // Italic: on
-                _cursor.attrs.set(Attribute::ITALIC);
+                _cursor.attrs.set(Attr::ITALIC);
                 break;
             case 4: // Underline: Single
-                _cursor.attrs.set(Attribute::UNDERLINE);
+                _cursor.attrs.set(Attr::UNDERLINE);
                 break;
             case 5: // Blink: slow
             case 6: // Blink: rapid
-                _cursor.attrs.set(Attribute::BLINK);
+                _cursor.attrs.set(Attr::BLINK);
                 break;
             case 7: // Image: Negative
-                _cursor.attrs.set(Attribute::INVERSE);
+                _cursor.attrs.set(Attr::INVERSE);
                 break;
             case 8: // Conceal (not widely supported)
-                _cursor.attrs.set(Attribute::CONCEAL);
+                _cursor.attrs.set(Attr::CONCEAL);
                 break;
             case 9: // Crossed-out (not widely supported)
                 NYI("Crossed-out");
@@ -1358,32 +1358,32 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
             case 21:
                 // Bold: off or Underline: Double (bold off not widely supported,
                 //                                 double underline hardly ever)
-                _cursor.attrs.unset(Attribute::BOLD);
+                _cursor.attrs.unset(Attr::BOLD);
                 // Bright -> Normal.
                 if (_cursor.fg >= 8 && _cursor.fg < 16) { _cursor.fg -= 8; }
                 break;
             case 22: // Normal color or intensity (neither bold nor faint)
-                _cursor.attrs.unset(Attribute::BOLD);
+                _cursor.attrs.unset(Attr::BOLD);
                 // Bright -> Normal.        XXX is this right?
                 if (_cursor.fg >= 8 && _cursor.fg < 16) { _cursor.fg -= 8; }
                 break;
             case 23: // Not italic, not Fraktur
-                _cursor.attrs.unset(Attribute::ITALIC);
+                _cursor.attrs.unset(Attr::ITALIC);
                 break;
             case 24: // Underline: None (not singly or doubly underlined)
-                _cursor.attrs.unset(Attribute::UNDERLINE);
+                _cursor.attrs.unset(Attr::UNDERLINE);
                 break;
             case 25: // Blink: off
-                _cursor.attrs.unset(Attribute::BLINK);
+                _cursor.attrs.unset(Attr::BLINK);
                 break;
             case 26: // Reserved?
-                _cursor.attrs.set(Attribute::INVERSE);
+                _cursor.attrs.set(Attr::INVERSE);
                 break;
             case 27: // Image: Positive
-                _cursor.attrs.unset(Attribute::INVERSE);
+                _cursor.attrs.unset(Attr::INVERSE);
                 break;
             case 28: // Reveal (conceal off - not widely supported)
-                _cursor.attrs.unset(Attribute::CONCEAL);
+                _cursor.attrs.unset(Attr::CONCEAL);
                 break;
             case 29: // Not crossed-out (not widely supported)
                 NYI("Crossed-out");

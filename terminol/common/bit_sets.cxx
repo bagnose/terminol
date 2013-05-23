@@ -4,10 +4,10 @@
 
 #include <iostream>
 
-std::ostream & operator << (std::ostream & ost, AttributeSet attributeSet) {
+std::ostream & operator << (std::ostream & ost, AttrSet attributeSet) {
     bool first = true;
-    for (auto i = 0; i != static_cast<int>(Attribute::LAST) + 1; ++i) {
-        auto a = static_cast<Attribute>(i);
+    for (auto i = 0; i != static_cast<int>(Attr::LAST) + 1; ++i) {
+        auto a = static_cast<Attr>(i);
         if (attributeSet.get(a)) {
             if (first) { first = false; }
             else       { ost << "|"; }

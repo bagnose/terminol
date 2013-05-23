@@ -77,7 +77,7 @@ std::ostream & operator << (std::ostream & ost, Mode mode);
 //
 //
 
-enum class Attribute {
+enum class Attr {
     BOLD,
     ITALIC,
     UNDERLINE,
@@ -87,6 +87,6 @@ enum class Attribute {
     LAST = CONCEAL
 };
 
-std::ostream & operator << (std::ostream & ost, Attribute attribute);
+std::ostream & operator << (std::ostream & ost, Attr attr);
 
 #endif // COMMON__ENUMS_HXX

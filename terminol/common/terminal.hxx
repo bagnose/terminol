@@ -42,14 +42,14 @@ public:
                                      uint16_t        col,
                                      uint16_t        fg,
                                      uint16_t        bg,
-                                     AttributeSet    attrs,
+                                     AttrSet         attrs,
                                      const uint8_t * str,       // nul-terminated
                                      size_t          count) throw () = 0;
         virtual void terminalDrawCursor(uint16_t        row,
                                         uint16_t        col,
                                         uint16_t        fg,
                                         uint16_t        bg,
-                                        AttributeSet    attrs,
+                                        AttrSet         attrs,
                                         const uint8_t * str,
                                         bool            wrapNext) throw () = 0;
         virtual void terminalDrawSelection(uint16_t rowBegin,
@@ -100,7 +100,7 @@ private:
         bool            wrapNext;
         bool            originMode;
         //
-        AttributeSet    attrs;
+        AttrSet         attrs;
         uint16_t        fg;
         uint16_t        bg;
     };
