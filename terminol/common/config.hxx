@@ -13,17 +13,11 @@ public:
     };
 
 private:
-    static const char * SOLARIZED_DARK_COLORS[16];
-    static const char * SOLARIZED_LIGHT_COLORS[16];
-    static const Color  STANDARD_COLORS[16];
-    static const Color  TWEAKED_COLORS[16];
-
     // TODO
     // pointerfgColor
     // pointerBgColor
     // scrollbarStrategy: show/hide/auto
 
-    // title
     // titleUpdateStrategy: replace, append, prepend, ignore
 
     // allow blink
@@ -123,7 +117,8 @@ public:
     bool                getServerFork()            const { return true; }
 
 protected:
-    static Color decodeHexColor(const std::string & hexColor);
+    static Color decodeHexColor(const std::string & hex);
+    static Color decodeTripletColor(const uint8_t values[3]);
 };
 
 #endif // COMMON__CONFIG__HXX
