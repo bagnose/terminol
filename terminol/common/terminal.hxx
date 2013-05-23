@@ -69,6 +69,13 @@ public:
         ~I_Observer() {}
     };
 
+    //
+    //
+    //
+
+    enum class Button    { LEFT, MIDDLE, RIGHT };
+    enum class ScrollDir { UP, DOWN };
+
 private:
     struct Cursor {
         Cursor() :
@@ -130,6 +137,11 @@ private:
 
     Damage                _damage;
 
+    bool                  _pressed;
+    Button                _button;
+    uint16_t              _pointerRow;
+    uint16_t              _pointerCol;
+
     //
 
     I_Tty               & _tty;
@@ -156,19 +168,16 @@ public:
 
     // Events:
 
-    enum class Button    { LEFT, MIDDLE, RIGHT };
-    enum class ScrollDir { UP, DOWN };
-
     void     resize(uint16_t rows, uint16_t cols);
 
     void     redraw(uint16_t rowBegin, uint16_t rowEnd,
                     uint16_t colBegin, uint16_t colEnd);
 
     void     keyPress(xkb_keysym_t keySym, uint8_t state);
-    void     buttonPress(Button button, uint8_t state,
-                         int count, bool within, uint16_t row, uint16_t col);
-    void     motionNotify(bool within, uint16_t row, uint16_t col);
-    void     buttonRelease(bool broken);
+    void     buttonPress(Button button, int count, uint8_t state,
+                         bool within, uint16_t row, uint16_t col);
+    void     buttonMotion(uint8_t state, bool within, uint16_t row, uint16_t col);
+    void     buttonRelease(bool broken, uint8_t state);
     void     scrollWheel(ScrollDir dir, uint8_t state);
 
     void     paste(const uint8_t * data, size_t size);

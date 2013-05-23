@@ -263,16 +263,16 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
 
     switch (event->detail) {
         case XCB_BUTTON_INDEX_1:
-            _terminal->buttonPress(Terminal::Button::LEFT, event->state,
-                                   _pressCount, within, row, col);
+            _terminal->buttonPress(Terminal::Button::LEFT, _pressCount,
+                                   event->state, within, row, col);
             break;
         case XCB_BUTTON_INDEX_2:
-            _terminal->buttonPress(Terminal::Button::MIDDLE, event->state,
-                                   _pressCount, within, row, col);
+            _terminal->buttonPress(Terminal::Button::MIDDLE, _pressCount,
+                                   event->state, within, row, col);
             break;
         case XCB_BUTTON_INDEX_3:
-            _terminal->buttonPress(Terminal::Button::RIGHT, event->state,
-                                   _pressCount, within, row, col);
+            _terminal->buttonPress(Terminal::Button::RIGHT, _pressCount,
+                                   event->state, within, row, col);
             break;
         case XCB_BUTTON_INDEX_4:
             _terminal->scrollWheel(Terminal::ScrollDir::UP, event->state);
@@ -290,7 +290,7 @@ void Window::buttonRelease(xcb_button_release_event_t * event) {
     if (!_isOpen) { return; }
 
     if (_pressed && _button == event->detail) {
-        _terminal->buttonRelease(false);
+        _terminal->buttonRelease(false, event->state);
         _pressed = false;
     }
 }
@@ -323,7 +323,7 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
     if (_pointerRow != row || _pointerCol != col) {
         _pointerRow = row;
         _pointerCol = col;
-        _terminal->motionNotify(within, row, col);
+        _terminal->buttonMotion(event->state, within, row, col);
     }
 
 }
@@ -534,7 +534,7 @@ void Window::leaveNotify(xcb_leave_notify_event_t * event) {
     // the button...
     if (event->mode == 2) {
         if (_pressed) {
-            _terminal->buttonRelease(true);
+            _terminal->buttonRelease(true, 0);
             _pressed = false;
         }
     }

@@ -104,6 +104,8 @@ Terminal::Terminal(I_Observer   & observer,
     //
     _damage(),
     //
+    _pressed(false),
+    //
     _tty(tty),
     _dumpWrites(false),
     _writeBuffer(),
@@ -171,24 +173,137 @@ void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
     }
 }
 
-void Terminal::buttonPress(Button button, uint8_t state,
-                           int count, bool within, uint16_t row, uint16_t col) {
+void Terminal::buttonPress(Button button, int count, uint8_t state,
+                           bool within, uint16_t row, uint16_t col) {
     PRINT("press: " << button << ", count=" << count <<
-          ", within=" << within << ", " << row << 'x' << col);
+          ", state=" << state << ", " << row << 'x' << col);
 
-    if (button == Button::LEFT) {
+    ASSERT(!_pressed, "");
+
+    if (_modes.get(Mode::MOUSE_BUTTON)) {
+        int num = static_cast<int>(button);
+        if (num >= 3) { num += 64 - 3; }
+
+        // FIXME more reason to standardise the masks in common.
+        if (state & _keyMap.maskShift())   { num +=  4; }
+        if (state & _keyMap.maskAlt())     { num +=  8; }
+        if (state & _keyMap.maskControl()) { num += 16; }
+
+        std::ostringstream ost;
+        if (_modes.get(Mode::MOUSE_SGR)) {
+            ost << ESC << "[<"
+                << num << ';' << col + 1 << ';' << row + 1
+                << 'M';
+        }
+        else if (row < 223 && col < 223) {
+            ost << ESC << "[M"
+                << char(32 + num)
+                << char(32 + col + 1)
+                << char(32 + row + 1);
+        }
+        else {
+            // Couldn't deliver it
+        }
+
+        const std::string & str = ost.str();
+
+        if (!str.empty()) {
+            write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+        }
     }
-    else if (button == Button::MIDDLE) {
-        _observer.terminalPaste(false);
+    else {
+        if (button == Button::LEFT) {
+        }
+        else if (button == Button::MIDDLE) {
+            _observer.terminalPaste(false);
+        }
     }
+
+    _pressed    = true;
+    _button     = button;
+    _pointerRow = row;
+    _pointerCol = col;
 }
 
-void Terminal::motionNotify(bool within, uint16_t row, uint16_t col) {
+void Terminal::buttonMotion(uint8_t state, bool within, uint16_t row, uint16_t col) {
     //PRINT("motion: within=" << within << ", " << row << 'x' << col);
+
+    ASSERT(_pressed, "");
+
+    if (_modes.get(Mode::MOUSE_MOTION) && within) {
+        int num = static_cast<int>(_button) + 32;
+
+        // FIXME more reason to standardise the masks in common.
+        if (state & _keyMap.maskShift())   { num +=  4; }
+        if (state & _keyMap.maskAlt())     { num +=  8; }
+        if (state & _keyMap.maskControl()) { num += 16; }
+
+        std::ostringstream ost;
+        if (_modes.get(Mode::MOUSE_SGR)) {
+            ost << ESC << "[<"
+                << num << ';' << col + 1 << ';' << row + 1
+                << 'M';
+        }
+        else if (row < 223 && col < 223) {
+            ost << ESC << "[M"
+                << char(32 + num)
+                << char(32 + col + 1)
+                << char(32 + row + 1);
+        }
+        else {
+            // Couldn't deliver it
+        }
+
+        const std::string & str = ost.str();
+
+        if (!str.empty()) {
+            write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+        }
+    }
+
+    _pointerRow = row;
+    _pointerCol = col;
 }
 
-void Terminal::buttonRelease(bool broken) {
+void Terminal::buttonRelease(bool broken, uint8_t state) {
     //PRINT("release, grabbed=" << grabbed);
+
+    ASSERT(_pressed, "");
+
+    if (_modes.get(Mode::MOUSE_BUTTON)) {
+        int num = _modes.get(Mode::MOUSE_SGR) ? static_cast<int>(_button) + 32 : 3;
+        int row = _pointerRow;
+        int col = _pointerCol;
+
+        // FIXME more reason to standardise the masks in common.
+        if (state & _keyMap.maskShift())   { num +=  4; }
+        if (state & _keyMap.maskAlt())     { num +=  8; }
+        if (state & _keyMap.maskControl()) { num += 16; }
+
+        std::ostringstream ost;
+        if (_modes.get(Mode::MOUSE_SGR)) {
+            ost << ESC << "[<"
+                << num << ';' << col + 1 << ';' << row + 1
+                << 'm';
+        }
+        else if (row < 223 && col < 223) {
+            ost << ESC << "[M"
+                << char(32 + num)
+                << char(32 + col + 1)
+                << char(32 + row + 1);
+        }
+        else {
+            // Couldn't deliver it
+        }
+
+        const std::string & str = ost.str();
+
+        if (!str.empty()) {
+            write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+        }
+    }
+
+    _pressed = false;
 }
 
 void Terminal::scrollWheel(ScrollDir dir, uint8_t state) {
