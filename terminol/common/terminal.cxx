@@ -134,12 +134,12 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     int16_t altRowAdjust = _altBuffer.resize(rows, cols);
     int16_t rowAdjust    = _buffer == &_priBuffer ? priRowAdjust : altRowAdjust;
 
-    _cursor.row = clamp< int16_t>(_cursor.row + rowAdjust, 0, rows - 1);
-    _cursor.col = clamp<uint16_t>(_cursor.col,             0, cols - 1);
+    _cursor.pos.row = clamp< int16_t>(_cursor.pos.row + rowAdjust, 0, rows - 1);
+    _cursor.pos.col = clamp<uint16_t>(_cursor.pos.col,             0, cols - 1);
 
     // XXX is this correct for the saved cursor row/col?
-    _savedCursor.row = std::min<uint16_t>(_savedCursor.row, rows - 1);
-    _savedCursor.col = std::min<uint16_t>(_savedCursor.col, cols - 1);
+    _savedCursor.pos.row = std::min<uint16_t>(_savedCursor.pos.row, rows - 1);
+    _savedCursor.pos.col = std::min<uint16_t>(_savedCursor.pos.col, cols - 1);
 
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {
@@ -463,23 +463,24 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, uint8_t state) {
     return false;
 }
 
-void Terminal::moveCursorOriginMode(int32_t row, int32_t col) {
-    moveCursor(row + (_cursor.originMode ? _buffer->getMarginBegin() : 0), col);
+void Terminal::moveCursorOriginMode(Pos pos) {
+    if (_cursor.originMode) { pos.row += _buffer->getMarginBegin(); }
+    moveCursor(pos);
 }
 
-void Terminal::moveCursor(int32_t row, int32_t col) {
+void Terminal::moveCursor(Pos pos) {
     damageCursor();
 
     if (_cursor.originMode) {
-        _cursor.row = clamp<int32_t>(row,
-                                    _buffer->getMarginBegin(),
-                                    _buffer->getMarginEnd() - 1);
+        _cursor.pos.row = clamp<int32_t>(pos.row,
+                                         _buffer->getMarginBegin(),
+                                         _buffer->getMarginEnd() - 1);
     }
     else {
-        _cursor.row = clamp<int32_t>(row, 0, _buffer->getRows() - 1);
+        _cursor.pos.row = clamp<int32_t>(pos.row, 0, _buffer->getRows() - 1);
     }
 
-    _cursor.col      = clamp<int32_t>(col, 0, _buffer->getCols() - 1);
+    _cursor.pos.col  = clamp<int32_t>(pos.col, 0, _buffer->getCols() - 1);
     _cursor.wrapNext = false;
 }
 
@@ -489,27 +490,27 @@ void Terminal::tabCursor(TabDir dir, uint16_t count) {
     switch (dir) {
         case TabDir::FORWARD:
             while (count != 0) {
-                ++_cursor.col;
+                ++_cursor.pos.col;
 
-                if (_cursor.col == _buffer->getCols()) {
-                    --_cursor.col;
+                if (_cursor.pos.col == _buffer->getCols()) {
+                    --_cursor.pos.col;
                     break;
                 }
 
-                if (_tabs[_cursor.col]) {
+                if (_tabs[_cursor.pos.col]) {
                     --count;
                 }
             }
             break;
         case TabDir::BACKWARD:
             while (count != 0) {
-                if (_cursor.col == 0) {
+                if (_cursor.pos.col == 0) {
                     break;
                 }
 
-                --_cursor.col;
+                --_cursor.pos.col;
 
-                if (_tabs[_cursor.col]) {
+                if (_tabs[_cursor.pos.col]) {
                     --count;
                 }
             }
@@ -518,9 +519,9 @@ void Terminal::tabCursor(TabDir dir, uint16_t count) {
 }
 
 void Terminal::damageCursor() {
-    ASSERT(_cursor.row < _buffer->getRows(), "");
-    ASSERT(_cursor.col < _buffer->getCols(), "");
-    _buffer->damageCell(_cursor.row, _cursor.col);
+    ASSERT(_cursor.pos.row < _buffer->getRows(), "");
+    ASSERT(_cursor.pos.col < _buffer->getCols(), "");
+    _buffer->damageCell(_cursor.pos);
 }
 
 void Terminal::fixDamage(uint16_t rowBegin, uint16_t rowEnd,
@@ -542,8 +543,8 @@ void Terminal::fixDamage(uint16_t rowBegin, uint16_t rowEnd,
             (damage == Damager::TTY && _buffer->getBarDamage());
 
         _observer.terminalFixDamageEnd(damage != Damager::EXPOSURE,
-                                       _damage.rowBegin, _damage.rowEnd,
-                                       _damage.colBegin, _damage.colEnd,
+                                       _damage.begin.row, _damage.end.row,
+                                       _damage.begin.col, _damage.end.col,
                                        scrollbar);
 
         if (damage == Damager::TTY) {
@@ -581,7 +582,7 @@ utf8::Seq Terminal::translate(utf8::Seq seq, utf8::Length length) const {
 void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
                     uint16_t colBegin, uint16_t colEnd,
                     Damager damage) {
-    _damage.reset();
+    _damage.clear();
 
     // Declare run at the outer scope (rather than for each row) to
     // minimise alloc/free.
@@ -606,22 +607,22 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
         }
 
         // Update _damage.colBegin and _damage.colEnd.
-        if (_damage.colBegin == _damage.colEnd) {
-            _damage.colBegin = colBegin2;
-            _damage.colEnd   = colEnd2;
+        if (_damage.begin.col == _damage.end.col) {
+            _damage.begin.col = colBegin2;
+            _damage.end.col   = colEnd2;
         }
         else if (colBegin2 != colEnd2) {
-            _damage.colBegin = std::min(_damage.colBegin, colBegin2);
-            _damage.colEnd   = std::max(_damage.colEnd,   colEnd2);
+            _damage.begin.col = std::min(_damage.begin.col, colBegin2);
+            _damage.end.col   = std::max(_damage.end.col,   colEnd2);
         }
 
         // Update _damage.rowBegin and _damage.rowEnd.
         if (colBegin2 != colEnd2) {
-            if (_damage.rowBegin == _damage.rowEnd) {
-                _damage.rowBegin = r;
+            if (_damage.begin.row == _damage.end.row) {
+                _damage.begin.row = r;
             }
 
-            _damage.rowEnd = r + 1;
+            _damage.end.row = r + 1;
         }
 
         // Step through each column, accumulating runs of compatible consecutive cells.
@@ -662,36 +663,36 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
     }
 
     if (_modes.get(Mode::SHOW_CURSOR) &&
-        _buffer->getHistory() + _cursor.row <
+        _buffer->getHistory() + _cursor.pos.row <
         _buffer->getScroll()  + _buffer->getRows())
     {
         uint16_t row;
         uint16_t col;
 
-        row = _cursor.row + (_buffer->getHistory() - _buffer->getScroll());
+        row = _cursor.pos.row + (_buffer->getHistory() - _buffer->getScroll());
         ASSERT(row < _buffer->getRows(), "");
 
-        col = _cursor.col;
+        col = _cursor.pos.col;
         ASSERT(col < _buffer->getCols(), "");
 
         // Update _damage.colBegin and _damage.colEnd.
-        if (_damage.colBegin == _damage.colEnd) {
-            _damage.colBegin = col;
-            _damage.colEnd   = col + 1;
+        if (_damage.begin.col == _damage.end.col) {
+            _damage.begin.col = col;
+            _damage.end.col   = col + 1;
         }
         else {
-            _damage.colBegin = std::min(_damage.colBegin, col);
-            _damage.colEnd   = std::max(_damage.colEnd,   static_cast<uint16_t>(col + 1));
+            _damage.begin.col = std::min(_damage.begin.col, col);
+            _damage.end.col   = std::max(_damage.end.col,   static_cast<uint16_t>(col + 1));
         }
 
         // Update _damage.rowBegin and _damage.rowEnd.
-        if (_damage.rowBegin == _damage.rowEnd) {
-            _damage.rowBegin = row;
-            _damage.rowEnd   = row + 1;
+        if (_damage.begin.row == _damage.end.row) {
+            _damage.begin.row = row;
+            _damage.end.row   = row + 1;
         }
         else {
-            _damage.rowBegin = std::min(_damage.rowBegin, row);
-            _damage.rowEnd   = std::max(_damage.rowEnd,   static_cast<uint16_t>(row + 1));
+            _damage.begin.row = std::min(_damage.begin.row, row);
+            _damage.end.row   = std::max(_damage.end.row,   static_cast<uint16_t>(row + 1));
         }
 
         const Cell & cell   = _buffer->getCell(row, col);
@@ -770,8 +771,8 @@ void Terminal::processRead(const uint8_t * data, size_t size) {
         switch (_utf8Machine.consume(data[i])) {
             case utf8::Machine::State::ACCEPT:
                 processChar(_utf8Machine.seq(), _utf8Machine.length());
-                ASSERT(_cursor.row < _buffer->getRows(), "");
-                ASSERT(_cursor.col < _buffer->getCols(), "");
+                ASSERT(_cursor.pos.row < _buffer->getRows(), "");
+                ASSERT(_cursor.pos.col < _buffer->getCols(), "");
                 break;
             case utf8::Machine::State::REJECT:
                 ERROR("Rejecting UTF-8 data.");
@@ -798,33 +799,33 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
     }
 
     if (_cursor.wrapNext && _modes.get(Mode::AUTO_WRAP)) {
-        moveCursor(_cursor.row, 0);
+        moveCursor(Pos(_cursor.pos.row, 0));
 
-        if (_cursor.row == _buffer->getMarginEnd() - 1) {
+        if (_cursor.pos.row == _buffer->getMarginEnd() - 1) {
             _buffer->addLine();
         }
         else {
-            moveCursor(_cursor.row + 1, _cursor.col);
+            moveCursor(Pos(_cursor.pos.row + 1, _cursor.pos.col));
         }
     }
 
-    ASSERT(_cursor.col < _buffer->getCols(), "");
-    ASSERT(_cursor.row < _buffer->getRows(), "");
+    ASSERT(_cursor.pos.col < _buffer->getCols(), "");
+    ASSERT(_cursor.pos.row < _buffer->getRows(), "");
 
     if (_modes.get(Mode::INSERT)) {
-        _buffer->insertCells(_cursor.row, _cursor.col, 1);
+        _buffer->insertCells(_cursor.pos, 1);
     }
 
-    _buffer->setCell(_cursor.row, _cursor.col, Cell::utf8(seq, _cursor.style));
+    _buffer->setCell(_cursor.pos, Cell::utf8(seq, _cursor.style));
 
-    if (_cursor.col == _buffer->getCols() - 1) {
+    if (_cursor.pos.col == _buffer->getCols() - 1) {
         _cursor.wrapNext = true;
     }
     else {
-        moveCursor(_cursor.row, _cursor.col + 1);
+        moveCursor(Pos(_cursor.pos.row, _cursor.pos.col + 1));
     }
 
-    ASSERT(_cursor.col < _buffer->getCols(), "");
+    ASSERT(_cursor.pos.col < _buffer->getCols(), "");
 }
 
 void Terminal::machineControl(uint8_t c) throw () {
@@ -846,39 +847,39 @@ void Terminal::machineControl(uint8_t c) throw () {
                 _cursor.wrapNext = false;
             }
             else {
-                if (_cursor.col == 0) {
+                if (_cursor.pos.col == 0) {
                     if (_modes.get(Mode::AUTO_WRAP)) {
-                        if (_cursor.row > _buffer->getMarginBegin()) {
-                            _cursor.col = _buffer->getCols() - 1;
-                            --_cursor.row;
+                        if (_cursor.pos.row > _buffer->getMarginBegin()) {
+                            _cursor.pos.col = _buffer->getCols() - 1;
+                            --_cursor.pos.row;
                         }
                     }
                 }
                 else {
-                    --_cursor.col;
+                    --_cursor.pos.col;
                 }
             }
             break;
         case CR:
             damageCursor();
-            _cursor.col = 0;
+            _cursor.pos.col = 0;
             break;
         case LF:
             if (_modes.get(Mode::CR_ON_LF)) {
                 damageCursor();
-                _cursor.col = 0;
+                _cursor.pos.col = 0;
             }
             // Fall-through:
         case FF:
         case VT:
-            if (_cursor.row == _buffer->getMarginEnd() - 1) {
+            if (_cursor.pos.row == _buffer->getMarginEnd() - 1) {
                 if (_config.getTraceTty()) {
                     std::cerr << "(ADDLINE1)" << std::endl;
                 }
                 _buffer->addLine();
             }
             else {
-                moveCursor(_cursor.row + 1, _cursor.col);
+                moveCursor(Pos(_cursor.pos.row + 1, _cursor.pos.col));
             }
 
             if (_config.getTraceTty()) {
@@ -916,35 +917,35 @@ void Terminal::machineEscape(uint8_t c) throw () {
     switch (c) {
         case 'D':   // IND - Line Feed (opposite of RI)
             // FIXME still dubious
-            if (_cursor.row == _buffer->getMarginEnd() - 1) {
+            if (_cursor.pos.row == _buffer->getMarginEnd() - 1) {
                 if (_config.getTraceTty()) { std::cerr << "(ADDLINE2)" << std::endl; }
                 _buffer->addLine();
             }
             else {
-                moveCursor(_cursor.row + 1, _cursor.col);
+                moveCursor(Pos(_cursor.pos.row + 1, _cursor.pos.col));
             }
             break;
         case 'E':   // NEL - Next Line
             // FIXME still dubious
-            moveCursor(_cursor.row, 0);
-            if (_cursor.row == _buffer->getMarginEnd() - 1) {
+            moveCursor(Pos(_cursor.pos.row, 0));
+            if (_cursor.pos.row == _buffer->getMarginEnd() - 1) {
                 if (_config.getTraceTty()) { std::cerr << "(ADDLINE3)" << std::endl; }
                 _buffer->addLine();
             }
             else {
-                moveCursor(_cursor.row + 1, _cursor.col);
+                moveCursor(Pos(_cursor.pos.row + 1, _cursor.pos.col));
             }
             break;
         case 'H':   // HTS - Horizontal Tab Stop
-            _tabs[_cursor.col] = true;
+            _tabs[_cursor.pos.col] = true;
             break;
         case 'M':   // RI - Reverse Line Feed (opposite of IND)
             // FIXME still dubious
-            if (_cursor.row == _buffer->getMarginBegin()) {
+            if (_cursor.pos.row == _buffer->getMarginBegin()) {
                 _buffer->insertLines(_buffer->getMarginBegin(), 1);
             }
             else {
-                moveCursor(_cursor.row - 1, _cursor.col);
+                moveCursor(Pos(_cursor.pos.row - 1, _cursor.pos.col));
             }
             break;
         case 'N':   // SS2 - Set Single Shift 2
@@ -998,35 +999,35 @@ void Terminal::machineCsi(bool priv,
         case '@': { // ICH - Insert Character
             // XXX what about _cursor.wrapNext
             int32_t count = nthArgNonZero(args, 0, 1);
-            count = clamp(count, 1, _buffer->getCols() - _cursor.col);
-            _buffer->insertCells(_cursor.row, _cursor.col, count);
+            count = clamp(count, 1, _buffer->getCols() - _cursor.pos.col);
+            _buffer->insertCells(_cursor.pos, count);
             break;
         }
         case 'A': // CUU - Cursor Up
-            moveCursor(_cursor.row - nthArgNonZero(args, 0, 1), _cursor.col);
+            moveCursor(Pos(_cursor.pos.row - nthArgNonZero(args, 0, 1), _cursor.pos.col));
             break;
         case 'B': // CUD - Cursor Down
-            moveCursor(_cursor.row + nthArgNonZero(args, 0, 1), _cursor.col);
+            moveCursor(Pos(_cursor.pos.row + nthArgNonZero(args, 0, 1), _cursor.pos.col));
             break;
         case 'C': // CUF - Cursor Forward
-            moveCursor(_cursor.row, _cursor.col + nthArgNonZero(args, 0, 1));
+            moveCursor(Pos(_cursor.pos.row, _cursor.pos.col + nthArgNonZero(args, 0, 1)));
             break;
         case 'D': // CUB - Cursor Backward
-            moveCursor(_cursor.row, _cursor.col - nthArgNonZero(args, 0, 1));
+            moveCursor(Pos(_cursor.pos.row, _cursor.pos.col - nthArgNonZero(args, 0, 1)));
             break;
         case 'E': // CNL - Cursor Next Line
-            moveCursor(_cursor.row + nthArgNonZero(args, 0, 1), 0);
+            moveCursor(Pos(_cursor.pos.row + nthArgNonZero(args, 0, 1), 0));
             break;
         case 'F': // CPL - Cursor Preceding Line
-            moveCursor(_cursor.row - nthArgNonZero(args, 0, 1), 0);
+            moveCursor(Pos(_cursor.pos.row - nthArgNonZero(args, 0, 1), 0));
             break;
         case 'G': // CHA - Cursor Horizontal Absolute
-            moveCursor(_cursor.row, nthArgNonZero(args, 0, 1) - 1);
+            moveCursor(Pos(_cursor.pos.row, nthArgNonZero(args, 0, 1) - 1));
             break;
         case 'f':       // HVP - Horizontal and Vertical Position
         case 'H':       // CUP - Cursor Position
             if (_config.getTraceTty()) { std::cerr << std::endl; }
-            moveCursorOriginMode(nthArg(args, 0, 1) - 1, nthArg(args, 1, 1) - 1);
+            moveCursorOriginMode(Pos(nthArg(args, 0, 1) - 1, nthArg(args, 1, 1) - 1));
             break;
         case 'I':       // CHT - Cursor Forward Tabulation *
             tabCursor(TabDir::FORWARD, nthArg(args, 0, 1));
@@ -1036,16 +1037,16 @@ void Terminal::machineCsi(bool priv,
             switch (nthArg(args, 0)) {
                 default:
                 case 0: // ED0 - Below
-                    _buffer->clearLineRight(_cursor.row, _cursor.col);
-                    _buffer->clearBelow(_cursor.row + 1);
+                    _buffer->clearLineRight(_cursor.pos);
+                    _buffer->clearBelow(_cursor.pos.row + 1);
                     break;
                 case 1: // ED1 - Above
-                    _buffer->clearAbove(_cursor.row);
-                    _buffer->clearLineLeft(_cursor.row, _cursor.col + 1);
+                    _buffer->clearAbove(_cursor.pos.row);
+                    _buffer->clearLineLeft(Pos(_cursor.pos.row, _cursor.pos.col + 1));
                     break;
                 case 2: // ED2 - All
                     _buffer->clear();
-                    _cursor.row = _cursor.col = 0;
+                    _cursor.pos = Pos();
                     break;
             }
             break;
@@ -1053,39 +1054,39 @@ void Terminal::machineCsi(bool priv,
             switch (nthArg(args, 0)) {
                 default:
                 case 0: // EL0 - Right (inclusive of cursor position)
-                    _buffer->clearLineRight(_cursor.row, _cursor.col);
+                    _buffer->clearLineRight(_cursor.pos);
                     break;
                 case 1: // EL1 - Left (inclusive of cursor position)
-                    _buffer->clearLineLeft(_cursor.row, _cursor.col + 1);
+                    _buffer->clearLineLeft(Pos(_cursor.pos.row, _cursor.pos.col + 1));
                     break;
                 case 2: // EL2 - All
-                    _buffer->clearLine(_cursor.row);
+                    _buffer->clearLine(_cursor.pos.row);
                     break;
             }
             break;
         case 'L': // IL - Insert Lines
-            if (_cursor.row >= _buffer->getMarginBegin() &&
-                _cursor.row <  _buffer->getMarginEnd())
+            if (_cursor.pos.row >= _buffer->getMarginBegin() &&
+                _cursor.pos.row <  _buffer->getMarginEnd())
             {
                 int32_t count = nthArgNonZero(args, 0, 1);
-                count = clamp(count, 1, _buffer->getMarginEnd() - _cursor.row);
-                _buffer->insertLines(_cursor.row, count);
+                count = clamp(count, 1, _buffer->getMarginEnd() - _cursor.pos.row);
+                _buffer->insertLines(_cursor.pos.row, count);
             }
             break;
         case 'M': // DL - Delete Lines
-            if (_cursor.row >= _buffer->getMarginBegin() &&
-                _cursor.row <  _buffer->getMarginEnd())
+            if (_cursor.pos.row >= _buffer->getMarginBegin() &&
+                _cursor.pos.row <  _buffer->getMarginEnd())
             {
                 int32_t count = nthArgNonZero(args, 0, 1);
-                count = clamp(count, 1, _buffer->getMarginEnd() - _cursor.row);
-                _buffer->eraseLines(_cursor.row, count);
+                count = clamp(count, 1, _buffer->getMarginEnd() - _cursor.pos.row);
+                _buffer->eraseLines(_cursor.pos.row, count);
             }
             break;
         case 'P': { // DCH - Delete Character
             // FIXME what about wrap-next?
             int32_t count = nthArgNonZero(args, 0, 1);
-            count = clamp(count, 1, _buffer->getCols() - _cursor.col);
-            _buffer->eraseCells(_cursor.row, _cursor.col, count);
+            count = clamp(count, 1, _buffer->getCols() - _cursor.pos.col);
+            _buffer->eraseCells(_cursor.pos, count);
             break;
         }
         case 'S': // SU - Scroll Up
@@ -1101,7 +1102,7 @@ void Terminal::machineCsi(bool priv,
             tabCursor(TabDir::BACKWARD, nthArgNonZero(args, 0, 1));
             break;
         case '`': // HPA
-            moveCursor(_cursor.row, nthArgNonZero(args, 0, 1) - 1);
+            moveCursor(Pos(_cursor.pos.row, nthArgNonZero(args, 0, 1) - 1));
             break;
         case 'b': // REP
             NYI("REP");
@@ -1110,14 +1111,14 @@ void Terminal::machineCsi(bool priv,
             write(reinterpret_cast<const uint8_t *>("\x1B[?6c"), 5);
             break;
         case 'd': // VPA - Vertical Position Absolute
-            moveCursorOriginMode(nthArg(args, 0, 1) - 1, _cursor.col);
+            moveCursorOriginMode(Pos(nthArg(args, 0, 1) - 1, _cursor.pos.col));
             break;
         case 'g': // TBC
             switch (nthArg(args, 0, 0)) {
                 case 0:
                     // "the character tabulation stop at the active presentation"
                     // "position is cleared"
-                    _tabs[_cursor.col] = false;
+                    _tabs[_cursor.pos.col] = false;
                     break;
                 case 1:
                     // "the line tabulation stop at the active line is cleared"
@@ -1186,7 +1187,9 @@ void Terminal::machineCsi(bool priv,
                         // origin-mode.
 
                         std::ostringstream ost;
-                        ost << ESC << '[' << _cursor.row + 1 << ';' << _cursor.col + 1 << 'R';
+                        ost << ESC << '['
+                            << _cursor.pos.row + 1 << ';' << _cursor.pos.col + 1
+                            << 'R';
                         const std::string & str = ost.str();
                         _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
                     }
@@ -1217,12 +1220,12 @@ void Terminal::machineCsi(bool priv,
             else {
                 if (args.empty()) {
                     _buffer->resetMargins();
-                    moveCursorOriginMode(0, 0);
+                    moveCursorOriginMode(Pos());
                 }
                 else {
                     // http://www.vt100.net/docs/vt510-rm/DECSTBM
                     int32_t top    = nthArgNonZero(args, 0, 1) - 1;
-                    int32_t bottom = nthArgNonZero(args, 1, _cursor.row + 1) - 1;
+                    int32_t bottom = nthArgNonZero(args, 1, _cursor.pos.row + 1) - 1;
 
                     top    = clamp<int32_t>(top,    0, _buffer->getRows() - 1);
                     bottom = clamp<int32_t>(bottom, 0, _buffer->getRows() - 1);
@@ -1234,20 +1237,19 @@ void Terminal::machineCsi(bool priv,
                         _buffer->resetMargins();
                     }
 
-                    moveCursorOriginMode(0, 0);
+                    moveCursorOriginMode(Pos());
                 }
             }
             break;
         case 's': // save cursor
-            _savedCursor.row = _cursor.row;
-            _savedCursor.col = _cursor.col;
+            _savedCursor.pos = _cursor.pos;
             break;
         case 't': // window ops?
             // FIXME see 'Window Operations' in man 7 urxvt.
             NYI("Window ops");
             break;
         case 'u': // restore cursor
-            moveCursor(_savedCursor.row, _savedCursor.col);
+            moveCursor(_savedCursor.pos);
             break;
         case 'y': // DECTST
             NYI("DECTST");
@@ -1319,7 +1321,7 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
                     Cell cell = Cell::ascii('E', _cursor.style);
                     for (uint16_t r = 0; r != _buffer->getRows(); ++r) {
                         for (uint16_t c = 0; c != _buffer->getCols(); ++c) {
-                            _buffer->setCell(r, c, cell);
+                            _buffer->setCell(Pos(r, c), cell);
                         }
                     }
                     break;
@@ -1729,7 +1731,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     break;
                 case 6: // DECOM - Origin Mode - Relative / Absolute
                     _cursor.originMode = set;
-                    moveCursorOriginMode(0, 0);
+                    moveCursorOriginMode(Pos());
                     break;
                 case 7: // DECAWM - Auto Wrap Mode
                     _modes.setTo(Mode::AUTO_WRAP, set);

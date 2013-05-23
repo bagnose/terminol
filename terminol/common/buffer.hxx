@@ -240,24 +240,24 @@ public:
     // Incoming / history-relative operations.
     //
 
-    void insertCells(uint16_t row, uint16_t col, uint16_t n) {
-        ASSERT(row < getRows(), "");
-        ASSERT(col <= getCols(), "");
-        ASSERT(col + n <= getCols(), "");
-        _lines[_history + row].insert(col, n);
+    void insertCells(Pos pos, uint16_t n) {
+        ASSERT(pos.row < getRows(), "");
+        ASSERT(pos.col <= getCols(), "");
+        ASSERT(pos.col + n <= getCols(), "");
+        _lines[_history + pos.row].insert(pos.col, n);
     }
 
-    void eraseCells(uint16_t row, uint16_t col, uint16_t n) {
-        ASSERT(row < getRows(), "");
-        ASSERT(col < getCols(), "");
-        _lines[_history + row].erase(col, n);
+    void eraseCells(Pos pos, uint16_t n) {
+        ASSERT(pos.row < getRows(), "");
+        ASSERT(pos.col < getCols(), "");
+        _lines[_history + pos.row].erase(pos.col, n);
     }
 
-    void setCell(uint16_t row, uint16_t col, const Cell & cell) {
+    void setCell(Pos pos, const Cell & cell) {
         ASSERT(cell.seq.lead() != NUL, "");
-        ASSERT(row < getRows(), "");
-        ASSERT(col < getCols(), "");
-        _lines[_history + row].setCell(col, cell);
+        ASSERT(pos.row < getRows(), "");
+        ASSERT(pos.col < getCols(), "");
+        _lines[_history + pos.row].setCell(pos.col, cell);
     }
 
     int16_t resize(uint16_t rows, uint16_t cols) {
@@ -384,12 +384,12 @@ public:
         _lines[_history + row].clear();
     }
 
-    void clearLineLeft(uint16_t row, uint16_t endCol) {
-        _lines[_history + row].clearLeft(endCol);
+    void clearLineLeft(Pos pos) {
+        _lines[_history + pos.row].clearLeft(pos.col);
     }
 
-    void clearLineRight(uint16_t row, uint16_t beginCol) {
-        _lines[_history + row].clearRight(beginCol);
+    void clearLineRight(Pos pos) {
+        _lines[_history + pos.row].clearRight(pos.col);
     }
 
     void clear() {
@@ -414,10 +414,10 @@ public:
     }
 
     // Called by Terminal::damageCursor()
-    void damageCell(uint16_t row, uint16_t col) {
-        ASSERT(row < getRows(), "");
-        ASSERT(col < getCols(), "");
-        _lines[_history + row].damageAdd(col, col + 1);
+    void damageCell(Pos pos) {
+        ASSERT(pos.row < getRows(), "");
+        ASSERT(pos.col < getCols(), "");
+        _lines[_history + pos.row].damageAdd(pos.col, pos.col + 1);
     }
 
     // Called by Terminal::fixDamage()

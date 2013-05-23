@@ -64,4 +64,25 @@ inline bool operator != (const Cell & lhs, const Cell & rhs) {
     return !(lhs == rhs);
 }
 
+//
+//
+//
+
+struct Pos {
+    Pos() : row(0), col(0) {}
+    Pos(uint16_t row_, uint16_t col_) : row(row_), col(col_) {}
+    uint16_t row;
+    uint16_t col;
+};
+
+//
+//
+//
+
+struct Region {
+    void clear() { *this = Region(); }
+    Pos begin;
+    Pos end;
+};
+
 #endif // COMMON__CELL__HXX

@@ -83,8 +83,7 @@ private:
             G0(CS_US),
             G1(CS_US),
             //
-            row(0),
-            col(0),
+            pos(),
             wrapNext(false),
             originMode(false),
             //
@@ -96,23 +95,11 @@ private:
         const CharSub * G0;
         const CharSub * G1;
         //
-        uint16_t        row;
-        uint16_t        col;
+        Pos             pos;
         bool            wrapNext;
         bool            originMode;
         //
         Style           style;
-    };
-
-    struct Damage {
-        Damage() : rowBegin(0), rowEnd(0), colBegin(0), colEnd(0) {}
-
-        void reset() { *this = Damage(); }
-
-        uint16_t rowBegin;
-        uint16_t rowEnd;
-        uint16_t colBegin;
-        uint16_t colEnd;
     };
 
     //
@@ -135,7 +122,7 @@ private:
     Cursor                _cursor;
     Cursor                _savedCursor;
 
-    Damage                _damage;
+    Region                _damage;
 
     bool                  _pressed;
     Button                _button;
@@ -194,8 +181,8 @@ protected:
 
     bool      handleKeyBinding(xkb_keysym_t keySym, uint8_t state);
 
-    void      moveCursorOriginMode(int32_t row, int32_t col);
-    void      moveCursor(int32_t row, int32_t col);
+    void      moveCursorOriginMode(Pos pos);
+    void      moveCursor(Pos pos);
     void      tabCursor(TabDir dir, uint16_t count);
     void      damageCursor();
 
