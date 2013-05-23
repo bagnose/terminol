@@ -51,6 +51,8 @@ struct Seq {
         bytes[0] = bytes[1] = bytes[2] = bytes[3] = '\0';
     }
 
+    uint8_t lead() const { return bytes[0]; }
+
     uint8_t bytes[Length::LMAX];
 };
 

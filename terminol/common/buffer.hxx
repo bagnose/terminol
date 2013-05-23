@@ -254,6 +254,7 @@ public:
     }
 
     void setCell(uint16_t row, uint16_t col, const Cell & cell) {
+        ASSERT(cell.seq.lead() != NUL, "");
         ASSERT(row < getRows(), "");
         ASSERT(col < getCols(), "");
         _lines[_history + row].setCell(col, cell);
@@ -444,6 +445,15 @@ public:
              i != _lines.begin() + _history + end; ++i)
         {
             i->damageAll();
+        }
+    }
+
+    void dump(std::ostream & ost) const {
+        for (auto l : _lines) {
+            for (uint16_t c = 0; c != l.getCols(); ++c) {
+                ost << l.getCell(c).seq;
+            }
+            ost << std::endl;
         }
     }
 };

@@ -1018,23 +1018,21 @@ bool Window::terminalFixDamageBegin(bool internal) throw () {
 
 void Window::terminalDrawRun(uint16_t        row,
                              uint16_t        col,
-                             uint16_t        fg,
-                             uint16_t        bg,
-                             AttrSet         attrs,
+                             Style           style,
                              const uint8_t * str,
                              size_t          count) throw () {
     ASSERT(_cr, "");
 
     cairo_save(_cr); {
-        if (attrs.get(Attr::INVERSE)) { std::swap(fg, bg); }
+        if (style.attrs.get(Attr::INVERSE)) { std::swap(style.fg, style.bg); }
 
-        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attr::ITALIC),
-                                                attrs.get(Attr::BOLD)));
+        cairo_set_scaled_font(_cr, _fontSet.get(style.attrs.get(Attr::ITALIC),
+                                                style.attrs.get(Attr::BOLD)));
 
         int x, y;
         rowCol2XY(row, col, x, y);
 
-        const auto & bgValues = _colorSet.getIndexedColor(bg);
+        const auto & bgValues = _colorSet.getIndexedColor(style.bg);
         cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
         cairo_rectangle(_cr,
                         x,
@@ -1043,11 +1041,11 @@ void Window::terminalDrawRun(uint16_t        row,
                         _fontSet.getHeight());
         cairo_fill(_cr);
 
-        const auto & fgValues = _colorSet.getIndexedColor(fg);
+        const auto & fgValues = _colorSet.getIndexedColor(style.fg);
         cairo_set_source_rgba(_cr, fgValues.r, fgValues.g, fgValues.b,
-                              attrs.get(Attr::CONCEAL) ? 0.2 : 1.0);
+                              style.attrs.get(Attr::CONCEAL) ? 0.2 : 1.0);
 
-        if (attrs.get(Attr::UNDERLINE)) {
+        if (style.attrs.get(Attr::UNDERLINE)) {
             cairo_move_to(_cr,
                           x,
                           y + _fontSet.getHeight() - 0.5);
@@ -1067,28 +1065,26 @@ void Window::terminalDrawRun(uint16_t        row,
 
 void Window::terminalDrawCursor(uint16_t        row,
                                 uint16_t        col,
-                                uint16_t        fg,
-                                uint16_t        bg,
-                                AttrSet         attrs,
+                                Style           style,
                                 const uint8_t * str,
                                 bool            wrapNext) throw () {
     ASSERT(_cr, "");
 
-    if (attrs.get(Attr::INVERSE)) { std::swap(fg, bg); }
+    if (style.attrs.get(Attr::INVERSE)) { std::swap(style.fg, style.bg); }
 
     const auto & fgValues =
         _config.getCustomCursorTextColor() ?
         _colorSet.getCursorTextColor() :
-        _colorSet.getIndexedColor(bg);
+        _colorSet.getIndexedColor(style.bg);
 
     const auto & bgValues =
         _config.getCustomCursorFillColor() ?
         _colorSet.getCursorFillColor() :
-        _colorSet.getIndexedColor(fg);
+        _colorSet.getIndexedColor(style.fg);
 
     cairo_save(_cr); {
-        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attr::ITALIC),
-                                                attrs.get(Attr::BOLD)));
+        cairo_set_scaled_font(_cr, _fontSet.get(style.attrs.get(Attr::ITALIC),
+                                                style.attrs.get(Attr::BOLD)));
 
         int x, y;
         rowCol2XY(row, col, x, y);

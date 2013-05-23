@@ -338,9 +338,14 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, uint8_t state) {
                 return false;
         }
     }
-    else {
-        return false;
+
+    switch (keySym) {
+        case XKB_KEY_F1:
+            _buffer->dump(std::cerr);
+            return true;
     }
+
+    return false;
 }
 
 void Terminal::moveCursorOriginMode(int32_t row, int32_t col) {
@@ -470,9 +475,8 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
     run.reserve(_buffer->getCols() * utf8::Length::LMAX + 1);
 
     for (uint16_t r = rowBegin; r != rowEnd; ++r) {
-        uint16_t c_ = 0;    // Accumulation start column.
-        uint16_t fg = 0, bg = 0;
-        AttrSet  attrs;
+        uint16_t c_    = 0;    // Accumulation start column.
+        Style    style = Style::normal();       // FIXME default initialise
         uint16_t c;
         uint16_t colBegin2, colEnd2;
 
@@ -509,37 +513,35 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
         for (c = colBegin2; c != colEnd2; ++c) {
             const Cell & cell = _buffer->getCell(r, c);
 
-            if (run.empty() || fg != cell.fg() || bg != cell.bg() || attrs != cell.attrs()) {
+            if (run.empty() || style != cell.style) {
                 if (!run.empty()) {
                     // flush run
                     run.push_back(NUL);
-                    _observer.terminalDrawRun(r, c_, fg, bg, attrs, &run.front(), c - c_);
+                    _observer.terminalDrawRun(r, c_, style, &run.front(), c - c_);
                     run.clear();
                 }
 
                 c_    = c;
-                fg    = cell.fg();
-                bg    = cell.bg();
-                attrs = cell.attrs();
+                style = cell.style;
 
-                if (_modes.get(Mode::REVERSE)) { std::swap(fg, bg); }
+                if (_modes.get(Mode::REVERSE)) { std::swap(style.fg, style.bg); }
 
-                utf8::Length length = utf8::leadLength(cell.lead());
+                utf8::Length length = utf8::leadLength(cell.seq.lead());
                 run.resize(length);
-                std::copy(cell.bytes(), cell.bytes() + length, &run.front());
+                std::copy(cell.seq.bytes, cell.seq.bytes + length, &run.front());
             }
             else {
                 size_t oldSize = run.size();
-                utf8::Length length = utf8::leadLength(cell.lead());
+                utf8::Length length = utf8::leadLength(cell.seq.lead());
                 run.resize(run.size() + length);
-                std::copy(cell.bytes(), cell.bytes() + length, &run[oldSize]);
+                std::copy(cell.seq.bytes, cell.seq.bytes + length, &run[oldSize]);
             }
         }
 
         // There may be an unterminated run to flush.
         if (!run.empty()) {
             run.push_back(NUL);
-            _observer.terminalDrawRun(r, c_, fg, bg, attrs, &run.front(), c - c_);
+            _observer.terminalDrawRun(r, c_, style, &run.front(), c - c_);
             run.clear();
         }
     }
@@ -578,13 +580,11 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
         }
 
         const Cell & cell   = _buffer->getCell(row, col);
-        utf8::Length length = utf8::leadLength(cell.lead());
+        utf8::Length length = utf8::leadLength(cell.seq.lead());
         run.resize(length);
-        std::copy(cell.bytes(), cell.bytes() + length, &run.front());
+        std::copy(cell.seq.bytes, cell.seq.bytes + length, &run.front());
         run.push_back(NUL);
-        _observer.terminalDrawCursor(row, col,
-                                     cell.fg(), cell.bg(), cell.attrs(), &run.front(),
-                                     _cursor.wrapNext);
+        _observer.terminalDrawCursor(row, col, cell.style, &run.front(), _cursor.wrapNext);
     }
 
     bool scrollbar =    // Identical in two places.
@@ -700,8 +700,7 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
         _buffer->insertCells(_cursor.row, _cursor.col, 1);
     }
 
-    _buffer->setCell(_cursor.row, _cursor.col,
-                     Cell::utf8(seq, _cursor.attrs, _cursor.fg, _cursor.bg));
+    _buffer->setCell(_cursor.row, _cursor.col, Cell::utf8(seq, _cursor.style));
 
     if (_cursor.col == _buffer->getCols() - 1) {
         _cursor.wrapNext = true;
@@ -1202,8 +1201,7 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
                     break;
                 case '8': { // DECALN - Alignment
                     // Fill terminal with 'E'
-                    Cell cell = Cell::utf8(utf8::Seq('E'),
-                                           _cursor.attrs, _cursor.fg, _cursor.bg);
+                    Cell cell = Cell::ascii('E', _cursor.style);
                     for (uint16_t r = 0; r != _buffer->getRows(); ++r) {
                         for (uint16_t c = 0; c != _buffer->getCols(); ++c) {
                             _buffer->setCell(r, c, cell);
@@ -1304,35 +1302,33 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
 
         switch (v) {
             case 0: // Reset/Normal
-                _cursor.bg    = Cell::defaultBg();
-                _cursor.fg    = Cell::defaultFg();
-                _cursor.attrs = Cell::defaultAttrs();
+                _cursor.style = Style::normal();
                 break;
             case 1: // Bold
-                _cursor.attrs.set(Attr::BOLD);
+                _cursor.style.attrs.set(Attr::BOLD);
                 // Normal -> Bright.
-                if (_cursor.fg < 8) { _cursor.fg += 8; }
+                if (_cursor.style.fg < 8) { _cursor.style.fg += 8; }
                 break;
             case 2: // Faint (low/decreased intensity)
-                _cursor.attrs.unset(Attr::BOLD);
+                _cursor.style.attrs.unset(Attr::BOLD);
                 // Bright -> Normal.
-                if (_cursor.fg >= 8 && _cursor.fg < 16) { _cursor.fg -= 8; }
+                if (_cursor.style.fg >= 8 && _cursor.style.fg < 16) { _cursor.style.fg -= 8; }
                 break;
             case 3: // Italic: on
-                _cursor.attrs.set(Attr::ITALIC);
+                _cursor.style.attrs.set(Attr::ITALIC);
                 break;
             case 4: // Underline: Single
-                _cursor.attrs.set(Attr::UNDERLINE);
+                _cursor.style.attrs.set(Attr::UNDERLINE);
                 break;
             case 5: // Blink: slow
             case 6: // Blink: rapid
-                _cursor.attrs.set(Attr::BLINK);
+                _cursor.style.attrs.set(Attr::BLINK);
                 break;
             case 7: // Image: Negative
-                _cursor.attrs.set(Attr::INVERSE);
+                _cursor.style.attrs.set(Attr::INVERSE);
                 break;
             case 8: // Conceal (not widely supported)
-                _cursor.attrs.set(Attr::CONCEAL);
+                _cursor.style.attrs.set(Attr::CONCEAL);
                 break;
             case 9: // Crossed-out (not widely supported)
                 NYI("Crossed-out");
@@ -1357,32 +1353,32 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
             case 21:
                 // Bold: off or Underline: Double (bold off not widely supported,
                 //                                 double underline hardly ever)
-                _cursor.attrs.unset(Attr::BOLD);
+                _cursor.style.attrs.unset(Attr::BOLD);
                 // Bright -> Normal.
-                if (_cursor.fg >= 8 && _cursor.fg < 16) { _cursor.fg -= 8; }
+                if (_cursor.style.fg >= 8 && _cursor.style.fg < 16) { _cursor.style.fg -= 8; }
                 break;
             case 22: // Normal color or intensity (neither bold nor faint)
-                _cursor.attrs.unset(Attr::BOLD);
+                _cursor.style.attrs.unset(Attr::BOLD);
                 // Bright -> Normal.        XXX is this right?
-                if (_cursor.fg >= 8 && _cursor.fg < 16) { _cursor.fg -= 8; }
+                if (_cursor.style.fg >= 8 && _cursor.style.fg < 16) { _cursor.style.fg -= 8; }
                 break;
             case 23: // Not italic, not Fraktur
-                _cursor.attrs.unset(Attr::ITALIC);
+                _cursor.style.attrs.unset(Attr::ITALIC);
                 break;
             case 24: // Underline: None (not singly or doubly underlined)
-                _cursor.attrs.unset(Attr::UNDERLINE);
+                _cursor.style.attrs.unset(Attr::UNDERLINE);
                 break;
             case 25: // Blink: off
-                _cursor.attrs.unset(Attr::BLINK);
+                _cursor.style.attrs.unset(Attr::BLINK);
                 break;
             case 26: // Reserved?
-                _cursor.attrs.set(Attr::INVERSE);
+                _cursor.style.attrs.set(Attr::INVERSE);
                 break;
             case 27: // Image: Positive
-                _cursor.attrs.unset(Attr::INVERSE);
+                _cursor.style.attrs.unset(Attr::INVERSE);
                 break;
             case 28: // Reveal (conceal off - not widely supported)
-                _cursor.attrs.unset(Attr::CONCEAL);
+                _cursor.style.attrs.unset(Attr::CONCEAL);
                 break;
             case 29: // Not crossed-out (not widely supported)
                 NYI("Crossed-out");
@@ -1436,7 +1432,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                                 i += 1;
                                 int32_t v2 = args[i];
                                 if (v2 >= 0 && v2 < 256) {
-                                    _cursor.fg = v2;
+                                    _cursor.style.fg = v2;
                                 }
                                 else {
                                     ERROR("Colour out of range: " << v2);
@@ -1453,7 +1449,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 }
                 break;
             case 39:
-                _cursor.fg = Cell::defaultFg();
+                _cursor.style.fg = Style::defaultFg();
                 break;
                 // 40..47 (set background colour - handled separately)
             case 48:
@@ -1504,7 +1500,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                                 i += 1;
                                 int32_t v2 = args[i];
                                 if (v2 >= 0 && v2 < 256) {
-                                    _cursor.bg = v2;
+                                    _cursor.style.bg = v2;
                                 }
                                 else {
                                     ERROR("Colour out of range: " << v2);
@@ -1521,7 +1517,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 }
                 break;
             case 49:
-                _cursor.bg = Cell::defaultBg();
+                _cursor.style.bg = Style::defaultBg();
                 break;
                 // 50 Reserved
             case 51: // Framed
@@ -1553,26 +1549,26 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
 
                 if (v >= 30 && v < 38) {
                     // normal fg
-                    _cursor.fg = v - 30;
+                    _cursor.style.fg = v - 30;
                     // BOLD -> += 8
                 }
                 else if (v >= 40 && v < 48) {
                     // normal bg
-                    _cursor.bg = v - 40;
+                    _cursor.style.bg = v - 40;
                 }
                 else if (v >= 90 && v < 98) {
                     // bright fg
-                    _cursor.fg = v - 90 + 8;
+                    _cursor.style.fg = v - 90 + 8;
                 }
                 else if (v >= 100 && v < 108) {
                     // bright bg
-                    _cursor.bg = v - 100 + 8;
+                    _cursor.style.bg = v - 100 + 8;
                 }
                 else if (v >= 256 && v < 512) {
-                    _cursor.fg = v - 256;
+                    _cursor.style.fg = v - 256;
                 }
                 else if (v >= 512 && v < 768) {
-                    _cursor.bg = v - 512;
+                    _cursor.style.bg = v - 512;
                 }
                 else {
                     ERROR("Unhandled attribute: " << v);

@@ -40,17 +40,13 @@ public:
         virtual bool terminalFixDamageBegin(bool internal) throw () = 0;
         virtual void terminalDrawRun(uint16_t        row,
                                      uint16_t        col,
-                                     uint16_t        fg,
-                                     uint16_t        bg,
-                                     AttrSet         attrs,
+                                     Style           style,
                                      const uint8_t * str,       // nul-terminated
                                      size_t          count) throw () = 0;
         virtual void terminalDrawCursor(uint16_t        row,
                                         uint16_t        col,
-                                        uint16_t        fg,
-                                        uint16_t        bg,
-                                        AttrSet         attrs,
-                                        const uint8_t * str,
+                                        Style           style,
+                                        const uint8_t * str,    // nul-terminated, length 1
                                         bool            wrapNext) throw () = 0;
         virtual void terminalDrawSelection(uint16_t rowBegin,
                                            uint16_t colBegin,
@@ -85,9 +81,7 @@ private:
             wrapNext(false),
             originMode(false),
             //
-            attrs(Cell::defaultAttrs()),
-            fg(Cell::defaultFg()),
-            bg(Cell::defaultBg()) {}
+            style(Style::normal()) {}
 
         void reset() { *this = Cursor(); }
 
@@ -100,9 +94,7 @@ private:
         bool            wrapNext;
         bool            originMode;
         //
-        AttrSet         attrs;
-        uint16_t        fg;
-        uint16_t        bg;
+        Style           style;
     };
 
     struct Damage {
