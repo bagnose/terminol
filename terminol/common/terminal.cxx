@@ -441,8 +441,7 @@ utf8::Seq Terminal::translate(utf8::Seq seq, utf8::Length length) const {
     if (length == utf8::Length::L1) {
         uint8_t ascii = seq.bytes[0];
 
-        for (const CharSub * cs = _cursor.otherCharSet ? _cursor.G1 : _cursor.G0;
-             cs->match != NUL; ++cs)
+        for (const CharSub * cs = _cursor.cs; cs->match != NUL; ++cs)
         {
             if (ascii == cs->match) {
                 if (_config.getTraceTty()) {
@@ -774,11 +773,11 @@ void Terminal::machineControl(uint8_t c) throw () {
             break;
         case SO:
             // XXX dubious
-            _cursor.otherCharSet = true;
+            _cursor.cs = _cursor.G1;
             break;
         case SI:
             // XXX dubious
-            _cursor.otherCharSet = false;
+            _cursor.cs = _cursor.G0;
             break;
         case CAN:
         case SUB:
@@ -1594,9 +1593,9 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     break;
                 case 2: // DECANM - ANSI/VT52 Mode
                     NYI("DECANM: " << set);
-                    _cursor.otherCharSet = false;  // XXX dubious
-                    _cursor.G0           = CS_US;
-                    _cursor.G1           = CS_US;
+                    _cursor.cs = CS_US;
+                    _cursor.G0 = CS_US;
+                    _cursor.G1 = CS_US;
                     break;
                 case 3: // DECCOLM - Column Mode
                     if (set) {

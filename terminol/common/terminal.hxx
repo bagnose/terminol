@@ -76,7 +76,7 @@ public:
 private:
     struct Cursor {
         Cursor() :
-            otherCharSet(false),
+            cs(CS_US),
             G0(CS_US),
             G1(CS_US),
             //
@@ -91,7 +91,7 @@ private:
 
         void reset() { *this = Cursor(); }
 
-        bool            otherCharSet;
+        const CharSub * cs;
         const CharSub * G0;
         const CharSub * G1;
         //
