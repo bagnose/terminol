@@ -28,32 +28,6 @@ std::ostream & operator << (std::ostream & ost, Control control) {
     FATAL(static_cast<int>(control));
 }
 
-std::ostream & operator << (std::ostream & ost, ClearScreen clear) {
-    switch (clear) {
-        case ClearScreen::BELOW:
-            return ost << "BELOW";
-        case ClearScreen::ABOVE:
-            return ost << "ABOVE";
-        case ClearScreen::ALL:
-            return ost << "ALL";
-    }
-
-    FATAL(static_cast<int>(clear));
-}
-
-std::ostream & operator << (std::ostream & ost, ClearLine clear) {
-    switch (clear) {
-        case ClearLine::RIGHT:
-            return ost << "RIGHT";
-        case ClearLine::LEFT:
-            return ost << "LEFT";
-        case ClearLine::ALL:
-            return ost << "ALL";
-    }
-
-    FATAL(static_cast<int>(clear));
-}
-
 std::ostream & operator << (std::ostream & ost, Mode mode) {
     switch (mode) {
         case Mode::AUTO_WRAP:

@@ -25,30 +25,6 @@ std::ostream & operator << (std::ostream & ost, Control control);
 //
 //
 
-enum class ClearScreen {
-    BELOW,
-    ABOVE,
-    ALL
-};
-
-std::ostream & operator << (std::ostream & ost, ClearScreen clear);
-
-//
-//
-//
-
-enum class ClearLine {
-    RIGHT,
-    LEFT,
-    ALL
-};
-
-std::ostream & operator << (std::ostream & ost, ClearLine clear);
-
-//
-//
-//
-
 enum class Mode {
     AUTO_WRAP,
     AUTO_REPEAT,
