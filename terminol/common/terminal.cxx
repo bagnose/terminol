@@ -1647,12 +1647,12 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     NYI("Ignored: "  << a << ", " << set);
                     break;
                 case 1000: // 1000,1002: enable xterm mouse report
-                    _modes.setTo(Mode::MOUSEBTN, set);
-                    _modes.setTo(Mode::MOUSEMOTION, false);
+                    _modes.setTo(Mode::MOUSE_BUTTON, set);
+                    _modes.setTo(Mode::MOUSE_MOTION, false);
                     break;
                 case 1002:
-                    _modes.setTo(Mode::MOUSEMOTION, set);
-                    _modes.setTo(Mode::MOUSEBTN, false);
+                    _modes.setTo(Mode::MOUSE_MOTION, set);
+                    _modes.setTo(Mode::MOUSE_BUTTON, false);
                     break;
                 case 1004:
                     // ??? tmux REPORT FOCUS
@@ -1662,7 +1662,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     break;
                 case 1006:
                     // MOUSE FORMAT = STR
-                    _modes.setTo(Mode::MOUSESGR, set);
+                    _modes.setTo(Mode::MOUSE_SGR, set);
                     break;
                 case 1015:
                     // MOUSE FORMAT = URXVT

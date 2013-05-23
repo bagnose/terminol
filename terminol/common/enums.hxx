@@ -40,11 +40,10 @@ enum class Mode {
     REVERSE,
 
     // Remainder are dubious...
-    MOUSEBTN,
-    MOUSEMOTION,
-    // MOUSE = MOUSEBTN | MOUSEMOTION
-    MOUSESGR,
-    LAST = MOUSESGR
+    MOUSE_BUTTON,
+    MOUSE_MOTION,
+    MOUSE_SGR,
+    LAST = MOUSE_SGR
 };
 
 std::ostream & operator << (std::ostream & ost, Mode mode);
