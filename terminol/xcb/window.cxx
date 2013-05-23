@@ -711,6 +711,9 @@ void Window::icccmConfigure() {
 }
 
 void Window::rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const {
+    ASSERT(row <= _terminal->getRows(), "");
+    ASSERT(col <= _terminal->getCols(), "");
+
     const int BORDER_THICKNESS = _config.getBorderThickness();
 
     x = BORDER_THICKNESS + col * _fontSet.getWidth();

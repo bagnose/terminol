@@ -155,7 +155,7 @@ public:
     size_t   getTotalRows()   const { return _lines.size(); }
 
     uint16_t getRows()        const { return _lines.size() - _history; }
-    uint16_t getCols()        const { return _lines.front().getCols(); }
+    uint16_t getCols()        const { return _lines.back().getCols(); }
 
     uint16_t getMarginBegin() const { return _marginBegin; }
     uint16_t getMarginEnd()   const { return _marginEnd;   }

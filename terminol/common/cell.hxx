@@ -44,8 +44,8 @@ class Cell {
     static const uint8_t BLANK = SPACE;
 
 public:
-    static uint16_t defaultFg()    { return 256; }
-    static uint16_t defaultBg()    { return 257; }
+    static uint16_t defaultFg()    { return 256 + 0; }
+    static uint16_t defaultBg()    { return 256 + 1; }
     static AttrSet  defaultAttrs() { return AttrSet(); }
 
     static Cell blank() {
@@ -88,8 +88,8 @@ inline bool operator == (Cell lhs, Cell rhs) {
         lhs._seq    == rhs._seq    &&
         lhs._attrs  == rhs._attrs  &&
 #if !PACK_CELL
-        lhs._fg    == rhs._fg    &&
-        lhs._bg    == rhs._bg;
+        lhs._fg     == rhs._fg     &&
+        lhs._bg     == rhs._bg;
 #else
         lhs._col[0] == rhs._col[0] &&
         lhs._col[1] == rhs._col[1] &&
