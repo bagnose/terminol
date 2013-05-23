@@ -140,8 +140,8 @@ Config::Config() :
     _doubleBuffer(true),
     _title("terminol"),
     _chdir(),
-    _scrollBackHistory(1024),
-    _unlimitedScrollBack(true),
+    _scrollBackHistory(4096),
+    _unlimitedScrollBack(false),
     //
     _traceTty(false),
     _syncTty(false),
