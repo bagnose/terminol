@@ -151,7 +151,7 @@ public:
         _finished(false)
     {
         if (config.getServerFork()) {
-            ENFORCE_SYS(::daemon(0, 0) != -1, "daemon()");
+            ENFORCE_SYS(::daemon(1, 0) != -1, "daemon()");
         }
 
         loop();
