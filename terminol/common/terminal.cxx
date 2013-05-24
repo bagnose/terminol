@@ -799,13 +799,13 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
     }
 
     if (_cursor.wrapNext && _modes.get(Mode::AUTO_WRAP)) {
-        moveCursor(Pos(_cursor.pos.row, 0));
+        moveCursor(_cursor.pos.atCol(0));
 
         if (_cursor.pos.row == _buffer->getMarginEnd() - 1) {
             _buffer->addLine();
         }
         else {
-            moveCursor(Pos(_cursor.pos.row + 1, _cursor.pos.col));
+            moveCursor(_cursor.pos.down());
         }
     }
 
@@ -822,7 +822,7 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
         _cursor.wrapNext = true;
     }
     else {
-        moveCursor(Pos(_cursor.pos.row, _cursor.pos.col + 1));
+        moveCursor(_cursor.pos.right());
     }
 
     ASSERT(_cursor.pos.col < _buffer->getCols(), "");
@@ -879,7 +879,7 @@ void Terminal::machineControl(uint8_t c) throw () {
                 _buffer->addLine();
             }
             else {
-                moveCursor(Pos(_cursor.pos.row + 1, _cursor.pos.col));
+                moveCursor(_cursor.pos.down());
             }
 
             if (_config.getTraceTty()) {
@@ -922,7 +922,7 @@ void Terminal::machineEscape(uint8_t c) throw () {
                 _buffer->addLine();
             }
             else {
-                moveCursor(Pos(_cursor.pos.row + 1, _cursor.pos.col));
+                moveCursor(_cursor.pos.down());
             }
             break;
         case 'E':   // NEL - Next Line
@@ -933,7 +933,7 @@ void Terminal::machineEscape(uint8_t c) throw () {
                 _buffer->addLine();
             }
             else {
-                moveCursor(Pos(_cursor.pos.row + 1, _cursor.pos.col));
+                moveCursor(_cursor.pos.down());
             }
             break;
         case 'H':   // HTS - Horizontal Tab Stop
@@ -945,7 +945,7 @@ void Terminal::machineEscape(uint8_t c) throw () {
                 _buffer->insertLines(_buffer->getMarginBegin(), 1);
             }
             else {
-                moveCursor(Pos(_cursor.pos.row - 1, _cursor.pos.col));
+                moveCursor(_cursor.pos.up());
             }
             break;
         case 'N':   // SS2 - Set Single Shift 2
@@ -1004,16 +1004,16 @@ void Terminal::machineCsi(bool priv,
             break;
         }
         case 'A': // CUU - Cursor Up
-            moveCursor(Pos(_cursor.pos.row - nthArgNonZero(args, 0, 1), _cursor.pos.col));
+            moveCursor(_cursor.pos.up(nthArgNonZero(args, 0, 1)));
             break;
         case 'B': // CUD - Cursor Down
-            moveCursor(Pos(_cursor.pos.row + nthArgNonZero(args, 0, 1), _cursor.pos.col));
+            moveCursor(_cursor.pos.down(nthArgNonZero(args, 0, 1)));
             break;
         case 'C': // CUF - Cursor Forward
-            moveCursor(Pos(_cursor.pos.row, _cursor.pos.col + nthArgNonZero(args, 0, 1)));
+            moveCursor(_cursor.pos.right(nthArgNonZero(args, 0, 1)));
             break;
         case 'D': // CUB - Cursor Backward
-            moveCursor(Pos(_cursor.pos.row, _cursor.pos.col - nthArgNonZero(args, 0, 1)));
+            moveCursor(_cursor.pos.left(nthArgNonZero(args, 0, 1)));
             break;
         case 'E': // CNL - Cursor Next Line
             moveCursor(Pos(_cursor.pos.row + nthArgNonZero(args, 0, 1), 0));
@@ -1022,7 +1022,7 @@ void Terminal::machineCsi(bool priv,
             moveCursor(Pos(_cursor.pos.row - nthArgNonZero(args, 0, 1), 0));
             break;
         case 'G': // CHA - Cursor Horizontal Absolute
-            moveCursor(Pos(_cursor.pos.row, nthArgNonZero(args, 0, 1) - 1));
+            moveCursor(_cursor.pos.atCol(nthArgNonZero(args, 0, 1) - 1));
             break;
         case 'f':       // HVP - Horizontal and Vertical Position
         case 'H':       // CUP - Cursor Position
@@ -1042,11 +1042,11 @@ void Terminal::machineCsi(bool priv,
                     break;
                 case 1: // ED1 - Above
                     _buffer->clearAbove(_cursor.pos.row);
-                    _buffer->clearLineLeft(Pos(_cursor.pos.row, _cursor.pos.col + 1));
+                    _buffer->clearLineLeft(_cursor.pos.right());
                     break;
                 case 2: // ED2 - All
                     _buffer->clear();
-                    _cursor.pos = Pos();
+                    moveCursor(Pos());      // XXX moveCursorOriginMode???
                     break;
             }
             break;
@@ -1057,7 +1057,7 @@ void Terminal::machineCsi(bool priv,
                     _buffer->clearLineRight(_cursor.pos);
                     break;
                 case 1: // EL1 - Left (inclusive of cursor position)
-                    _buffer->clearLineLeft(Pos(_cursor.pos.row, _cursor.pos.col + 1));
+                    _buffer->clearLineLeft(_cursor.pos.right());
                     break;
                 case 2: // EL2 - All
                     _buffer->clearLine(_cursor.pos.row);
@@ -1102,7 +1102,7 @@ void Terminal::machineCsi(bool priv,
             tabCursor(TabDir::BACKWARD, nthArgNonZero(args, 0, 1));
             break;
         case '`': // HPA
-            moveCursor(Pos(_cursor.pos.row, nthArgNonZero(args, 0, 1) - 1));
+            moveCursor(_cursor.pos.atCol(nthArgNonZero(args, 0, 1) - 1));
             break;
         case 'b': // REP
             NYI("REP");
@@ -1111,7 +1111,7 @@ void Terminal::machineCsi(bool priv,
             write(reinterpret_cast<const uint8_t *>("\x1B[?6c"), 5);
             break;
         case 'd': // VPA - Vertical Position Absolute
-            moveCursorOriginMode(Pos(nthArg(args, 0, 1) - 1, _cursor.pos.col));
+            moveCursorOriginMode(_cursor.pos.atRow(nthArg(args, 0, 1) - 1));
             break;
         case 'g': // TBC
             switch (nthArg(args, 0, 0)) {

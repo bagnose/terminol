@@ -73,6 +73,23 @@ struct Pos {
     Pos(uint16_t row_, uint16_t col_) : row(row_), col(col_) {}
     uint16_t row;
     uint16_t col;
+
+    Pos atRow(uint16_t row_) { return Pos(row_, col); }
+    Pos atCol(uint16_t col_) { return Pos(row, col_); }
+
+    Pos left(uint16_t n = 1) const {
+        if (n < col) { return Pos(row, col - n); }
+        else         { return Pos(row, 0); }
+    }
+
+    Pos right(uint16_t n = 1) const { return Pos(row, col + n); }
+
+    Pos up(uint16_t n = 1) const {
+        if (n < row) { return Pos(row - n, col); }
+        else         { return Pos(0, col); }
+    }
+
+    Pos down(uint16_t n = 1) const { return Pos(row + n, col); }
 };
 
 //
