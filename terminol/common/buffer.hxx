@@ -16,7 +16,13 @@ class Buffer {
         uint16_t          _damageBegin;
         uint16_t          _damageEnd;
 
+        std::vector<Cell>::iterator begin() { return _cells.begin(); }
+        std::vector<Cell>::iterator end()   { return _cells.end(); }
+
     public:
+        std::vector<Cell>::const_iterator begin() const { return _cells.begin(); }
+        std::vector<Cell>::const_iterator end()   const { return _cells.end(); }
+
         explicit Line(uint16_t cols) :
             _cells(cols, Cell::blank())
         {
@@ -24,7 +30,7 @@ class Buffer {
         }
 
         uint16_t getCols() const { return static_cast<uint16_t>(_cells.size()); }
-        const Cell & getCell(uint16_t col) const { return _cells[col]; }
+        const Cell & nth(uint16_t col) const { return _cells[col]; }
 
         void getDamage(uint16_t & colBegin, uint16_t & colEnd) const {
             colBegin = _damageBegin;
@@ -70,22 +76,22 @@ class Buffer {
         }
 
         void clear() {
-            std::fill(_cells.begin(), _cells.end(), Cell::blank());
+            std::fill(begin(), end(), Cell::blank());
             damageAll();
         }
 
         void clearLeft(uint16_t endCol) {
-            std::fill(_cells.begin(), _cells.begin() + endCol, Cell::blank());
+            std::fill(begin(), begin() + endCol, Cell::blank());
             damageAdd(0, endCol);
         }
 
         void clearRight(uint16_t beginCol) {
-            std::fill(_cells.begin() + beginCol, _cells.end(), Cell::blank());
+            std::fill(begin() + beginCol, end(), Cell::blank());
             damageAdd(beginCol, getCols());
         }
 
         bool isBlank() const {
-            for (const auto & c : _cells) {
+            for (const auto & c : *this) {
                 if (c != Cell::blank()) { return false; }
             }
             return true;
@@ -100,18 +106,18 @@ class Buffer {
             _damageEnd   = getCols();
         }
 
-        void damageAdd(uint16_t begin, uint16_t end) {
-            ASSERT(begin <= end, "");
-            ASSERT(end   <= getCols(), "");
+        void damageAdd(uint16_t begin_, uint16_t end_) {
+            ASSERT(begin_ <= end_, "");
+            ASSERT(end_   <= getCols(), "");
 
             if (_damageBegin == _damageEnd) {
                 // No damage yet.
-                _damageBegin = begin;
-                _damageEnd   = end;
+                _damageBegin = begin_;
+                _damageEnd   = end_;
             }
             else {
-                _damageBegin = std::min(_damageBegin, begin);
-                _damageEnd   = std::max(_damageEnd,   end);
+                _damageBegin = std::min(_damageBegin, begin_);
+                _damageEnd   = std::max(_damageEnd,   end_);
             }
         }
     };
@@ -133,6 +139,18 @@ class Buffer {
     uint16_t           _marginBegin;
     uint16_t           _marginEnd;
 
+    std::deque<Line>::iterator begin()  { return _lines.begin(); }
+    std::deque<Line>::iterator active() { return _lines.begin() + _history; }
+    std::deque<Line>::iterator end()    { return _lines.end(); }
+
+    std::deque<Line>::const_iterator begin()  const { return _lines.begin(); }
+    std::deque<Line>::const_iterator active() const { return _lines.begin() + _history; }
+    std::deque<Line>::const_iterator end()    const { return _lines.end(); }
+
+    Line & nth(size_t n)       { return _lines[n]; }
+    Line & nthActive(size_t n) { return _lines[_history + n]; }
+    const Line & nth(size_t n) const       { return _lines[n]; }
+    const Line & nthActive(size_t n) const { return _lines[_history + n]; }
 
 public:
     Buffer(const Config & config, uint16_t rows, uint16_t cols, size_t maxHistory) :
@@ -203,11 +221,11 @@ public:
         }
     }
 
-    void setMargins(uint16_t begin, uint16_t end) {
-        ASSERT(begin < end, "");
-        ASSERT(end <= getRows(), "");
-        _marginBegin = begin;
-        _marginEnd   = end;
+    void setMargins(uint16_t begin_, uint16_t end_) {
+        ASSERT(begin_ < end_, "");
+        ASSERT(end_ <= getRows(), "");
+        _marginBegin = begin_;
+        _marginEnd   = end_;
     }
 
     void resetMargins() {
@@ -215,8 +233,6 @@ public:
         _marginEnd   = getRows();
     }
 
-    // XXX Do we need an explicit bool covering this or is it sufficient
-    // to infer it from the values?
     bool marginsSet() const {
         return _marginBegin != 0 || _marginEnd != getRows();
     }
@@ -228,12 +244,12 @@ public:
     const Cell & getCell(uint16_t row, uint16_t col) const {
         ASSERT(row < getRows(), "");
         ASSERT(col < getCols(), "");
-        return _lines[_scroll + row].getCell(col);
+        return nthActive(row).nth(col);
     }
 
     void getDamage(uint16_t row, uint16_t & colBegin, uint16_t & colEnd) const {
         ASSERT(row < getRows(), "");
-        _lines[_scroll + row].getDamage(colBegin, colEnd);
+        nthActive(row).getDamage(colBegin, colEnd);
     }
 
     //
@@ -244,20 +260,20 @@ public:
         ASSERT(pos.row < getRows(), "");
         ASSERT(pos.col <= getCols(), "");
         ASSERT(pos.col + n <= getCols(), "");
-        _lines[_history + pos.row].insert(pos.col, n);
+        nthActive(pos.row).insert(pos.col, n);
     }
 
     void eraseCells(Pos pos, uint16_t n) {
         ASSERT(pos.row < getRows(), "");
         ASSERT(pos.col < getCols(), "");
-        _lines[_history + pos.row].erase(pos.col, n);
+        nthActive(pos.row).erase(pos.col, n);
     }
 
     void setCell(Pos pos, const Cell & cell) {
         ASSERT(cell.seq.lead() != NUL, "");
         ASSERT(pos.row < getRows(), "");
         ASSERT(pos.col < getCols(), "");
-        _lines[_history + pos.row].setCell(pos.col, cell);
+        nthActive(pos.row).setCell(pos.col, cell);
     }
 
     int16_t resize(uint16_t rows, uint16_t cols) {
@@ -302,7 +318,8 @@ public:
 
             // Then enforce the history limit.
             if (_history > _maxHistory) {
-                _lines.erase(_lines.begin(), _lines.begin() + _history - _maxHistory);
+                size_t excess = _history - _maxHistory;
+                _lines.erase(_lines.begin(), _lines.begin() + excess);
                 _history = _maxHistory;
             }
         }
@@ -381,77 +398,57 @@ public:
 
     void clearLine(uint16_t row) {
         ASSERT(row < getRows(), "");
-        _lines[_history + row].clear();
+        nthActive(row).clear();
     }
 
     void clearLineLeft(Pos pos) {
-        _lines[_history + pos.row].clearLeft(pos.col);
+        nthActive(pos.row).clearLeft(pos.col);
     }
 
     void clearLineRight(Pos pos) {
-        _lines[_history + pos.row].clearRight(pos.col);
+        nthActive(pos.row).clearRight(pos.col);
     }
 
     void clear() {
-        for (auto i = _lines.begin() + _history; i != _lines.end(); ++i) {
-            i->clear();
-        }
+        for (auto i = active(); i != end(); ++i) { i->clear(); }
     }
 
-    void clearAbove(uint16_t endRow) {
-        for (auto i = _lines.begin() + _history;
-             i != _lines.begin() + _history + endRow; ++i)
-        {
-            i->clear();
-        }
+    void clearAbove(uint16_t row) {
+        for (auto i = active(); i != active() + row; ++i) { i->clear(); }
     }
 
-    void clearBelow(uint16_t beginRow) {
-        for (auto i = _lines.begin() + _history + beginRow; i != _lines.end(); ++i)
-        {
-            i->clear();
-        }
+    void clearBelow(uint16_t row) {
+        for (auto i = active() + row; i != end(); ++i) { i->clear(); }
     }
 
     // Called by Terminal::damageCursor()
     void damageCell(Pos pos) {
         ASSERT(pos.row < getRows(), "");
         ASSERT(pos.col < getCols(), "");
-        _lines[_history + pos.row].damageAdd(pos.col, pos.col + 1);
+        nthActive(pos.row).damageAdd(pos.col, pos.col + 1);
     }
 
     // Called by Terminal::fixDamage()
     void resetDamage() {
-        for (auto i = _lines.begin() + _history; i != _lines.end(); ++i) {
-            i->resetDamage();
-        }
-
+        for (auto i = active(); i != end(); ++i) { i->resetDamage(); }
         _barDamage = false;     // XXX ?
     }
 
     void damageAll() {
-        for (auto i = _lines.begin() + _history; i != _lines.end(); ++i) {
-            i->damageAll();
-        }
-
+        for (auto i = active(); i != end(); ++i) { i->damageAll(); }
         _barDamage = true;      // XXX ?
     }
 
-    void damageRange(uint16_t begin, uint16_t end) {
-        ASSERT(begin <= end, "");
-        ASSERT(end <= _marginEnd, "");
-
-        for (auto i = _lines.begin() + _history + begin;
-             i != _lines.begin() + _history + end; ++i)
-        {
-            i->damageAll();
-        }
+    void damageRange(uint16_t begin_, uint16_t end_) {
+        ASSERT(begin_ <= end_, "");
+        ASSERT(end_ <= _marginEnd, "");
+        for (auto i = active() + begin_; i != active() + end_; ++i) { i->damageAll(); }
     }
 
     void dump(std::ostream & ost) const {
-        for (auto l : _lines) {
-            for (uint16_t c = 0; c != l.getCols(); ++c) {
-                ost << l.getCell(c).seq;
+        for (auto r = active(); r != end(); ++r) {
+            for (const auto & c : *r) {
+                ost << c.seq;
             }
             ost << std::endl;
         }
