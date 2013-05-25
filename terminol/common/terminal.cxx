@@ -336,19 +336,15 @@ void Terminal::read() {
     _dispatch = true;
 
     try {
-        const int FPS = 50;             // Frames per second
-        Timer     timer(1000 / FPS);
-        uint8_t   buf[BUFSIZ];          // 8192 last time I looked.
+        Timer   timer(1000 / _config.getFramesPerSecond());
+        uint8_t buf[BUFSIZ];          // 8192 last time I looked.
+        size_t  size = sizeof buf;
+        if (_config.getSyncTty()) { size = std::min<size_t>(size, 16); }
         do {
-            //static int i = 0;
-            //PRINT("Read: " << ++i);
-            size_t rval = _tty.read(buf, _config.getSyncTty() ? 16 : sizeof buf);
-            if (rval == 0) { /*PRINT("Would block");*/ break; }
-            //PRINT("Read: " << rval);
+            size_t rval = _tty.read(buf, size);
+            if (rval == 0) { break; }
             processRead(buf, rval);
         } while (!timer.expired());
-
-        //PRINT("Exit loop");
     }
     catch (const I_Tty::Exited & ex) {
         _observer.terminalChildExited(ex.exitCode);

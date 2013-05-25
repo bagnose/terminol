@@ -85,6 +85,7 @@ public:
     bool                getUnlimitedScrollBack() const { return _unlimitedScrollBack; }
     bool                getTraceTty() const { return _traceTty; }
     bool                getSyncTty() const { return _syncTty; }
+    int                 getFramesPerSecond() const { return 50; }
 
     int16_t             getInitialX()    const { return -1; }
     int16_t             getInitialY()    const { return -1; }
