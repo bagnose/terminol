@@ -87,33 +87,38 @@ void forwardReverse(CodePoint cp) {
 }
 
 int main() {
-    ENFORCE(leadLength(B1) == Length::L1, "");
-    ENFORCE(leadLength(B1 | B2) == Length::L1, "");
-    ENFORCE(leadLength(static_cast<uint8_t>(~B7)) == Length::L1, "");
-    ENFORCE(leadLength('a') == Length::L1, "");
-    ENFORCE(leadLength('z') == Length::L1, "");
-    ENFORCE(leadLength('\x7F') == Length::L1, "");
+    try {
+        ENFORCE(leadLength(B1) == Length::L1, "");
+        ENFORCE(leadLength(B1 | B2) == Length::L1, "");
+        ENFORCE(leadLength(static_cast<uint8_t>(~B7)) == Length::L1, "");
+        ENFORCE(leadLength('a') == Length::L1, "");
+        ENFORCE(leadLength('z') == Length::L1, "");
+        ENFORCE(leadLength('\x7F') == Length::L1, "");
 
-    ENFORCE(leadLength(B7 | B6) == Length::L2, "");
-    ENFORCE(leadLength(B7 | B6 | B5) == Length::L3, "");
-    ENFORCE(leadLength(B7 | B6 | B5 | B4) == Length::L4, "");
+        ENFORCE(leadLength(B7 | B6) == Length::L2, "");
+        ENFORCE(leadLength(B7 | B6 | B5) == Length::L3, "");
+        ENFORCE(leadLength(B7 | B6 | B5 | B4) == Length::L4, "");
 
-    // 1 byte sequence
-    forwardReverse(0x00);
-    forwardReverse(0x50);
-    forwardReverse(0x7F);
+        // 1 byte sequence
+        forwardReverse(0x00);
+        forwardReverse(0x50);
+        forwardReverse(0x7F);
 
-    // 2 byte sequence
-    forwardReverse(0x80);
-    forwardReverse(0xFF);
-    forwardReverse(0x0250);
+        // 2 byte sequence
+        forwardReverse(0x80);
+        forwardReverse(0xFF);
+        forwardReverse(0x0250);
 
-    // 3 byte sequence
-    forwardReverse(0x8250);
+        // 3 byte sequence
+        forwardReverse(0x8250);
 
-    // 4 byte sequence
-    forwardReverse(0x038250);
-    forwardReverse(0x10FFFF);
+        // 4 byte sequence
+        forwardReverse(0x038250);
+        forwardReverse(0x10FFFF);
+    }
+    catch (const utf8::Error & ex) {
+        FATAL("Failed");
+    }
 
     return 0;
 }

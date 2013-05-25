@@ -14,7 +14,7 @@ int main() {
 
     ENFORCE_SYS(fd != -1, "Failed to open: " << socketPath);
 
-    char c;
+    char c = 0;
     ssize_t rval = ::write(fd, &c, 1) != -1;
 
     if (rval == -1) {

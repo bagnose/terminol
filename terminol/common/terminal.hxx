@@ -206,7 +206,7 @@ protected:
     void      processAttributes(const std::vector<int32_t> & args);
     void      processModes(bool priv, bool set, const std::vector<int32_t> & args);
 
-    // VtStateMachine::I_Observer overrides:
+    // VtStateMachine::I_Observer implementation:
 
     void machineNormal(utf8::Seq seq, utf8::Length length) throw ();
     void machineControl(uint8_t c) throw ();

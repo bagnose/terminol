@@ -74,7 +74,7 @@ class Timer {
     uint32_t _usec;
 
 public:
-    Timer(uint32_t milliseconds);
+    explicit Timer(uint32_t milliseconds);
     bool expired() const;
 };
 
