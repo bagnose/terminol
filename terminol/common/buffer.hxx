@@ -147,10 +147,12 @@ class Buffer {
     std::deque<Line>::const_iterator active() const { return _lines.begin() + _history; }
     std::deque<Line>::const_iterator end()    const { return _lines.end(); }
 
-    Line & nth(size_t n)       { return _lines[n]; }
-    Line & nthActive(size_t n) { return _lines[_history + n]; }
-    const Line & nth(size_t n) const       { return _lines[n]; }
-    const Line & nthActive(size_t n) const { return _lines[_history + n]; }
+    Line & nth(size_t n)        { return _lines[n]; }
+    Line & nthActive(size_t n)  { return _lines[_history + n]; }
+    Line & nthVisible(size_t n) { return _lines[_scroll + n]; }
+    const Line & nth(size_t n)        const { return _lines[n]; }
+    const Line & nthActive(size_t n)  const { return _lines[_history + n]; }
+    const Line & nthVisible(size_t n) const { return _lines[_scroll + n]; }
 
 public:
     Buffer(const Config & config, uint16_t rows, uint16_t cols, size_t maxHistory) :
@@ -231,12 +233,12 @@ public:
     const Cell & getCell(uint16_t row, uint16_t col) const {
         ASSERT(row < getRows(), "");
         ASSERT(col < getCols(), "");
-        return nthActive(row).nth(col);
+        return nthVisible(row).nth(col);
     }
 
     void getDamage(uint16_t row, uint16_t & colBegin, uint16_t & colEnd) const {
         ASSERT(row < getRows(), "");
-        nthActive(row).getDamage(colBegin, colEnd);
+        nthVisible(row).getDamage(colBegin, colEnd);
     }
 
     //
