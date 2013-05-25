@@ -134,10 +134,10 @@ class Buffer {
     size_t             _history;          // Offset of active region.
     size_t             _scroll;           // Offset of visible region.
 
-    bool               _barDamage;        // Scrollbar damage.
-
     uint16_t           _marginBegin;
     uint16_t           _marginEnd;
+
+    bool               _barDamage;        // Scrollbar damage.
 
     std::deque<Line>::iterator begin()  { return _lines.begin(); }
     std::deque<Line>::iterator active() { return _lines.begin() + _history; }
@@ -159,10 +159,11 @@ public:
         _maxHistory(maxHistory),
         _history(0),
         _scroll(0),
-        _barDamage(true),
         //
         _marginBegin(0),
-        _marginEnd(rows)
+        _marginEnd(rows),
+        //
+        _barDamage(true)
     {
         ASSERT(rows != 0, "");
         ASSERT(cols != 0, "");
@@ -183,12 +184,8 @@ public:
     bool scrollUp(uint16_t rows) {
         size_t oldScroll = _scroll;
 
-        if (rows > _scroll) {
-            _scroll = 0;
-        }
-        else {
-            _scroll -= rows;
-        }
+        if (rows > _scroll) { _scroll = 0; }
+        else                { _scroll -= rows; }
 
         return _scroll != oldScroll;
     }
@@ -202,23 +199,13 @@ public:
     }
 
     bool scrollTop() {
-        if (_scroll != 0) {
-            _scroll = 0;
-            return true;
-        }
-        else {
-            return false;
-        }
+        if (_scroll != 0) { _scroll = 0; return true; }
+        else              { return false; }
     }
 
     bool scrollBottom() {
-        if (_scroll != _history) {
-            _scroll = _history;
-            return true;
-        }
-        else {
-            return false;
-        }
+        if (_scroll != _history) { _scroll = _history; return true; }
+        else                     { return false; }
     }
 
     void setMargins(uint16_t begin_, uint16_t end_) {
