@@ -174,7 +174,7 @@ void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
 }
 
 void Terminal::buttonPress(Button button, int count, uint8_t state,
-                           bool within, uint16_t row, uint16_t col) {
+                           bool UNUSED(within), uint16_t row, uint16_t col) {
     PRINT("press: " << button << ", count=" << count <<
           ", state=" << state << ", " << row << 'x' << col);
 
@@ -265,7 +265,7 @@ void Terminal::buttonMotion(uint8_t state, bool within, uint16_t row, uint16_t c
     _pointerCol = col;
 }
 
-void Terminal::buttonRelease(bool broken, uint8_t state) {
+void Terminal::buttonRelease(bool UNUSED(broken), uint8_t state) {
     //PRINT("release, grabbed=" << grabbed);
 
     ASSERT(_pressed, "");
@@ -306,7 +306,7 @@ void Terminal::buttonRelease(bool broken, uint8_t state) {
     _pressed = false;
 }
 
-void Terminal::scrollWheel(ScrollDir dir, uint8_t state) {
+void Terminal::scrollWheel(ScrollDir dir, uint8_t UNUSED(state)) {
     switch (dir) {
         case ScrollDir::UP:
             // TODO consolidate scroll operations with method.
