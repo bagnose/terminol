@@ -43,8 +43,7 @@ Window::Window(const Config       & config,
     _tty(nullptr),
     _terminal(nullptr),
     _isOpen(false),
-    _pointerRow(std::numeric_limits<uint16_t>::max()),
-    _pointerCol(std::numeric_limits<uint16_t>::max()),
+    _pointerPos(Pos::invalid()),
     _mapped(false),
     _focussed(false),
     _hadExpose(false),
@@ -268,21 +267,21 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
     _button        = event->detail;
     _lastPressTime = event->time;
 
-    uint16_t row, col;
-    bool within = xy2RowCol(event->event_x, event->event_y, row, col);
+    Pos pos;
+    bool within = xy2Pos(event->event_x, event->event_y, pos);
 
     switch (event->detail) {
         case XCB_BUTTON_INDEX_1:
             _terminal->buttonPress(Terminal::Button::LEFT, _pressCount,
-                                   event->state, within, row, col);
+                                   event->state, within, pos);
             return;
         case XCB_BUTTON_INDEX_2:
             _terminal->buttonPress(Terminal::Button::MIDDLE, _pressCount,
-                                   event->state, within, row, col);
+                                   event->state, within, pos);
             return;
         case XCB_BUTTON_INDEX_3:
             _terminal->buttonPress(Terminal::Button::RIGHT, _pressCount,
-                                   event->state, within, row, col);
+                                   event->state, within, pos);
             return;
     }
 }
@@ -320,13 +319,12 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
         y = event->event_y;
     }
 
-    uint16_t row, col;
-    bool within = xy2RowCol(x, y, row, col);
+    Pos pos;
+    bool within = xy2Pos(x, y, pos);
 
-    if (_pointerRow != row || _pointerCol != col) {
-        _pointerRow = row;
-        _pointerCol = col;
-        _terminal->buttonMotion(event->state, within, row, col);
+    if (_pointerPos != pos) {
+        _pointerPos = pos;
+        _terminal->buttonMotion(event->state, within, pos);
     }
 
 }
@@ -713,17 +711,17 @@ void Window::icccmConfigure() {
     // TODO
 }
 
-void Window::rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const {
-    ASSERT(row <= _terminal->getRows(), "");
-    ASSERT(col <= _terminal->getCols(), "");
+void Window::pos2XY(Pos pos, int & x, int & y) const {
+    ASSERT(pos.row <= _terminal->getRows(), "");
+    ASSERT(pos.col <= _terminal->getCols(), "");
 
     const int BORDER_THICKNESS = _config.getBorderThickness();
 
-    x = BORDER_THICKNESS + col * _fontSet.getWidth();
-    y = BORDER_THICKNESS + row * _fontSet.getHeight();
+    x = BORDER_THICKNESS + pos.col * _fontSet.getWidth();
+    y = BORDER_THICKNESS + pos.row * _fontSet.getHeight();
 }
 
-bool Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
+bool Window::xy2Pos(int x, int y, Pos & pos) const {
     bool within = true;
 
     const int BORDER_THICKNESS = _config.getBorderThickness();
@@ -731,32 +729,34 @@ bool Window::xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const {
     // x / cols:
 
     if (x < BORDER_THICKNESS) {
-        col = 0;
+        pos.col = 0;
         within = false;
     }
     else if (x < BORDER_THICKNESS + _fontSet.getWidth() * _terminal->getCols()) {
-        col = (x - BORDER_THICKNESS) / _fontSet.getWidth();
-        ASSERT(col < _terminal->getCols(),
-               "col is: " << col << ", getCols() is: " << _terminal->getCols());
+        pos.col = (x - BORDER_THICKNESS) / _fontSet.getWidth();
+        ASSERT(pos.col < _terminal->getCols(),
+               "col is: " << pos.col << ", getCols() is: " <<
+               _terminal->getCols());
     }
     else {
-        col = _terminal->getCols();
+        pos.col = _terminal->getCols();
         within = false;
     }
 
     // y / rows:
 
     if (y < BORDER_THICKNESS) {
-        row = 0;
+        pos.row = 0;
         within = false;
     }
     else if (y < BORDER_THICKNESS + _fontSet.getHeight() * _terminal->getRows()) {
-        row = (y - BORDER_THICKNESS) / _fontSet.getHeight();
-        ASSERT(row < _terminal->getRows(),
-               "row is: " << row << ", getRows() is: " << _terminal->getRows());
+        pos.row = (y - BORDER_THICKNESS) / _fontSet.getHeight();
+        ASSERT(pos.row < _terminal->getRows(),
+               "row is: " << pos.row << ", getRows() is: " <<
+               _terminal->getRows());
     }
     else {
-        row = _terminal->getRows();
+        pos.row = _terminal->getRows();
         within = false;
     }
 
@@ -839,13 +839,13 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 
         drawBorder();
 
-        uint16_t rowBegin, colBegin;
-        xy2RowCol(x, y, rowBegin, colBegin);
-        uint16_t rowEnd, colEnd;
-        xy2RowCol(x + w, y + h, rowEnd, colEnd);
-        if (colEnd != _terminal->getCols()) { ++colEnd; }
-        if (rowEnd != _terminal->getRows()) { ++rowEnd; }
-        _terminal->redraw(rowBegin, rowEnd, colBegin, colEnd);
+        Pos posBegin;
+        xy2Pos(x, y, posBegin);
+        Pos posEnd;
+        xy2Pos(x + w, y + h, posEnd);
+        if (posEnd.col != _terminal->getCols()) { ++posEnd.col; }
+        if (posEnd.row != _terminal->getRows()) { ++posEnd.row; }
+        _terminal->redraw(posBegin.row, posBegin.col, posEnd.row, posEnd.col);  // FIXME
 
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
@@ -1033,7 +1033,7 @@ void Window::terminalDrawRun(uint16_t        row,
                                                 style.attrs.get(Attr::BOLD)));
 
         int x, y;
-        rowCol2XY(row, col, x, y);
+        pos2XY(Pos(row, col), x, y);        // FIXME
 
         const auto & bgValues = _colorSet.getIndexedColor(style.bg);
         cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
@@ -1090,7 +1090,7 @@ void Window::terminalDrawCursor(uint16_t        row,
                                                 style.attrs.get(Attr::BOLD)));
 
         int x, y;
-        rowCol2XY(row, col, x, y);
+        pos2XY(Pos(row, col), x, y);     // FIXME
 
         cairo_set_source_rgba(_cr, bgValues.r, bgValues.g, bgValues.b,
                               wrapNext ? 0.4 : 1.0);
@@ -1172,9 +1172,9 @@ void Window::terminalDrawSelection(uint16_t rowBegin,
         ASSERT(colBegin < colEnd, "");
 
         int x0, y0;
-        rowCol2XY(rowBegin, colBegin, x0, y0);
+        pos2XY(Pos(rowBegin, colBegin), x0, y0);        // FIXME
         int x1, y1;
-        rowCol2XY(rowEnd, colEnd, x1, y1);
+        pos2XY(Pos(rowEnd, colEnd), x1, y1);
 
         drawLineSelection2(_cr,
                            x0 + halfWidth, y0 + halfWidth,
@@ -1218,10 +1218,10 @@ void Window::terminalDrawSelection(uint16_t rowBegin,
 
         uint16_t numCols = _terminal->getCols();
 
-        rowCol2XY(rowBegin,     0,        x0, y0);  // top left
-        rowCol2XY(rowBegin + 1, colBegin, x1, y1);  // #7
-        rowCol2XY(rowEnd - 1,   colEnd,   x2, y2);  // #3
-        rowCol2XY(rowEnd,       numCols,  x3, y3);  // bottom right
+        pos2XY(Pos(rowBegin,     0),        x0, y0);  // top left
+        pos2XY(Pos(rowBegin + 1, colBegin), x1, y1);  // #7
+        pos2XY(Pos(rowEnd - 1,   colEnd),   x2, y2);  // #3
+        pos2XY(Pos(rowEnd,       numCols),  x3, y3);  // bottom right
 
         cairo_move_to(_cr, x1, y0);
         cairo_line_to(_cr, x3, y0);
@@ -1294,9 +1294,9 @@ void Window::terminalFixDamageEnd(bool     internal,
 
         if (_config.getDoubleBuffer()) {
             int x0, y0;
-            rowCol2XY(rowBegin, colBegin, x0, y0);
+            pos2XY(Pos(rowBegin, colBegin), x0, y0);        // FIXME
             int x1, y1;
-            rowCol2XY(rowEnd, colEnd, x1, y1);
+            pos2XY(Pos(rowEnd, colEnd), x1, y1);
 
             if (scrollBar) {
                 // Expand the region to include the scroll bar

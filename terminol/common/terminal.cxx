@@ -176,9 +176,9 @@ void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
 }
 
 void Terminal::buttonPress(Button button, int count, uint8_t state,
-                           bool UNUSED(within), uint16_t row, uint16_t col) {
+                           bool UNUSED(within), Pos pos) {
     PRINT("press: " << button << ", count=" << count <<
-          ", state=" << state << ", " << row << 'x' << col);
+          ", state=" << state << ", " << pos);
 
     ASSERT(!_pressed, "");
 
@@ -194,14 +194,14 @@ void Terminal::buttonPress(Button button, int count, uint8_t state,
         std::ostringstream ost;
         if (_modes.get(Mode::MOUSE_SGR)) {
             ost << ESC << "[<"
-                << num << ';' << col + 1 << ';' << row + 1
+                << num << ';' << pos.col + 1 << ';' << pos.row + 1
                 << 'M';
         }
-        else if (row < 223 && col < 223) {
+        else if (pos.row < 223 && pos.col < 223) {
             ost << ESC << "[M"
                 << char(32 + num)
-                << char(32 + col + 1)
-                << char(32 + row + 1);
+                << char(32 + pos.col + 1)
+                << char(32 + pos.row + 1);
         }
         else {
             // Couldn't deliver it
@@ -223,12 +223,11 @@ void Terminal::buttonPress(Button button, int count, uint8_t state,
 
     _pressed    = true;
     _button     = button;
-    _pointerRow = row;
-    _pointerCol = col;
+    _pointerPos = pos;
 }
 
-void Terminal::buttonMotion(uint8_t state, bool within, uint16_t row, uint16_t col) {
-    PRINT("motion: within=" << within << ", " << row << 'x' << col);
+void Terminal::buttonMotion(uint8_t state, bool within, Pos pos) {
+    PRINT("motion: within=" << within << ", " << pos);
 
     ASSERT(_pressed, "");
 
@@ -243,14 +242,14 @@ void Terminal::buttonMotion(uint8_t state, bool within, uint16_t row, uint16_t c
         std::ostringstream ost;
         if (_modes.get(Mode::MOUSE_SGR)) {
             ost << ESC << "[<"
-                << num << ';' << col + 1 << ';' << row + 1
+                << num << ';' << pos.col + 1 << ';' << pos.row + 1
                 << 'M';
         }
-        else if (row < 223 && col < 223) {
+        else if (pos.row < 223 && pos.col < 223) {
             ost << ESC << "[M"
                 << char(32 + num)
-                << char(32 + col + 1)
-                << char(32 + row + 1);
+                << char(32 + pos.col + 1)
+                << char(32 + pos.row + 1);
         }
         else {
             // Couldn't deliver it
@@ -263,8 +262,7 @@ void Terminal::buttonMotion(uint8_t state, bool within, uint16_t row, uint16_t c
         }
     }
 
-    _pointerRow = row;
-    _pointerCol = col;
+    _pointerPos = pos;
 }
 
 void Terminal::buttonRelease(bool broken, uint8_t state) {
@@ -274,8 +272,7 @@ void Terminal::buttonRelease(bool broken, uint8_t state) {
 
     if (_modes.get(Mode::MOUSE_BUTTON)) {
         int num = _modes.get(Mode::MOUSE_SGR) ? static_cast<int>(_button) + 32 : 3;
-        int row = _pointerRow;
-        int col = _pointerCol;
+        auto pos = _pointerPos;
 
         // FIXME more reason to standardise the masks in common.
         if (state & _keyMap.maskShift())   { num +=  4; }
@@ -285,14 +282,14 @@ void Terminal::buttonRelease(bool broken, uint8_t state) {
         std::ostringstream ost;
         if (_modes.get(Mode::MOUSE_SGR)) {
             ost << ESC << "[<"
-                << num << ';' << col + 1 << ';' << row + 1
+                << num << ';' << pos.col + 1 << ';' << pos.row + 1
                 << 'm';
         }
-        else if (row < 223 && col < 223) {
+        else if (pos.row < 223 && pos.col < 223) {
             ost << ESC << "[M"
                 << char(32 + num)
-                << char(32 + col + 1)
-                << char(32 + row + 1);
+                << char(32 + pos.col + 1)
+                << char(32 + pos.row + 1);
         }
         else {
             // Couldn't deliver it

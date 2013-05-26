@@ -126,8 +126,7 @@ private:
 
     bool                  _pressed;
     Button                _button;
-    uint16_t              _pointerRow;
-    uint16_t              _pointerCol;
+    Pos                   _pointerPos;
 
     //
 
@@ -163,8 +162,8 @@ public:
 
     void     keyPress(xkb_keysym_t keySym, uint8_t state);
     void     buttonPress(Button button, int count, uint8_t state,
-                         bool within, uint16_t row, uint16_t col);
-    void     buttonMotion(uint8_t state, bool within, uint16_t row, uint16_t col);
+                         bool within, Pos pos);
+    void     buttonMotion(uint8_t state, bool within, Pos pos);
     void     buttonRelease(bool broken, uint8_t state);
     void     scrollWheel(ScrollDir dir, uint8_t state);
 

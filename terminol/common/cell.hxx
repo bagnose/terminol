@@ -74,6 +74,11 @@ struct Pos {
     uint16_t row;
     uint16_t col;
 
+    static Pos invalid() {
+        return Pos(std::numeric_limits<uint16_t>::max(),
+                   std::numeric_limits<uint16_t>::max());
+    }
+
     Pos atRow(uint16_t row_) { return Pos(row_, col); }
     Pos atCol(uint16_t col_) { return Pos(row, col_); }
 
@@ -91,6 +96,18 @@ struct Pos {
 
     Pos down(uint16_t n = 1) const { return Pos(row + n, col); }
 };
+
+inline bool operator == (Pos lhs, Pos rhs) {
+    return lhs.row == rhs.row && lhs.col == rhs.col;
+}
+
+inline bool operator != (Pos lhs, Pos rhs) {
+    return !(lhs == rhs);
+}
+
+inline std::ostream & operator << (std::ostream & ost, Pos pos) {
+    return ost << pos.row << 'x' << pos.col;
+}
 
 //
 //

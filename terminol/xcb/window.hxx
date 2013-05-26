@@ -33,8 +33,7 @@ class Window :
     Tty             * _tty;
     Terminal        * _terminal;
     bool              _isOpen;  // FIXME rename to _open?
-    uint16_t          _pointerRow;
-    uint16_t          _pointerCol;
+    Pos               _pointerPos;
     bool              _mapped;          // Is the window mapped.
     bool              _focussed;        // Is the window focussed.
 
@@ -109,8 +108,8 @@ public:
 protected:
     void icccmConfigure();
 
-    void rowCol2XY(uint16_t row, uint16_t col, int & x, int & y) const;
-    bool xy2RowCol(int x, int y, uint16_t & row, uint16_t & col) const;
+    void pos2XY(Pos pos, int & x, int & y) const;
+    bool xy2Pos(int x, int y, Pos & pos) const;
 
     void updateTitle();
 
