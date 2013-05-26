@@ -1185,7 +1185,7 @@ void Window::terminalDrawSelection(uint16_t rowBegin,
         cairo_stroke(_cr);
     }
     else {
-        // There are 8 distinct points, but there are defined by
+        // There are 8 distinct points, but they are defined by
         // 8 coordinates (not 16).
         // The general shape is:
         //
@@ -1220,7 +1220,7 @@ void Window::terminalDrawSelection(uint16_t rowBegin,
         rowCol2XY(rowEnd - 1,   colEnd,   x2, y2);  // #3
         rowCol2XY(rowEnd,       numCols,  x3, y3);  // bottom right
 
-        cairo_move_to  (_cr, x1, y0);
+        cairo_move_to(_cr, x1, y0);
         cairo_line_to(_cr, x3, y0);
         cairo_line_to(_cr, x3, y2);
         cairo_line_to(_cr, x2, y2);
