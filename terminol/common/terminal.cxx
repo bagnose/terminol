@@ -228,7 +228,7 @@ void Terminal::buttonPress(Button button, int count, uint8_t state,
 }
 
 void Terminal::buttonMotion(uint8_t state, bool within, uint16_t row, uint16_t col) {
-    //PRINT("motion: within=" << within << ", " << row << 'x' << col);
+    PRINT("motion: within=" << within << ", " << row << 'x' << col);
 
     ASSERT(_pressed, "");
 
@@ -267,8 +267,8 @@ void Terminal::buttonMotion(uint8_t state, bool within, uint16_t row, uint16_t c
     _pointerCol = col;
 }
 
-void Terminal::buttonRelease(bool UNUSED(broken), uint8_t state) {
-    //PRINT("release, grabbed=" << grabbed);
+void Terminal::buttonRelease(bool broken, uint8_t state) {
+    PRINT("release, broken=" << broken);
 
     ASSERT(_pressed, "");
 

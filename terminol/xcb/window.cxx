@@ -240,6 +240,15 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
     //PRINT("Button-press: " << event->event_x << " " << event->event_y);
     if (!_isOpen) { return; }
 
+    switch (event->detail) {
+        case XCB_BUTTON_INDEX_4:
+            _terminal->scrollWheel(Terminal::ScrollDir::UP, event->state);
+            return;
+        case XCB_BUTTON_INDEX_5:
+            _terminal->scrollWheel(Terminal::ScrollDir::DOWN, event->state);
+            return;
+    }
+
     if (_pressed) {
         ASSERT(event->detail != _button, "Already pressed!");
         return;
@@ -266,22 +275,15 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
         case XCB_BUTTON_INDEX_1:
             _terminal->buttonPress(Terminal::Button::LEFT, _pressCount,
                                    event->state, within, row, col);
-            break;
+            return;
         case XCB_BUTTON_INDEX_2:
             _terminal->buttonPress(Terminal::Button::MIDDLE, _pressCount,
                                    event->state, within, row, col);
-            break;
+            return;
         case XCB_BUTTON_INDEX_3:
             _terminal->buttonPress(Terminal::Button::RIGHT, _pressCount,
                                    event->state, within, row, col);
-            break;
-        case XCB_BUTTON_INDEX_4:
-            _terminal->scrollWheel(Terminal::ScrollDir::UP, event->state);
-            break;
-        case XCB_BUTTON_INDEX_5:
-            _terminal->scrollWheel(Terminal::ScrollDir::DOWN, event->state);
-            // Scroll wheel
-            break;
+            return;
     }
 }
 
