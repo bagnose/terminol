@@ -125,6 +125,7 @@ class EventLoop :
 
     const Config & _config;
     Server         _server;         // FIXME what order? socket then X, or other way around?
+    Deduper        _deduper;
     Basics         _basics;
     ColorSet       _colorSet;
     FontSet        _fontSet;
@@ -142,6 +143,7 @@ public:
         throw (Server::Error, Basics::Error, FontSet::Error, Error) :
         _config(config),
         _server(*this, config),
+        _deduper(),
         _basics(),
         _colorSet(config, _basics),
         _fontSet(config),
@@ -374,7 +376,8 @@ protected:
 
     void create() throw () {
         try {
-            Window * window = new Window(_config, _basics, _colorSet, _fontSet, _keyMap);
+            Window * window = new Window(_config, _deduper,
+                                         _basics, _colorSet, _fontSet, _keyMap);
             _windows.insert(std::make_pair(window->getWindowId(), window));
         }
         catch (const Window::Error & ex) {

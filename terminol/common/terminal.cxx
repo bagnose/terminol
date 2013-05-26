@@ -79,6 +79,7 @@ const Terminal::CharSub Terminal::CS_SPECIAL[] = {
 
 Terminal::Terminal(I_Observer   & observer,
                    const Config & config,
+                   Deduper      & deduper,
                    uint16_t       rows,
                    uint16_t       cols,
                    const KeyMap & keyMap,
@@ -89,11 +90,12 @@ Terminal::Terminal(I_Observer   & observer,
     _config(config),
     _keyMap(keyMap),
     //
-    _priBuffer(_config, rows, cols,
+    _priBuffer(_config, deduper,
+               rows, cols,
                _config.getUnlimitedScrollBack() ?
                std::numeric_limits<uint32_t>::max() :
                _config.getScrollBackHistory()),
-    _altBuffer(_config, rows, cols, 0),
+    _altBuffer(_config, deduper, rows, cols, 0),
     _buffer(&_priBuffer),
     //
     _modes(),
@@ -134,8 +136,8 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     int16_t altRowAdjust = _altBuffer.resize(rows, cols);
     int16_t rowAdjust    = _buffer == &_priBuffer ? priRowAdjust : altRowAdjust;
 
-    _cursor.pos.row = clamp< int16_t>(_cursor.pos.row + rowAdjust, 0, rows - 1);
-    _cursor.pos.col = clamp<uint16_t>(_cursor.pos.col,             0, cols - 1);
+    _cursor.pos.row += rowAdjust;
+    _cursor.pos.col  = clamp<uint16_t>(_cursor.pos.col,             0, cols - 1);
 
     // XXX is this correct for the saved cursor row/col?
     _savedCursor.pos.row = std::min<uint16_t>(_savedCursor.pos.row, rows - 1);
@@ -660,12 +662,12 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
 
     if (_modes.get(Mode::SHOW_CURSOR) &&
         _buffer->getHistory() + _cursor.pos.row <
-        _buffer->getScroll()  + _buffer->getRows())
+        _buffer->getBar()     + _buffer->getRows())
     {
         uint16_t row;
         uint16_t col;
 
-        row = _cursor.pos.row + (_buffer->getHistory() - _buffer->getScroll());
+        row = _cursor.pos.row + (_buffer->getHistory() - _buffer->getBar());
         ASSERT(row < _buffer->getRows(), "");
 
         col = _cursor.pos.col;
@@ -704,8 +706,8 @@ void Terminal::draw(uint16_t rowBegin, uint16_t rowEnd,
         (damage == Damager::TTY && _buffer->getBarDamage());
 
     if (scrollbar) {
-        _observer.terminalDrawScrollbar(_buffer->getTotalRows(),
-                                        _buffer->getScroll(),
+        _observer.terminalDrawScrollbar(_buffer->getTotal(),
+                                        _buffer->getBar(),
                                         _buffer->getRows());
     }
 }

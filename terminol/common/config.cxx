@@ -169,6 +169,7 @@ Config::Config() :
     _scrollWithHistory(false),
     _scrollOnTtyOutput(false),
     _scrollOnTtyKeyPress(true),
+    _scrollOnResize(false),
     _doubleBuffer(true),
     _title("terminol"),
     _chdir(),

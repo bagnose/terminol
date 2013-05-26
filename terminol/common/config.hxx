@@ -30,6 +30,7 @@ private:
     bool        _scrollWithHistory;
     bool        _scrollOnTtyOutput;
     bool        _scrollOnTtyKeyPress;
+    bool        _scrollOnResize;
     bool        _doubleBuffer;
     std::string _title;
     std::string _chdir;
@@ -65,6 +66,7 @@ public:
     void setTermName(const std::string & val) { _termName = val; }
     void setScrollOnTtyOutput(bool val) { _scrollOnTtyOutput = val; }
     void setScrollOnTtyKeyPress(bool val) { _scrollOnTtyKeyPress = val; }
+    void setScrollOnResize(bool val) { _scrollOnResize = val; }
     void setDoubleBuffer(bool val) { _doubleBuffer = val; }
     void setTitle(const std::string & val) { _title = val; }
     void setChdir(const std::string & val) { _chdir = val; }
@@ -78,6 +80,7 @@ public:
     bool                getScrollWithHistory() const { return _scrollWithHistory; }
     bool                getScrollOnTtyOutput() const { return _scrollOnTtyOutput; }
     bool                getScrollOnTtyKeyPress() const { return _scrollOnTtyKeyPress; }
+    bool                getScrollOnResize() const { return _scrollOnResize; }
     bool                getDoubleBuffer() const { return _doubleBuffer; }
     const std::string & getTitle() const { return _title; }
     const std::string & getChdir() const { return _chdir; }

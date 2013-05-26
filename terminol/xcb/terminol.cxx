@@ -18,6 +18,7 @@
 #include <sys/select.h>
 
 class EventLoop : protected Uncopyable {
+    Deduper  _deduper;
     Basics   _basics;
     ColorSet _colorSet;
     FontSet  _fontSet;
@@ -33,6 +34,7 @@ public:
     EventLoop(const Config       & config,
               const Tty::Command & command)
         throw (Basics::Error, FontSet::Error, Window::Error, Error) :
+        _deduper(),
         _basics(),
         _colorSet(config, _basics),
         _fontSet(config),
@@ -40,6 +42,7 @@ public:
                 _basics.maskAlt(),
                 _basics.maskControl()),
         _window(config,
+                _deduper,
                 _basics,
                 _colorSet,
                 _fontSet,

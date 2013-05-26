@@ -62,6 +62,7 @@ public:
     };
 
     Window(const Config       & config,
+           Deduper            & deduper,
            Basics             & basics,
            const ColorSet     & colorSet,
            FontSet            & fontSet,

@@ -25,6 +25,7 @@ int _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
 } // namespace {anonymous}
 
 Window::Window(const Config       & config,
+               Deduper            & deduper,
                Basics             & basics,
                const ColorSet     & colorSet,
                FontSet            & fontSet,
@@ -152,7 +153,7 @@ Window::Window(const Config       & config,
     //
 
     _tty = new Tty(_config, rows, cols, stringify(_window), command);
-    _terminal = new Terminal(*this, _config, rows, cols, keyMap, *_tty);
+    _terminal = new Terminal(*this, _config, deduper, rows, cols, keyMap, *_tty);
     _isOpen = true;
 
     //
