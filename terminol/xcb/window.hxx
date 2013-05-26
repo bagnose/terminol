@@ -125,30 +125,24 @@ protected:
     void terminalSetTitle(const std::string & title) throw ();
     void terminalResizeBuffer(uint16_t rows, uint16_t cols) throw ();
     bool terminalFixDamageBegin(bool internal) throw ();
-    void terminalDrawRun(uint16_t        row,
-                         uint16_t        col,
+    void terminalDrawRun(Pos             pos,
                          Style           style,
                          const uint8_t * str,
                          size_t          count) throw ();
-    void terminalDrawCursor(uint16_t        row,
-                            uint16_t        col,
+    void terminalDrawCursor(Pos             pos,
                             Style           style,
                             const uint8_t * str,
                             bool            wrapNext) throw ();
-    void terminalDrawSelection(uint16_t rowBegin,
-                               uint16_t colBegin,
-                               uint16_t rowEnd,
-                               uint16_t colEnd,
+    void terminalDrawSelection(Pos      begin,
+                               Pos      end,
                                bool     topless,
                                bool     bottomless) throw ();
     void terminalDrawScrollbar(size_t   totalRows,
                                size_t   historyOffset,
                                uint16_t visibleRows) throw ();
     void terminalFixDamageEnd(bool     internal,
-                              uint16_t rowBegin,
-                              uint16_t rowEnd,
-                              uint16_t colBegin,
-                              uint16_t colEnd,
+                              Pos      begin,
+                              Pos      end,
                               bool     scrollbar) throw ();
     void terminalChildExited(int exitStatus) throw ();
 };

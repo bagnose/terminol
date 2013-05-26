@@ -845,7 +845,7 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
         xy2Pos(x + w, y + h, posEnd);
         if (posEnd.col != _terminal->getCols()) { ++posEnd.col; }
         if (posEnd.row != _terminal->getRows()) { ++posEnd.row; }
-        _terminal->redraw(posBegin.row, posBegin.col, posEnd.row, posEnd.col);  // FIXME
+        _terminal->redraw(posBegin, posEnd);
 
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
@@ -1019,8 +1019,7 @@ bool Window::terminalFixDamageBegin(bool internal) throw () {
     }
 }
 
-void Window::terminalDrawRun(uint16_t        row,
-                             uint16_t        col,
+void Window::terminalDrawRun(Pos             pos,
                              Style           style,
                              const uint8_t * str,
                              size_t          count) throw () {
@@ -1033,7 +1032,7 @@ void Window::terminalDrawRun(uint16_t        row,
                                                 style.attrs.get(Attr::BOLD)));
 
         int x, y;
-        pos2XY(Pos(row, col), x, y);        // FIXME
+        pos2XY(pos, x, y);        // FIXME
 
         const auto & bgValues = _colorSet.getIndexedColor(style.bg);
         cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
@@ -1066,8 +1065,7 @@ void Window::terminalDrawRun(uint16_t        row,
     } cairo_restore(_cr);
 }
 
-void Window::terminalDrawCursor(uint16_t        row,
-                                uint16_t        col,
+void Window::terminalDrawCursor(Pos             pos,
                                 Style           style,
                                 const uint8_t * str,
                                 bool            wrapNext) throw () {
@@ -1090,7 +1088,7 @@ void Window::terminalDrawCursor(uint16_t        row,
                                                 style.attrs.get(Attr::BOLD)));
 
         int x, y;
-        pos2XY(Pos(row, col), x, y);     // FIXME
+        pos2XY(pos, x, y);
 
         cairo_set_source_rgba(_cr, bgValues.r, bgValues.g, bgValues.b,
                               wrapNext ? 0.4 : 1.0);
@@ -1152,15 +1150,13 @@ void drawLineSelection2(cairo_t * cr, double x, double y, double w, double h, do
 #endif
 }
 
-void Window::terminalDrawSelection(uint16_t rowBegin,
-                                   uint16_t colBegin,
-                                   uint16_t rowEnd,
-                                   uint16_t colEnd,
-                                   bool     topless,
-                                   bool     bottomless) throw () {
-    ASSERT(!topless    || rowBegin == 0, "");
-    ASSERT(!bottomless || rowEnd   == _terminal->getRows(), "");
-    ASSERT(rowBegin < rowEnd, "");
+void Window::terminalDrawSelection(Pos  begin,
+                                   Pos  end,
+                                   bool topless,
+                                   bool bottomless) throw () {
+    ASSERT(!topless    || begin.row == 0, "");
+    ASSERT(!bottomless || end.row   == _terminal->getRows(), "");
+    ASSERT(begin.row < end.row, "");
 
     ASSERT(_cr, "");
 
@@ -1168,13 +1164,13 @@ void Window::terminalDrawSelection(uint16_t rowBegin,
     double halfWidth = lineWidth / 2.0;
     double curve = 4.0;
 
-    if (rowBegin + 1 == rowEnd) {
-        ASSERT(colBegin < colEnd, "");
+    if (begin.row + 1 == end.row) {
+        ASSERT(begin.col < end.col, "");
 
         int x0, y0;
-        pos2XY(Pos(rowBegin, colBegin), x0, y0);        // FIXME
+        pos2XY(begin, x0, y0);
         int x1, y1;
-        pos2XY(Pos(rowEnd, colEnd), x1, y1);
+        pos2XY(end, x1, y1);
 
         drawLineSelection2(_cr,
                            x0 + halfWidth, y0 + halfWidth,
@@ -1218,10 +1214,10 @@ void Window::terminalDrawSelection(uint16_t rowBegin,
 
         uint16_t numCols = _terminal->getCols();
 
-        pos2XY(Pos(rowBegin,     0),        x0, y0);  // top left
-        pos2XY(Pos(rowBegin + 1, colBegin), x1, y1);  // #7
-        pos2XY(Pos(rowEnd - 1,   colEnd),   x2, y2);  // #3
-        pos2XY(Pos(rowEnd,       numCols),  x3, y3);  // bottom right
+        pos2XY(Pos(begin.row,     0),         x0, y0);  // top left
+        pos2XY(Pos(begin.row + 1, begin.col), x1, y1);  // #7
+        pos2XY(Pos(end.row - 1,   end.col),   x2, y2);  // #3
+        pos2XY(Pos(end.row,       numCols),   x3, y3);  // bottom right
 
         cairo_move_to(_cr, x1, y0);
         cairo_line_to(_cr, x3, y0);
@@ -1278,12 +1274,10 @@ void Window::terminalDrawScrollbar(size_t   totalRows,
     cairo_fill(_cr);
 }
 
-void Window::terminalFixDamageEnd(bool     internal,
-                                  uint16_t rowBegin,
-                                  uint16_t rowEnd,
-                                  uint16_t colBegin,
-                                  uint16_t colEnd,
-                                  bool     scrollBar) throw () {
+void Window::terminalFixDamageEnd(bool internal,
+                                  Pos  begin,
+                                  Pos  end,
+                                  bool scrollBar) throw () {
     ASSERT(_cr, "");
 
     if (internal) {
@@ -1294,9 +1288,9 @@ void Window::terminalFixDamageEnd(bool     internal,
 
         if (_config.getDoubleBuffer()) {
             int x0, y0;
-            pos2XY(Pos(rowBegin, colBegin), x0, y0);        // FIXME
+            pos2XY(begin, x0, y0);
             int x1, y1;
-            pos2XY(Pos(rowEnd, colEnd), x1, y1);
+            pos2XY(end, x1, y1);
 
             if (scrollBar) {
                 // Expand the region to include the scroll bar

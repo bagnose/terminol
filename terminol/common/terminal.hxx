@@ -38,30 +38,24 @@ public:
         virtual void terminalSetTitle(const std::string & title) throw () = 0;
         virtual void terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () = 0;
         virtual bool terminalFixDamageBegin(bool internal) throw () = 0;
-        virtual void terminalDrawRun(uint16_t        row,
-                                     uint16_t        col,
+        virtual void terminalDrawRun(Pos             pos,
                                      Style           style,
                                      const uint8_t * str,       // nul-terminated
                                      size_t          count) throw () = 0;
-        virtual void terminalDrawCursor(uint16_t        row,
-                                        uint16_t        col,
+        virtual void terminalDrawCursor(Pos             pos,
                                         Style           style,
                                         const uint8_t * str,    // nul-terminated, length 1
                                         bool            wrapNext) throw () = 0;
-        virtual void terminalDrawSelection(uint16_t rowBegin,
-                                           uint16_t colBegin,
-                                           uint16_t rowEnd,
-                                           uint16_t colEnd,
+        virtual void terminalDrawSelection(Pos      begin,
+                                           Pos      end,
                                            bool     topless,
                                            bool     bottomless) throw () = 0;
         virtual void terminalDrawScrollbar(size_t   totalRows,
                                            size_t   historyOffset,
                                            uint16_t visibleRows) throw () = 0;
         virtual void terminalFixDamageEnd(bool     internal,
-                                          uint16_t rowBegin,
-                                          uint16_t rowEnd,
-                                          uint16_t colBegin,
-                                          uint16_t colEnd,
+                                          Pos      begin,
+                                          Pos      end,
                                           bool     scrollbar) throw () = 0;
         virtual void terminalChildExited(int exitStatus) throw () = 0;
 
@@ -157,8 +151,7 @@ public:
 
     void     resize(uint16_t rows, uint16_t cols);
 
-    void     redraw(uint16_t rowBegin, uint16_t rowEnd,
-                    uint16_t colBegin, uint16_t colEnd);
+    void     redraw(Pos begin, Pos end);
 
     void     keyPress(xkb_keysym_t keySym, uint8_t state);
     void     buttonPress(Button button, int count, uint8_t state,
@@ -186,15 +179,11 @@ protected:
     void      tabCursor(TabDir dir, uint16_t count);
     void      damageCursor();
 
-    void      fixDamage(uint16_t rowBegin, uint16_t rowEnd,
-                        uint16_t colBegin, uint16_t colEnd,
-                        Damager damage);
+    void      fixDamage(Pos begin, Pos end, Damager damager);
 
     utf8::Seq translate(utf8::Seq seq, utf8::Length length) const;
 
-    void      draw(uint16_t rowBegin, uint16_t rowEnd,
-                   uint16_t colBegin, uint16_t colEnd,
-                   Damager damage);
+    void      draw(Pos begin, Pos end, Damager damage);
 
     void      write(const uint8_t * data, size_t size);
 
