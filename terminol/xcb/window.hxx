@@ -32,7 +32,7 @@ class Window :
     uint16_t          _height;
     Tty             * _tty;
     Terminal        * _terminal;
-    bool              _isOpen;  // FIXME rename to _open?
+    bool              _open;
     Pos               _pointerPos;
     bool              _mapped;          // Is the window mapped.
     bool              _focussed;        // Is the window focussed.
@@ -74,8 +74,8 @@ public:
 
     // We handle these:
 
-    bool isOpen() const { return _isOpen; }
-    int  getFd() { ASSERT(_isOpen, ""); return _tty->getFd(); }
+    bool isOpen() const { return _open; }
+    int  getFd() { ASSERT(_open, ""); return _tty->getFd(); }
 
     // The following calls are forwarded to the Terminal:
 

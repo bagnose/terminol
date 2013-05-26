@@ -42,7 +42,7 @@ Window::Window(const Config       & config,
     _height(0),
     _tty(nullptr),
     _terminal(nullptr),
-    _isOpen(false),
+    _open(false),
     _pointerPos(Pos::invalid()),
     _mapped(false),
     _focussed(false),
@@ -153,7 +153,7 @@ Window::Window(const Config       & config,
 
     _tty = new Tty(_config, rows, cols, stringify(_window), command);
     _terminal = new Terminal(*this, _config, deduper, rows, cols, keyMap, *_tty);
-    _isOpen = true;
+    _open = true;
 
     //
     // Update the window title the map the window.
@@ -207,37 +207,37 @@ Window::~Window() {
 }
 
 void Window::read() {
-    ASSERT(_isOpen, "");
+    ASSERT(_open, "");
     _terminal->read();
 }
 
 bool Window::needsFlush() const {
-    ASSERT(_isOpen, "");
+    ASSERT(_open, "");
     return _terminal->needsFlush();
 }
 
 void Window::flush() {
-    ASSERT(_isOpen, "");
+    ASSERT(_open, "");
     _terminal->flush();
 }
 
 // Events:
 
 void Window::keyPress(xcb_key_press_event_t * event) {
-    if (!_isOpen) { return; }
+    if (!_open) { return; }
 
     xcb_keysym_t keySym = _basics.getKeySym(event->detail, event->state);
     _terminal->keyPress(keySym, event->state);
 }
 
 void Window::keyRelease(xcb_key_release_event_t * UNUSED(event)) {
-    if (!_isOpen) { return; }
+    if (!_open) { return; }
 }
 
 void Window::buttonPress(xcb_button_press_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
     //PRINT("Button-press: " << event->event_x << " " << event->event_y);
-    if (!_isOpen) { return; }
+    if (!_open) { return; }
 
     switch (event->detail) {
         case XCB_BUTTON_INDEX_4:
@@ -289,7 +289,7 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
 void Window::buttonRelease(xcb_button_release_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
     //PRINT("Button-release: " << event->event_x << " " << event->event_y);
-    if (!_isOpen) { return; }
+    if (!_open) { return; }
 
     if (_pressed && _button == event->detail) {
         _terminal->buttonRelease(false, event->state);
@@ -300,7 +300,7 @@ void Window::buttonRelease(xcb_button_release_event_t * event) {
 void Window::motionNotify(xcb_motion_notify_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
     //PRINT("Motion-notify: " << event->event_x << " " << event->event_y);
-    if (!_isOpen) { return; }
+    if (!_open) { return; }
     if (!_pressed) { return; }
 
     int16_t x, y;
@@ -492,7 +492,7 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
     ASSERT(rows > 0 && cols > 0, "");
 
-    if (_isOpen) {
+    if (_open) {
         _tty->resize(rows, cols);
     }
 
@@ -549,7 +549,7 @@ void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
     //PRINT("Destroy notify");
 
     _tty->close();
-    _isOpen    = false;
+    _open    = false;
     _destroyed = true;
 }
 
@@ -561,7 +561,7 @@ void Window::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) {
 
 void Window::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
     //PRINT("Selection notify");
-    if (_isOpen) {
+    if (_open) {
         uint32_t offset = 0;        // 32-bit quantities
 
         for (;;) {
@@ -1316,5 +1316,5 @@ void Window::terminalFixDamageEnd(bool internal,
 
 void Window::terminalChildExited(int exitStatus) throw () {
     PRINT("Child exited: " << exitStatus);
-    _isOpen = false;
+    _open = false;
 }
