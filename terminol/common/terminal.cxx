@@ -91,7 +91,7 @@ Terminal::Terminal(I_Observer   & observer,
     //
     _priBuffer(_config, rows, cols,
                _config.getUnlimitedScrollBack() ?
-               std::numeric_limits<size_t>::max() :
+               std::numeric_limits<uint32_t>::max() :
                _config.getScrollBackHistory()),
     _altBuffer(_config, rows, cols, 0),
     _buffer(&_priBuffer),
