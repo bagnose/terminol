@@ -162,7 +162,7 @@ public:
     Line(uint16_t cols, const std::vector<Cell> & cells) :
         _cells(cells)
     {
-        _cells.resize(cols, Cell::blank());
+        grow(cols);
         damageAll();
     }
 
@@ -203,16 +203,11 @@ public:
         damageAdd(col, col + 1);
     }
 
-    void resize(uint16_t cols) {
-        uint16_t oldCols = _cells.size();
-        _cells.resize(cols, Cell::blank());
-
-        if (cols > oldCols) {
+    void grow(uint16_t cols) {
+        if (_cells.size() < cols) {
+            uint16_t oldCols = _cells.size();
+            _cells.resize(cols, Cell::blank());
             damageAdd(oldCols, cols);
-        }
-        else {
-            _damageBegin = std::min(_damageBegin, cols);
-            _damageEnd   = std::min(_damageEnd,   cols);
         }
     }
 
@@ -442,6 +437,11 @@ public:
         }
         else {
             _active[row - _scrollOffset].getDamage(colBegin, colEnd);
+
+            // The line may be wider than the buffer because we don't
+            // shrink it on resize.
+            colBegin = std::min(_cols, colBegin);
+            colEnd   = std::min(_cols, colEnd);
         }
     }
 
@@ -483,7 +483,7 @@ public:
 
         if (cols != getCols()) {
             for (auto & line : _active) {
-                line.resize(cols);      // FIXME only grow
+                line.grow(cols);
             }
             _cols = cols;
         }
