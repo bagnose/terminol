@@ -619,7 +619,7 @@ void Terminal::draw(Pos begin, Pos end, Damager damage) {
 
         // Step through each column, accumulating runs of compatible consecutive cells.
         for (c = colBegin2; c != colEnd2; ++c) {
-            const Cell & cell = _buffer->getCell(r, c);
+            const Cell & cell = _buffer->getCell(Pos(r, c));
 
             if (run.empty() || style != cell.style) {
                 if (!run.empty()) {
@@ -658,41 +658,38 @@ void Terminal::draw(Pos begin, Pos end, Damager damage) {
         _buffer->getHistory() + _cursor.pos.row <
         _buffer->getBar()     + _buffer->getRows())
     {
-        uint16_t row;
-        uint16_t col;
+        Pos pos(_cursor.pos.row + (_buffer->getHistory() - _buffer->getBar()),
+                _cursor.pos.col);
 
-        row = _cursor.pos.row + (_buffer->getHistory() - _buffer->getBar());
-        ASSERT(row < _buffer->getRows(), "");
-
-        col = _cursor.pos.col;
-        ASSERT(col < _buffer->getCols(), "");
+        ASSERT(pos.row < _buffer->getRows(), "");
+        ASSERT(pos.col < _buffer->getCols(), "");
 
         // Update _damage.colBegin and _damage.colEnd.
         if (_damage.begin.col == _damage.end.col) {
-            _damage.begin.col = col;
-            _damage.end.col   = col + 1;
+            _damage.begin.col = pos.col;
+            _damage.end.col   = pos.col + 1;
         }
         else {
-            _damage.begin.col = std::min(_damage.begin.col, col);
-            _damage.end.col   = std::max(_damage.end.col,   static_cast<uint16_t>(col + 1));
+            _damage.begin.col = std::min(_damage.begin.col, pos.col);
+            _damage.end.col   = std::max(_damage.end.col,   static_cast<uint16_t>(pos.col + 1));
         }
 
         // Update _damage.rowBegin and _damage.rowEnd.
         if (_damage.begin.row == _damage.end.row) {
-            _damage.begin.row = row;
-            _damage.end.row   = row + 1;
+            _damage.begin.row = pos.row;
+            _damage.end.row   = pos.row + 1;
         }
         else {
-            _damage.begin.row = std::min(_damage.begin.row, row);
-            _damage.end.row   = std::max(_damage.end.row,   static_cast<uint16_t>(row + 1));
+            _damage.begin.row = std::min(_damage.begin.row, pos.row);
+            _damage.end.row   = std::max(_damage.end.row,   static_cast<uint16_t>(pos.row + 1));
         }
 
-        const Cell & cell   = _buffer->getCell(row, col);
+        const Cell & cell   = _buffer->getCell(pos);
         utf8::Length length = utf8::leadLength(cell.seq.lead());
         run.resize(length);
         std::copy(cell.seq.bytes, cell.seq.bytes + length, &run.front());
         run.push_back(NUL);
-        _observer.terminalDrawCursor(Pos(row, col), cell.style, &run.front(), _cursor.wrapNext);
+        _observer.terminalDrawCursor(pos, cell.style, &run.front(), _cursor.wrapNext);
     }
 
     bool scrollbar =    // Identical in two places.

@@ -440,17 +440,17 @@ public:
     // Outgoing / scroll-relative operations.
     //
 
-    const Cell & getCell(uint16_t row, uint16_t col) const {
-        ASSERT(row < getRows(), "");
-        ASSERT(col < getCols(), "");
+    const Cell & getCell(Pos pos) const {
+        ASSERT(pos.row < getRows(), "");
+        ASSERT(pos.col < getCols(), "");
 
-        if (row < _scrollOffset) {
-            auto tag = _history[_history.size() - _scrollOffset + row];
+        if (pos.row < _scrollOffset) {
+            auto tag = _history[_history.size() - _scrollOffset + pos.row];
             const auto & cells = _deduper.lookup(tag);
-            return col < cells.size() ? cells[col] : BLANK;
+            return pos.col < cells.size() ? cells[pos.col] : BLANK;
         }
         else {
-            return _active[row - _scrollOffset].nth(col);
+            return _active[pos.row - _scrollOffset].nth(pos.col);
         }
     }
 
