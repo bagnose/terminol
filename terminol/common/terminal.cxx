@@ -511,7 +511,7 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, uint8_t state) {
     }
 
     switch (keySym) {
-        case XKB_KEY_F1:
+        case XKB_KEY_F9:
             _buffer->dump(std::cerr);
             return true;
     }
