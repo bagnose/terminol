@@ -438,19 +438,6 @@ protected:
 
 public:
 
-    const Cell & getCellAbs(int32_t row, uint16_t col) const {
-        size_t absRow = _history.size() + row;
-
-        if (absRow < _history.size()) {
-            return BLANK;
-        }
-        else {
-            uint16_t r = absRow - _history.size();
-            ASSERT(r < getRows(), "");
-            return _active[r].nth(col);
-        }
-    }
-
     //
     // Outgoing / scroll-relative operations.
     //

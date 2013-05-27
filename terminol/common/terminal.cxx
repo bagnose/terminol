@@ -106,8 +106,6 @@ Terminal::Terminal(I_Observer   & observer,
     //
     _damage(),
     //
-    _selection(),
-    //
     _pressed(false),
     //
     _tty(tty),
@@ -216,15 +214,6 @@ void Terminal::buttonPress(Button button, int count, uint8_t state,
     }
     else {
         if (button == Button::LEFT) {
-            _selection.state  = Selection::State::ACTIVE;
-            _selection.first  = Selection::Pos(_buffer->getScrollOffset(), pos);
-            _selection.second = _selection.first;
-
-            // FIXME cheapo
-            _buffer->damageAll();
-            fixDamage(Pos(0, 0),
-                      Pos(_buffer->getRows(), _buffer->getCols()),
-                      Damager::TTY);
         }
         else if (button == Button::MIDDLE) {
             _observer.terminalPaste(false);
@@ -274,15 +263,6 @@ void Terminal::buttonMotion(uint8_t state, bool within, Pos pos) {
         }
     }
     else {
-        if (_selection.state == Selection::State::ACTIVE) {
-            _selection.second = Selection::Pos(_buffer->getScrollOffset(), pos);
-
-            // FIXME cheapo
-            _buffer->damageAll();
-            fixDamage(Pos(0, 0),
-                      Pos(_buffer->getRows(), _buffer->getCols()),
-                      Damager::TTY);
-        }
     }
 
     _pointerPos = pos;
@@ -327,46 +307,6 @@ void Terminal::buttonRelease(bool broken, uint8_t state) {
         }
     }
     else {
-        if (_selection.state == Selection::State::ACTIVE) {
-            if (_selection.first != _selection.second) {
-                _selection.state = Selection::State::ESTABLISHED;
-
-                Selection::Pos b = _selection.first;
-                Selection::Pos e = _selection.second;
-
-                if (b.row > e.row || (b.row == e.row && b.col > e.col)) {
-                    std::swap(b, e);
-                }
-
-                std::string text;
-                uint16_t lastCol = _buffer->getCols();
-
-                for (auto i = b; i.row <= e.row; ++i.row, i.col = 0) {
-                    if (!text.empty()) { text.push_back('\n'); }
-                    size_t lastNonBlank = text.size();
-
-                    for (; i.col < lastCol && (i.row < e.row || i.col != e.col); ++i.col)
-                    {
-                        const Cell & cell = _buffer->getCellAbs(i.row, i.col);
-                        utf8::Seq seq = cell.seq;
-                        std::copy(&seq.bytes[0],
-                                  &seq.bytes[utf8::leadLength(seq.lead())],
-                                  back_inserter(text));
-
-                        if (seq != Cell::blank().seq) {
-                            lastNonBlank = text.size();
-                        }
-                    }
-
-                    text.erase(text.begin() + lastNonBlank, text.end());
-                }
-
-                _observer.terminalCopy(text, false);
-            }
-            else {
-                _selection.state = Selection::State::NONE;
-            }
-        }
     }
 
     _pressed = false;
@@ -756,26 +696,6 @@ void Terminal::draw(Pos begin, Pos end, Damager damage) {
         std::copy(cell.seq.bytes, cell.seq.bytes + length, &run.front());
         run.push_back(NUL);
         _observer.terminalDrawCursor(pos, cell.style, &run.front(), _cursor.wrapNext);
-    }
-
-    if (_selection.state != Selection::State::NONE) {
-        Selection::Pos b = _selection.first;
-        Selection::Pos e = _selection.second;
-
-        if (b.row > e.row || (b.row == e.row && b.col > e.col)) {
-            std::swap(b, e);
-        }
-
-        if (b.row != e.row || b.col != e.col) {
-            Region region(Pos(b.row + _buffer->getScrollOffset(), b.col),
-                          Pos(e.row + _buffer->getScrollOffset(), e.col));
-
-            bool topless    = false;
-            bool bottomless = false;
-
-            _observer.terminalDrawSelection(region.begin, region.end,
-                                            topless, bottomless);
-        }
     }
 
     bool scrollbar =    // Identical in two places.
