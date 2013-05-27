@@ -375,6 +375,12 @@ void Terminal::paste(const uint8_t * data, size_t size) {
     write(data, size);
 }
 
+void Terminal::clearSelection() {
+    _buffer->clearSelection();
+    fixDamage(Pos(), Pos(_buffer->getRows(), _buffer->getCols()),
+              Damager::SCROLL);     // FIXME Damager
+}
+
 void Terminal::read() {
     ASSERT(!_dispatch, "");
 

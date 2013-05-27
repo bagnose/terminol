@@ -162,6 +162,8 @@ public:
 
     void     paste(const uint8_t * data, size_t size);
 
+    void     clearSelection();
+
     // I/O:
 
     void     read();

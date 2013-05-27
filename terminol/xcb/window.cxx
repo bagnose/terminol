@@ -558,7 +558,7 @@ void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
 void Window::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) {
     //PRINT("Selection clear");
 
-    // TODO clear the selected region AND clear the selection copy buffer
+    _terminal->clearSelection();
 }
 
 void Window::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
