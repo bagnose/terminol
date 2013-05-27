@@ -141,6 +141,7 @@ private:
 //
 
 class Line {
+    uint16_t          _cols;        // May be more cells than this due to resize.
     std::vector<Cell> _cells;
     uint16_t          _damageBegin;
     uint16_t          _damageEnd;
@@ -154,22 +155,24 @@ public:
     std::vector<Cell>::const_iterator end()   const { return _cells.end(); }
 
     explicit Line(uint16_t cols) :
+        _cols(cols),
         _cells(cols, Cell::blank())
     {
         damageAll();
     }
 
     Line(uint16_t cols, const std::vector<Cell> & cells) :
+        _cols(cols),
         _cells(cells)
     {
-        grow(cols);
+        resize(cols);
         damageAll();
     }
 
     const std::vector<Cell> & cells() const { return _cells; }
 
     const Cell & nth(uint16_t col) const {
-        ASSERT(col < _cells.size(), "");
+        ASSERT(col < _cols, "");
         return _cells[col];
     }
 
@@ -179,6 +182,8 @@ public:
     }
 
     void insert(uint16_t col, uint16_t n) {
+        trim();
+
         std::copy_backward(&_cells[col],
                            &_cells[_cells.size() - n],
                            &_cells[_cells.size()]);
@@ -188,6 +193,10 @@ public:
     }
 
     void erase(uint16_t col, uint16_t n) {
+        trim();
+
+        PRINT("Erase: col=" << col << " n=" << n << " _cols=" << _cols << " size=" << _cells.size());
+
         ASSERT(col + n <= _cells.size(), "");
 
         std::copy(&_cells[col] + n, &_cells[_cells.size()], &_cells[col]);
@@ -197,31 +206,41 @@ public:
     }
 
     void setCell(uint16_t col, const Cell & cell) {
+        trim();
+
         ASSERT(col < _cells.size(), "");
         _cells[col] = cell;
 
         damageAdd(col, col + 1);
     }
 
-    void grow(uint16_t cols) {
+    void resize(uint16_t cols) {
         if (_cells.size() < cols) {
             uint16_t oldCols = _cells.size();
             _cells.resize(cols, Cell::blank());
             damageAdd(oldCols, cols);
         }
+
+        _cols = cols;
     }
 
     void clear() {
+        trim();
+
         std::fill(begin(), end(), Cell::blank());
         damageAll();
     }
 
     void clearLeft(uint16_t endCol) {
+        trim();
+
         std::fill(begin(), begin() + endCol, Cell::blank());
         damageAdd(0, endCol);
     }
 
     void clearRight(uint16_t beginCol) {
+        trim();
+
         std::fill(begin() + beginCol, end(), Cell::blank());
         damageAdd(beginCol, _cells.size());
     }
@@ -254,6 +273,13 @@ public:
         else {
             _damageBegin = std::min(_damageBegin, begin_);
             _damageEnd   = std::max(_damageEnd,   end_);
+        }
+    }
+
+    void trim() {
+        if (_cells.size() != _cols) {
+            ASSERT(_cells.size() > _cols, "");
+            _cells.erase(_cells.begin() + _cols, _cells.end());
         }
     }
 };
@@ -483,7 +509,7 @@ public:
 
         if (cols != getCols()) {
             for (auto & line : _active) {
-                line.grow(cols);
+                line.resize(cols);
             }
             _cols = cols;
         }
