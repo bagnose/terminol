@@ -15,16 +15,18 @@
 
 namespace {
 
-    template <class T>
-    T sdbm(const void * buf, size_t bufLength) {
-        const uint8_t * buffer = static_cast<const uint8_t *>(buf);
-
-        T hashAddress = 0;
-        for (size_t i = 0; i != bufLength; ++i) {
-            hashAddress = buffer[i] + (hashAddress << 6) + (hashAddress << 16) - hashAddress;
-        }
-        return hashAddress;
+template <class T> struct SDBM {
+    typedef T Type;
+    T operator () (T val, uint8_t next) {
+        return static_cast<T>(next) + (val << 6) + (val << 16) - val;
     }
+};
+
+template <class A> typename A::Type hash(const void * buffer,
+                                         size_t       length) {
+    auto buf = static_cast<const uint8_t *>(buffer);
+    return std::accumulate(buf, buf + length, typename A::Type(0), A());
+}
 
 } // namespace {anonymous}
 
@@ -126,7 +128,7 @@ again:
 
 private:
     Tag makeTag(const std::vector<Cell> & cells) const {
-        return sdbm<Tag>(&cells.front(), sizeof(Cell) * cells.size());
+        return hash<SDBM<Tag>>(&cells.front(), sizeof(Cell) * cells.size());
     }
 };
 
