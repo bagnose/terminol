@@ -318,6 +318,7 @@ class Buffer {
 
     bool                       _barDamage;
 
+    int                        _selectExpansion;
     APos                       _selectMarker;
     APos                       _selectDelimiter;
 
@@ -336,7 +337,10 @@ public:
         _scrollOffset(0),
         _marginBegin(0),
         _marginEnd(rows),
-        _barDamage(true)
+        _barDamage(true),
+        _selectExpansion(0),
+        _selectMarker(),
+        _selectDelimiter()
     {
         ASSERT(rows != 0, "");
         ASSERT(cols != 0, "");
@@ -593,6 +597,7 @@ public:
     //
 
     void selectMark(Pos pos) {
+        _selectExpansion = 0;
         _selectMarker    = APos(pos, _history.size() - _scrollOffset);
         _selectDelimiter = _selectMarker;
     }
@@ -626,6 +631,15 @@ public:
     }
 
     void selectExpand(Pos UNUSED(pos)) {
+        auto b = _selectMarker;
+        auto e = _selectDelimiter;
+
+        // Re-order aBegin and aEnd if necessary.
+        if (b.row > e.row || (b.row == e.row && b.col > e.col)) {
+            std::swap(b, e);
+        }
+
+        // TODO
     }
 
     //
