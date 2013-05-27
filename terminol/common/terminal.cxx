@@ -230,34 +230,36 @@ void Terminal::buttonMotion(uint8_t state, bool within, Pos pos) {
 
     ASSERT(_pressed, "");
 
-    if (_modes.get(Mode::MOUSE_MOTION) && within) {
-        int num = static_cast<int>(_button) + 32;
+    if (_modes.get(Mode::MOUSE_MOTION)) {
+        if (within) {
+            int num = static_cast<int>(_button) + 32;
 
-        // FIXME more reason to standardise the masks in common.
-        if (state & _keyMap.maskShift())   { num +=  4; }
-        if (state & _keyMap.maskAlt())     { num +=  8; }
-        if (state & _keyMap.maskControl()) { num += 16; }
+            // FIXME more reason to standardise the masks in common.
+            if (state & _keyMap.maskShift())   { num +=  4; }
+            if (state & _keyMap.maskAlt())     { num +=  8; }
+            if (state & _keyMap.maskControl()) { num += 16; }
 
-        std::ostringstream ost;
-        if (_modes.get(Mode::MOUSE_SGR)) {
-            ost << ESC << "[<"
-                << num << ';' << pos.col + 1 << ';' << pos.row + 1
-                << 'M';
-        }
-        else if (pos.row < 223 && pos.col < 223) {
-            ost << ESC << "[M"
-                << char(32 + num)
-                << char(32 + pos.col + 1)
-                << char(32 + pos.row + 1);
-        }
-        else {
-            // Couldn't deliver it
-        }
+            std::ostringstream ost;
+            if (_modes.get(Mode::MOUSE_SGR)) {
+                ost << ESC << "[<"
+                    << num << ';' << pos.col + 1 << ';' << pos.row + 1
+                    << 'M';
+            }
+            else if (pos.row < 223 && pos.col < 223) {
+                ost << ESC << "[M"
+                    << char(32 + num)
+                    << char(32 + pos.col + 1)
+                    << char(32 + pos.row + 1);
+            }
+            else {
+                // Couldn't deliver it
+            }
 
-        const std::string & str = ost.str();
+            const std::string & str = ost.str();
 
-        if (!str.empty()) {
-            write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+            if (!str.empty()) {
+                write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+            }
         }
     }
 
@@ -655,11 +657,9 @@ void Terminal::draw(Pos begin, Pos end, Damager damage) {
     }
 
     if (_modes.get(Mode::SHOW_CURSOR) &&
-        _buffer->getHistory() + _cursor.pos.row <
-        _buffer->getBar()     + _buffer->getRows())
+        _buffer->getScrollOffset() + _cursor.pos.row < _buffer->getRows())
     {
-        Pos pos(_cursor.pos.row + (_buffer->getHistory() - _buffer->getBar()),
-                _cursor.pos.col);
+        Pos pos(_cursor.pos.row + _buffer->getScrollOffset(), _cursor.pos.col);
 
         ASSERT(pos.row < _buffer->getRows(), "");
         ASSERT(pos.col < _buffer->getCols(), "");

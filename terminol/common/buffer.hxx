@@ -335,6 +335,8 @@ public:
     size_t   getBar()     const { return _history.size() - _scrollOffset; }
     size_t   getTotal()   const { return getHistory() + getRows(); }
 
+    size_t   getScrollOffset() const { return _scrollOffset; }
+
     uint16_t getMarginBegin() const { return _marginBegin; }
     uint16_t getMarginEnd()   const { return _marginEnd;   }
 
