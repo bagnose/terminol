@@ -11,13 +11,17 @@
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_event.h>
+#include <xcb/xcb_aux.h>
 #include <cairo-ft.h>
 #include <fontconfig/fontconfig.h>
 
 #include <unistd.h>
 #include <sys/select.h>
 
-class EventLoop : protected Uncopyable {
+class EventLoop :
+    protected Window::I_Observer,
+    protected Uncopyable
+{
     Deduper  _deduper;
     Basics   _basics;
     ColorSet _colorSet;
@@ -41,7 +45,8 @@ public:
         _keyMap(_basics.maskShift(),
                 _basics.maskAlt(),
                 _basics.maskControl()),
-        _window(config,
+        _window(*this,
+                config,
                 _deduper,
                 _basics,
                 _colorSet,
@@ -51,6 +56,8 @@ public:
     {
         loop();
     }
+
+    virtual ~EventLoop() {}
 
 protected:
     void loop() throw (Error) {
@@ -85,10 +92,19 @@ protected:
         }
     }
 
-    void xevent() throw (Error) {
+    void xevent(bool block = false) throw (Error) {
         xcb_generic_event_t * event;
 
-        while ((event = ::xcb_poll_for_event(_basics.connection()))) {
+        for (;;) {
+            if (block) {
+                event = ::xcb_wait_for_event(_basics.connection());
+                block = false;
+            }
+            else {
+                event = ::xcb_poll_for_event(_basics.connection());
+                if (!event) { break; }
+            }
+
             auto    guard         = scopeGuard([event] { std::free(event); });
             uint8_t response_type = XCB_EVENT_RESPONSE_TYPE(event);
             if (response_type == 0) { throw Error("Lost connection (2)?"); }
@@ -190,6 +206,15 @@ protected:
                 PRINT("Unrecognised event: " << static_cast<int>(response_type));
                 break;
         }
+    }
+
+protected:
+
+    // Window::I_Observer implementation:
+
+    void sync() throw () {
+        xcb_aux_sync(_basics.connection());
+        xevent(true);
     }
 };
 

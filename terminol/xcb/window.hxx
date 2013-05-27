@@ -21,6 +21,18 @@ class Window :
     protected Terminal::I_Observer,
     protected Uncopyable
 {
+public:
+    class I_Observer {
+    public:
+        virtual void sync() throw () = 0;
+
+    protected:
+        I_Observer() {}
+        ~I_Observer() {}
+    };
+
+private:
+    I_Observer      & _observer;
     const Config    & _config;
     Basics          & _basics;
     const ColorSet  & _colorSet;
@@ -60,7 +72,8 @@ public:
         std::string message;
     };
 
-    Window(const Config       & config,
+    Window(I_Observer         & observer,
+           const Config       & config,
            Deduper            & deduper,
            Basics             & basics,
            const ColorSet     & colorSet,

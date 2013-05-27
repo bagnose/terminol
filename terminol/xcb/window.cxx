@@ -24,13 +24,15 @@ int _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
 }
 } // namespace {anonymous}
 
-Window::Window(const Config       & config,
+Window::Window(I_Observer         & observer,
+               const Config       & config,
                Deduper            & deduper,
                Basics             & basics,
                const ColorSet     & colorSet,
                FontSet            & fontSet,
                const KeyMap       & keyMap,
                const Tty::Command & command) throw (Error) :
+    _observer(observer),
     _config(config),
     _basics(basics),
     _colorSet(colorSet),
@@ -969,22 +971,24 @@ void Window::terminalSetTitle(const std::string & title) throw () {
 }
 
 void Window::terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () {
-    NYI("Terminal resize: rows=" << rows << ", cols=" << cols);
-    // Thoughts: this is tricky because we are at the mercy of the window
-    // manager and our resize request requires a round trip to the X server.
-    // Do we need to try to complete the resize before we return? i.e. handle
-    // the configure event, etc...
+    const int BORDER_THICKNESS = _config.getBorderThickness();
+    const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
 
-    xcb_ewmh_request_moveresize_window(_basics.ewmhConnection(),
-                                       _basics.screenNum(),
-                                       _window,
-                                       XCB_GRAVITY_NORTH_WEST,
-                                       XCB_EWMH_CLIENT_SOURCE_TYPE_NORMAL,
-                                       static_cast<xcb_ewmh_moveresize_window_opt_flags_t>
-                                       (XCB_EWMH_MOVERESIZE_WINDOW_WIDTH |
-                                        XCB_EWMH_MOVERESIZE_WINDOW_HEIGHT),
-                                       0, 0,        // x,y
-                                       100, 100);
+    uint32_t width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
+    uint32_t height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
+
+    if (_width != width || _height != height) {
+        PRINT("RESIZING");
+        uint32_t values[] = { width, height };
+        xcb_configure_window(_basics.connection(),
+                             _window,
+                             XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
+                             values);
+
+        xcb_flush(_basics.connection());
+
+        _observer.sync();
+    }
 }
 
 bool Window::terminalFixDamageBegin(bool internal) throw () {

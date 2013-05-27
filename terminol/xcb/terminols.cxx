@@ -11,6 +11,7 @@
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_event.h>
+#include <xcb/xcb_aux.h>
 #include <cairo-ft.h>
 #include <fontconfig/fontconfig.h>
 
@@ -118,7 +119,8 @@ protected:
 //
 
 class EventLoop :
-    public I_Creator,
+    protected Window::I_Observer,
+    protected I_Creator,
     protected Uncopyable
 {
     typedef std::map<xcb_window_t, Window *> Windows;
@@ -227,10 +229,19 @@ protected:
         }
     }
 
-    void xevent() throw (Error) {
+    void xevent(bool block = false) throw (Error) {
         xcb_generic_event_t * event;
 
-        while ((event = ::xcb_poll_for_event(_basics.connection()))) {
+        for (;;) {
+            if (block) {
+                event = ::xcb_wait_for_event(_basics.connection());
+                block = false;
+            }
+            else {
+                event = ::xcb_poll_for_event(_basics.connection());
+                if (!event) { break; }
+            }
+
             auto    guard         = scopeGuard([event] { std::free(event); });
             uint8_t response_type = XCB_EVENT_RESPONSE_TYPE(event);
             if (response_type == 0) { throw Error("Lost connection (2)?"); }
@@ -372,11 +383,18 @@ protected:
         }
     }
 
-    // I_Creator implementatin:
+    // Window::I_Observer implementation:
+
+    void sync() throw () {
+        xcb_aux_sync(_basics.connection());
+        xevent(true);
+    }
+
+    // I_Creator implementation:
 
     void create() throw () {
         try {
-            Window * window = new Window(_config, _deduper,
+            Window * window = new Window(*this, _config, _deduper,
                                          _basics, _colorSet, _fontSet, _keyMap);
             _windows.insert(std::make_pair(window->getWindowId(), window));
         }

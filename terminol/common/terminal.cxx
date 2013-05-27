@@ -129,7 +129,8 @@ Terminal::~Terminal() {
 }
 
 void Terminal::resize(uint16_t rows, uint16_t cols) {
-    ASSERT(!_dispatch, "");
+    // Special exception, resizes can occur during dispatch.
+
     ASSERT(rows > 0 && cols > 0, "");
 
     int16_t priRowAdjust = _priBuffer.resize(rows, cols);
