@@ -464,6 +464,26 @@ protected:
         _deduper.remove(tag);
     }
 
+    void normalSelection(APos & b, APos & e) const {
+        b = _selectMarker;
+        e = _selectDelimiter;
+
+        // Re-order aBegin and aEnd if necessary.
+        if (b.row > e.row || (b.row == e.row && b.col > e.col)) {
+            std::swap(b, e);
+        }
+
+        if (b.col == _cols) {
+            ++b.row;
+            b.col = 0;
+        }
+
+        if (e.col == 0) {
+            --e.row;
+            e.col = _cols;
+        }
+    }
+
 public:
 
     //
@@ -520,13 +540,8 @@ public:
             return false;
         }
 
-        auto b = _selectMarker;
-        auto e = _selectDelimiter;
-
-        // Re-order aBegin and aEnd if necessary.
-        if (b.row > e.row || (b.row == e.row && b.col > e.col)) {
-            std::swap(b, e);
-        }
+        APos b, e;
+        normalSelection(b, e);
 
         for (auto i = b; i.row <= e.row; ++i.row, i.col = 0) {
             if (!text.empty()) { text.push_back('\n'); }
@@ -557,35 +572,30 @@ public:
             return false;
         }
 
-        auto aBegin = _selectMarker;
-        auto aEnd   = _selectDelimiter;
-
-        // Re-order aBegin and aEnd if necessary.
-        if (aBegin.row > aEnd.row || (aBegin.row == aEnd.row && aBegin.col > aEnd.col)) {
-            std::swap(aBegin, aEnd);
-        }
+        APos b, e;
+        normalSelection(b, e);
 
         uint32_t topOffset = _history.size() - _scrollOffset;
 
         // Test if the selection intersects the visible region.
-        if (aBegin.row < topOffset + getRows() && aEnd.row > topOffset)
+        if (b.row < topOffset + getRows() && e.row > topOffset)
         {
-            if (aBegin.row < topOffset) {
+            if (b.row < topOffset) {
                 topless = true;
                 begin = Pos();
             }
             else {
                 topless = false;
-                begin = Pos(aBegin.row - topOffset, aBegin.col);
+                begin = Pos(b.row - topOffset, b.col);
             }
 
-            if (aEnd.row >= topOffset + getRows()) {
+            if (e.row >= topOffset + getRows()) {
                 bottomless = true;
                 end = Pos(getRows(), getCols());
             }
             else{
                 bottomless = false;
-                end = Pos(aEnd.row - topOffset, aEnd.col);
+                end = Pos(e.row - topOffset, e.col);
             }
 
             return true;
@@ -612,13 +622,8 @@ public:
     void adjustSelection(Pos pos) {
         if (_selectMarker == _selectDelimiter) { return; }
 
-        auto b = _selectMarker;
-        auto e = _selectDelimiter;
-
-        // Re-order aBegin and aEnd if necessary.
-        if (b.row > e.row || (b.row == e.row && b.col > e.col)) {
-            std::swap(b, e);
-        }
+        APos b, e;
+        normalSelection(b, e);
 
         auto p = APos(pos, _history.size());
 
@@ -634,13 +639,8 @@ public:
     }
 
     void expandSelection(Pos UNUSED(pos)) {
-        auto b = _selectMarker;
-        auto e = _selectDelimiter;
-
-        // Re-order aBegin and aEnd if necessary.
-        if (b.row > e.row || (b.row == e.row && b.col > e.col)) {
-            std::swap(b, e);
-        }
+        APos b, e;
+        normalSelection(b, e);
 
         // TODO
     }
@@ -682,14 +682,8 @@ public:
         if (_active[pos.row].setCell(pos.col, cell)) {
             if (_selectMarker != _selectDelimiter) {
                 // There is a selection
-
-                auto b = _selectMarker;
-                auto e = _selectDelimiter;
-
-                // Re-order aBegin and aEnd if necessary.
-                if (b.row > e.row || (b.row == e.row && b.col > e.col)) {
-                    std::swap(b, e);
-                }
+                APos b, e;
+                normalSelection(b, e);
 
                 APos apos(pos, _history.size() - _scrollOffset);
 
