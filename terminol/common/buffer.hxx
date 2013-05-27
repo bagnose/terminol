@@ -700,7 +700,7 @@ public:
         }
     }
 
-    int16_t resize(uint16_t rows, uint16_t cols) {
+    int16_t resize(uint16_t rows, uint16_t cols, uint16_t cursorRow) {
         ASSERT(rows != 0, "");
         ASSERT(cols != 0, "");
 
@@ -738,13 +738,20 @@ public:
             while (getRows() != rows) {
                 if (_active.back().isBlank()) {
                     _active.pop_back();
+
+                    // FIXME this cursor-dependent adjustment stuff is
+                    // all pretty horrible.
+                    if (cursorRow == _active.size()) {
+                        --cursorRow;
+                        --delta;
+                    }
                 }
                 else {
                     break;
                 }
             }
 
-            delta = rows - getRows();
+            delta -= getRows() - rows;
 
             if (_historyLimit == 0) {
                 // Optimisation, just erase lines if they aren't going into history.

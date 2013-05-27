@@ -128,12 +128,27 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
 
     ASSERT(rows > 0 && cols > 0, "");
 
-    int16_t priRowAdjust = _priBuffer.resize(rows, cols);
-    int16_t altRowAdjust = _altBuffer.resize(rows, cols);
+    ASSERT(_cursor.pos.row < _buffer->getRows(), "");
+    ASSERT(_cursor.pos.col < _buffer->getCols(), "");
+
+    // Clear any wrapNext if the number of cols has changed.
+    if (_cursor.wrapNext && _cursor.pos.col != cols - 1) {
+        _cursor.wrapNext = false;
+    }
+
+    // FIXME this cursor-dependent adjustment stuff is
+    // all pretty horrible.
+    int16_t priRowAdjust = _priBuffer.resize(rows, cols, _cursor.pos.row);
+    int16_t altRowAdjust = _altBuffer.resize(rows, cols, _cursor.pos.row);
     int16_t rowAdjust    = _buffer == &_priBuffer ? priRowAdjust : altRowAdjust;
 
+    // Note, we mustn't call damage cursor here because the old
+    // coordinates might not be valid.
     _cursor.pos.row += rowAdjust;
     _cursor.pos.col  = clamp<uint16_t>(_cursor.pos.col, 0, cols - 1);
+
+    ASSERT(_cursor.pos.row < rows, "");
+    ASSERT(_cursor.pos.col < cols, "");
 
     // XXX is this correct for the saved cursor row/col?
     _savedCursor.pos = Pos();
