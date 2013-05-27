@@ -283,6 +283,23 @@ public:
 //
 
 class Buffer {
+    struct APos {
+        APos() : row(0), col(0) {}
+        APos(uint32_t row_, uint16_t col_) : row(row_), col(col_) {}
+        APos(Pos pos, uint32_t offset) : row(pos.row + offset), col(pos.col) {}
+
+        uint32_t row;
+        uint16_t col;
+
+        friend bool operator == (APos lhs, APos rhs) {
+            return lhs.row == rhs.row && lhs.col == rhs.col;
+        }
+
+        friend bool operator != (APos lhs, APos rhs) {
+            return !(lhs == rhs);
+        }
+    };
+
     static const Cell BLANK;
 
     const Config             & _config;
@@ -299,6 +316,9 @@ class Buffer {
     uint16_t                   _marginEnd;
 
     bool                       _barDamage;
+
+    APos                       _selectMarker;
+    APos                       _selectDelimiter;
 
 public:
     Buffer(const Config & config,
@@ -439,7 +459,7 @@ protected:
 public:
 
     //
-    // Outgoing / scroll-relative operations.
+    // Render / scroll-relative operations.
     //
 
     const Cell & getCell(Pos pos) const {
@@ -473,8 +493,142 @@ public:
         }
     }
 
+    const Cell & getCellAbs(APos pos) const {
+        if (pos.row < _history.size()) {
+            auto tag = _history[pos.row];
+            const auto & cells = _deduper.lookup(tag);
+            return pos.col < cells.size() ? cells[pos.col] : BLANK;
+        }
+        else {
+            uint16_t r = pos.row - _history.size();
+            ASSERT(r < getRows(), r << " < " << getRows());
+            return _active[r].nth(pos.col);
+        }
+    }
+
+    bool getSelectText(std::string & text) {
+        // If the marker and delimiter are the same then the selection is empty.
+        if (_selectMarker == _selectDelimiter) {
+            return false;
+        }
+
+        auto b = _selectMarker;
+        auto e = _selectDelimiter;
+
+        // Re-order aBegin and aEnd if necessary.
+        if (b.row > e.row || (b.row == e.row && b.col > e.col)) {
+            std::swap(b, e);
+        }
+
+        for (auto i = b; i.row <= e.row; ++i.row, i.col = 0) {
+            if (!text.empty()) { text.push_back('\n'); }
+            size_t lastNonBlank = text.size();
+
+            for (; i.col < getCols() && (i.row < e.row || i.col != e.col); ++i.col)
+            {
+                const Cell & cell = getCellAbs(i);
+                utf8::Seq seq = cell.seq;
+                std::copy(&seq.bytes[0],
+                          &seq.bytes[utf8::leadLength(seq.lead())],
+                          back_inserter(text));
+
+                if (seq != Cell::blank().seq) {
+                    lastNonBlank = text.size();
+                }
+            }
+
+            text.erase(text.begin() + lastNonBlank, text.end());
+        }
+
+        return true;
+    }
+
+    bool getSelect(Pos & begin, Pos & end, bool & topless, bool & bottomless) {
+        // If the marker and delimiter are the same then the selection is empty.
+        if (_selectMarker == _selectDelimiter) {
+            return false;
+        }
+
+        auto aBegin = _selectMarker;
+        auto aEnd   = _selectDelimiter;
+
+        // Re-order aBegin and aEnd if necessary.
+        if (aBegin.row > aEnd.row || (aBegin.row == aEnd.row && aBegin.col > aEnd.col)) {
+            std::swap(aBegin, aEnd);
+        }
+
+        uint32_t topOffset = _history.size() - _scrollOffset;
+
+        // Test if the selection intersects the visible region.
+        if (aBegin.row < topOffset + getRows() && aEnd.row > topOffset)
+        {
+            if (aBegin.row < topOffset) {
+                topless = true;
+                begin = Pos();
+            }
+            else {
+                topless = false;
+                begin = Pos(aBegin.row - topOffset, aBegin.col);
+            }
+
+            if (aEnd.row >= topOffset + getRows()) {
+                bottomless = true;
+                end = Pos(getRows(), getCols());
+            }
+            else{
+                bottomless = false;
+                end = Pos(aEnd.row - topOffset, aEnd.col);
+            }
+
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
     //
-    // Incoming / active-relative operations.
+    // Select / scroll-relative operations.
+    //
+
+    void selectMark(Pos pos) {
+        _selectMarker    = APos(pos, _history.size() - _scrollOffset);
+        _selectDelimiter = _selectMarker;
+    }
+
+    void selectDelimit(Pos pos) {
+        _selectDelimiter = APos(pos, _history.size() - _scrollOffset);
+    }
+
+    void selectAdjust(Pos pos) {
+        if (_selectMarker == _selectDelimiter) { return; }
+
+        auto b = _selectMarker;
+        auto e = _selectDelimiter;
+
+        // Re-order aBegin and aEnd if necessary.
+        if (b.row > e.row || (b.row == e.row && b.col > e.col)) {
+            std::swap(b, e);
+        }
+
+        auto p = APos(pos, _history.size());
+
+        if (p.row < b.row || (p.row == b.row && p.col < b.col)) {
+            b = p;
+        }
+        else if (p.row > e.row || (p.row == e.row && p.col > e.col)) {
+            e = p;
+        }
+
+        _selectMarker    = b;
+        _selectDelimiter = e;
+    }
+
+    void selectExpand(Pos UNUSED(pos)) {
+    }
+
+    //
+    // Update / active-relative operations.
     //
 
     void insertCells(Pos pos, uint16_t n) {
@@ -578,6 +732,8 @@ public:
         _barDamage   = true;
 
         _active.shrink_to_fit();
+
+        _selectMarker = _selectDelimiter = APos();
 
         damageAll();
 

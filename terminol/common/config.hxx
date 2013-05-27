@@ -81,6 +81,7 @@ public:
     bool                getScrollOnTtyOutput() const { return _scrollOnTtyOutput; }
     bool                getScrollOnTtyKeyPress() const { return _scrollOnTtyKeyPress; }
     bool                getScrollOnResize() const { return _scrollOnResize; }
+    bool                getScrollOnPaste() const { return true; }
     bool                getDoubleBuffer() const { return _doubleBuffer; }
     const std::string & getTitle() const { return _title; }
     const std::string & getChdir() const { return _chdir; }

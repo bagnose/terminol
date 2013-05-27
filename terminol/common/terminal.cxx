@@ -214,9 +214,23 @@ void Terminal::buttonPress(Button button, int count, uint8_t state,
     }
     else {
         if (button == Button::LEFT) {
+            if (count == 1) {
+                _buffer->selectMark(pos);
+            }
+            else {
+                _buffer->selectExpand(pos);
+            }
+
+            fixDamage(Pos(), Pos(_buffer->getRows(), _buffer->getCols()),
+                      Damager::SCROLL);     // FIXME Damager
         }
         else if (button == Button::MIDDLE) {
             _observer.terminalPaste(false);
+        }
+        else if (_button == Button::RIGHT) {
+            _buffer->selectAdjust(pos);
+            fixDamage(Pos(), Pos(_buffer->getRows(), _buffer->getCols()),
+                      Damager::SCROLL);     // FIXME Damager
         }
     }
 
@@ -263,6 +277,11 @@ void Terminal::buttonMotion(uint8_t state, bool within, Pos pos) {
         }
     }
     else {
+        if (_button == Button::LEFT) {
+            _buffer->selectDelimit(pos);
+            fixDamage(Pos(), Pos(_buffer->getRows(), _buffer->getCols()),
+                      Damager::SCROLL);     // FIXME Damager
+        }
     }
 
     _pointerPos = pos;
@@ -307,6 +326,10 @@ void Terminal::buttonRelease(bool broken, uint8_t state) {
         }
     }
     else {
+        std::string text;
+        if (_buffer->getSelectText(text)) {
+            _observer.terminalCopy(text, false);
+        }
     }
 
     _pressed = false;
@@ -333,6 +356,12 @@ void Terminal::scrollWheel(ScrollDir dir, uint8_t UNUSED(state)) {
 }
 
 void Terminal::paste(const uint8_t * data, size_t size) {
+    if (_config.getScrollOnPaste() && _buffer->scrollBottom()) {
+        fixDamage(Pos(0, 0),
+                  Pos(_buffer->getRows(), _buffer->getCols()),
+                  Damager::SCROLL);
+    }
+
     write(data, size);
 }
 
@@ -395,14 +424,21 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, uint8_t state) {
         state & _keyMap.maskControl())
     {
         switch (keySym) {
-            case XKB_KEY_X:
-                _observer.terminalCopy("PRIMARY SELECTION", false);
-                return true;
-            case XKB_KEY_C:
-                _observer.terminalCopy("CLIPBOARD SELECTION", true);
-                return true;
-            case XKB_KEY_V: {
+            case XKB_KEY_X: {
                 std::string text;
+                if (_buffer->getSelectText(text)) {
+                    _observer.terminalCopy(text, false);
+                }
+                return true;
+            }
+            case XKB_KEY_C: {
+                std::string text;
+                if (_buffer->getSelectText(text)) {
+                    _observer.terminalCopy(text, true);
+                }
+                return true;
+            }
+            case XKB_KEY_V: {
                 _observer.terminalPaste(true);
                 return true;
             }
@@ -696,6 +732,14 @@ void Terminal::draw(Pos begin, Pos end, Damager damage) {
         std::copy(cell.seq.bytes, cell.seq.bytes + length, &run.front());
         run.push_back(NUL);
         _observer.terminalDrawCursor(pos, cell.style, &run.front(), _cursor.wrapNext);
+    }
+
+    {
+        Pos sBegin, sEnd;
+        bool topless, bottomless;
+        if (_buffer->getSelect(sBegin, sEnd, topless, bottomless)) {
+            _observer.terminalDrawSelection(sBegin, sEnd, topless, bottomless);
+        }
     }
 
     bool scrollbar =    // Identical in two places.

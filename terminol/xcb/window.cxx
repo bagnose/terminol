@@ -1178,9 +1178,14 @@ void Window::terminalDrawSelection(Pos  begin,
     double halfWidth = lineWidth / 2.0;
     double curve = 4.0;
 
-    uint16_t numCols = _terminal->getCols();
+    auto numCols = _terminal->getCols();
+    auto plus    = bottomless ? 0 : 1;
+
+    double bg[4] = { 0.0, 0.0, 1.0, 0.1 };
+    double fg[4] = { 0.0, 0.5, 1.0, 0.3 };
 
     if (begin.row == end.row) {
+        ASSERT(!topless && !bottomless, "");
         ASSERT(begin.col < end.col, "");
 
         //       0                  1
@@ -1189,14 +1194,20 @@ void Window::terminalDrawSelection(Pos  begin,
         //   1   3------------------2
 
         int x0, y0;
-        pos2XY(begin, x0, y0);
         int x1, y1;
+        pos2XY(begin,      x0, y0);
         pos2XY(end.down(), x1, y1);
 
         pathSingleLineSelection(_cr,
                                 x0, y0, x1, y1,
                                 halfWidth,
                                 curve);
+
+        cairo_set_source_rgba(_cr, bg[0], bg[1], bg[2], bg[3]);
+        cairo_fill_preserve(_cr);
+
+        cairo_set_source_rgba(_cr, fg[0], fg[1], fg[2], fg[3]);
+        cairo_stroke(_cr);
     }
     else if (begin.row + 1 == end.row && begin.col >= end.col)
     {
@@ -1209,25 +1220,28 @@ void Window::terminalDrawSelection(Pos  begin,
         int x0, x1, x2, x3;
         int y0, y1, y2;
 
-        pos2XY(Pos(begin.row, 0), x0, y0);
-        pos2XY(Pos(end.row, end.col), x1, y1);
-        pos2XY(Pos(end.row + 1, begin.col), x2, y2);
-        pos2XY(Pos(end.row + 1, numCols), x3, y2);      // clobber y2 with same value
+        pos2XY(Pos(begin.row,      0),         x0, y0);
+        pos2XY(Pos(end.row,        end.col),   x1, y1);
+        pos2XY(Pos(end.row + plus, begin.col), x2, y2);
+        pos2XY(Pos(end.row + plus, numCols),   x3, y2);      // clobber y2 with same value
+
+        if (topless)    { y0 = -1; }
+        if (bottomless) { y2 = _height + 1; }
 
         pathDoubleLineSelection(_cr, x0, x1, x2, x3, y0, y1, y2, halfWidth, curve, true);
 
-        cairo_set_source_rgba(_cr, 0.3, 0.1, 0.8, 0.1);
+        cairo_set_source_rgba(_cr, bg[0], bg[1], bg[2], bg[3]);
         cairo_fill_preserve(_cr);
 
-        cairo_set_source_rgba(_cr, 0.0, 0.7, 0.8, 0.7);
+        cairo_set_source_rgba(_cr, fg[0], fg[1], fg[2], fg[3]);
         cairo_stroke(_cr);
 
         pathDoubleLineSelection(_cr, x0, x1, x2, x3, y0, y1, y2, halfWidth, curve, false);
 
-        cairo_set_source_rgba(_cr, 0.3, 0.1, 0.8, 0.1);
+        cairo_set_source_rgba(_cr, bg[0], bg[1], bg[2], bg[3]);
         cairo_fill_preserve(_cr);
 
-        cairo_set_source_rgba(_cr, 0.0, 0.7, 0.8, 0.7);
+        cairo_set_source_rgba(_cr, fg[0], fg[1], fg[2], fg[3]);
         cairo_stroke(_cr);
     }
     else {
@@ -1259,19 +1273,22 @@ void Window::terminalDrawSelection(Pos  begin,
         int x0, x1, x2, x3;
         int y0, y1, y2, y3;
 
-        pos2XY(Pos(begin.row,     0),         x0, y0);  // top left
-        pos2XY(Pos(begin.row + 1, begin.col), x1, y1);  // #7
-        pos2XY(Pos(end.row,       end.col),   x2, y2);  // #3
-        pos2XY(Pos(end.row + 1,   numCols),   x3, y3);  // bottom right
+        pos2XY(Pos(begin.row,      0),         x0, y0);  // top left
+        pos2XY(Pos(begin.row + 1,  begin.col), x1, y1);  // #7
+        pos2XY(Pos(end.row,        end.col),   x2, y2);  // #3
+        pos2XY(Pos(end.row + plus, numCols),   x3, y3);  // bottom right
+
+        if (topless)    { y0 = -1; }
+        if (bottomless) { y3 = _height + 1; }
 
         pathMultiLineSelection(_cr, x0, x1, x2, x3, y0, y1, y2, y3, halfWidth, curve);
+
+        cairo_set_source_rgba(_cr, bg[0], bg[1], bg[2], bg[3]);
+        cairo_fill_preserve(_cr);
+
+        cairo_set_source_rgba(_cr, fg[0], fg[1], fg[2], fg[3]);
+        cairo_stroke(_cr);
     }
-
-    cairo_set_source_rgba(_cr, 0.3, 0.1, 0.8, 0.1);
-    cairo_fill_preserve(_cr);
-
-    cairo_set_source_rgba(_cr, 0.0, 0.7, 0.8, 0.7);
-    cairo_stroke(_cr);
 }
 
 void Window::terminalDrawScrollbar(size_t   totalRows,
