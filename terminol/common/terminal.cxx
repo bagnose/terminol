@@ -835,8 +835,6 @@ void Terminal::machineControl(uint8_t c) throw () {
             tabCursor(TabDir::FORWARD, 1);
             break;
         case BS:
-            damageCursor();
-
             if (_cursor.wrapNext) {
                 _cursor.wrapNext = false;
             }
@@ -844,24 +842,21 @@ void Terminal::machineControl(uint8_t c) throw () {
                 if (_cursor.pos.col == 0) {
                     if (_modes.get(Mode::AUTO_WRAP)) {
                         if (_cursor.pos.row > _buffer->getMarginBegin()) {
-                            _cursor.pos.col = _buffer->getCols() - 1;
-                            --_cursor.pos.row;
+                            moveCursor(_cursor.pos.up().atCol(_buffer->getCols() - 1));
                         }
                     }
                 }
                 else {
-                    --_cursor.pos.col;
+                    moveCursor(_cursor.pos.left());
                 }
             }
             break;
         case CR:
-            damageCursor();
-            _cursor.pos.col = 0;
+            moveCursor(_cursor.pos.atCol(0));
             break;
         case LF:
             if (_modes.get(Mode::CR_ON_LF)) {
-                damageCursor();
-                _cursor.pos.col = 0;
+                moveCursor(_cursor.pos.atCol(0));
             }
             // Fall-through:
         case FF:
