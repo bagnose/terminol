@@ -915,7 +915,7 @@ public:
             for (const auto & c : l) {
                 ost << c.seq;
             }
-            ost << std::endl;
+            ost << '\\' << std::endl;
         }
     }
 };
