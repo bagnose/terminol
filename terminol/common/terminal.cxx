@@ -11,12 +11,7 @@
 namespace {
 
 int32_t nthArg(const std::vector<int32_t> & args, size_t n, int32_t fallback = 0) {
-    if (n < args.size()) {
-        return args[n];
-    }
-    else {
-        return fallback;
-    }
+    return n < args.size() ? args[n] : fallback;
 }
 
 // Same as nth arg, but use fallback if arg is zero.
@@ -138,11 +133,10 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     int16_t rowAdjust    = _buffer == &_priBuffer ? priRowAdjust : altRowAdjust;
 
     _cursor.pos.row += rowAdjust;
-    _cursor.pos.col  = clamp<uint16_t>(_cursor.pos.col,             0, cols - 1);
+    _cursor.pos.col  = clamp<uint16_t>(_cursor.pos.col, 0, cols - 1);
 
     // XXX is this correct for the saved cursor row/col?
-    _savedCursor.pos.row = std::min<uint16_t>(_savedCursor.pos.row, rows - 1);
-    _savedCursor.pos.col = std::min<uint16_t>(_savedCursor.pos.col, cols - 1);
+    _savedCursor.pos = Pos();
 
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {
@@ -505,8 +499,7 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, uint8_t state) {
 }
 
 void Terminal::moveCursorOriginMode(Pos pos) {
-    if (_cursor.originMode) { pos.row += _buffer->getMarginBegin(); }
-    moveCursor(pos);
+    moveCursor(pos.down(_cursor.originMode ? _buffer->getMarginBegin() : 0));
 }
 
 void Terminal::moveCursor(Pos pos) {
@@ -526,37 +519,39 @@ void Terminal::moveCursor(Pos pos) {
 }
 
 void Terminal::tabCursor(TabDir dir, uint16_t count) {
-    damageCursor();
+    uint16_t col = _cursor.pos.col;
 
     switch (dir) {
         case TabDir::FORWARD:
             while (count != 0) {
-                ++_cursor.pos.col;
+                ++col;
 
-                if (_cursor.pos.col == _buffer->getCols()) {
-                    --_cursor.pos.col;
+                if (col == _buffer->getCols()) {
+                    --col;
                     break;
                 }
 
-                if (_tabs[_cursor.pos.col]) {
+                if (_tabs[col]) {
                     --count;
                 }
             }
             break;
         case TabDir::BACKWARD:
             while (count != 0) {
-                if (_cursor.pos.col == 0) {
+                if (col == 0) {
                     break;
                 }
 
-                --_cursor.pos.col;
+                --col;
 
-                if (_tabs[_cursor.pos.col]) {
+                if (_tabs[col]) {
                     --count;
                 }
             }
             break;
     }
+
+    moveCursor(_cursor.pos.atCol(col));
 }
 
 void Terminal::damageCursor() {
@@ -1106,7 +1101,7 @@ void Terminal::machineCsi(bool priv,
                 _cursor.pos.row <  _buffer->getMarginEnd())
             {
                 int32_t count = nthArgNonZero(args, 0, 1);
-                count = clamp(count, 1, _buffer->getMarginEnd() - _cursor.pos.row);
+                count = std::min(count, _buffer->getMarginEnd() - _cursor.pos.row);
                 _buffer->insertLines(_cursor.pos.row, count);
             }
             break;
@@ -1115,14 +1110,14 @@ void Terminal::machineCsi(bool priv,
                 _cursor.pos.row <  _buffer->getMarginEnd())
             {
                 int32_t count = nthArgNonZero(args, 0, 1);
-                count = clamp(count, 1, _buffer->getMarginEnd() - _cursor.pos.row);
+                count = std::min(count, _buffer->getMarginEnd() - _cursor.pos.row);
                 _buffer->eraseLines(_cursor.pos.row, count);
             }
             break;
         case 'P': { // DCH - Delete Character
             // FIXME what about wrap-next?
             int32_t count = nthArgNonZero(args, 0, 1);
-            count = clamp(count, 1, _buffer->getCols() - _cursor.pos.col);
+            count = std::min(count, _buffer->getCols() - _cursor.pos.col);
             _buffer->eraseCells(_cursor.pos, count);
             break;
         }
