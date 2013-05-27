@@ -277,7 +277,7 @@ public:
     void trim() {
         if (_cells.size() != _cols) {
             ASSERT(_cells.size() > _cols, "");
-            _cells.erase(_cells.begin() + _cols, _cells.end());
+            _cells.erase(begin() + _cols, end());
         }
     }
 };
