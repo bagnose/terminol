@@ -71,6 +71,7 @@ inline bool operator != (const Cell & lhs, const Cell & rhs) {
 struct Pos {
     Pos() : row(0), col(0) {}
     Pos(uint16_t row_, uint16_t col_) : row(row_), col(col_) {}
+
     uint16_t row;
     uint16_t col;
 
@@ -114,6 +115,9 @@ inline std::ostream & operator << (std::ostream & ost, Pos pos) {
 //
 
 struct Region {
+    Region() : begin(), end() {}
+    Region(Pos begin_, Pos end_) : begin(begin_), end(end_) {}
+
     void clear() { *this = Region(); }
     Pos begin;
     Pos end;

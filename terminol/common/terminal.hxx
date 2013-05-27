@@ -46,7 +46,7 @@ public:
                                         Style           style,
                                         const uint8_t * str,    // nul-terminated, length 1
                                         bool            wrapNext) throw () = 0;
-        virtual void terminalDrawSelection(Pos      begin,
+        virtual void terminalDrawSelection(Pos      begin,  // FIXME use Region
                                            Pos      end,
                                            bool     topless,
                                            bool     bottomless) throw () = 0;
@@ -96,6 +96,34 @@ private:
         Style           style;
     };
 
+    struct Selection {
+        Selection() : state(State::NONE), first(), second() {}
+
+        struct Pos {
+            Pos() : row(0), col(0) {}
+            Pos(int32_t scrollOffset, ::Pos pos) :
+                row(pos.row - scrollOffset), col(pos.col) {}
+            Pos(int32_t row_, uint16_t col_) : row(row_), col(col_) {}
+
+            int32_t  row;
+            uint32_t col;
+
+            friend bool operator == (Pos lhs, Pos rhs) {
+                return lhs.row == rhs.row && lhs.col == rhs.col;
+            }
+
+            friend bool operator != (Pos lhs, Pos rhs) {
+                return !(lhs == rhs);
+            }
+        };
+
+        enum class State { NONE, ACTIVE, ESTABLISHED };
+
+        State state;
+        Pos   first;
+        Pos   second;
+    };
+
     //
     //
     //
@@ -117,6 +145,8 @@ private:
     Cursor                _savedCursor;
 
     Region                _damage;
+
+    Selection             _selection;
 
     bool                  _pressed;
     Button                _button;
