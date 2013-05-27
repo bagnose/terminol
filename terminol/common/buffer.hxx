@@ -200,13 +200,16 @@ public:
         damageAdd(col, _cells.size());
     }
 
-    void setCell(uint16_t col, const Cell & cell) {
+    bool setCell(uint16_t col, const Cell & cell) {
         trim();
 
         ASSERT(col < _cells.size(), "");
+        bool seqChanged = _cells[col].seq != cell.seq;
         _cells[col] = cell;
 
         damageAdd(col, col + 1);
+
+        return seqChanged;
     }
 
     void resize(uint16_t cols) {
@@ -642,6 +645,18 @@ public:
         // TODO
     }
 
+    void clearSelection() {
+        if (_selectMarker != _selectDelimiter) {
+            _selectMarker    = APos();
+            _selectDelimiter = _selectMarker;
+
+            // FIXME this doesn't work for historical
+            damageAll();
+        }
+
+        _selectExpansion = 0;
+    }
+
     //
     // Update / active-relative operations.
     //
@@ -663,7 +678,26 @@ public:
         ASSERT(cell.seq.lead() != NUL, "");
         ASSERT(pos.row < getRows(), "");
         ASSERT(pos.col < getCols(), "");
-        _active[pos.row].setCell(pos.col, cell);
+
+        if (_active[pos.row].setCell(pos.col, cell)) {
+            if (_selectMarker != _selectDelimiter) {
+                // There is a selection
+
+                auto b = _selectMarker;
+                auto e = _selectDelimiter;
+
+                // Re-order aBegin and aEnd if necessary.
+                if (b.row > e.row || (b.row == e.row && b.col > e.col)) {
+                    std::swap(b, e);
+                }
+
+                APos apos(pos, _history.size() - _scrollOffset);
+
+                if (apos.row >= b.row && apos.row <= e.row) {
+                    clearSelection();
+                }
+            }
+        }
     }
 
     int16_t resize(uint16_t rows, uint16_t cols) {
@@ -746,7 +780,7 @@ public:
 
         _active.shrink_to_fit();
 
-        _selectMarker = _selectDelimiter = APos();
+        clearSelection();
 
         damageAll();
 
@@ -779,6 +813,8 @@ public:
             damageAll();
             _barDamage = true;
         }
+
+        clearSelection();
     }
 
     void insertLines(uint16_t row, uint16_t n) {
@@ -791,6 +827,8 @@ public:
         _active.insert(_active.begin() + row, n, Line(getCols()));
 
         damageRange(row, _marginEnd);
+
+        clearSelection();
     }
 
     void eraseLines(uint16_t row, uint16_t n) {
@@ -803,6 +841,8 @@ public:
         _active.insert(_active.begin() + _marginEnd - n, n, Line(getCols()));
 
         damageRange(row, _marginEnd);
+
+        clearSelection();
     }
 
     void clearLine(uint16_t row) {
@@ -820,18 +860,21 @@ public:
 
     void clear() {
         for (auto & l : _active) { l.clear(); }
+        clearSelection();
     }
 
     void clearAbove(uint16_t row) {
         for (auto i = _active.begin(); i != _active.begin() + row; ++i) {
             i->clear();
         }
+        clearSelection();
     }
 
     void clearBelow(uint16_t row) {
         for (auto i = _active.begin() + row; i != _active.end(); ++i) {
             i->clear();
         }
+        clearSelection();
     }
 
     // Called by Terminal::damageCursor()
