@@ -142,13 +142,12 @@ class Line {
     uint16_t          _damageBegin;
     uint16_t          _damageEnd;
 
-    // XXX are these useful?
     std::vector<Cell>::iterator begin() { return _cells.begin(); }
-    std::vector<Cell>::iterator end()   { return _cells.end(); }
+    std::vector<Cell>::iterator end()   { return _cells.begin() + _cols; }
 
 public:
     std::vector<Cell>::const_iterator begin() const { return _cells.begin(); }
-    std::vector<Cell>::const_iterator end()   const { return _cells.end(); }
+    std::vector<Cell>::const_iterator end()   const { return _cells.begin() + _cols; }
 
     explicit Line(uint16_t cols) :
         _cols(cols),
