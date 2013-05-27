@@ -511,7 +511,7 @@ public:
         }
     }
 
-    bool getSelectText(std::string & text) {
+    bool getSelectedText(std::string & text) {
         // If the marker and delimiter are the same then the selection is empty.
         if (_selectMarker == _selectDelimiter) {
             return false;
@@ -548,7 +548,7 @@ public:
         return true;
     }
 
-    bool getSelect(Pos & begin, Pos & end, bool & topless, bool & bottomless) {
+    bool getSelectedArea(Pos & begin, Pos & end, bool & topless, bool & bottomless) {
         // If the marker and delimiter are the same then the selection is empty.
         if (_selectMarker == _selectDelimiter) {
             return false;
@@ -596,17 +596,17 @@ public:
     // Select / scroll-relative operations.
     //
 
-    void selectMark(Pos pos) {
+    void markSelection(Pos pos) {
         _selectExpansion = 0;
         _selectMarker    = APos(pos, _history.size() - _scrollOffset);
         _selectDelimiter = _selectMarker;
     }
 
-    void selectDelimit(Pos pos) {
+    void delimitSelection(Pos pos) {
         _selectDelimiter = APos(pos, _history.size() - _scrollOffset);
     }
 
-    void selectAdjust(Pos pos) {
+    void adjustSelection(Pos pos) {
         if (_selectMarker == _selectDelimiter) { return; }
 
         auto b = _selectMarker;
@@ -630,7 +630,7 @@ public:
         _selectDelimiter = e;
     }
 
-    void selectExpand(Pos UNUSED(pos)) {
+    void expandSelection(Pos UNUSED(pos)) {
         auto b = _selectMarker;
         auto e = _selectDelimiter;
 

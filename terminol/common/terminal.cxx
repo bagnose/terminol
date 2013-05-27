@@ -210,10 +210,10 @@ void Terminal::buttonPress(Button button, int count, uint8_t state,
     else {
         if (button == Button::LEFT) {
             if (count == 1) {
-                _buffer->selectMark(pos);
+                _buffer->markSelection(pos);
             }
             else {
-                _buffer->selectExpand(pos);
+                _buffer->expandSelection(pos);
             }
 
             fixDamage(Pos(), Pos(_buffer->getRows(), _buffer->getCols()),
@@ -223,7 +223,7 @@ void Terminal::buttonPress(Button button, int count, uint8_t state,
             _observer.terminalPaste(false);
         }
         else if (_button == Button::RIGHT) {
-            _buffer->selectAdjust(pos);
+            _buffer->adjustSelection(pos);
             fixDamage(Pos(), Pos(_buffer->getRows(), _buffer->getCols()),
                       Damager::SCROLL);     // FIXME Damager
         }
@@ -273,7 +273,7 @@ void Terminal::buttonMotion(uint8_t state, bool within, Pos pos) {
     }
     else {
         if (_button == Button::LEFT) {
-            _buffer->selectDelimit(pos);
+            _buffer->delimitSelection(pos);
             fixDamage(Pos(), Pos(_buffer->getRows(), _buffer->getCols()),
                       Damager::SCROLL);     // FIXME Damager
         }
@@ -322,7 +322,7 @@ void Terminal::buttonRelease(bool broken, uint8_t state) {
     }
     else {
         std::string text;
-        if (_buffer->getSelectText(text)) {
+        if (_buffer->getSelectedText(text)) {
             _observer.terminalCopy(text, false);
         }
     }
@@ -421,14 +421,14 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, uint8_t state) {
         switch (keySym) {
             case XKB_KEY_X: {
                 std::string text;
-                if (_buffer->getSelectText(text)) {
+                if (_buffer->getSelectedText(text)) {
                     _observer.terminalCopy(text, false);
                 }
                 return true;
             }
             case XKB_KEY_C: {
                 std::string text;
-                if (_buffer->getSelectText(text)) {
+                if (_buffer->getSelectedText(text)) {
                     _observer.terminalCopy(text, true);
                 }
                 return true;
@@ -730,10 +730,10 @@ void Terminal::draw(Pos begin, Pos end, Damager damage) {
         _observer.terminalDrawCursor(pos, cell.style, &run.front(), _cursor.wrapNext);
     }
 
-    {
+    if (true) {
         Pos sBegin, sEnd;
         bool topless, bottomless;
-        if (_buffer->getSelect(sBegin, sEnd, topless, bottomless)) {
+        if (_buffer->getSelectedArea(sBegin, sEnd, topless, bottomless)) {
             _observer.terminalDrawSelection(sBegin, sEnd, topless, bottomless);
         }
     }
