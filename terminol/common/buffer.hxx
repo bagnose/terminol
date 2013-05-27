@@ -13,12 +13,6 @@
 #include <cstddef>
 #include <stdint.h>
 
-// TODO
-// - Separate history from current
-// - Introduce dedupe
-// - Explicit buffer width
-// - CurrentLine keeps trailing non-blank cells on resize
-
 namespace {
 
     template <class T>
