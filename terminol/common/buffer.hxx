@@ -329,6 +329,12 @@ public:
         _config.getScrollbarWidth();        // XXX avoid unused error
     }
 
+    ~Buffer() {
+        for (auto tag : _history) {
+            _deduper.remove(tag);
+        }
+    }
+
     size_t   getHistory() const { return _history.size(); }
     uint16_t getRows()    const { return _active.size(); }
     uint16_t getCols()    const { return _cols; }
@@ -594,10 +600,6 @@ public:
                 _active.pop_front();
             }
             else {
-                if (_history.size() == _historyLimit) {
-                    _history.pop_front();
-                }
-
                 bump();
 
                 if (!_config.getScrollWithHistory()) {
