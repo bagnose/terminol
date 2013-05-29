@@ -1048,13 +1048,17 @@ void Window::terminalDrawRun(Pos             pos,
         int x, y;
         pos2XY(pos, x, y);
 
+        double w = count * _fontSet.getWidth();
+        double h = _fontSet.getHeight();
+
         const auto & bgValues = _colorSet.getIndexedColor(style.bg);
         cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
         cairo_rectangle(_cr,
                         x,
                         y,
-                        count * _fontSet.getWidth(),
-                        _fontSet.getHeight());
+                        w,
+                        h);
+        cairo_clip_preserve(_cr);       // XXX prevent droppings
         cairo_fill(_cr);
 
         const auto & fgValues = _colorSet.getIndexedColor(style.fg);
@@ -1062,12 +1066,9 @@ void Window::terminalDrawRun(Pos             pos,
                               style.attrs.get(Attr::CONCEAL) ? 0.2 : 1.0);
 
         if (style.attrs.get(Attr::UNDERLINE)) {
-            cairo_move_to(_cr,
-                          x,
-                          y + _fontSet.getHeight() - 0.5);
-            cairo_line_to(_cr,
-                          x + count * _fontSet.getWidth(),
-                          y + _fontSet.getHeight() - 0.5);
+            double yy = _fontSet.getHeight() - 0.5;
+            cairo_move_to(_cr, x, yy);
+            cairo_line_to(_cr, x + w, yy);
             cairo_stroke(_cr);
         }
 
