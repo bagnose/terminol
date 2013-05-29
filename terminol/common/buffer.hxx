@@ -436,7 +436,7 @@ protected:
     void bump() {
         ASSERT(_historyLimit != 0, "");
 
-        auto cells = _active.front().cells();
+        auto cells = std::move(_active.front().cells());
         _active.pop_front();
         while (!cells.empty() && cells.back() == Cell::blank()) {
             cells.pop_back();
