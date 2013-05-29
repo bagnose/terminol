@@ -295,7 +295,7 @@ void Terminal::buttonMotion(ModifierSet modifiers, bool within, Pos pos) {
             }
         }
     }
-    else {
+    else if (!_modes.get(Mode::MOUSE_BUTTON)) {
         if (_button == Button::LEFT) {
             _buffer->delimitSelection(pos);
             fixDamage(Pos(), Pos(_buffer->getRows(), _buffer->getCols()),
