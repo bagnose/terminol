@@ -28,6 +28,29 @@ std::ostream & operator << (std::ostream & ost, Control control) {
     FATAL(static_cast<int>(control));
 }
 
+std::ostream & operator << (std::ostream & ost, Modifier modifier) {
+    switch (modifier) {
+        case Modifier::SHIFT:
+            return ost << "SHIFT";
+        case Modifier::ALT:
+            return ost << "ALT";
+        case Modifier::CONTROL:
+            return ost << "CONTROL";
+        case Modifier::SUPER:
+            return ost << "SUPER";
+        case Modifier::NUM_LOCK:
+            return ost << "NUM_LOCK";
+        case Modifier::SHIFT_LOCK:
+            return ost << "SHIFT_LOCK";
+        case Modifier::CAPS_LOCK:
+            return ost << "CAPS_LOCK";
+        case Modifier::MODE_SWITCH:
+            return ost << "MODE_SWITCH";
+    }
+
+    FATAL(static_cast<int>(modifier));
+}
+
 std::ostream & operator << (std::ostream & ost, Mode mode) {
     switch (mode) {
         case Mode::AUTO_WRAP:

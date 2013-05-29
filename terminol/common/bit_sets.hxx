@@ -38,6 +38,8 @@ public:
 //
 //
 
+typedef GenericSet<Modifier, uint8_t> ModifierSet;
+std::ostream & operator << (std::ostream & ost, ModifierSet modifierSet);
 
 typedef GenericSet<Attr, uint8_t> AttrSet;
 std::ostream & operator << (std::ostream & ost, AttrSet attrSet);

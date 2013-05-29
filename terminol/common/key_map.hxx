@@ -4,6 +4,7 @@
 #define XCB__KEY_MAP__HXX
 
 #include "terminol/support/pattern.hxx"
+#include "terminol/common/bit_sets.hxx"
 
 #include <vector>
 
@@ -22,16 +23,11 @@ class KeyMap : protected Uncopyable {
     static const Map MAP_NORMAL[];
     static const Map MAP_APPLICATION[];
 
-    const uint8_t _maskShift;
-    const uint8_t _maskAlt;
-    const uint8_t _maskControl;
-
 public:
-    // shift, alt, control
-    KeyMap(uint8_t maskShift, uint8_t maskAlt, uint8_t maskControl);
+    KeyMap();
     ~KeyMap();
 
-    bool convert(xkb_keysym_t keySym, uint8_t state,
+    bool convert(xkb_keysym_t keySym, ModifierSet modifiers,
                  bool appKeypad,
                  bool appCursor,
                  bool crOnLf,
@@ -41,17 +37,13 @@ public:
 
     bool isPotent(xkb_keysym_t keySym) const;
 
-    uint8_t maskShift()   const { return _maskShift; }
-    uint8_t maskAlt()     const { return _maskAlt; }
-    uint8_t maskControl() const { return _maskControl; }
-
 protected:
     static void normalise(xkb_keysym_t & keySym);
 
-    void functionKeyResponse(char escape, int num, uint8_t state, char code,
+    void functionKeyResponse(char escape, int num, ModifierSet modifiers, char code,
                              std::vector<uint8_t> & str) const;
 
-    bool applyKeyMap(const Map * mode, xkb_keysym_t sym, uint8_t state,
+    bool applyKeyMap(const Map * mode, xkb_keysym_t sym, ModifierSet modifiers,
                      std::vector<uint8_t> & str) const;
 };
 

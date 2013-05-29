@@ -41,14 +41,10 @@ const KeyMap::Map KeyMap::MAP_APPLICATION[] = {
     { 0, 0, 0, 0 }
 };
 
-KeyMap::KeyMap(uint8_t maskShift_, uint8_t maskAlt_, uint8_t maskControl_) :
-    _maskShift(maskShift_),
-    _maskAlt(maskAlt_),
-    _maskControl(maskControl_) {}
-
+KeyMap::KeyMap() {}
 KeyMap::~KeyMap() {}
 
-bool KeyMap::convert(xkb_keysym_t keySym, uint8_t state,
+bool KeyMap::convert(xkb_keysym_t keySym, ModifierSet modifiers,
                      bool UNUSED(appKeypad),
                      bool appCursor,
                      bool crOnLf,
@@ -59,7 +55,7 @@ bool KeyMap::convert(xkb_keysym_t keySym, uint8_t state,
 
     switch (keySym) {
         case XKB_KEY_BackSpace:
-            if (state & _maskAlt) { str.push_back(ESC); }
+            if (modifiers.get(Modifier::ALT)) { str.push_back(ESC); }
             str.push_back(DEL);
             break;
 
@@ -93,64 +89,64 @@ bool KeyMap::convert(xkb_keysym_t keySym, uint8_t state,
             break;
 
         case XKB_KEY_Insert:
-            functionKeyResponse('[', 2, state, '~', str);
+            functionKeyResponse('[', 2, modifiers, '~', str);
             break;
 
         case XKB_KEY_Delete:
             if (deleteSendsDel) { str.push_back(EOT); }
-            else { functionKeyResponse('[', 3, state, '~', str); }
+            else { functionKeyResponse('[', 3, modifiers, '~', str); }
             break;
 
         case XKB_KEY_Page_Up:
-            functionKeyResponse('[', 5, state, '~', str);
+            functionKeyResponse('[', 5, modifiers, '~', str);
             break;
 
         case XKB_KEY_Page_Down:
-            functionKeyResponse('[', 6, state, '~', str);
+            functionKeyResponse('[', 6, modifiers, '~', str);
             break;
 
         case XKB_KEY_F1:
-            functionKeyResponse('O', 1, state, 'P', str);
+            functionKeyResponse('O', 1, modifiers, 'P', str);
             break;
 
         case XKB_KEY_F2:
-            functionKeyResponse('O', 1, state, 'Q', str);
+            functionKeyResponse('O', 1, modifiers, 'Q', str);
             break;
 
         case XKB_KEY_F3:
-            functionKeyResponse('O', 1, state, 'R', str);
+            functionKeyResponse('O', 1, modifiers, 'R', str);
             break;
 
         case XKB_KEY_F4:
-            functionKeyResponse('O', 1, state, 'S', str);
+            functionKeyResponse('O', 1, modifiers, 'S', str);
             break;
 
         case XKB_KEY_F5:
-            functionKeyResponse('[', 15, state, '~', str);
+            functionKeyResponse('[', 15, modifiers, '~', str);
             break;
 
         case XKB_KEY_F6:
-            functionKeyResponse('[', 17, state, '~', str);
+            functionKeyResponse('[', 17, modifiers, '~', str);
             break;
 
         case XKB_KEY_F7:
-            functionKeyResponse('[', 18, state, '~', str);
+            functionKeyResponse('[', 18, modifiers, '~', str);
             break;
 
         case XKB_KEY_F8:
-            functionKeyResponse('[', 19, state, '~', str);
+            functionKeyResponse('[', 19, modifiers, '~', str);
             break;
 
         case XKB_KEY_F9:
-            functionKeyResponse('[', 20, state, '~', str);
+            functionKeyResponse('[', 20, modifiers, '~', str);
             break;
 
         case XKB_KEY_F10:
-            functionKeyResponse('[', 21, state, '~', str);
+            functionKeyResponse('[', 21, modifiers, '~', str);
             break;
 
         case XKB_KEY_F12:
-            functionKeyResponse('[', 24, state, '~', str);
+            functionKeyResponse('[', 24, modifiers, '~', str);
             break;
 
         default:
@@ -158,12 +154,12 @@ bool KeyMap::convert(xkb_keysym_t keySym, uint8_t state,
 
             // Handle special keys with alternate mappings.
             if (applyKeyMap(appCursor ? MAP_APPLICATION : MAP_NORMAL,
-                            keySym, state, str))
+                            keySym, modifiers, str))
             {
                 break;
             }
 
-            if (state & _maskControl) {
+            if (modifiers.get(Modifier::CONTROL)) {
                 if (keySym >= '3' && keySym <= '7') {
                     keySym = (keySym & 0x1f) + 8;
                 }
@@ -176,7 +172,7 @@ bool KeyMap::convert(xkb_keysym_t keySym, uint8_t state,
                 else if (keySym == '8' || keySym == '?') { keySym = 0x7F;          }
             }
 
-            if (state & _maskAlt) {
+            if (modifiers.get(Modifier::ALT)) {
                 if (altSendsEsc) { str.push_back(ESC); }
                 else { keySym = keySym | 0x80; convertUtf8 = false; }
             }
@@ -291,15 +287,15 @@ void KeyMap::normalise(xkb_keysym_t & keySym) {
     }
 }
 
-void KeyMap::functionKeyResponse(char escape, int num, uint8_t state, char code,
+void KeyMap::functionKeyResponse(char escape, int num, ModifierSet modifiers, char code,
                                  std::vector<uint8_t> & str) const {
     std::ostringstream ost;
 
     int modNum = 0;
 
-    if (state & _maskShift)   modNum |= 1;
-    if (state & _maskAlt)     modNum |= 2;
-    if (state & _maskControl) modNum |= 4;
+    if (modifiers.get(Modifier::SHIFT))   modNum |= 1;
+    if (modifiers.get(Modifier::ALT))     modNum |= 2;
+    if (modifiers.get(Modifier::CONTROL)) modNum |= 4;
 
     if (modNum != 0) {
         ost << ESC << '[' << num << ';' << modNum + 1 << code;
@@ -315,11 +311,11 @@ void KeyMap::functionKeyResponse(char escape, int num, uint8_t state, char code,
     std::copy(s.begin(), s.end(), std::back_inserter(str));
 }
 
-bool KeyMap::applyKeyMap(const Map * mode, xkb_keysym_t sym, uint8_t state,
+bool KeyMap::applyKeyMap(const Map * mode, xkb_keysym_t sym, ModifierSet modifiers,
                          std::vector<uint8_t> & str) const {
     for (const Map * map = mode; map->sym; ++map) {
         if (sym == map->sym) {
-            functionKeyResponse(map->escape, map->num, state, map->code, str);
+            functionKeyResponse(map->escape, map->num, modifiers, map->code, str);
             return true;
         }
     }

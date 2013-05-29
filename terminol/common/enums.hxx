@@ -25,6 +25,24 @@ std::ostream & operator << (std::ostream & ost, Control control);
 //
 //
 
+enum class Modifier {
+    SHIFT,
+    ALT,
+    CONTROL,
+    SUPER,
+    NUM_LOCK,
+    SHIFT_LOCK,
+    CAPS_LOCK,
+    MODE_SWITCH,
+    LAST = MODE_SWITCH
+};
+
+std::ostream & operator << (std::ostream & ost, Modifier);
+
+//
+//
+//
+
 enum class Mode {
     AUTO_WRAP,
     AUTO_REPEAT,

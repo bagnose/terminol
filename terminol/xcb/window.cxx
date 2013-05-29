@@ -228,8 +228,12 @@ void Window::flush() {
 void Window::keyPress(xcb_key_press_event_t * event) {
     if (!_open) { return; }
 
-    xcb_keysym_t keySym = _basics.getKeySym(event->detail, event->state);
-    _terminal->keyPress(keySym, event->state);
+    xcb_keysym_t keySym;
+    ModifierSet  modifiers;
+
+    if (_basics.getKeySym(event->detail, event->state, keySym, modifiers)) {
+        _terminal->keyPress(keySym, modifiers);
+    }
 }
 
 void Window::keyRelease(xcb_key_release_event_t * UNUSED(event)) {
@@ -241,12 +245,14 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
     //PRINT("Button-press: " << event->event_x << " " << event->event_y);
     if (!_open) { return; }
 
+    auto modifiers = _basics.convertState(event->state);
+
     switch (event->detail) {
         case XCB_BUTTON_INDEX_4:
-            _terminal->scrollWheel(Terminal::ScrollDir::UP, event->state);
+            _terminal->scrollWheel(Terminal::ScrollDir::UP, modifiers);
             return;
         case XCB_BUTTON_INDEX_5:
-            _terminal->scrollWheel(Terminal::ScrollDir::DOWN, event->state);
+            _terminal->scrollWheel(Terminal::ScrollDir::DOWN, modifiers);
             return;
     }
 
@@ -275,15 +281,15 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
     switch (event->detail) {
         case XCB_BUTTON_INDEX_1:
             _terminal->buttonPress(Terminal::Button::LEFT, _pressCount,
-                                   event->state, within, pos);
+                                   modifiers, within, pos);
             return;
         case XCB_BUTTON_INDEX_2:
             _terminal->buttonPress(Terminal::Button::MIDDLE, _pressCount,
-                                   event->state, within, pos);
+                                   modifiers, within, pos);
             return;
         case XCB_BUTTON_INDEX_3:
             _terminal->buttonPress(Terminal::Button::RIGHT, _pressCount,
-                                   event->state, within, pos);
+                                   modifiers, within, pos);
             return;
     }
 }
@@ -293,8 +299,10 @@ void Window::buttonRelease(xcb_button_release_event_t * event) {
     //PRINT("Button-release: " << event->event_x << " " << event->event_y);
     if (!_open) { return; }
 
+    auto modifiers = _basics.convertState(event->state);
+
     if (_pressed && _button == event->detail) {
-        _terminal->buttonRelease(false, event->state);
+        _terminal->buttonRelease(false, modifiers);
         _pressed = false;
     }
 }
@@ -325,8 +333,10 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
     bool within = xy2Pos(x, y, pos);
 
     if (_pointerPos != pos) {
+        auto modifiers = _basics.convertState(event->state);
+
         _pointerPos = pos;
-        _terminal->buttonMotion(event->state, within, pos);
+        _terminal->buttonMotion(modifiers, within, pos);
     }
 
 }
@@ -537,7 +547,7 @@ void Window::leaveNotify(xcb_leave_notify_event_t * event) {
     // the button...
     if (event->mode == 2) {
         if (_pressed) {
-            _terminal->buttonRelease(true, 0);
+            _terminal->buttonRelease(true, ModifierSet());
             _pressed = false;
         }
     }

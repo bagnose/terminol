@@ -4,6 +4,7 @@
 #define XCB__BASICS__HXX
 
 #include "terminol/support/pattern.hxx"
+#include "terminol/common/bit_sets.hxx"
 
 #include <string>
 
@@ -55,18 +56,10 @@ public:
     xcb_atom_t              atomUtf8String() { return lookupAtom("UTF8_STRING"); }  // TODO fallback on XCB_ATOM_STRING
     xcb_atom_t              atomTargets() { return lookupAtom("TARGETS"); }
 
-    // FIXME don't expose these, provide a getter that normalises
-    // to xkbcommon and terminol-defined masks
-    uint8_t                 maskShift()      const { return _maskShift;       }
-    uint8_t                 maskAlt()        const { return _maskAlt;         }
-    uint8_t                 maskControl()    const { return _maskControl;     }
-    uint8_t                 maskSuper()      const { return _maskSuper;       }
-    uint8_t                 maskNumLock()    const { return _maskNumLock;     }
-    uint8_t                 maskShiftLock()  const { return _maskShiftLock;   }
-    uint8_t                 maskCapsLock()   const { return _maskCapsLock;    }
-    uint8_t                 maskModeSwitch() const { return _maskModeSwitch;  }
+    bool                    getKeySym(xcb_keycode_t keyCode, uint8_t state,
+                                      xcb_keysym_t & keySym, ModifierSet & modifiers) const;
 
-    xcb_keysym_t            getKeySym(xcb_keycode_t keyCode, uint8_t state);
+    ModifierSet             convertState(uint8_t state) const;
 
     // FIXME don't want this, should use terminol-defined state/mask
     std::string             stateToString(uint8_t state) const;

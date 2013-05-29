@@ -81,7 +81,10 @@ Basics::~Basics() {
 // Copyright © 2008-2009 Julien Danjou <julien@danjou.info>
 // Copyright © 2008 Pierre Habouzit <madcoder@debian.org>
 
-xcb_keysym_t Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
+bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
+                       xcb_keysym_t & keySym, ModifierSet & modifiers) const {
+    modifiers = convertState(state);
+
     xcb_keysym_t k0, k1;
 
     /* 'col' (third parameter) is used to get the proper KeySym
@@ -90,7 +93,7 @@ xcb_keysym_t Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
      *
      * If Mode_Switch is ON we look into second group.
      */
-    if (state & _maskModeSwitch)
+    if (modifiers.get(Modifier::MODE_SWITCH))
     {
         k0 = xcb_key_symbols_get_keysym(_keySymbols, keyCode, 4);
         k1 = xcb_key_symbols_get_keysym(_keySymbols, keyCode, 5);
@@ -108,47 +111,74 @@ xcb_keysym_t Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state) {
 
     /* The numlock modifier is on and the second KeySym is a keypad
      * KeySym */
-    if ((state & _maskNumLock) && xcb_is_keypad_key(k1))
+    if (modifiers.get(Modifier::NUM_LOCK) && xcb_is_keypad_key(k1))
     {
         /* The Shift modifier is on, or if the Lock modifier is on and
          * is interpreted as ShiftLock, use the first KeySym */
-        if ((state & XCB_MOD_MASK_SHIFT)
-           || (state & XCB_MOD_MASK_LOCK && (state & _maskShiftLock)))
-            return k0;
-        else
-            return k1;
+        if ((state & XCB_MOD_MASK_SHIFT) ||
+            (state & XCB_MOD_MASK_LOCK && (state & _maskShiftLock))) {
+            keySym = k0;
+            return true;
+        }
+        else {
+            keySym = k1;
+            return true;
+        }
     }
     /* The Shift and Lock modifers are both off, use the first
      * KeySym */
     else if (!(state & XCB_MOD_MASK_SHIFT) && !(state & XCB_MOD_MASK_LOCK)) {
-        return k0;
+        keySym = k0;
+        return true;
     }
     /* The Shift modifier is off and the Lock modifier is on and is
      * interpreted as CapsLock */
-    else if (!(state & XCB_MOD_MASK_SHIFT)
-             && (state & XCB_MOD_MASK_LOCK && (state & _maskCapsLock))) {
+    else if (!(state & XCB_MOD_MASK_SHIFT) &&
+             (state & XCB_MOD_MASK_LOCK && (state & _maskCapsLock)))
+    {
         /* The first Keysym is used but if that KeySym is lowercase
          * alphabetic, then the corresponding uppercase KeySym is used
          * instead */
-        return k1;
+        keySym = k1;
+        return true;
     }
     /* The Shift modifier is on, and the Lock modifier is on and is
      * interpreted as CapsLock */
-    else if ((state & XCB_MOD_MASK_SHIFT)
-            && (state & XCB_MOD_MASK_LOCK && (state & _maskCapsLock))) {
+    else if ((state & XCB_MOD_MASK_SHIFT) &&
+             (state & XCB_MOD_MASK_LOCK && (state & _maskCapsLock)))
+    {
         /* The second Keysym is used but if that KeySym is lowercase
          * alphabetic, then the corresponding uppercase KeySym is used
          * instead */
-        return k1;
+        keySym = k1;
+        return true;
     }
     /* The Shift modifier is on, or the Lock modifier is on and is
      * interpreted as ShiftLock, or both */
-    else if ((state & XCB_MOD_MASK_SHIFT)
-            || (state & XCB_MOD_MASK_LOCK && (state & _maskShiftLock))) {
-        return k1;
+    else if ((state & XCB_MOD_MASK_SHIFT) ||
+             (state & XCB_MOD_MASK_LOCK && (state & _maskShiftLock)))
+    {
+        keySym = k1;
+        return true;
     }
 
-    return XCB_NO_SYMBOL;
+    keySym = XCB_NO_SYMBOL;
+    return false;
+}
+
+ModifierSet Basics::convertState(uint8_t state) const {
+    ModifierSet modifiers;
+
+    if (state & _maskShift)      { modifiers.set(Modifier::SHIFT); }
+    if (state & _maskAlt)        { modifiers.set(Modifier::ALT); }
+    if (state & _maskControl)    { modifiers.set(Modifier::CONTROL); }
+    if (state & _maskSuper)      { modifiers.set(Modifier::SUPER); }
+    if (state & _maskNumLock)    { modifiers.set(Modifier::NUM_LOCK); }
+    if (state & _maskShiftLock)  { modifiers.set(Modifier::SHIFT_LOCK); }
+    if (state & _maskCapsLock)   { modifiers.set(Modifier::CAPS_LOCK); }
+    if (state & _maskModeSwitch) { modifiers.set(Modifier::MODE_SWITCH); }
+
+    return modifiers;
 }
 
 xcb_atom_t Basics::lookupAtom(const std::string & name) throw (Error) {

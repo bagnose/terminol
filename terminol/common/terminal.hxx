@@ -153,12 +153,12 @@ public:
 
     void     redraw(Pos begin, Pos end);
 
-    void     keyPress(xkb_keysym_t keySym, uint8_t state);
-    void     buttonPress(Button button, int count, uint8_t state,
+    void     keyPress(xkb_keysym_t keySym, ModifierSet modifiers);
+    void     buttonPress(Button button, int count, ModifierSet modifiers,
                          bool within, Pos pos);
-    void     buttonMotion(uint8_t state, bool within, Pos pos);
-    void     buttonRelease(bool broken, uint8_t state);
-    void     scrollWheel(ScrollDir dir, uint8_t state);
+    void     buttonMotion(ModifierSet modifiers, bool within, Pos pos);
+    void     buttonRelease(bool broken, ModifierSet modifiers);
+    void     scrollWheel(ScrollDir dir, ModifierSet modifiers);
 
     void     paste(const uint8_t * data, size_t size);
 
@@ -174,7 +174,7 @@ protected:
     enum class TabDir { FORWARD, BACKWARD };
     enum class Damager { TTY, EXPOSURE, SCROLL };
 
-    bool      handleKeyBinding(xkb_keysym_t keySym, uint8_t state);
+    bool      handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers);
 
     void      moveCursorOriginMode(Pos pos);
     void      moveCursor(Pos pos);

@@ -149,9 +149,7 @@ public:
         _basics(),
         _colorSet(config, _basics),
         _fontSet(config),
-        _keyMap(_basics.maskShift(),
-                _basics.maskAlt(),
-                _basics.maskControl()),
+        _keyMap(),
         _finished(false)
     {
         if (config.getServerFork()) {

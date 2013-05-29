@@ -174,8 +174,8 @@ void Terminal::redraw(Pos begin, Pos end) {
     fixDamage(begin, end, Damager::EXPOSURE);
 }
 
-void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
-    if (!handleKeyBinding(keySym, state) && _keyMap.isPotent(keySym)) {
+void Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
+    if (!handleKeyBinding(keySym, modifiers) && _keyMap.isPotent(keySym)) {
         if (_config.getScrollOnTtyKeyPress() && _buffer->scrollBottom()) {
             fixDamage(Pos(0, 0),
                       Pos(_buffer->getRows(), _buffer->getCols()),
@@ -183,7 +183,7 @@ void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
         }
 
         std::vector<uint8_t> str;
-        if (_keyMap.convert(keySym, state,
+        if (_keyMap.convert(keySym, modifiers,
                             _modes.get(Mode::APPKEYPAD),
                             _modes.get(Mode::APPCURSOR),
                             _modes.get(Mode::CR_ON_LF),
@@ -195,10 +195,10 @@ void Terminal::keyPress(xkb_keysym_t keySym, uint8_t state) {
     }
 }
 
-void Terminal::buttonPress(Button button, int count, uint8_t state,
+void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
                            bool UNUSED(within), Pos pos) {
     PRINT("press: " << button << ", count=" << count <<
-          ", state=" << state << ", " << pos);
+          ", state=" << modifiers << ", " << pos);
 
     ASSERT(!_pressed, "");
 
@@ -206,10 +206,9 @@ void Terminal::buttonPress(Button button, int count, uint8_t state,
         int num = static_cast<int>(button);
         if (num >= 3) { num += 64 - 3; }
 
-        // FIXME more reason to standardise the masks in common.
-        if (state & _keyMap.maskShift())   { num +=  4; }
-        if (state & _keyMap.maskAlt())     { num +=  8; }
-        if (state & _keyMap.maskControl()) { num += 16; }
+        if (modifiers.get(Modifier::SHIFT))   { num +=  4; }
+        if (modifiers.get(Modifier::ALT))     { num +=  8; }
+        if (modifiers.get(Modifier::CONTROL)) { num += 16; }
 
         std::ostringstream ost;
         if (_modes.get(Mode::MOUSE_SGR)) {
@@ -260,7 +259,7 @@ void Terminal::buttonPress(Button button, int count, uint8_t state,
     _pointerPos = pos;
 }
 
-void Terminal::buttonMotion(uint8_t state, bool within, Pos pos) {
+void Terminal::buttonMotion(ModifierSet modifiers, bool within, Pos pos) {
     //PRINT("motion: within=" << within << ", " << pos);
 
     ASSERT(_pressed, "");
@@ -269,10 +268,9 @@ void Terminal::buttonMotion(uint8_t state, bool within, Pos pos) {
         if (within) {
             int num = static_cast<int>(_button) + 32;
 
-            // FIXME more reason to standardise the masks in common.
-            if (state & _keyMap.maskShift())   { num +=  4; }
-            if (state & _keyMap.maskAlt())     { num +=  8; }
-            if (state & _keyMap.maskControl()) { num += 16; }
+            if (modifiers.get(Modifier::SHIFT))   { num +=  1; }
+            if (modifiers.get(Modifier::ALT))     { num +=  2; }
+            if (modifiers.get(Modifier::CONTROL)) { num +=  4; }
 
             std::ostringstream ost;
             if (_modes.get(Mode::MOUSE_SGR)) {
@@ -308,7 +306,7 @@ void Terminal::buttonMotion(uint8_t state, bool within, Pos pos) {
     _pointerPos = pos;
 }
 
-void Terminal::buttonRelease(bool broken, uint8_t state) {
+void Terminal::buttonRelease(bool broken, ModifierSet modifiers) {
     PRINT("release, broken=" << broken);
 
     ASSERT(_pressed, "");
@@ -319,10 +317,9 @@ void Terminal::buttonRelease(bool broken, uint8_t state) {
         int num = _modes.get(Mode::MOUSE_SGR) ? static_cast<int>(_button) + 32 : 3;
         auto pos = _pointerPos;
 
-        // FIXME more reason to standardise the masks in common.
-        if (state & _keyMap.maskShift())   { num +=  4; }
-        if (state & _keyMap.maskAlt())     { num +=  8; }
-        if (state & _keyMap.maskControl()) { num += 16; }
+        if (modifiers.get(Modifier::SHIFT))   { num +=  4; }
+        if (modifiers.get(Modifier::ALT))     { num +=  8; }
+        if (modifiers.get(Modifier::CONTROL)) { num += 16; }
 
         std::ostringstream ost;
         if (_modes.get(Mode::MOUSE_SGR)) {
@@ -356,7 +353,7 @@ void Terminal::buttonRelease(bool broken, uint8_t state) {
     _pressed = false;
 }
 
-void Terminal::scrollWheel(ScrollDir dir, uint8_t UNUSED(state)) {
+void Terminal::scrollWheel(ScrollDir dir, ModifierSet UNUSED(modifiers)) {
     switch (dir) {
         case ScrollDir::UP:
             // TODO consolidate scroll operations with method.
@@ -444,12 +441,10 @@ void Terminal::flush() {
     }
 }
 
-bool Terminal::handleKeyBinding(xkb_keysym_t keySym, uint8_t state) {
+bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
     // FIXME no hard-coded keybindings. Use config.
 
-    if (state & _keyMap.maskShift() &&
-        state & _keyMap.maskControl())
-    {
+    if (modifiers.get(Modifier::SHIFT) && modifiers.get(Modifier::CONTROL)) {
         switch (keySym) {
             case XKB_KEY_X: {
                 std::string text;
@@ -472,7 +467,7 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, uint8_t state) {
         }
     }
 
-    if (state & _keyMap.maskShift()) {
+    if (modifiers.get(Modifier::SHIFT)) {
         switch (keySym) {
             case XKB_KEY_Up:
                 if (_buffer->scrollUp(1)) {
