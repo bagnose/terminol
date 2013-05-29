@@ -128,30 +128,41 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
 
     ASSERT(rows > 0 && cols > 0, "");
 
-    ASSERT(_cursor.pos.row < _buffer->getRows(), "");
-    ASSERT(_cursor.pos.col < _buffer->getCols(), "");
-
     // Clear any wrapNext if the number of cols has changed.
     if (_cursor.wrapNext && _cursor.pos.col != cols - 1) {
         _cursor.wrapNext = false;
     }
 
-    // FIXME this cursor-dependent adjustment stuff is
-    // all pretty horrible.
-    int16_t priRowAdjust = _priBuffer.resize(rows, cols, _cursor.pos.row);
-    int16_t altRowAdjust = _altBuffer.resize(rows, cols, _cursor.pos.row);
-    int16_t rowAdjust    = _buffer == &_priBuffer ? priRowAdjust : altRowAdjust;
+    // XXX Unsure about the following strategy.
+    // It assumes that the saved cursor is solely used to remember the
+    // position on the primary buffer while we are using the alternative
+    // buffer. However, it kinda seems that urxvt works this way.
 
-    // Note, we mustn't call damage cursor here because the old
-    // coordinates might not be valid.
-    _cursor.pos.row += rowAdjust;
+    auto priCursor = _cursor.pos.row;
+    auto altCursor = _savedCursor.pos.row;
+
+    if (_buffer != &_priBuffer) { std::swap(priCursor, altCursor); }
+
+    auto cursorAdj      = _priBuffer.resize(rows, cols, priCursor);
+    auto savedCursorAdj = _altBuffer.resize(rows, cols, altCursor);
+
+    if (_buffer != &_priBuffer) { std::swap(cursorAdj, savedCursorAdj); }
+
+    // Note, we mustn't call moveCursor()/damageCursor() here because:
+    //  - the old coordinates might not be valid
+    //  - it will clear wrapNext, if set
+
+    _cursor.pos.row += cursorAdj;
     _cursor.pos.col  = clamp<uint16_t>(_cursor.pos.col, 0, cols - 1);
 
     ASSERT(_cursor.pos.row < rows, "");
     ASSERT(_cursor.pos.col < cols, "");
 
-    // XXX is this correct for the saved cursor row/col?
-    _savedCursor.pos = Pos();
+    _savedCursor.pos.row += savedCursorAdj;
+    _savedCursor.pos.col  = clamp<uint16_t>(_cursor.pos.col, 0, cols - 1);
+
+    ASSERT(_savedCursor.pos.row < rows, "");
+    ASSERT(_savedCursor.pos.col < cols, "");
 
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {

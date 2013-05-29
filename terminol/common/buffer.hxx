@@ -730,15 +730,8 @@ public:
         else if (rows < getRows()) {
             // Remove blanks lines from the back.
             while (getRows() != rows) {
-                if (_active.back().isBlank()) {
+                if (_active.back().isBlank() && cursorRow != _active.size() - 1) {
                     _active.pop_back();
-
-                    // FIXME this cursor-dependent adjustment stuff is
-                    // all pretty horrible.
-                    if (cursorRow == _active.size()) {
-                        --cursorRow;
-                        --delta;
-                    }
                 }
                 else {
                     break;
