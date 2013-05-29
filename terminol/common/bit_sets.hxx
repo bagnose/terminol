@@ -8,58 +8,41 @@
 #include <iosfwd>
 #include <stdint.h>
 
-class AttrSet {
-    uint8_t _bits;
-    static uint8_t bit(Attr attr) { return 1 << static_cast<int>(attr); }
+template <typename T, typename I> class GenericSet {
+    I _bits;
+    static I bit(T t) { return 1 << static_cast<int>(t); }
 
 public:
-    AttrSet() : _bits(0) {}
+    GenericSet() : _bits(0) {}
 
-    void clear()              { _bits  =  0;              }
-    void set(Attr attr)       { _bits |=  bit(attr);      }
-    void unset(Attr attr)     { _bits &= ~bit(attr);      }
-    bool get(Attr attr) const { return _bits & bit(attr); }
+    void clear()        { _bits  =  I(0);        }
+    void set(T t)       { _bits |=  bit(t);      }
+    void unset(T t)     { _bits &= ~bit(t);      }
+    bool get(T t) const { return _bits & bit(t); }
 
-    void setTo(Attr attr, bool to) {
-        if (to) { set(attr);   }
-        else    { unset(attr); }
+    void setTo(T t, bool to) {
+        if (to) { set(t);   }
+        else    { unset(t); }
     }
 
-    friend inline bool operator == (AttrSet lhs, AttrSet rhs);
-};
+    friend inline bool operator == (GenericSet lhs, GenericSet rhs) {
+        return lhs._bits == rhs._bits;
+    }
 
-std::ostream & operator << (std::ostream & ost, AttrSet attributeSet);
-
-inline bool operator == (AttrSet lhs, AttrSet rhs) {
-    return lhs._bits == rhs._bits;
-}
-
-inline bool operator != (AttrSet lhs, AttrSet rhs) {
-    return !(lhs == rhs);
-}
-
-//
-//
-//
-
-class ModeSet {
-    uint16_t _bits;
-    static uint16_t bit(Mode mode) { return 1 << static_cast<int>(mode); }
-
-public:
-    ModeSet() : _bits(0) {}
-
-    void clear()              { _bits  =  0;              }
-    void set(Mode mode)       { _bits |=  bit(mode);      }
-    void unset(Mode mode)     { _bits &= ~bit(mode);      }
-    bool get(Mode mode) const { return _bits & bit(mode); }
-
-    void setTo(Mode mode, bool to) {
-        if (to) { set(mode);   }
-        else    { unset(mode); }
+    friend inline bool operator != (GenericSet lhs, GenericSet rhs) {
+        return !(lhs == rhs);
     }
 };
 
+//
+//
+//
+
+
+typedef GenericSet<Attr, uint8_t> AttrSet;
+std::ostream & operator << (std::ostream & ost, AttrSet attrSet);
+
+typedef GenericSet<Mode, uint16_t> ModeSet;
 std::ostream & operator << (std::ostream & ost, ModeSet modeSet);
 
 #endif // COMMON__BIT_SETS__HXX

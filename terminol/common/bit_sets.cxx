@@ -4,11 +4,11 @@
 
 #include <iostream>
 
-std::ostream & operator << (std::ostream & ost, AttrSet attributeSet) {
+std::ostream & operator << (std::ostream & ost, AttrSet attrs) {
     bool first = true;
     for (auto i = 0; i != static_cast<int>(Attr::LAST) + 1; ++i) {
         auto a = static_cast<Attr>(i);
-        if (attributeSet.get(a)) {
+        if (attrs.get(a)) {
             if (first) { first = false; }
             else       { ost << "|"; }
             ost << a;
@@ -17,11 +17,11 @@ std::ostream & operator << (std::ostream & ost, AttrSet attributeSet) {
     return ost;
 }
 
-std::ostream & operator << (std::ostream & ost, ModeSet modeSet) {
+std::ostream & operator << (std::ostream & ost, ModeSet modes) {
     bool first = true;
     for (auto i = 0; i != static_cast<int>(Mode::LAST) + 1; ++i) {
         auto a = static_cast<Mode>(i);
-        if (modeSet.get(a)) {
+        if (modes.get(a)) {
             if (first) { first = false; }
             else       { ost << "|"; }
             ost << a;
