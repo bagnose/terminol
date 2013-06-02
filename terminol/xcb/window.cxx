@@ -1036,7 +1036,7 @@ void Window::terminalDrawRun(Pos             pos,
                                                 style.attrs.get(Attr::BOLD)));
 
         int x, y;
-        pos2XY(pos, x, y);        // FIXME
+        pos2XY(pos, x, y);
 
         const auto & bgValues = _colorSet.getIndexedColor(style.bg);
         cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
