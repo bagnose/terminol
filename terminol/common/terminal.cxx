@@ -880,7 +880,7 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
         _buffer->insertCells(_cursor.pos, 1);
     }
 
-    _buffer->setCell(_cursor.pos, Cell::utf8(seq, _cursor.style));
+    _buffer->setCell(_cursor.pos, Cell::utf8(_cursor.style, seq));
 
     if (_cursor.pos.col == _buffer->getCols() - 1) {
         _cursor.wrapNext = true;
@@ -1380,7 +1380,7 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
                     break;
                 case '8': { // DECALN - Alignment
                     // Fill terminal with 'E'
-                    Cell cell = Cell::ascii('E', _cursor.style);
+                    Cell cell = Cell::ascii(_cursor.style, 'E');
                     for (uint16_t r = 0; r != _buffer->getRows(); ++r) {
                         for (uint16_t c = 0; c != _buffer->getCols(); ++c) {
                             _buffer->setCell(Pos(r, c), cell);

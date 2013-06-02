@@ -10,28 +10,28 @@
 #include <algorithm>
 
 struct Style {
-    uint16_t fg;       // 2 bytes
-    uint16_t bg;       // 2 bytes
     AttrSet  attrs;    // 1 byte
     uint8_t  padding;  // 1 byte - helpful ???
+    uint16_t fg;       // 2 bytes
+    uint16_t bg;       // 2 bytes
 
+    static AttrSet  defaultAttrs() { return AttrSet(); }
     static uint16_t defaultFg()    { return 256 + 0; }
     static uint16_t defaultBg()    { return 256 + 1; }
-    static AttrSet  defaultAttrs() { return AttrSet(); }
 
     static Style normal() {
-        return Style(defaultFg(), defaultBg(), defaultAttrs());
+        return Style(defaultAttrs(), defaultFg(), defaultBg());
     }
 
-    Style(uint16_t fg_, uint16_t bg_, AttrSet attrs_) :
-        fg(fg_), bg(bg_), attrs(attrs_), padding(0) {}
+    Style(AttrSet attrs_, uint16_t fg_, uint16_t bg_) :
+        attrs(attrs_), padding(0), fg(fg_), bg(bg_) {}
 };
 
 inline bool operator == (Style lhs, Style rhs) {
     return
+        lhs.attrs == rhs.attrs &&
         lhs.fg    == rhs.fg &&
-        lhs.bg    == rhs.bg &&
-        lhs.attrs == rhs.attrs;
+        lhs.bg    == rhs.bg;
 }
 
 inline bool operator != (Style lhs, Style rhs) { return !(lhs == rhs); }
@@ -41,17 +41,17 @@ inline bool operator != (Style lhs, Style rhs) { return !(lhs == rhs); }
 //
 
 struct Cell {
-    utf8::Seq seq;          // 4 bytes
     Style     style;        // 6 bytes
+    utf8::Seq seq;          // 4 bytes
 
-    static Cell blank() { return Cell(utf8::Seq(SPACE), Style::normal()); }
-    static Cell ascii(uint8_t a, Style style) { return Cell(utf8::Seq(a), style); }
-    static Cell utf8(utf8::Seq seq, Style style) { return Cell(seq, style); }
+    static Cell blank() { return Cell(Style::normal(), utf8::Seq(SPACE)); }
+    static Cell ascii(Style style, uint8_t a) { return Cell(style, utf8::Seq(a)); }
+    static Cell utf8(Style style, utf8::Seq seq) { return Cell(style, seq); }
 
 private:
-    Cell(utf8::Seq seq_, Style style_) :
-        seq(seq_),
-        style(style_) {}
+    Cell(Style style_, utf8::Seq seq_) :
+        style(style_),
+        seq(seq_) {}
 };
 
 inline bool operator == (const Cell & lhs, const Cell & rhs) {
@@ -60,9 +60,7 @@ inline bool operator == (const Cell & lhs, const Cell & rhs) {
         lhs.style == rhs.style;
 }
 
-inline bool operator != (const Cell & lhs, const Cell & rhs) {
-    return !(lhs == rhs);
-}
+inline bool operator != (const Cell & lhs, const Cell & rhs) { return !(lhs == rhs); }
 
 //
 //
@@ -102,9 +100,7 @@ inline bool operator == (Pos lhs, Pos rhs) {
     return lhs.row == rhs.row && lhs.col == rhs.col;
 }
 
-inline bool operator != (Pos lhs, Pos rhs) {
-    return !(lhs == rhs);
-}
+inline bool operator != (Pos lhs, Pos rhs) { return !(lhs == rhs); }
 
 inline std::ostream & operator << (std::ostream & ost, Pos pos) {
     return ost << pos.row << 'x' << pos.col;
