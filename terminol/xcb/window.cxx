@@ -1051,8 +1051,16 @@ void Window::terminalDrawRun(Pos             pos,
         double w = count * _fontSet.getWidth();
         double h = _fontSet.getHeight();
 
-        const auto & bgValues = _colorSet.getIndexedColor(style.bg);
-        cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
+        if (style.bg.type == Colr::Type::INDEXED) {
+            const auto & bg = _colorSet.getIndexedColor(style.bg.index);
+            cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
+        }
+        else {
+            ASSERT(style.bg.type == Colr::Type::DIRECT, "");
+            auto bg = style.bg.triplet;
+            cairo_set_source_rgb(_cr, bg.r / 255.0, bg.g / 255.0, bg.b / 255.0);
+        }
+
         cairo_rectangle(_cr,
                         x,
                         y,
@@ -1061,9 +1069,17 @@ void Window::terminalDrawRun(Pos             pos,
         cairo_clip_preserve(_cr);       // XXX prevent droppings
         cairo_fill(_cr);
 
-        const auto & fgValues = _colorSet.getIndexedColor(style.fg);
-        cairo_set_source_rgba(_cr, fgValues.r, fgValues.g, fgValues.b,
-                              style.attrs.get(Attr::CONCEAL) ? 0.2 : 1.0);
+        auto alpha = style.attrs.get(Attr::CONCEAL) ? 0.2 : 1.0;
+
+        if (style.fg.type == Colr::Type::INDEXED) {
+            const auto & fg = _colorSet.getIndexedColor(style.fg.index);
+            cairo_set_source_rgba(_cr, fg.r, fg.g, fg.b, alpha);
+        }
+        else {
+            ASSERT(style.fg.type == Colr::Type::DIRECT, "");
+            auto fg = style.fg.triplet;
+            cairo_set_source_rgba(_cr, fg.r / 255.0, fg.g / 255.0, fg.b / 255.0, alpha);
+        }
 
         if (style.attrs.get(Attr::UNDERLINE)) {
             double yy = _fontSet.getHeight() - 0.5;
@@ -1088,16 +1104,6 @@ void Window::terminalDrawCursor(Pos             pos,
 
     if (style.attrs.get(Attr::INVERSE)) { std::swap(style.fg, style.bg); }
 
-    const auto & fgValues =
-        _config.getCustomCursorTextColor() ?
-        _colorSet.getCursorTextColor() :
-        _colorSet.getIndexedColor(style.bg);
-
-    const auto & bgValues =
-        _config.getCustomCursorFillColor() ?
-        _colorSet.getCursorFillColor() :
-        _colorSet.getIndexedColor(style.fg);
-
     cairo_save(_cr); {
         cairo_set_scaled_font(_cr, _fontSet.get(style.attrs.get(Attr::ITALIC),
                                                 style.attrs.get(Attr::BOLD)));
@@ -1105,12 +1111,39 @@ void Window::terminalDrawCursor(Pos             pos,
         int x, y;
         pos2XY(pos, x, y);
 
-        cairo_set_source_rgba(_cr, bgValues.r, bgValues.g, bgValues.b,
-                              wrapNext ? 0.4 : 1.0);
+        double alpha = wrapNext ? 0.4 : 1.0;
+
+        if (_config.getCustomCursorFillColor()) {
+            const auto & bg = _colorSet.getCursorFillColor();
+            cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
+        }
+        else if (style.fg.type == Colr::Type::INDEXED) {
+            const auto & bg = _colorSet.getIndexedColor(style.fg.index);
+            cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
+        }
+        else {
+            ASSERT(style.fg.type == Colr::Type::DIRECT, "");
+            auto bg = style.fg.triplet;
+            cairo_set_source_rgba(_cr, bg.r / 255.0, bg.g / 255.0, bg.b / 255.0, alpha);
+        }
+
         cairo_rectangle(_cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
         cairo_fill(_cr);
 
-        cairo_set_source_rgb(_cr, fgValues.r, fgValues.g, fgValues.b);
+        if (_config.getCustomCursorTextColor()) {
+            const auto & fg = _colorSet.getCursorTextColor();
+            cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
+        }
+        else if (style.bg.type == Colr::Type::INDEXED) {
+            const auto & fg = _colorSet.getIndexedColor(style.bg.index);
+            cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
+        }
+        else {
+            ASSERT(style.bg.type == Colr::Type::DIRECT, "");
+            auto fg = style.bg.triplet;
+            cairo_set_source_rgb(_cr, fg.r / 255.0, fg.g / 255.0, fg.b / 255.0);
+        }
+
         cairo_move_to(_cr, x, y + _fontSet.getAscent());
         cairo_show_text(_cr, reinterpret_cast<const char *>(str));
 

@@ -1486,12 +1486,12 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
             case 1: // Bold
                 _cursor.style.attrs.set(Attr::BOLD);
                 // Normal -> Bright.
-                if (_cursor.style.fg < 8) { _cursor.style.fg += 8; }
+                //if (_cursor.style.fg < 8) { _cursor.style.fg += 8; }
                 break;
             case 2: // Faint (low/decreased intensity)
                 _cursor.style.attrs.unset(Attr::BOLD);
                 // Bright -> Normal.
-                if (_cursor.style.fg >= 8 && _cursor.style.fg < 16) { _cursor.style.fg -= 8; }
+                //if (_cursor.style.fg >= 8 && _cursor.style.fg < 16) { _cursor.style.fg -= 8; }
                 break;
             case 3: // Italic: on
                 _cursor.style.attrs.set(Attr::ITALIC);
@@ -1534,12 +1534,12 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 //                                 double underline hardly ever)
                 _cursor.style.attrs.unset(Attr::BOLD);
                 // Bright -> Normal.
-                if (_cursor.style.fg >= 8 && _cursor.style.fg < 16) { _cursor.style.fg -= 8; }
+                //if (_cursor.style.fg >= 8 && _cursor.style.fg < 16) { _cursor.style.fg -= 8; }
                 break;
             case 22: // Normal color or intensity (neither bold nor faint)
                 _cursor.style.attrs.unset(Attr::BOLD);
                 // Bright -> Normal.        XXX is this right?
-                if (_cursor.style.fg >= 8 && _cursor.style.fg < 16) { _cursor.style.fg -= 8; }
+                //if (_cursor.style.fg >= 8 && _cursor.style.fg < 16) { _cursor.style.fg -= 8; }
                 break;
             case 23: // Not italic, not Fraktur
                 _cursor.style.attrs.unset(Attr::ITALIC);
@@ -1578,8 +1578,8 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                             if (i + 3 < args.size()) {
                                 // 24-bit foreground support
                                 // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB foreground color
-                                NYI("24-bit RGB foreground");
-                                i += 3;
+                                _cursor.style.fg = Colr(args[i + 1], args[i + 2], args[i + 3]);
+                                i += 3;     // FIXME 4??
                             }
                             else {
                                 ERROR("Insufficient args");
@@ -1611,7 +1611,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                                 i += 1;
                                 int32_t v2 = args[i];
                                 if (v2 >= 0 && v2 < 256) {
-                                    _cursor.style.fg = v2;
+                                    _cursor.style.fg.index = v2;
                                 }
                                 else {
                                     ERROR("Colour out of range: " << v2);
@@ -1646,7 +1646,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                             if (i + 3 < args.size()) {
                                 // 24-bit background support
                                 // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB background color
-                                NYI("24-bit RGB background");
+                                _cursor.style.bg = Colr(args[i + 1], args[i + 2], args[i + 3]);
                                 i += 3;
                             }
                             else {
@@ -1679,7 +1679,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                                 i += 1;
                                 int32_t v2 = args[i];
                                 if (v2 >= 0 && v2 < 256) {
-                                    _cursor.style.bg = v2;
+                                    _cursor.style.bg.index = v2;
                                 }
                                 else {
                                     ERROR("Colour out of range: " << v2);
@@ -1728,26 +1728,26 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
 
                 if (v >= 30 && v < 38) {
                     // normal fg
-                    _cursor.style.fg = v - 30;
+                    _cursor.style.fg.index = v - 30;
                     // BOLD -> += 8
                 }
                 else if (v >= 40 && v < 48) {
                     // normal bg
-                    _cursor.style.bg = v - 40;
+                    _cursor.style.bg.index = v - 40;
                 }
                 else if (v >= 90 && v < 98) {
                     // bright fg
-                    _cursor.style.fg = v - 90 + 8;
+                    _cursor.style.fg.index = v - 90 + 8;
                 }
                 else if (v >= 100 && v < 108) {
                     // bright bg
-                    _cursor.style.bg = v - 100 + 8;
+                    _cursor.style.bg.index = v - 100 + 8;
                 }
                 else if (v >= 256 && v < 512) {
-                    _cursor.style.fg = v - 256;
+                    _cursor.style.fg.index = v - 256;
                 }
                 else if (v >= 512 && v < 768) {
-                    _cursor.style.bg = v - 512;
+                    _cursor.style.bg.index = v - 512;
                 }
                 else {
                     ERROR("Unhandled attribute: " << v);

@@ -9,28 +9,78 @@
 
 #include <algorithm>
 
-struct Style {
-    AttrSet  attrs;    // 1 byte
-    uint8_t  padding;  // 1 byte - helpful ???
-    uint16_t fg;       // 2 bytes
-    uint16_t bg;       // 2 bytes
+struct Triplet {
+    Triplet(uint8_t r_, uint8_t g_, uint8_t b_) : r(r_), g(g_), b(b_) {}
 
-    static AttrSet  defaultAttrs() { return AttrSet(); }
-    static uint16_t defaultFg()    { return 256 + 0; }
-    static uint16_t defaultBg()    { return 256 + 1; }
+    uint8_t r, g, b;
+};
+
+inline bool operator == (Triplet lhs, Triplet rhs) {
+    return lhs.r == rhs.r && lhs.g == rhs.g && lhs.b == rhs.b;
+}
+
+inline bool operator != (Triplet lhs, Triplet rhs) { return !(lhs == rhs); }
+
+//
+//
+//
+
+struct Colr {
+    explicit Colr(uint16_t index_) : type(Type::INDEXED), index(index_) {}
+    Colr(uint8_t r, uint8_t g, uint8_t b) : type(Type::DIRECT), triplet(r, g, b) {}
+
+    enum class Type : uint8_t { INDEXED, DIRECT };
+
+    Type type;
+
+    union {
+        uint16_t index;
+        Triplet  triplet;
+    };
+};
+
+inline bool operator == (Colr lhs, Colr rhs) {
+    if (lhs.type != rhs.type) {
+        return false;
+    }
+    else {
+        if (lhs.type == Colr::Type::INDEXED) {
+            return lhs.index == rhs.index;
+        }
+        else {
+            return lhs.triplet == rhs.triplet;
+        }
+    }
+}
+
+inline bool operator != (Colr lhs, Colr rhs) { return !(lhs == rhs); }
+
+//
+//
+//
+
+struct Style {
+    AttrSet attrs;    // 1 byte
+    uint8_t padding;  // 1 byte - helpful ???
+    Colr    fg;       // 4 bytes
+    Colr    bg;       // 4 bytes
+
+    static AttrSet defaultAttrs() { return AttrSet();     }
+    static Colr    defaultFg()    { return Colr(256 + 0); }
+    static Colr    defaultBg()    { return Colr(256 + 1); }
 
     static Style normal() {
         return Style(defaultAttrs(), defaultFg(), defaultBg());
     }
 
-    Style(AttrSet attrs_, uint16_t fg_, uint16_t bg_) :
+    Style(AttrSet attrs_, Colr fg_, Colr bg_) :
         attrs(attrs_), padding(0), fg(fg_), bg(bg_) {}
 };
 
 inline bool operator == (Style lhs, Style rhs) {
     return
         lhs.attrs == rhs.attrs &&
-        lhs.fg    == rhs.fg &&
+        lhs.fg    == rhs.fg    &&
         lhs.bg    == rhs.bg;
 }
 
@@ -41,8 +91,8 @@ inline bool operator != (Style lhs, Style rhs) { return !(lhs == rhs); }
 //
 
 struct Cell {
-    Style     style;        // 6 bytes
-    utf8::Seq seq;          // 4 bytes
+    Style     style;        // 10 bytes
+    utf8::Seq seq;          // 4  bytes
 
     static Cell blank() { return Cell(Style::normal(), utf8::Seq(SPACE)); }
     static Cell ascii(Style style, uint8_t a) { return Cell(style, utf8::Seq(a)); }
