@@ -659,8 +659,6 @@ public:
 
         int16_t delta = 0;
 
-        //size_t oldHistory = _history;
-
         //
         // Cols
         //
