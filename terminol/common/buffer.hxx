@@ -542,7 +542,7 @@ public:
         }
     }
 
-    bool getSelectedText(std::string & text) {
+    bool getSelectedText(std::string & text) const {
         // If the marker and delimiter are the same then the selection is empty.
         if (_selectMarker == _selectDelimiter) {
             return false;
@@ -574,7 +574,7 @@ public:
         return true;
     }
 
-    bool getSelectedArea(Pos & begin, Pos & end, bool & topless, bool & bottomless) {
+    bool getSelectedArea(Pos & begin, Pos & end, bool & topless, bool & bottomless) const {
         // If the marker and delimiter are the same then the selection is empty.
         if (_selectMarker == _selectDelimiter) {
             return false;
