@@ -54,7 +54,16 @@
         } \
     } while (false)
 
-#define NYI(output) \
+#if DEBUG
+#  define NYI(output) \
+    do { \
+        std::cerr \
+            << __FILE__ << ":" << __LINE__ << " " \
+            << "NYI: " << output  \
+            << std::endl; \
+    } while (false)
+#else
+#  define NYI(output) \
     DO_ONCE( \
         do { \
             std::cerr \
@@ -63,6 +72,7 @@
                 << std::endl; \
         } while (false) \
     )
+#endif
 
 // ENFORCE (and its variants) never get compiled out.
 #define ENFORCE(condition, output) \
