@@ -60,11 +60,11 @@ Window::Window(I_Observer         & observer,
     _lastPressTime(0),
     _button(XCB_BUTTON_INDEX_ANY)
 {
-    uint16_t rows = _config.getInitialRows();
-    uint16_t cols = _config.getInitialCols();
+    auto rows = _config.getInitialRows();
+    auto cols = _config.getInitialCols();
 
-    const int BORDER_THICKNESS = _config.getBorderThickness();
-    const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+    const auto BORDER_THICKNESS = _config.getBorderThickness();
+    const auto SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
 
     _width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
     _height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
@@ -275,8 +275,8 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
     _button        = event->detail;
     _lastPressTime = event->time;
 
-    Pos pos;
-    bool within = xy2Pos(event->event_x, event->event_y, pos);
+    Pos  pos;
+    auto within = xy2Pos(event->event_x, event->event_y, pos);
 
     switch (event->detail) {
         case XCB_BUTTON_INDEX_1:
@@ -329,8 +329,8 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
         y = event->event_y;
     }
 
-    Pos pos;
-    bool within = xy2Pos(x, y, pos);
+    Pos  pos;
+    auto within = xy2Pos(x, y, pos);
 
     if (_pointerPos != pos) {
         auto modifiers = _basics.convertState(event->state);
@@ -486,8 +486,8 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
     uint16_t rows, cols;
 
-    const int BORDER_THICKNESS = _config.getBorderThickness();
-    const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+    const auto BORDER_THICKNESS = _config.getBorderThickness();
+    const auto SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
 
     if (_width  > 2 * BORDER_THICKNESS + _fontSet.getWidth() + SCROLLBAR_WIDTH &&
         _height > 2 * BORDER_THICKNESS + _fontSet.getHeight())
@@ -663,7 +663,7 @@ void Window::icccmConfigure() {
     // machine
     //
 
-    const std::string & hostname = _basics.hostname();
+    const auto & hostname = _basics.hostname();
     if (!hostname.empty()) {
         xcb_icccm_set_wm_client_machine(_basics.connection(),
                                         _window,
@@ -685,8 +685,8 @@ void Window::icccmConfigure() {
     // size
     //
 
-    const int BORDER_THICKNESS = _config.getBorderThickness();
-    const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+    const auto BORDER_THICKNESS = _config.getBorderThickness();
+    const auto SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
 
     xcb_size_hints_t sizeHints;
     sizeHints.flags = 0;
@@ -727,14 +727,14 @@ void Window::pos2XY(Pos pos, int & x, int & y) const {
     ASSERT(pos.row <= _terminal->getRows(), "");
     ASSERT(pos.col <= _terminal->getCols(), "");
 
-    const int BORDER_THICKNESS = _config.getBorderThickness();
+    const auto BORDER_THICKNESS = _config.getBorderThickness();
 
     x = BORDER_THICKNESS + pos.col * _fontSet.getWidth();
     y = BORDER_THICKNESS + pos.row * _fontSet.getHeight();
 }
 
 bool Window::xy2Pos(int x, int y, Pos & pos) const {
-    bool within = true;
+    auto within = true;
 
     const int BORDER_THICKNESS = _config.getBorderThickness();
 
@@ -787,7 +787,7 @@ void Window::updateTitle() {
     ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
     ost << _title;
 
-    const std::string & fullTitle = ost.str();
+    const auto & fullTitle = ost.str();
 
 #if 1
     xcb_icccm_set_wm_name(_basics.connection(),
@@ -882,12 +882,12 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 }
 
 void Window::drawBorder() {
-    const int BORDER_THICKNESS = _config.getBorderThickness();
-    const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+    const auto BORDER_THICKNESS = _config.getBorderThickness();
+    const auto SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
 
     cairo_save(_cr); {
-        const auto & bgValues = _colorSet.getBorderColor();
-        cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
+        const auto & bg = _colorSet.getBorderColor();
+        cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
 
         double x1 = BORDER_THICKNESS + _fontSet.getWidth() * _terminal->getCols();
         double x2 = _width - SCROLLBAR_WIDTH;
@@ -981,8 +981,8 @@ void Window::terminalSetTitle(const std::string & title) throw () {
 }
 
 void Window::terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () {
-    const int BORDER_THICKNESS = _config.getBorderThickness();
-    const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+    const auto BORDER_THICKNESS = _config.getBorderThickness();
+    const auto SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
 
     uint32_t width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
     uint32_t height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
@@ -1111,7 +1111,7 @@ void Window::terminalDrawCursor(Pos             pos,
         int x, y;
         pos2XY(pos, x, y);
 
-        double alpha = wrapNext ? 0.4 : 1.0;
+        auto alpha = wrapNext ? 0.4 : 1.0;
 
         if (_config.getCustomCursorFillColor()) {
             const auto & bg = _colorSet.getCursorFillColor();
@@ -1157,7 +1157,7 @@ namespace {
 void pathSingleLineSelection(cairo_t * cr,
                              double x0, double y0, double x1, double y1,
                              double i, double c) {
-    double d = M_PI / 180.0;
+    auto d = M_PI / 180.0;
 
     cairo_new_sub_path(cr);
     cairo_arc(cr, x0 + i + c, y0 + i + c, c, 180 * d, 270 * d);
@@ -1172,7 +1172,7 @@ void pathDoubleLineSelection(cairo_t * cr,
                              double y0, double y1, double y2,
                              double i, double c,
                              bool first) {
-    double d = M_PI / 180.0;
+    auto d = M_PI / 180.0;
 
     if (first) {
         cairo_new_sub_path(cr);
@@ -1196,7 +1196,7 @@ void pathMultiLineSelection(cairo_t * cr,
                             double x0, double x1, double x2, double x3,
                             double y0, double y1, double y2, double y3,
                             double i, double c) {
-    double d = M_PI / 180.0;
+    auto d = M_PI / 180.0;
 
     cairo_new_sub_path(cr);
     cairo_arc(cr, x1 + i + c, y0 + i + c, c, 180 * d, 270 * d);
@@ -1353,8 +1353,8 @@ void Window::terminalDrawScrollbar(size_t   totalRows,
 
     // Draw the gutter.
 
-    const auto & bgValues = _colorSet.getScrollBarBgColor();
-    cairo_set_source_rgb(_cr, bgValues.r, bgValues.g, bgValues.b);
+    const auto & bg = _colorSet.getScrollBarBgColor();
+    cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
 
     cairo_rectangle(_cr,
                     x,
@@ -1365,11 +1365,11 @@ void Window::terminalDrawScrollbar(size_t   totalRows,
 
     // Draw the bar.
 
-    double yBar = static_cast<double>(historyOffset) / static_cast<double>(totalRows) * h;
-    double hBar = static_cast<double>(visibleRows)   / static_cast<double>(totalRows) * h;
+    auto yBar = static_cast<double>(historyOffset) / static_cast<double>(totalRows) * h;
+    auto hBar = static_cast<double>(visibleRows)   / static_cast<double>(totalRows) * h;
 
-    const auto & fgValues = _colorSet.getScrollBarFgColor();
-    cairo_set_source_rgb(_cr, fgValues.r, fgValues.g, fgValues.b);
+    const auto & fg = _colorSet.getScrollBarFgColor();
+    cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
 
     cairo_rectangle(_cr,
                     x + 1.0,

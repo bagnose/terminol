@@ -16,7 +16,7 @@ int32_t nthArg(const std::vector<int32_t> & args, size_t n, int32_t fallback = 0
 
 // Same as nth arg, but use fallback if arg is zero.
 int32_t nthArgNonZero(const std::vector<int32_t> & args, size_t n, int32_t fallback) {
-    int32_t arg = nthArg(args, n, fallback);
+    auto arg = nthArg(args, n, fallback);
     return arg != 0 ? arg : fallback;
 }
 
@@ -226,7 +226,7 @@ void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
             // Couldn't deliver it
         }
 
-        const std::string & str = ost.str();
+        const auto & str = ost.str();
 
         if (!str.empty()) {
             write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
@@ -288,7 +288,7 @@ void Terminal::buttonMotion(ModifierSet modifiers, bool within, Pos pos) {
                 // Couldn't deliver it
             }
 
-            const std::string & str = ost.str();
+            const auto & str = ost.str();
 
             if (!str.empty()) {
                 write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
@@ -314,7 +314,7 @@ void Terminal::buttonRelease(bool broken, ModifierSet modifiers) {
     if (_modes.get(Mode::MOUSE_BUTTON)) {
         // XXX within??
 
-        int num = _modes.get(Mode::MOUSE_SGR) ? static_cast<int>(_button) + 32 : 3;
+        auto num = _modes.get(Mode::MOUSE_SGR) ? static_cast<int>(_button) + 32 : 3;
         auto pos = _pointerPos;
 
         if (modifiers.get(Modifier::SHIFT))   { num +=  4; }
@@ -337,7 +337,7 @@ void Terminal::buttonRelease(bool broken, ModifierSet modifiers) {
             // Couldn't deliver it
         }
 
-        const std::string & str = ost.str();
+        const auto & str = ost.str();
 
         if (!str.empty()) {
             write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
@@ -397,10 +397,10 @@ void Terminal::read() {
     try {
         Timer   timer(1000 / _config.getFramesPerSecond());
         uint8_t buf[BUFSIZ];          // 8192 last time I looked.
-        size_t  size = sizeof buf;
+        auto    size = sizeof buf;
         if (_config.getSyncTty()) { size = std::min<size_t>(size, 16); }
         do {
-            size_t rval = _tty.read(buf, size);
+            auto rval = _tty.read(buf, size);
             if (rval == 0) { break; }
             processRead(buf, rval);
         } while (!timer.expired());
@@ -430,7 +430,7 @@ void Terminal::flush() {
 
     try {
         do {
-            size_t rval = _tty.write(&_writeBuffer.front(), _writeBuffer.size());
+            auto rval = _tty.write(&_writeBuffer.front(), _writeBuffer.size());
             if (rval == 0) { break; }
             _writeBuffer.erase(_writeBuffer.begin(), _writeBuffer.begin() + rval);
         } while (!_writeBuffer.empty());
@@ -546,7 +546,7 @@ void Terminal::moveCursor(Pos pos) {
 }
 
 void Terminal::tabCursor(TabDir dir, uint16_t count) {
-    uint16_t col = _cursor.pos.col;
+    auto col = _cursor.pos.col;
 
     switch (dir) {
         case TabDir::FORWARD:
@@ -651,7 +651,7 @@ void Terminal::draw(Pos begin, Pos end, Damager damage) {
 
     for (uint16_t r = begin.row; r != end.row; ++r) {
         uint16_t c_    = 0;    // Accumulation start column.
-        Style    style = Style::normal();       // FIXME default initialise
+        auto     style = Style::normal();       // FIXME default initialise
         uint16_t c;
         uint16_t colBegin2, colEnd2;
 
@@ -783,7 +783,7 @@ void Terminal::write(const uint8_t * data, size_t size) {
         // Try to write it now, queue what we can't write.
         try {
             while (size != 0) {
-                size_t rval = _tty.write(data, size);
+                auto rval = _tty.write(data, size);
                 if (rval == 0) { PRINT("Write would block!"); break; }
                 data += rval; size -= rval;
             }
@@ -1045,7 +1045,7 @@ void Terminal::machineCsi(bool priv,
     if (_config.getTraceTty()) {
         std::cerr << Esc::FG_CYAN << "ESC[";
         if (priv) { std::cerr << '?'; }
-        bool first = true;
+        auto first = true;
         for (auto & a : args) {
             if (first) { first = false; }
             else       { std::cerr << ';'; }
@@ -1057,7 +1057,7 @@ void Terminal::machineCsi(bool priv,
     switch (mode) {
         case '@': { // ICH - Insert Character
             // XXX what about _cursor.wrapNext
-            int32_t count = nthArgNonZero(args, 0, 1);
+            auto count = nthArgNonZero(args, 0, 1);
             count = clamp(count, 1, _buffer->getCols() - _cursor.pos.col);
             _buffer->insertCells(_cursor.pos, count);
             break;
@@ -1127,7 +1127,7 @@ void Terminal::machineCsi(bool priv,
             if (_cursor.pos.row >= _buffer->getMarginBegin() &&
                 _cursor.pos.row <  _buffer->getMarginEnd())
             {
-                int32_t count = nthArgNonZero(args, 0, 1);
+                auto count = nthArgNonZero(args, 0, 1);
                 count = std::min(count, _buffer->getMarginEnd() - _cursor.pos.row);
                 _buffer->insertLines(_cursor.pos.row, count);
             }
@@ -1136,14 +1136,14 @@ void Terminal::machineCsi(bool priv,
             if (_cursor.pos.row >= _buffer->getMarginBegin() &&
                 _cursor.pos.row <  _buffer->getMarginEnd())
             {
-                int32_t count = nthArgNonZero(args, 0, 1);
+                auto count = nthArgNonZero(args, 0, 1);
                 count = std::min(count, _buffer->getMarginEnd() - _cursor.pos.row);
                 _buffer->eraseLines(_cursor.pos.row, count);
             }
             break;
         case 'P': { // DCH - Delete Character
             // FIXME what about wrap-next?
-            int32_t count = nthArgNonZero(args, 0, 1);
+            auto count = nthArgNonZero(args, 0, 1);
             count = std::min(count, _buffer->getCols() - _cursor.pos.col);
             _buffer->eraseCells(_cursor.pos, count);
             break;
@@ -1235,7 +1235,7 @@ void Terminal::machineCsi(bool priv,
                         // RDO - Report Device OK: <ESC>[0n
                         std::ostringstream ost;
                         ost << ESC << "[0n";
-                        const std::string & str = ost.str();
+                        const auto & str = ost.str();
                         _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
                         break;
                     }
@@ -1246,14 +1246,14 @@ void Terminal::machineCsi(bool priv,
                         // XXX Is cursor position reported absolute irrespective of
                         // origin-mode.
 
-                        uint16_t row = _cursor.pos.row;
-                        uint16_t col = _cursor.pos.col;
+                        auto row = _cursor.pos.row;
+                        auto col = _cursor.pos.col;
 
                         if (_cursor.originMode) { row -= _buffer->getMarginBegin(); }
 
                         std::ostringstream ost;
                         ost << ESC << '[' << row + 1 << ';' << col + 1 << 'R';
-                        const std::string & str = ost.str();
+                        const auto & str = ost.str();
                         _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
                     }
                     case 7: {
@@ -1287,8 +1287,8 @@ void Terminal::machineCsi(bool priv,
                 }
                 else {
                     // http://www.vt100.net/docs/vt510-rm/DECSTBM
-                    int32_t top    = nthArgNonZero(args, 0, 1) - 1;
-                    int32_t bottom = nthArgNonZero(args, 1, _cursor.pos.row + 1) - 1;
+                    auto top    = nthArgNonZero(args, 0, 1) - 1;
+                    auto bottom = nthArgNonZero(args, 1, _cursor.pos.row + 1) - 1;
 
                     top    = clamp<int32_t>(top,    0, _buffer->getRows() - 1);
                     bottom = clamp<int32_t>(bottom, 0, _buffer->getRows() - 1);
@@ -1333,7 +1333,7 @@ void Terminal::machineDcs(const std::vector<uint8_t> & seq) throw () {
 void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
     if (_config.getTraceTty()) {
         std::cerr << Esc::FG_MAGENTA << "ESC";
-        for (auto & a : args) { std::cerr << a << ';'; }
+        for (const auto & a : args) { std::cerr << a << ';'; }
         std::cerr << Esc::RESET << " ";
     }
 
@@ -1478,7 +1478,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
 
     // FIXME is it right to loop?
     for (size_t i = 0; i != args.size(); ++i) {
-        int32_t v = args[i];
+        auto v = args[i];
 
         switch (v) {
             case 0: // Reset/Normal
@@ -1610,7 +1610,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                         case 5:
                             if (i + 1 < args.size()) {
                                 i += 1;
-                                int32_t v2 = args[i];
+                                auto v2 = args[i];
                                 if (v2 >= 0 && v2 < 256) {
                                     _cursor.style.fg.index = v2;
                                 }
@@ -1678,7 +1678,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                         case 5:
                             if (i + 1 < args.size()) {
                                 i += 1;
-                                int32_t v2 = args[i];
+                                auto v2 = args[i];
                                 if (v2 >= 0 && v2 < 256) {
                                     _cursor.style.bg.index = v2;
                                 }

@@ -553,12 +553,12 @@ public:
 
         for (auto i = b; i.row <= e.row; ++i.row, i.col = 0) {
             if (!text.empty()) { text.push_back('\n'); }
-            size_t lastNonBlank = text.size();
+            auto lastNonBlank = text.size();
 
             for (; i.col < getCols() && (i.row < e.row || i.col != e.col); ++i.col)
             {
-                const Cell & cell = getCellAbs(i);
-                utf8::Seq seq = cell.seq;
+                const auto & cell = getCellAbs(i);
+                auto         seq  = cell.seq;
                 std::copy(&seq.bytes[0],
                           &seq.bytes[utf8::leadLength(seq.lead())],
                           back_inserter(text));
