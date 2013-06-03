@@ -179,10 +179,10 @@ public:
     void insert(uint16_t col, uint16_t n) {
         trim();
 
-        std::copy_backward(&_cells[col],
-                           &_cells[_cells.size() - n],
-                           &_cells[_cells.size()]);
-        std::fill(&_cells[col], &_cells[col + n], Cell::blank());
+        ASSERT(col + n <= _cells.size(), "");
+
+        std::copy_backward(begin() + col, end() - n, end());
+        std::fill(begin() + col, begin() + col + n, Cell::blank());
 
         damageAdd(col, _cells.size());
     }
@@ -190,12 +190,10 @@ public:
     void erase(uint16_t col, uint16_t n) {
         trim();
 
-        PRINT("Erase: col=" << col << " n=" << n << " _cols=" << _cols << " size=" << _cells.size());
-
         ASSERT(col + n <= _cells.size(), "");
 
-        std::copy(&_cells[col] + n, &_cells[_cells.size()], &_cells[col]);
-        std::fill(&_cells[_cells.size()] - n, &_cells[_cells.size()], Cell::blank());
+        std::copy(begin() + col + n, end(), begin() + col);
+        std::fill(end() - n, end(), Cell::blank());
 
         damageAdd(col, _cells.size());
     }
