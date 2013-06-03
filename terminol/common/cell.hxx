@@ -94,12 +94,20 @@ struct Cell {
     Style     style;        // 10 bytes
     utf8::Seq seq;          // 4  bytes
 
-    static Cell blank() { return Cell(Style::normal(), utf8::Seq(SPACE)); }
-    static Cell ascii(Style style, uint8_t a) { return Cell(style, utf8::Seq(a)); }
-    static Cell utf8(Style style, utf8::Seq seq) { return Cell(style, seq); }
+    static Cell blank(const Style & style = Style::normal()) {
+        return Cell(style, utf8::Seq(SPACE));
+    }
+
+    static Cell ascii(uint8_t a, const Style & style = Style::normal()) {
+        return Cell(style, utf8::Seq(a));
+    }
+
+    static Cell utf8(utf8::Seq seq, const Style & style = Style::normal()) {
+        return Cell(style, seq);
+    }
 
 private:
-    Cell(Style style_, utf8::Seq seq_) :
+    Cell(const Style & style_, utf8::Seq seq_) :
         style(style_),
         seq(seq_) {}
 };
