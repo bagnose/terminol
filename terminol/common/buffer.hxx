@@ -586,7 +586,7 @@ public:
         uint32_t topOffset = _history.size() - _scrollOffset;
 
         // Test if the selection intersects the visible region.
-        if (b.row < topOffset + getRows() && e.row > topOffset)
+        if (b.row < topOffset + getRows() && e.row >= topOffset)
         {
             if (b.row < topOffset) {
                 topless = true;
