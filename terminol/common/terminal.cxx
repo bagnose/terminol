@@ -619,25 +619,21 @@ void Terminal::fixDamage(Pos begin, Pos end, Damager damager) {
     }
 }
 
-utf8::Seq Terminal::translate(utf8::Seq seq, utf8::Length length) const {
-    if (length == utf8::Length::L1) {
-        uint8_t ascii = seq.bytes[0];
-
-        for (const CharSub * cs = _cursor.cs; cs->match != NUL; ++cs)
-        {
-            if (ascii == cs->match) {
-                if (_config.getTraceTty()) {
-                    std::cerr
-                        << Esc::BG_BLUE << Esc::FG_WHITE
-                        << '/' << cs->match << '/' << cs->replace << '/'
-                        << Esc::RESET;
-                }
-                return cs->replace;
+bool Terminal::translate(uint8_t ascii, utf8::Seq & seq) const {
+    for (auto cs = _cursor.cs; cs->match != NUL; ++cs) {
+        if (ascii == cs->match) {
+            if (_config.getTraceTty()) {
+                std::cerr
+                    << Esc::BG_BLUE << Esc::FG_WHITE
+                    << '/' << cs->match << '/' << cs->replace << '/'
+                    << Esc::RESET;
             }
+            seq = cs->replace;
+            return true;
         }
     }
 
-    return seq;
+    return false;
 }
 
 void Terminal::draw(Pos begin, Pos end, Damager damage) {
@@ -856,7 +852,9 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length length) {
 }
 
 void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
-    seq = translate(seq, length);
+    if (length == utf8::Length::L1) {
+        translate(seq.lead(), seq);
+    }
 
     if (_config.getTraceTty()) {
         std::cerr << Esc::FG_GREEN << Esc::UNDERLINE << seq << Esc::RESET;

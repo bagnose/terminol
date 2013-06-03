@@ -183,7 +183,7 @@ protected:
 
     void      fixDamage(Pos begin, Pos end, Damager damager);
 
-    utf8::Seq translate(utf8::Seq seq, utf8::Length length) const;
+    bool      translate(uint8_t ascii, utf8::Seq & seq) const;
 
     void      draw(Pos begin, Pos end, Damager damage);
 
