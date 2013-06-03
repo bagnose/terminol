@@ -280,9 +280,9 @@ void Terminal::buttonMotion(ModifierSet modifiers, bool within, Pos pos) {
             }
             else if (pos.row < 223 && pos.col < 223) {
                 ost << ESC << "[M"
-                    << char(32 + num)
-                    << char(32 + pos.col + 1)
-                    << char(32 + pos.row + 1);
+                    << static_cast<char>(32 + num)
+                    << static_cast<char>(32 + pos.col + 1)
+                    << static_cast<char>(32 + pos.row + 1);
             }
             else {
                 // Couldn't deliver it
@@ -329,9 +329,9 @@ void Terminal::buttonRelease(bool broken, ModifierSet modifiers) {
         }
         else if (pos.row < 223 && pos.col < 223) {
             ost << ESC << "[M"
-                << char(32 + num)
-                << char(32 + pos.col + 1)
-                << char(32 + pos.row + 1);
+                << static_cast<char>(32 + num)
+                << static_cast<char>(32 + pos.col + 1)
+                << static_cast<char>(32 + pos.row + 1);
         }
         else {
             // Couldn't deliver it
@@ -963,7 +963,7 @@ void Terminal::machineControl(uint8_t c) throw () {
         case DC3:    // DC3/XOFF
             break;
         default:
-            PRINT("Ignored control char: " << int(c));
+            PRINT("Ignored control char: " << static_cast<int>(c));
             break;
     }
 }
