@@ -620,7 +620,7 @@ void Terminal::fixDamage(Pos begin, Pos end, Damager damager) {
 }
 
 bool Terminal::translate(uint8_t ascii, utf8::Seq & seq) const {
-    for (auto cs = _cursor.cs; cs->match != NUL; ++cs) {
+    for (auto cs = *_cursor.cs; cs->match != NUL; ++cs) {
         if (ascii == cs->match) {
             if (_config.getTraceTty()) {
                 std::cerr
@@ -945,11 +945,11 @@ void Terminal::machineControl(uint8_t c) throw () {
             break;
         case SO:
             // XXX dubious
-            _cursor.cs = _cursor.G1;
+            _cursor.cs = &_cursor.g1;
             break;
         case SI:
             // XXX dubious
-            _cursor.cs = _cursor.G0;
+            _cursor.cs = &_cursor.g0;
             break;
         case CAN:
         case SUB:
@@ -1395,7 +1395,7 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
         case '(':
             switch (code) {
                 case '0': // set specg0
-                    _cursor.G0 = CS_SPECIAL;
+                    _cursor.g0 = CS_SPECIAL;
                     break;
                 case '1': // set altg0
                     NYI("Alternate Character rom");
@@ -1404,10 +1404,10 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
                     NYI("Alternate Special Character rom");
                     break;
                 case 'A': // set ukg0
-                    _cursor.G0 = CS_UK;
+                    _cursor.g0 = CS_UK;
                     break;
                 case 'B': // set usg0
-                    _cursor.G0 = CS_US;
+                    _cursor.g0 = CS_US;
                     break;
                 case '<': // Multinational character set
                     NYI("Multinational character set");
@@ -1430,7 +1430,7 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
             switch (code) {
                 case '0': // set specg1
                     PRINT("\nG1 = SPECIAL");
-                    _cursor.G1 = CS_SPECIAL;
+                    _cursor.g1 = CS_SPECIAL;
                     break;
                 case '1': // set altg1
                     NYI("Alternate Character rom");
@@ -1440,11 +1440,11 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
                     break;
                 case 'A': // set ukg0
                     PRINT("\nG1 = UK");
-                    _cursor.G1 = CS_UK;
+                    _cursor.g1 = CS_UK;
                     break;
                 case 'B': // set usg0
                     PRINT("\nG1 = US");
-                    _cursor.G1 = CS_US;
+                    _cursor.g1 = CS_US;
                     break;
                 case '<': // Multinational character set
                     NYI("Multinational character set");
@@ -1767,9 +1767,9 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     break;
                 case 2: // DECANM - ANSI/VT52 Mode
                     NYI("DECANM: " << set);
-                    _cursor.cs = CS_US;
-                    _cursor.G0 = CS_US;
-                    _cursor.G1 = CS_US;
+                    _cursor.g0 = CS_US;
+                    _cursor.g1 = CS_US;
+                    _cursor.cs = &_cursor.g0;
                     break;
                 case 3: // DECCOLM - Column Mode
                     if (set) {

@@ -73,9 +73,9 @@ public:
 private:
     struct Cursor {
         Cursor() :
-            cs(CS_US),
-            G0(CS_US),
-            G1(CS_US),
+            g0(CS_US),
+            g1(CS_US),
+            cs(&g0),
             //
             pos(),
             wrapNext(false),
@@ -85,15 +85,15 @@ private:
 
         void reset() { *this = Cursor(); }
 
-        const CharSub * cs;
-        const CharSub * G0;
-        const CharSub * G1;
+        const CharSub *  g0;
+        const CharSub *  g1;
+        const CharSub ** cs;
         //
-        Pos             pos;
-        bool            wrapNext;
-        bool            originMode;
+        Pos              pos;
+        bool             wrapNext;
+        bool             originMode;
         //
-        Style           style;
+        Style            style;
     };
 
     //
