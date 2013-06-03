@@ -199,15 +199,15 @@ protected:
 
     // VtStateMachine::I_Observer implementation:
 
-    void machineNormal(utf8::Seq seq, utf8::Length length) throw ();
-    void machineControl(uint8_t c) throw ();
-    void machineEscape(uint8_t c) throw ();
-    void machineCsi(bool priv,
-                    const std::vector<int32_t> & args,
-                    uint8_t code) throw ();
-    void machineDcs(const std::vector<uint8_t> & seq) throw ();
-    void machineOsc(const std::vector<std::string> & args) throw ();
-    void machineSpecial(uint8_t special, uint8_t code) throw ();
+    void      machineNormal(utf8::Seq seq, utf8::Length length) throw ();
+    void      machineControl(uint8_t c) throw ();
+    void      machineEscape(uint8_t c) throw ();
+    void      machineCsi(bool priv,
+                         const std::vector<int32_t> & args,
+                         uint8_t code) throw ();
+    void      machineDcs(const std::vector<uint8_t> & seq) throw ();
+    void      machineOsc(const std::vector<std::string> & args) throw ();
+    void      machineSpecial(uint8_t special, uint8_t code) throw ();
 };
 
 std::ostream & operator << (std::ostream & ost, Terminal::Button button);

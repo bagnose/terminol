@@ -79,7 +79,7 @@ again:
                 PRINT("And:");
                 for (auto c : lineInfo.cells) { std::cerr << c.seq; }
                 std::cerr << std::endl;
-#endif // DEBUG
+#endif
 
                 ENFORCE(static_cast<Tag>(_lines.size()) != 0, "No dedupe room left");
 

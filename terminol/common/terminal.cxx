@@ -109,14 +109,14 @@ Terminal::Terminal(I_Observer   & observer,
     _utf8Machine(),
     _vtMachine(*this)
 {
-    for (size_t i = 0; i != _tabs.size(); ++i) {
-        _tabs[i] = (i + 1) % TAB_SIZE == 0;
-    }
-
     _modes.set(Mode::AUTO_WRAP);
     _modes.set(Mode::SHOW_CURSOR);
     _modes.set(Mode::AUTO_REPEAT);
     _modes.set(Mode::ALT_SENDS_ESC);
+
+    for (size_t i = 0; i != _tabs.size(); ++i) {
+        _tabs[i] = (i + 1) % TAB_SIZE == 0;
+    }
 }
 
 Terminal::~Terminal() {
@@ -398,7 +398,7 @@ void Terminal::read() {
         Timer   timer(1000 / _config.getFramesPerSecond());
         uint8_t buf[BUFSIZ];          // 8192 last time I looked.
         auto    size = sizeof buf;
-        if (_config.getSyncTty()) { size = std::min<size_t>(size, 16); }
+        if (_config.getSyncTty()) { size = std::min(size, static_cast<size_t>(16)); }
         do {
             auto rval = _tty.read(buf, size);
             if (rval == 0) { break; }
@@ -1156,7 +1156,7 @@ void Terminal::machineCsi(bool priv,
             _buffer->setCells(_cursor.pos, nthArgNonZero(args, 0, 1),
                               Cell::ascii(SPACE, _cursor.style));
             break;
-        case 'Z':       // CBT - Cursor Backward Tabulation
+        case 'Z': // CBT - Cursor Backward Tabulation
             tabCursor(TabDir::BACKWARD, nthArgNonZero(args, 0, 1));
             break;
         case '`': // HPA
