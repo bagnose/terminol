@@ -92,7 +92,7 @@ again:
 
         ++_totalRefCount;
 
-#if DEBUG
+#if 0
         if (_totalRefCount != 0) {
             PRINT("+++ " << 100.0 * double(_lines.size()) / double(_totalRefCount) << " %");
         }
@@ -119,7 +119,7 @@ again:
 
         --_totalRefCount;
 
-#if DEBUG
+#if 0
         if (_totalRefCount != 0) {
             PRINT("--- " << 100.0 * double(_lines.size()) / double(_totalRefCount) << " %");
         }
