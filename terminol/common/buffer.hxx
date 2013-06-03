@@ -198,6 +198,16 @@ public:
         damageAdd(col, _cells.size());
     }
 
+    void setCells(uint16_t col, uint16_t n, const Cell & cell) {
+        trim();
+
+        ASSERT(col + n <= _cells.size(), "");
+
+        std::fill(begin() + col, begin() + col + n, cell);
+
+        damageAdd(col, col + n);
+    }
+
     bool setCell(uint16_t col, const Cell & cell) {
         trim();
 
@@ -670,6 +680,13 @@ public:
         ASSERT(pos.row < getRows(), "");
         ASSERT(pos.col < getCols(), "");
         _active[pos.row].erase(pos.col, n);
+    }
+
+    void setCells(Pos pos, uint16_t n, const Cell & cell) {
+        ASSERT(pos.row < getRows(), "");
+        ASSERT(pos.col < getCols(), "");
+        ASSERT(pos.col + n <= getCols(), "");
+        _active[pos.row].setCells(pos.col, n, cell);
     }
 
     void setCell(Pos pos, const Cell & cell) {

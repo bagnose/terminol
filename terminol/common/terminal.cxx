@@ -1154,8 +1154,9 @@ void Terminal::machineCsi(bool priv,
         case 'T': // SD - Scroll Down
             NYI("SD");
             break;
-        case 'X': // ECH
-            NYI("ECH");
+        case 'X': // ECH - Erase Char
+            _buffer->setCells(_cursor.pos, nthArgNonZero(args, 0, 1),
+                              Cell::ascii(_cursor.style, SPACE));
             break;
         case 'Z':       // CBT - Cursor Backward Tabulation
             tabCursor(TabDir::BACKWARD, nthArgNonZero(args, 0, 1));
