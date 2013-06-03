@@ -828,8 +828,8 @@ public:
 
     void insertLines(uint16_t row, uint16_t n) {
         ASSERT(row >= _marginBegin && row < _marginEnd, "");
-        ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n
-               << ", margin-end=" << _marginEnd);
+        ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n <<
+               ", margin-end=" << _marginEnd);
 
         _active.erase (_active.begin() + _marginEnd - n,
                        _active.begin() + _marginEnd);
@@ -842,8 +842,8 @@ public:
 
     void eraseLines(uint16_t row, uint16_t n) {
         ASSERT(row >= _marginBegin && row < _marginEnd, "");
-        ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n
-               << ", margin-end=" << _marginEnd);
+        ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n <<
+               ", margin-end=" << _marginEnd);
 
         _active.erase (_active.begin() + row,
                        _active.begin() + row + n);
