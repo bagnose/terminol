@@ -378,7 +378,7 @@ public:
 
     bool     getBarDamage()   const { return _barDamage; }
 
-    bool scrollUp(uint16_t rows) {
+    bool scrollUpHistory(uint16_t rows) {
         auto oldScrollOffset = _scrollOffset;
 
         if (_scrollOffset + rows > getHistory()) {
@@ -391,7 +391,7 @@ public:
         return _scrollOffset != oldScrollOffset;
     }
 
-    bool scrollDown(uint16_t rows) {
+    bool scrollDownHistory(uint16_t rows) {
         auto oldScrollOffset = _scrollOffset;
 
         if (rows > _scrollOffset) {
@@ -404,7 +404,7 @@ public:
         return _scrollOffset != oldScrollOffset;
     }
 
-    bool scrollTop() {
+    bool scrollTopHistory() {
         if (_scrollOffset != getHistory()) {
             _scrollOffset = getHistory();
             return true;
@@ -414,7 +414,7 @@ public:
         }
     }
 
-    bool scrollBottom() {
+    bool scrollBottomHistory() {
         if (_scrollOffset != 0) {
             _scrollOffset = 0;
             return true;
@@ -852,6 +852,14 @@ public:
         damageRange(row, _marginEnd);
 
         clearSelection();
+    }
+
+    void scrollUpMargins(uint16_t n) {
+        eraseLines(_marginBegin, n);
+    }
+
+    void scrollDownMargins(uint16_t n) {
+        insertLines(_marginBegin, n);
     }
 
     void clearLine(uint16_t row) {

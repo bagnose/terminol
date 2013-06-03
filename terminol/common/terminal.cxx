@@ -176,7 +176,7 @@ void Terminal::redraw(Pos begin, Pos end) {
 
 void Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
     if (!handleKeyBinding(keySym, modifiers) && _keyMap.isPotent(keySym)) {
-        if (_config.getScrollOnTtyKeyPress() && _buffer->scrollBottom()) {
+        if (_config.getScrollOnTtyKeyPress() && _buffer->scrollBottomHistory()) {
             fixDamage(Pos(0, 0),
                       Pos(_buffer->getRows(), _buffer->getCols()),
                       Damager::SCROLL);
@@ -357,14 +357,14 @@ void Terminal::scrollWheel(ScrollDir dir, ModifierSet UNUSED(modifiers)) {
     switch (dir) {
         case ScrollDir::UP:
             // TODO consolidate scroll operations with method.
-            if (_buffer->scrollUp(std::max(1, _buffer->getRows() / 4))) {
+            if (_buffer->scrollUpHistory(std::max(1, _buffer->getRows() / 4))) {
                 fixDamage(Pos(0, 0),
                           Pos(_buffer->getRows(), _buffer->getCols()),
                           Damager::SCROLL);
             }
             break;
         case ScrollDir::DOWN:
-            if (_buffer->scrollDown(std::max(1, _buffer->getRows() / 4))) {
+            if (_buffer->scrollDownHistory(std::max(1, _buffer->getRows() / 4))) {
                 fixDamage(Pos(0, 0),
                           Pos(_buffer->getRows(), _buffer->getCols()),
                           Damager::SCROLL);
@@ -374,7 +374,7 @@ void Terminal::scrollWheel(ScrollDir dir, ModifierSet UNUSED(modifiers)) {
 }
 
 void Terminal::paste(const uint8_t * data, size_t size) {
-    if (_config.getScrollOnPaste() && _buffer->scrollBottom()) {
+    if (_config.getScrollOnPaste() && _buffer->scrollBottomHistory()) {
         fixDamage(Pos(0, 0),
                   Pos(_buffer->getRows(), _buffer->getCols()),
                   Damager::SCROLL);
@@ -470,42 +470,42 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
     if (modifiers.get(Modifier::SHIFT)) {
         switch (keySym) {
             case XKB_KEY_Up:
-                if (_buffer->scrollUp(1)) {
+                if (_buffer->scrollUpHistory(1)) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
                               Damager::SCROLL);
                 }
                 return true;
             case XKB_KEY_Down:
-                if (_buffer->scrollDown(1)) {
+                if (_buffer->scrollDownHistory(1)) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
                               Damager::SCROLL);
                 }
                 return true;
             case XKB_KEY_Page_Up:
-                if (_buffer->scrollUp(_buffer->getRows())) {
+                if (_buffer->scrollUpHistory(_buffer->getRows())) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
                               Damager::SCROLL);
                 }
                 return true;
             case XKB_KEY_Page_Down:
-                if (_buffer->scrollDown(_buffer->getRows())) {
+                if (_buffer->scrollDownHistory(_buffer->getRows())) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
                               Damager::SCROLL);
                 }
                 return true;
             case XKB_KEY_Home:
-                if (_buffer->scrollTop()) {
+                if (_buffer->scrollTopHistory()) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
                               Damager::SCROLL);
                 }
                 return true;
             case XKB_KEY_End:
-                if (_buffer->scrollBottom()) {
+                if (_buffer->scrollBottomHistory()) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
                               Damager::SCROLL);
@@ -590,7 +590,7 @@ void Terminal::damageCursor() {
 void Terminal::fixDamage(Pos begin, Pos end, Damager damager) {
     if (damager == Damager::TTY &&
         _config.getScrollOnTtyOutput() &&
-        _buffer->scrollBottom())
+        _buffer->scrollBottomHistory())
     {
         // Promote the damage from TTY to SCROLL.
         damager = Damager::SCROLL;
@@ -1149,10 +1149,10 @@ void Terminal::machineCsi(bool priv,
             break;
         }
         case 'S': // SU - Scroll Up
-            NYI("SU");
+            _buffer->scrollUpMargins(nthArgNonZero(args, 0, 1));
             break;
         case 'T': // SD - Scroll Down
-            NYI("SD");
+            _buffer->scrollDownMargins(nthArgNonZero(args, 0, 1));
             break;
         case 'X': // ECH - Erase Char
             _buffer->setCells(_cursor.pos, nthArgNonZero(args, 0, 1),
