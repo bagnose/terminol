@@ -155,6 +155,11 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     _cursor.pos.row += cursorAdj;
     _cursor.pos.col  = clamp<uint16_t>(_cursor.pos.col, 0, cols - 1);
 
+    if (!(_cursor.pos.row < rows)) {
+        PRINT("Bug");
+        _cursor.pos.row = rows - 1;
+    }
+
     ASSERT(_cursor.pos.row < rows, "");
     ASSERT(_cursor.pos.col < cols, "");
 
