@@ -252,7 +252,7 @@ void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
         else if (button == Button::MIDDLE) {
             _observer.terminalPaste(false);
         }
-        else if (_button == Button::RIGHT) {
+        else if (button == Button::RIGHT) {
             _buffer->adjustSelection(pos);
             fixDamage(Pos(), Pos(_buffer->getRows(), _buffer->getCols()),
                       Damager::SCROLL);     // FIXME Damager
