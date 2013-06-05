@@ -56,12 +56,11 @@ enum class Mode {
     APPKEYPAD,
     APPCURSOR,
     REVERSE,
-
-    // Remainder are dubious...
     MOUSE_BUTTON,
     MOUSE_MOTION,
     MOUSE_SGR,
-    LAST = MOUSE_SGR
+    BRACKETED_PASTE,
+    LAST = BRACKETED_PASTE
 };
 
 std::ostream & operator << (std::ostream & ost, Mode mode);

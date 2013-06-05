@@ -385,7 +385,21 @@ void Terminal::paste(const uint8_t * data, size_t size) {
                   Damager::SCROLL);
     }
 
+    if (_modes.get(Mode::BRACKETED_PASTE)) {
+        std::ostringstream ostr;
+        ostr << ESC << "[200~";
+        const auto & str = ostr.str();
+        write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+    }
+
     write(data, size);
+
+    if (_modes.get(Mode::BRACKETED_PASTE)) {
+        std::ostringstream ostr;
+        ostr << ESC << "[201~";
+        const auto & str = ostr.str();
+        write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+    }
 }
 
 void Terminal::clearSelection() {
@@ -1879,7 +1893,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     _buffer->damageAll();
                     break;
                 case 2004:
-                    // Bracketed paste mode.
+                    _modes.setTo(Mode::BRACKETED_PASTE, set);
                     break;
                 default:
                     ERROR("erresc: unknown private set/reset mode : " << a);

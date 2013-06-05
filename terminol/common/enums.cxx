@@ -77,14 +77,14 @@ std::ostream & operator << (std::ostream & ost, Mode mode) {
             return ost << "APPCURSOR";
         case Mode::REVERSE:
             return ost << "REVERSE";
-
-        // Remainder are dubious...
         case Mode::MOUSE_BUTTON:
             return ost << "MOUSE_BUTTON";
         case Mode::MOUSE_MOTION:
             return ost << "MOUSE_MOTION";
         case Mode::MOUSE_SGR:
             return ost << "MOUSE_SGR";
+        case Mode::BRACKETED_PASTE:
+            return ost << "BRACKETED_PASTE";
     }
 
     FATAL("Invalid mode: " << static_cast<int>(mode));
