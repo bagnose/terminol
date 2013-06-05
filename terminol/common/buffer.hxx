@@ -3,7 +3,7 @@
 #ifndef COMMON__BUFFER__HXX
 #define COMMON__BUFFER__HXX
 
-#include "terminol/common/cell.hxx"
+#include "terminol/common/data_types.hxx"
 #include "terminol/common/config.hxx"
 
 #include <unordered_map>

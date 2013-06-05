@@ -5,7 +5,7 @@
 
 #include "terminol/support/debug.hxx"
 #include "terminol/support/pattern.hxx"
-#include "terminol/common/cell.hxx"         // FIXME remove dep on cell.hxx for Color
+#include "terminol/common/data_types.hxx"
 
 class Config : protected Uncopyable {
 private:

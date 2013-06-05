@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 
-#ifndef COMMON__CELL__HXX
-#define COMMON__CELL__HXX
+#ifndef COMMON__DATA_TYPES__HXX
+#define COMMON__DATA_TYPES__HXX
 
 #include "terminol/common/bit_sets.hxx"
 #include "terminol/common/utf8.hxx"
@@ -186,4 +186,4 @@ struct Region {
     Pos end;
 };
 
-#endif // COMMON__CELL__HXX
+#endif // COMMON__DATA_TYPES__HXX
