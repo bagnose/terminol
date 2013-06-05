@@ -9,51 +9,54 @@
 
 #include <algorithm>
 
-struct Triplet {
-    Triplet(uint8_t r_, uint8_t g_, uint8_t b_) : r(r_), g(g_), b(b_) {}
+struct Color {
+    Color() : r(0), g(0), b(0) {}
+    Color(uint8_t r_, uint8_t g_, uint8_t b_) : r(r_), g(g_), b(b_) {}
 
     uint8_t r, g, b;
 };
 
-inline bool operator == (Triplet lhs, Triplet rhs) {
+inline bool operator == (Color lhs, Color rhs) {
     return lhs.r == rhs.r && lhs.g == rhs.g && lhs.b == rhs.b;
 }
 
-inline bool operator != (Triplet lhs, Triplet rhs) { return !(lhs == rhs); }
+inline bool operator != (Color lhs, Color rhs) {
+    return !(lhs == rhs);
+}
 
 //
 //
 //
 
-struct Colr {
-    explicit Colr(uint16_t index_) : type(Type::INDEXED), index(index_) {}
-    Colr(uint8_t r, uint8_t g, uint8_t b) : type(Type::DIRECT), triplet(r, g, b) {}
-
+struct UColor {
     enum class Type : uint8_t { INDEXED, DIRECT };
+
+    explicit UColor(uint16_t index_) : type(Type::INDEXED), index(index_) {}
+    UColor(uint8_t r, uint8_t g, uint8_t b) : type(Type::DIRECT), values(r, g, b) {}
 
     Type type;
 
     union {
         uint16_t index;
-        Triplet  triplet;
+        Color    values;
     };
 };
 
-inline bool operator == (Colr lhs, Colr rhs) {
+inline bool operator == (UColor lhs, UColor rhs) {
     if (lhs.type != rhs.type) {
         return false;
     }
     else {
-        if (lhs.type == Colr::Type::INDEXED) {
+        if (lhs.type == UColor::Type::INDEXED) {
             return lhs.index == rhs.index;
         }
         else {
-            return lhs.triplet == rhs.triplet;
+            return lhs.values == rhs.values;
         }
     }
 }
 
-inline bool operator != (Colr lhs, Colr rhs) { return !(lhs == rhs); }
+inline bool operator != (UColor lhs, UColor rhs) { return !(lhs == rhs); }
 
 //
 //
@@ -62,29 +65,31 @@ inline bool operator != (Colr lhs, Colr rhs) { return !(lhs == rhs); }
 struct Style {
     AttrSet attrs;    // 1 byte
     uint8_t padding;  // 1 byte - helpful ???
-    Colr    fg;       // 4 bytes
-    Colr    bg;       // 4 bytes
+    UColor    fg;       // 4 bytes
+    UColor    bg;       // 4 bytes
 
     static AttrSet defaultAttrs() { return AttrSet();     }
-    static Colr    defaultFg()    { return Colr(256 + 0); }
-    static Colr    defaultBg()    { return Colr(256 + 1); }
+    static UColor  defaultFg()    { return UColor(256 + 0); }
+    static UColor  defaultBg()    { return UColor(256 + 1); }
 
     static Style normal() {
         return Style(defaultAttrs(), defaultFg(), defaultBg());
     }
 
-    Style(AttrSet attrs_, Colr fg_, Colr bg_) :
+    Style(AttrSet attrs_, UColor fg_, UColor bg_) :
         attrs(attrs_), padding(0), fg(fg_), bg(bg_) {}
 };
 
-inline bool operator == (Style lhs, Style rhs) {
+inline bool operator == (const Style & lhs, const Style & rhs) {
     return
         lhs.attrs == rhs.attrs &&
         lhs.fg    == rhs.fg    &&
         lhs.bg    == rhs.bg;
 }
 
-inline bool operator != (Style lhs, Style rhs) { return !(lhs == rhs); }
+inline bool operator != (const Style & lhs, const Style & rhs) {
+    return !(lhs == rhs);
+}
 
 //
 //

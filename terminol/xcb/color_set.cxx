@@ -10,11 +10,11 @@ ColorSet::ColorSet(const Config & config,
     _config(config),
     _basics(basics)
 {
-    _cursorFillColor  = _config.getCursorFillColor();
-    _cursorTextColor  = _config.getCursorTextColor();
-    _borderColor      = _config.getBorderColor();
-    _scrollBarFgColor = _config.getScrollbarFgColor();
-    _scrollBarBgColor = _config.getScrollbarBgColor();
+    _cursorFillColor  = convert(_config.getCursorFillColor());
+    _cursorTextColor  = convert(_config.getCursorTextColor());
+    _borderColor      = convert(_config.getBorderColor());
+    _scrollBarFgColor = convert(_config.getScrollbarFgColor());
+    _scrollBarBgColor = convert(_config.getScrollbarBgColor());
 
     // 0..7     normal colors
     // 8..15    bright colors
@@ -26,23 +26,23 @@ ColorSet::ColorSet(const Config & config,
     uint16_t index = 0;
 
     for (; index != 16; ++index) {
-        _indexedColors[index] = _config.getSystemColor(index);
+        _indexedColors[index] = convert(_config.getSystemColor(index));
     }
 
     for (auto r = 0; r != 6; ++r) {
         for (auto g = 0; g != 6; ++g) {
             for (auto b = 0; b != 6; ++b) {
-                _indexedColors[index++] = { r / 5.0, g / 5.0, b / 5.0 };
+                _indexedColors[index++] = ColoR(r / 5.0, g / 5.0, b / 5.0);
             }
         }
     }
 
     for (auto v = 0; v != 24; ++v) {
-        _indexedColors[index++] = { v / 23.0, v / 23.0, v / 23.0 };
+        _indexedColors[index++] = ColoR(v / 23.0, v / 23.0, v / 23.0);
     }
 
-    _indexedColors[index++] = _config.getFgColor();
-    _indexedColors[index++] = _config.getBgColor();
+    _indexedColors[index++] = convert(_config.getFgColor());
+    _indexedColors[index++] = convert(_config.getBgColor());
 
     ASSERT(index == 258, "");
 
@@ -50,7 +50,7 @@ ColorSet::ColorSet(const Config & config,
     // Allocate the background pixel.
     //
 
-    Color background = _config.getBgColor();
+    ColoR background = convert(_config.getBgColor());
 
     const double MAX = std::numeric_limits<uint16_t>::max();
 
@@ -75,4 +75,10 @@ ColorSet::~ColorSet() {
                     0,         // plane_mask - WTF?
                     1,
                     &_backgroundPixel);
+}
+
+ColoR ColorSet::convert(const Color & color) {
+    return ColoR(color.r / 255.0,
+                 color.g / 255.0,
+                 color.b / 255.0);
 }

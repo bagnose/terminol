@@ -1051,13 +1051,13 @@ void Window::terminalDrawRun(Pos             pos,
         double w = count * _fontSet.getWidth();
         double h = _fontSet.getHeight();
 
-        if (style.bg.type == Colr::Type::INDEXED) {
+        if (style.bg.type == UColor::Type::INDEXED) {
             const auto & bg = _colorSet.getIndexedColor(style.bg.index);
             cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
         }
         else {
-            ASSERT(style.bg.type == Colr::Type::DIRECT, "");
-            auto bg = style.bg.triplet;
+            ASSERT(style.bg.type == UColor::Type::DIRECT, "");
+            auto bg = style.bg.values;
             cairo_set_source_rgb(_cr, bg.r / 255.0, bg.g / 255.0, bg.b / 255.0);
         }
 
@@ -1071,13 +1071,13 @@ void Window::terminalDrawRun(Pos             pos,
 
         auto alpha = style.attrs.get(Attr::CONCEAL) ? 0.2 : 1.0;
 
-        if (style.fg.type == Colr::Type::INDEXED) {
+        if (style.fg.type == UColor::Type::INDEXED) {
             const auto & fg = _colorSet.getIndexedColor(style.fg.index);
             cairo_set_source_rgba(_cr, fg.r, fg.g, fg.b, alpha);
         }
         else {
-            ASSERT(style.fg.type == Colr::Type::DIRECT, "");
-            auto fg = style.fg.triplet;
+            ASSERT(style.fg.type == UColor::Type::DIRECT, "");
+            auto fg = style.fg.values;
             cairo_set_source_rgba(_cr, fg.r / 255.0, fg.g / 255.0, fg.b / 255.0, alpha);
         }
 
@@ -1117,13 +1117,13 @@ void Window::terminalDrawCursor(Pos             pos,
             const auto & bg = _colorSet.getCursorFillColor();
             cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
         }
-        else if (style.fg.type == Colr::Type::INDEXED) {
+        else if (style.fg.type == UColor::Type::INDEXED) {
             const auto & bg = _colorSet.getIndexedColor(style.fg.index);
             cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
         }
         else {
-            ASSERT(style.fg.type == Colr::Type::DIRECT, "");
-            auto bg = style.fg.triplet;
+            ASSERT(style.fg.type == UColor::Type::DIRECT, "");
+            auto bg = style.fg.values;
             cairo_set_source_rgba(_cr, bg.r / 255.0, bg.g / 255.0, bg.b / 255.0, alpha);
         }
 
@@ -1134,13 +1134,13 @@ void Window::terminalDrawCursor(Pos             pos,
             const auto & fg = _colorSet.getCursorTextColor();
             cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
         }
-        else if (style.bg.type == Colr::Type::INDEXED) {
+        else if (style.bg.type == UColor::Type::INDEXED) {
             const auto & fg = _colorSet.getIndexedColor(style.bg.index);
             cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
         }
         else {
-            ASSERT(style.bg.type == Colr::Type::DIRECT, "");
-            auto fg = style.bg.triplet;
+            ASSERT(style.bg.type == UColor::Type::DIRECT, "");
+            auto fg = style.bg.values;
             cairo_set_source_rgb(_cr, fg.r / 255.0, fg.g / 255.0, fg.b / 255.0);
         }
 

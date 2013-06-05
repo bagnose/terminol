@@ -5,13 +5,9 @@
 
 #include "terminol/support/debug.hxx"
 #include "terminol/support/pattern.hxx"
+#include "terminol/common/cell.hxx"         // FIXME remove dep on cell.hxx for Color
 
 class Config : protected Uncopyable {
-public:
-    struct Color {
-        double r, g, b;
-    };
-
 private:
     // TODO
     // pointerfgColor
@@ -123,7 +119,6 @@ public:
 
 protected:
     static Color decodeHexColor(const std::string & hex);
-    static Color decodeTripletColor(const uint8_t values[3]);
 };
 
 #endif // COMMON__CONFIG__HXX

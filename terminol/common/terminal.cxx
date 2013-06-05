@@ -1596,7 +1596,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                             if (i + 3 < args.size()) {
                                 // 24-bit foreground support
                                 // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB foreground color
-                                _cursor.style.fg = Colr(args[i + 1], args[i + 2], args[i + 3]);
+                                _cursor.style.fg = UColor(args[i + 1], args[i + 2], args[i + 3]);
                                 i += 3;     // FIXME 4??
                             }
                             else {
@@ -1664,7 +1664,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                             if (i + 3 < args.size()) {
                                 // 24-bit background support
                                 // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB background color
-                                _cursor.style.bg = Colr(args[i + 1], args[i + 2], args[i + 3]);
+                                _cursor.style.bg = UColor(args[i + 1], args[i + 2], args[i + 3]);
                                 i += 3;
                             }
                             else {
