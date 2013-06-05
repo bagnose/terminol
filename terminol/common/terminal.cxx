@@ -1596,7 +1596,8 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                             if (i + 3 < args.size()) {
                                 // 24-bit foreground support
                                 // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB foreground color
-                                _cursor.style.fg = UColor(args[i + 1], args[i + 2], args[i + 3]);
+                                _cursor.style.fg =
+                                    UColor::direct(args[i + 1], args[i + 2], args[i + 3]);
                                 i += 3;     // FIXME 4??
                             }
                             else {
@@ -1629,7 +1630,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                                 i += 1;
                                 auto v2 = args[i];
                                 if (v2 >= 0 && v2 < 256) {
-                                    _cursor.style.fg.index = v2;
+                                    _cursor.style.fg = UColor::indexed(v2);
                                 }
                                 else {
                                     ERROR("Colour out of range: " << v2);
@@ -1664,7 +1665,8 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                             if (i + 3 < args.size()) {
                                 // 24-bit background support
                                 // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB background color
-                                _cursor.style.bg = UColor(args[i + 1], args[i + 2], args[i + 3]);
+                                _cursor.style.bg =
+                                    UColor::direct(args[i + 1], args[i + 2], args[i + 3]);
                                 i += 3;
                             }
                             else {
@@ -1697,7 +1699,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                                 i += 1;
                                 auto v2 = args[i];
                                 if (v2 >= 0 && v2 < 256) {
-                                    _cursor.style.bg.index = v2;
+                                    _cursor.style.bg = UColor::indexed(v2);
                                 }
                                 else {
                                     ERROR("Colour out of range: " << v2);
@@ -1746,26 +1748,26 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
 
                 if (v >= 30 && v < 38) {
                     // normal fg
-                    _cursor.style.fg.index = v - 30;
+                    _cursor.style.fg = UColor::indexed(v - 30);
                     // BOLD -> += 8
                 }
                 else if (v >= 40 && v < 48) {
                     // normal bg
-                    _cursor.style.bg.index = v - 40;
+                    _cursor.style.bg = UColor::indexed(v - 40);
                 }
                 else if (v >= 90 && v < 98) {
                     // bright fg
-                    _cursor.style.fg.index = v - 90 + 8;
+                    _cursor.style.fg = UColor::indexed(v - 90 + 8);
                 }
                 else if (v >= 100 && v < 108) {
                     // bright bg
-                    _cursor.style.bg.index = v - 100 + 8;
+                    _cursor.style.bg = UColor::indexed(v - 100 + 8);
                 }
                 else if (v >= 256 && v < 512) {
-                    _cursor.style.fg.index = v - 256;
+                    _cursor.style.fg = UColor::indexed(v - 256);
                 }
                 else if (v >= 512 && v < 768) {
-                    _cursor.style.bg.index = v - 512;
+                    _cursor.style.bg = UColor::indexed(v - 512);
                 }
                 else {
                     ERROR("Unhandled attribute: " << v);

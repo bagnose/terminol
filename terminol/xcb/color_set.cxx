@@ -20,10 +20,8 @@ ColorSet::ColorSet(const Config & config,
     // 8..15    bright colors
     // 16..231  6x6x6 color cube
     // 232..255 grey ramp
-    // 256      foreground
-    // 257      background
 
-    uint16_t index = 0;
+    uint8_t index = 0;
 
     for (; index != 16; ++index) {
         _indexedColors[index] = convert(_config.getSystemColor(index));
@@ -41,22 +39,20 @@ ColorSet::ColorSet(const Config & config,
         _indexedColors[index++] = ColoR(v / 23.0, v / 23.0, v / 23.0);
     }
 
-    _indexedColors[index++] = convert(_config.getFgColor());
-    _indexedColors[index++] = convert(_config.getBgColor());
+    ASSERT(index == 0, "");
 
-    ASSERT(index == 258, "");
+    _foregroundColor = convert(_config.getFgColor());
+    _backgroundColor = convert(_config.getBgColor());
 
     //
     // Allocate the background pixel.
     //
 
-    ColoR background = convert(_config.getBgColor());
-
     const double MAX = std::numeric_limits<uint16_t>::max();
 
-    uint16_t r = static_cast<uint16_t>(background.r * MAX + 0.5);
-    uint16_t g = static_cast<uint16_t>(background.g * MAX + 0.5);
-    uint16_t b = static_cast<uint16_t>(background.b * MAX + 0.5);
+    uint16_t r = static_cast<uint16_t>(_backgroundColor.r * MAX + 0.5);
+    uint16_t g = static_cast<uint16_t>(_backgroundColor.g * MAX + 0.5);
+    uint16_t b = static_cast<uint16_t>(_backgroundColor.b * MAX + 0.5);
 
     xcb_alloc_color_reply_t * reply =
         xcb_alloc_color_reply(_basics.connection(),

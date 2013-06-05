@@ -29,17 +29,24 @@ inline bool operator != (Color lhs, Color rhs) {
 //
 
 struct UColor {
-    enum class Type : uint8_t { INDEXED, DIRECT };
+    enum class Type : uint8_t { FOREGROUND, BACKGROUND, INDEXED, DIRECT };
 
-    explicit UColor(uint16_t index_) : type(Type::INDEXED), index(index_) {}
-    UColor(uint8_t r, uint8_t g, uint8_t b) : type(Type::DIRECT), values(r, g, b) {}
+    static UColor foreground() { return UColor(Type::FOREGROUND); }
+    static UColor background() { return UColor(Type::BACKGROUND); }
+    static UColor indexed(uint8_t index) { return UColor(index); }
+    static UColor direct(uint8_t r, uint8_t g, uint8_t b) { return UColor(r, g, b); }
 
     Type type;
 
     union {
-        uint16_t index;
-        Color    values;
+        uint8_t index;
+        Color   values;
     };
+
+private:
+    explicit UColor(Type type_) : type(type_) {}
+    explicit UColor(uint8_t index_) : type(Type::INDEXED), index(index_) {}
+    UColor(uint8_t r, uint8_t g, uint8_t b) : type(Type::DIRECT), values(r, g, b) {}
 };
 
 inline bool operator == (UColor lhs, UColor rhs) {
@@ -47,11 +54,14 @@ inline bool operator == (UColor lhs, UColor rhs) {
         return false;
     }
     else {
-        if (lhs.type == UColor::Type::INDEXED) {
-            return lhs.index == rhs.index;
-        }
-        else {
-            return lhs.values == rhs.values;
+        switch (lhs.type) {
+            case UColor::Type::FOREGROUND:
+            case UColor::Type::BACKGROUND:
+                return true;
+            case UColor::Type::INDEXED:
+                return lhs.index == rhs.index;
+            case UColor::Type::DIRECT:
+                return lhs.values == rhs.values;
         }
     }
 }
@@ -65,12 +75,12 @@ inline bool operator != (UColor lhs, UColor rhs) { return !(lhs == rhs); }
 struct Style {
     AttrSet attrs;    // 1 byte
     uint8_t padding;  // 1 byte - helpful ???
-    UColor    fg;       // 4 bytes
-    UColor    bg;       // 4 bytes
+    UColor  fg;       // 4 bytes
+    UColor  bg;       // 4 bytes
 
     static AttrSet defaultAttrs() { return AttrSet();     }
-    static UColor  defaultFg()    { return UColor(256 + 0); }
-    static UColor  defaultBg()    { return UColor(256 + 1); }
+    static UColor  defaultFg()    { return UColor::foreground(); }
+    static UColor  defaultBg()    { return UColor::background(); }
 
     static Style normal() {
         return Style(defaultAttrs(), defaultFg(), defaultBg());
