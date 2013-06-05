@@ -78,16 +78,10 @@ struct Style {
     UColor  fg;       // 4 bytes
     UColor  bg;       // 4 bytes
 
-    static AttrSet defaultAttrs() { return AttrSet();     }
-    static UColor  defaultFg()    { return UColor::foreground(); }
-    static UColor  defaultBg()    { return UColor::background(); }
-
-    static Style normal() {
-        return Style(defaultAttrs(), defaultFg(), defaultBg());
-    }
+    Style() : attrs(), fg(UColor::foreground()), bg(UColor::background()) {}
 
     Style(AttrSet attrs_, UColor fg_, UColor bg_) :
-        attrs(attrs_), padding(0), fg(fg_), bg(bg_) {}
+        attrs(attrs_), fg(fg_), bg(bg_) {}
 };
 
 inline bool operator == (const Style & lhs, const Style & rhs) {
@@ -109,15 +103,15 @@ struct Cell {
     Style     style;        // 10 bytes
     utf8::Seq seq;          // 4  bytes
 
-    static Cell blank(const Style & style = Style::normal()) {
+    static Cell blank(const Style & style = Style()) {
         return Cell(style, utf8::Seq(SPACE));
     }
 
-    static Cell ascii(uint8_t a, const Style & style = Style::normal()) {
+    static Cell ascii(uint8_t a, const Style & style = Style()) {
         return Cell(style, utf8::Seq(a));
     }
 
-    static Cell utf8(utf8::Seq seq, const Style & style = Style::normal()) {
+    static Cell utf8(utf8::Seq seq, const Style & style = Style()) {
         return Cell(style, seq);
     }
 

@@ -666,7 +666,7 @@ void Terminal::draw(Pos begin, Pos end, Damager damage) {
 
     for (uint16_t r = begin.row; r != end.row; ++r) {
         uint16_t c_    = 0;    // Accumulation start column.
-        auto     style = Style::normal();       // FIXME default initialise
+        auto     style = Style();
         uint16_t c;
         uint16_t colBegin2, colEnd2;
 
@@ -1499,7 +1499,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
 
         switch (v) {
             case 0: // Reset/Normal
-                _cursor.style = Style::normal();
+                _cursor.style = Style();
                 break;
             case 1: // Bold
                 _cursor.style.attrs.set(Attr::BOLD);
@@ -1647,7 +1647,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 }
                 break;
             case 39:
-                _cursor.style.fg = Style::defaultFg();
+                _cursor.style.fg = UColor::foreground();
                 break;
                 // 40..47 (set background colour - handled separately)
             case 48:
@@ -1716,7 +1716,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 }
                 break;
             case 49:
-                _cursor.style.bg = Style::defaultBg();
+                _cursor.style.bg = UColor::background();
                 break;
                 // 50 Reserved
             case 51: // Framed

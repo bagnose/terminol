@@ -81,7 +81,7 @@ private:
             wrapNext(false),
             originMode(false),
             //
-            style(Style::normal()) {}
+            style() {}
 
         void reset() { *this = Cursor(); }
 
