@@ -30,13 +30,13 @@ ColorSet::ColorSet(const Config & config,
     for (auto r = 0; r != 6; ++r) {
         for (auto g = 0; g != 6; ++g) {
             for (auto b = 0; b != 6; ++b) {
-                _indexedColors[index++] = ColoR(r / 5.0, g / 5.0, b / 5.0);
+                _indexedColors[index++] = XColor(r / 5.0, g / 5.0, b / 5.0);
             }
         }
     }
 
     for (auto v = 0; v != 24; ++v) {
-        _indexedColors[index++] = ColoR(v / 23.0, v / 23.0, v / 23.0);
+        _indexedColors[index++] = XColor(v / 23.0, v / 23.0, v / 23.0);
     }
 
     ASSERT(index == 0, "");
@@ -73,8 +73,8 @@ ColorSet::~ColorSet() {
                     &_backgroundPixel);
 }
 
-ColoR ColorSet::convert(const Color & color) {
-    return ColoR(color.r / 255.0,
-                 color.g / 255.0,
-                 color.b / 255.0);
+XColor ColorSet::convert(const Color & color) {
+    return XColor(color.r / 255.0,
+                  color.g / 255.0,
+                  color.b / 255.0);
 }
