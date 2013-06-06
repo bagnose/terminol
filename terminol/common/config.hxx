@@ -86,6 +86,7 @@ public:
     bool                getTraceTty() const { return _traceTty; }
     bool                getSyncTty() const { return _syncTty; }
     int                 getFramesPerSecond() const { return 50; }
+    bool                getTraditionalWrapping() const { return false; }
 
     int16_t             getInitialX()    const { return -1; }
     int16_t             getInitialY()    const { return -1; }

@@ -970,12 +970,14 @@ void Terminal::machineControl(uint8_t c) throw () {
             tabCursor(TabDir::FORWARD, 1);
             break;
         case BS:
-            if (_cursor.wrapNext) {
+            if (_cursor.wrapNext && !_config.getTraditionalWrapping()) {
                 _cursor.wrapNext = false;
             }
             else {
                 if (_cursor.pos.col == 0) {
-                    if (_modes.get(Mode::AUTO_WRAP)) {
+                    if (!_config.getTraditionalWrapping() &&
+                        _modes.get(Mode::AUTO_WRAP))
+                    {
                         if (_cursor.pos.row > _buffer->getMarginBegin()) {
                             moveCursor(_cursor.pos.up().atCol(_buffer->getCols() - 1));
                         }
