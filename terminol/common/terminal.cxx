@@ -639,7 +639,9 @@ void Terminal::fixDamage(Pos begin, Pos end, Damager damager) {
 }
 
 bool Terminal::translate(uint8_t ascii, utf8::Seq & seq) const {
-    for (auto cs = *_cursor.cs; cs->match != NUL; ++cs) {
+    auto cs = _cursor.cs == Cursor::CharSet::G0 ? _cursor.g0 : _cursor.g1;
+
+    while (cs->match != NUL) {
         if (ascii == cs->match) {
             if (_config.getTraceTty()) {
                 std::cerr
@@ -650,6 +652,8 @@ bool Terminal::translate(uint8_t ascii, utf8::Seq & seq) const {
             seq = cs->replace;
             return true;
         }
+
+        ++cs;
     }
 
     return false;
@@ -963,12 +967,10 @@ void Terminal::machineControl(uint8_t c) throw () {
             }
             break;
         case SO:
-            // XXX dubious
-            _cursor.cs = &_cursor.g1;
+            _cursor.cs = Cursor::CharSet::G1;
             break;
         case SI:
-            // XXX dubious
-            _cursor.cs = &_cursor.g0;
+            _cursor.cs = Cursor::CharSet::G0;
             break;
         case CAN:
         case SUB:
@@ -1790,7 +1792,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     NYI("DECANM: " << set);
                     _cursor.g0 = CS_US;
                     _cursor.g1 = CS_US;
-                    _cursor.cs = &_cursor.g0;
+                    _cursor.cs = Cursor::CharSet::G0;
                     break;
                 case 3: // DECCOLM - Column Mode
                     if (set) {

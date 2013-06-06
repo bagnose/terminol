@@ -72,10 +72,12 @@ public:
 
 private:
     struct Cursor {
+        enum class CharSet { G0, G1 };
+
         Cursor() :
             g0(CS_US),
             g1(CS_US),
-            cs(&g0),
+            cs(CharSet::G0),
             //
             pos(),
             wrapNext(false),
@@ -87,7 +89,7 @@ private:
 
         const CharSub *  g0;
         const CharSub *  g1;
-        const CharSub ** cs;
+        CharSet          cs;
         //
         Pos              pos;
         bool             wrapNext;
