@@ -1038,8 +1038,6 @@ void Window::terminalDrawBg(Pos    pos,
                             size_t count) throw () {
     ASSERT(_cr, "");
 
-    PRINT(pos << " " << count);
-
     cairo_save(_cr); {
         int x, y;
         pos2XY(pos, x, y);
