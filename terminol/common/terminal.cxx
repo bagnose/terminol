@@ -1217,10 +1217,12 @@ void Terminal::machineCsi(bool priv,
         case 'T': // SD - Scroll Down
             _buffer->scrollDownMargins(nthArgNonZero(args, 0, 1));
             break;
-        case 'X': // ECH - Erase Char
-            _buffer->setCells(_cursor.pos, nthArgNonZero(args, 0, 1),
-                              Cell::ascii(SPACE, _cursor.style));
+        case 'X': { // ECH - Erase Char
+            auto count = nthArgNonZero(args, 0, 1);
+            count = std::min(count, _buffer->getCols() - _cursor.pos.col);
+            _buffer->setCells(_cursor.pos, count, Cell::ascii(SPACE, _cursor.style));
             break;
+        }
         case 'Z': // CBT - Cursor Backward Tabulation
             tabCursor(TabDir::BACKWARD, nthArgNonZero(args, 0, 1));
             break;
