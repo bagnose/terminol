@@ -528,11 +528,11 @@ void Window::focusIn(xcb_focus_in_event_t * UNUSED(event)) {
     //PRINT("Focus in");
 }
 
-void Window::focusOut(xcb_focus_out_event_t * event) {
+void Window::focusOut(xcb_focus_out_event_t * UNUSED(event)) {
     _focussed = false;
     // TODO damage cursor? Or tell temrinal?
 
-    PRINT("Focus out: " << int(event->mode));
+    //PRINT("Focus out: " << int(event->mode));
 
 }
 
@@ -541,7 +541,7 @@ void Window::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {
 }
 
 void Window::leaveNotify(xcb_leave_notify_event_t * event) {
-    PRINT("leave: " << int(event->mode));
+    //PRINT("leave: " << int(event->mode));
 
     // XXX total guess that this is how we ensure we release
     // the button...
@@ -988,7 +988,6 @@ void Window::terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () {
     uint32_t height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
 
     if (_width != width || _height != height) {
-        PRINT("RESIZING");
         uint32_t values[] = { width, height };
         xcb_configure_window(_basics.connection(),
                              _window,
