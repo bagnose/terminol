@@ -1116,9 +1116,8 @@ void Terminal::machineCsi(bool priv,
 
     switch (mode) {
         case '@': { // ICH - Insert Character
-            // XXX what about _cursor.wrapNext
             auto count = nthArgNonZero(args, 0, 1);
-            count = clamp(count, 1, _buffer->getCols() - _cursor.pos.col);
+            count = std::min(count, _buffer->getCols() - _cursor.pos.col);
             _buffer->insertCells(_cursor.pos, count);
             break;
         }
