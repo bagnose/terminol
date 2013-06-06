@@ -753,7 +753,7 @@ public:
                 }
             }
 
-            delta -= getRows() - rows;
+            delta = std::max(-cursorRow, rows - getRows());
 
             if (_historyLimit == 0) {
                 // Optimisation, just erase lines if they aren't going into history.
