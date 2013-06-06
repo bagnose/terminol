@@ -1033,25 +1033,21 @@ bool Window::terminalFixDamageBegin(bool internal) throw () {
     }
 }
 
-void Window::terminalDrawRun(Pos             pos,
-                             Style           style,
-                             const uint8_t * str,
-                             size_t          count) throw () {
+void Window::terminalDrawBg(Pos    pos,
+                            UColor color,
+                            size_t count) throw () {
     ASSERT(_cr, "");
 
+    PRINT(pos << " " << count);
+
     cairo_save(_cr); {
-        if (style.attrs.get(Attr::INVERSE)) { std::swap(style.fg, style.bg); }
-
-        cairo_set_scaled_font(_cr, _fontSet.get(style.attrs.get(Attr::ITALIC),
-                                                style.attrs.get(Attr::BOLD)));
-
         int x, y;
         pos2XY(pos, x, y);
 
         double w = count * _fontSet.getWidth();
         double h = _fontSet.getHeight();
 
-        switch (style.bg.type) {
+        switch (color.type) {
             case UColor::Type::FOREGROUND: {
                 const auto & bg = _colorSet.getForegroundColor();
                 cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
@@ -1061,11 +1057,11 @@ void Window::terminalDrawRun(Pos             pos,
                 cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
             } break;
             case UColor::Type::INDEXED: {
-                const auto & bg = _colorSet.getIndexedColor(style.bg.index);
+                const auto & bg = _colorSet.getIndexedColor(color.index);
                 cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
             } break;
             case UColor::Type::DIRECT: {
-                auto bg = style.bg.values;
+                auto bg = color.values;
                 auto d  = 255.0;
                 cairo_set_source_rgb(_cr, bg.r / d, bg.g / d, bg.b / d);
             } break;
@@ -1076,12 +1072,40 @@ void Window::terminalDrawRun(Pos             pos,
                         y,
                         w,
                         h);
-        cairo_clip_preserve(_cr);       // XXX prevent droppings
         cairo_fill(_cr);
 
-        auto alpha = style.attrs.get(Attr::CONCEAL) ? 0.2 : 1.0;
+        ASSERT(cairo_status(_cr) == 0,
+               "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
+    } cairo_restore(_cr);
+}
 
-        switch (style.fg.type) {
+void Window::terminalDrawFg(Pos             pos,
+                            UColor          color,
+                            AttrSet         attrs,
+                            const uint8_t * str,
+                            size_t          count) throw () {
+    ASSERT(_cr, "");
+
+    cairo_save(_cr); {
+        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attr::ITALIC),
+                                                attrs.get(Attr::BOLD)));
+
+        int x, y;
+        pos2XY(pos, x, y);
+
+        double w = count * _fontSet.getWidth();
+        double h = _fontSet.getHeight();
+
+        cairo_rectangle(_cr,
+                        x,
+                        y,
+                        w,
+                        h);
+        cairo_clip(_cr);
+
+        auto alpha = attrs.get(Attr::CONCEAL) ? 0.2 : 1.0;
+
+        switch (color.type) {
             case UColor::Type::FOREGROUND: {
                 const auto & fg = _colorSet.getForegroundColor();
                 cairo_set_source_rgba(_cr, fg.r, fg.g, fg.b, alpha);
@@ -1091,17 +1115,17 @@ void Window::terminalDrawRun(Pos             pos,
                 cairo_set_source_rgba(_cr, fg.r, fg.g, fg.b, alpha);
             } break;
             case UColor::Type::INDEXED: {
-                const auto & fg = _colorSet.getIndexedColor(style.fg.index);
+                const auto & fg = _colorSet.getIndexedColor(color.index);
                 cairo_set_source_rgba(_cr, fg.r, fg.g, fg.b, alpha);
             } break;
             case UColor::Type::DIRECT: {
-                auto fg = style.fg.values;
+                auto fg = color.values;
                 auto d  = 255.0;
                 cairo_set_source_rgba(_cr, fg.r / d, fg.g / d, fg.b / d, alpha);
             } break;
         }
 
-        if (style.attrs.get(Attr::UNDERLINE)) {
+        if (attrs.get(Attr::UNDERLINE)) {
             double yy = _fontSet.getHeight() - 0.5;
             cairo_move_to(_cr, x, yy);
             cairo_line_to(_cr, x + w, yy);

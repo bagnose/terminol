@@ -669,33 +669,32 @@ void Terminal::draw(Pos begin, Pos end, Damager damage) {
     run.reserve(_buffer->getCols() * utf8::Length::LMAX + 1);
 
     for (uint16_t r = begin.row; r != end.row; ++r) {
-        uint16_t c_    = 0;    // Accumulation start column.
-        auto     style = Style();
-        uint16_t c;
-        uint16_t colBegin2, colEnd2;
+        // Determine the column extents
+
+        uint16_t colBegin, colEnd;
 
         if (damage == Damager::TTY) {
-            _buffer->getDamage(r, colBegin2, colEnd2);
-            //PRINT("Consulted buffer damage, got: " << colBegin2 << ", " << colEnd2);
+            _buffer->getDamage(r, colBegin, colEnd);
+            //PRINT("Consulted buffer damage, got: " << colBegin << ", " << colEnd);
         }
         else {
-            colBegin2 = begin.col;
-            colEnd2   = end.col;
-            //PRINT("External damage damage, got: " << colBegin2 << ", " << colEnd2);
+            colBegin = begin.col;
+            colEnd   = end.col;
+            //PRINT("External damage damage, got: " << colBegin << ", " << colEnd);
         }
 
         // Update _damage.colBegin and _damage.colEnd.
         if (_damage.begin.col == _damage.end.col) {
-            _damage.begin.col = colBegin2;
-            _damage.end.col   = colEnd2;
+            _damage.begin.col = colBegin;
+            _damage.end.col   = colEnd;
         }
-        else if (colBegin2 != colEnd2) {
-            _damage.begin.col = std::min(_damage.begin.col, colBegin2);
-            _damage.end.col   = std::max(_damage.end.col,   colEnd2);
+        else if (colBegin != colEnd) {
+            _damage.begin.col = std::min(_damage.begin.col, colBegin);
+            _damage.end.col   = std::max(_damage.end.col,   colEnd);
         }
 
         // Update _damage.rowBegin and _damage.rowEnd.
-        if (colBegin2 != colEnd2) {
+        if (colBegin != colEnd) {
             if (_damage.begin.row == _damage.end.row) {
                 _damage.begin.row = r;
             }
@@ -703,43 +702,96 @@ void Terminal::draw(Pos begin, Pos end, Damager damage) {
             _damage.end.row = r + 1;
         }
 
-        // Step through each column, accumulating runs of compatible consecutive cells.
-        for (c = colBegin2; c != colEnd2; ++c) {
-            const Cell & cell = _buffer->getCell(Pos(r, c));
+        drawRowBg(r, colBegin, colEnd);
+        drawRowFg(run, r, colBegin, colEnd);
+    }
 
-            if (run.empty() || style != cell.style) {
-                if (!run.empty()) {
-                    // flush run
-                    run.push_back(NUL);
-                    _observer.terminalDrawRun(Pos(r, c_), style, &run.front(), c - c_);
-                    run.clear();
-                }
+    drawCursor(run);
+    drawSelection();
 
-                c_    = c;
-                style = cell.style;
 
-                if (_modes.get(Mode::REVERSE)) { std::swap(style.fg, style.bg); }
+    bool scrollbar =    // Identical in two places.
+        damage == Damager::SCROLL || damage == Damager::EXPOSURE ||
+        (damage == Damager::TTY && _buffer->getBarDamage());
 
-                utf8::Length length = utf8::leadLength(cell.seq.lead());
-                run.resize(length);
-                std::copy(cell.seq.bytes, cell.seq.bytes + length, &run.front());
+    if (scrollbar) {
+        _observer.terminalDrawScrollbar(_buffer->getTotal(),
+                                        _buffer->getBar(),
+                                        _buffer->getRows());
+    }
+}
+
+void Terminal::drawRowBg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
+    auto     bg = UColor::background();
+    uint16_t c_ = colBegin;     // Accumulation start column.
+    uint16_t c;
+
+    for (c = colBegin; c != colEnd; ++c) {
+        const Cell & cell = _buffer->getCell(Pos(r, c));
+
+        bool swap = XOR(_modes.get(Mode::REVERSE), cell.style.attrs.get(Attr::INVERSE));
+        auto bg2  = swap ? cell.style.fg : cell.style.bg;
+
+        if (bg != bg2) {
+            if (c != c_) {
+                _observer.terminalDrawBg(Pos(r, c_), bg, c - c_);
             }
-            else {
-                size_t oldSize = run.size();
-                utf8::Length length = utf8::leadLength(cell.seq.lead());
-                run.resize(run.size() + length);
-                std::copy(cell.seq.bytes, cell.seq.bytes + length, &run[oldSize]);
-            }
-        }
 
-        // There may be an unterminated run to flush.
-        if (!run.empty()) {
-            run.push_back(NUL);
-            _observer.terminalDrawRun(Pos(r, c_), style, &run.front(), c - c_);
-            run.clear();
+            c_ = c;
+            bg = bg2;
         }
     }
 
+    // There may be an unterminated run to flush.
+    if (c != c_) {
+        _observer.terminalDrawBg(Pos(r, c_), bg, c - c_);
+    }
+}
+
+void Terminal::drawRowFg(std::vector<uint8_t> & run,
+                         uint16_t r, uint16_t colBegin, uint16_t colEnd) {
+    auto     fg    = UColor::foreground();
+    auto     attrs = AttrSet();
+    uint16_t c_    = colBegin;      // Accumulation start column.
+    uint16_t c;
+
+    for (c = colBegin; c != colEnd; ++c) {
+        const Cell & cell = _buffer->getCell(Pos(r, c));
+
+        bool swap   = XOR(_modes.get(Mode::REVERSE), cell.style.attrs.get(Attr::INVERSE));
+        auto fg2    = swap ? cell.style.bg : cell.style.fg;
+        auto attrs2 = cell.style.attrs;
+
+        if (fg != fg2 || attrs != attrs2) {
+            if (!run.empty()) {
+                // flush run
+                run.push_back(NUL);
+                _observer.terminalDrawFg(Pos(r, c_), fg, attrs, &run.front(), c - c_);
+                run.clear();
+            }
+
+            c_    = c;
+            fg    = fg2;
+            attrs = attrs2;
+
+            run.clear();
+        }
+
+        size_t oldSize = run.size();
+        utf8::Length length = utf8::leadLength(cell.seq.lead());
+        run.resize(run.size() + length);
+        std::copy(cell.seq.bytes, cell.seq.bytes + length, &run[oldSize]);
+    }
+
+    // There may be an unterminated run to flush.
+    if (!run.empty()) {
+        run.push_back(NUL);
+        _observer.terminalDrawFg(Pos(r, c_), fg, attrs, &run.front(), c - c_);
+        run.clear();
+    }
+}
+
+void Terminal::drawCursor(std::vector<uint8_t> & run) {
     if (_modes.get(Mode::SHOW_CURSOR) &&
         _buffer->getScrollOffset() + _cursor.pos.row < _buffer->getRows())
     {
@@ -775,23 +827,15 @@ void Terminal::draw(Pos begin, Pos end, Damager damage) {
         run.push_back(NUL);
         _observer.terminalDrawCursor(pos, cell.style, &run.front(), _cursor.wrapNext);
     }
+}
 
+void Terminal::drawSelection() {
     if (true) {
         Pos sBegin, sEnd;
         bool topless, bottomless;
         if (_buffer->getSelectedArea(sBegin, sEnd, topless, bottomless)) {
             _observer.terminalDrawSelection(sBegin, sEnd, topless, bottomless);
         }
-    }
-
-    bool scrollbar =    // Identical in two places.
-        damage == Damager::SCROLL || damage == Damager::EXPOSURE ||
-        (damage == Damager::TTY && _buffer->getBarDamage());
-
-    if (scrollbar) {
-        _observer.terminalDrawScrollbar(_buffer->getTotal(),
-                                        _buffer->getBar(),
-                                        _buffer->getRows());
     }
 }
 

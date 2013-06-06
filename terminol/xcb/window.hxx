@@ -138,10 +138,14 @@ protected:
     void terminalSetTitle(const std::string & title) throw ();
     void terminalResizeBuffer(uint16_t rows, uint16_t cols) throw ();
     bool terminalFixDamageBegin(bool internal) throw ();
-    void terminalDrawRun(Pos             pos,
-                         Style           style,
-                         const uint8_t * str,
-                         size_t          count) throw ();
+    void terminalDrawBg(Pos    pos,
+                        UColor color,
+                        size_t count) throw ();
+    void terminalDrawFg(Pos    pos,
+                        UColor          color,
+                        AttrSet         attrs,
+                        const uint8_t * str,
+                        size_t          count) throw ();
     void terminalDrawCursor(Pos             pos,
                             Style           style,
                             const uint8_t * str,

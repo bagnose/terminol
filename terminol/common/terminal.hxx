@@ -38,10 +38,14 @@ public:
         virtual void terminalSetTitle(const std::string & title) throw () = 0;
         virtual void terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () = 0;
         virtual bool terminalFixDamageBegin(bool internal) throw () = 0;
-        virtual void terminalDrawRun(Pos             pos,
-                                     Style           style,
-                                     const uint8_t * str,       // nul-terminated
-                                     size_t          count) throw () = 0;
+        virtual void terminalDrawBg(Pos    pos,
+                                    UColor color,
+                                    size_t count) throw () = 0;
+        virtual void terminalDrawFg(Pos             pos,
+                                    UColor          color,
+                                    AttrSet         attrs,
+                                    const uint8_t * str,       // nul-terminated
+                                    size_t          count) throw () = 0;
         virtual void terminalDrawCursor(Pos             pos,
                                         Style           style,
                                         const uint8_t * str,    // nul-terminated, length 1
@@ -188,6 +192,11 @@ protected:
     bool      translate(uint8_t ascii, utf8::Seq & seq) const;
 
     void      draw(Pos begin, Pos end, Damager damage);
+    void      drawRowBg(uint16_t row, uint16_t colBegin, uint16_t colEnd);
+    void      drawRowFg(std::vector<uint8_t> & run,
+                        uint16_t row, uint16_t colBegin, uint16_t colEnd);
+    void      drawCursor(std::vector<uint8_t> & run);
+    void      drawSelection();
 
     void      write(const uint8_t * data, size_t size);
 

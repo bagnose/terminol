@@ -101,4 +101,8 @@ template <typename T> std::string toBinaryString(T t) {
     return str;
 }
 
+inline bool XOR(bool a, bool b) {
+    return a != b;
+}
+
 #endif // SUPPORT__CONV__HXX
