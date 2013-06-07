@@ -12,8 +12,6 @@
 #include <xcb/xcb.h>
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_aux.h>
-#include <cairo-ft.h>
-#include <fontconfig/fontconfig.h>
 
 #include <unistd.h>
 #include <sys/select.h>
@@ -41,7 +39,7 @@ public:
         _deduper(),
         _basics(),
         _colorSet(config, _basics),
-        _fontSet(config),
+        _fontSet(config, _basics),
         _keyMap(),
         _window(*this,
                 config,
@@ -282,8 +280,6 @@ int main(int argc, char * argv[]) {
         }
     }
 
-    FcInit();
-
     try {
         EventLoop eventLoop(config, command);
     }
@@ -299,8 +295,6 @@ int main(int argc, char * argv[]) {
     catch (const Basics::Error & ex) {
         FATAL(ex.message);
     }
-
-    FcFini();
 
     return 0;
 }

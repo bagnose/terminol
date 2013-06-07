@@ -145,12 +145,14 @@ protected:
                         UColor          color,
                         AttrSet         attrs,
                         const uint8_t * str,
+                        size_t          size,
                         size_t          count) throw ();
     void terminalDrawCursor(Pos             pos,
                             UColor          fg,
                             UColor          bg,
                             AttrSet         attrs,
                             const uint8_t * str,
+                            size_t          size,
                             bool            wrapNext,
                             bool            focused) throw ();
     void terminalDrawSelection(Pos      begin,

@@ -46,12 +46,14 @@ public:
                                     UColor          color,
                                     AttrSet         attrs,
                                     const uint8_t * str,       // nul-terminated
+                                    size_t          size,
                                     size_t          count) throw () = 0;
         virtual void terminalDrawCursor(Pos             pos,
                                         UColor          fg,
                                         UColor          bg,
                                         AttrSet         attrs,
                                         const uint8_t * str,    // nul-terminated, length 1
+                                        size_t          size,
                                         bool            wrapNext,
                                         bool            focused) throw () = 0;
         virtual void terminalDrawSelection(Pos      begin,

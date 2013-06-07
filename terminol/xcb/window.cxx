@@ -6,6 +6,7 @@
 
 #include <xcb/xcb_icccm.h>
 #include <xcb/xcb_aux.h>
+#include <pango/pangocairo.h>
 
 #include <limits>
 
@@ -1059,35 +1060,36 @@ void Window::terminalDrawFg(Pos             pos,
                             UColor          color,
                             AttrSet         attrs,
                             const uint8_t * str,
+                            size_t          size,
                             size_t          count) throw () {
     ASSERT(_cr, "");
 
     cairo_save(_cr); {
-        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attr::ITALIC),
-                                                attrs.get(Attr::BOLD)));
+        auto layout = pango_cairo_create_layout(_cr);
+        auto layoutGuard = scopeGuard([&] { g_object_unref(layout); });
+
+        auto font = _fontSet.get(attrs.get(Attr::ITALIC), attrs.get(Attr::BOLD));
+        pango_layout_set_font_description(layout, font);
+        pango_layout_set_width(layout, -1);
 
         int x, y;
         pos2XY(pos, x, y);
-
-        double w = count * _fontSet.getWidth();
-        double h = _fontSet.getHeight();
-
-        cairo_rectangle(_cr, x, y, w, h);
-        cairo_clip(_cr);
 
         auto alpha = attrs.get(Attr::CONCEAL) ? 0.1 : attrs.get(Attr::FAINT) ? 0.5 : 1.0;
         auto fg    = getColor(color);
         cairo_set_source_rgba(_cr, fg.r, fg.g, fg.b, alpha);
 
         if (attrs.get(Attr::UNDERLINE)) {
-            double yy = _fontSet.getHeight() - 0.5;
-            cairo_move_to(_cr, x, yy);
-            cairo_line_to(_cr, x + w, yy);
+            double w = count * _fontSet.getWidth();
+            cairo_move_to(_cr, x, y + _fontSet.getHeight() - 0.5);
+            cairo_rel_line_to(_cr, w, 0);
             cairo_stroke(_cr);
         }
 
-        cairo_move_to(_cr, x, y + _fontSet.getAscent());
-        cairo_show_text(_cr, reinterpret_cast<const char *>(str));
+        cairo_move_to(_cr, x, y);
+        pango_layout_set_text(layout, reinterpret_cast<const char *>(str), size);
+        pango_cairo_update_layout(_cr, layout);
+        pango_cairo_show_layout(_cr, layout);
 
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
@@ -1099,13 +1101,18 @@ void Window::terminalDrawCursor(Pos             pos,
                                 UColor          bg_,
                                 AttrSet         attrs,
                                 const uint8_t * str,
+                                size_t          size,
                                 bool            wrapNext,
                                 bool            focused) throw () {
     ASSERT(_cr, "");
 
     cairo_save(_cr); {
-        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attr::ITALIC),
-                                                attrs.get(Attr::BOLD)));
+        auto layout = pango_cairo_create_layout(_cr);
+        auto font   = _fontSet.get(attrs.get(Attr::ITALIC), attrs.get(Attr::BOLD));
+        pango_layout_set_font_description(layout, font);
+
+        pango_layout_set_width(layout, -1);
+        pango_layout_set_wrap(layout, PANGO_WRAP_CHAR);
 
         auto fg =
             _config.getCustomCursorTextColor() ?
@@ -1141,11 +1148,16 @@ void Window::terminalDrawCursor(Pos             pos,
             cairo_stroke(_cr);
         }
 
-        cairo_move_to(_cr, x, y + _fontSet.getAscent());
-        cairo_show_text(_cr, reinterpret_cast<const char *>(str));
+        cairo_move_to(_cr, x, y);
+        pango_layout_set_text(layout, reinterpret_cast<const char *>(str), size);
+        pango_cairo_update_layout(_cr, layout);
+        pango_cairo_show_layout(_cr, layout);
 
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
+
+        /* Free resources */
+        g_object_unref(layout);
     } cairo_restore(_cr);
 }
 

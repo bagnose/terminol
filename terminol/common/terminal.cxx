@@ -757,7 +757,8 @@ void Terminal::drawRowFg(std::vector<uint8_t> & run,
             if (!run.empty()) {
                 // flush run
                 run.push_back(NUL);
-                _observer.terminalDrawFg(Pos(r, c_), fg, attrs, &run.front(), c - c_);
+                _observer.terminalDrawFg(Pos(r, c_), fg, attrs,
+                                         &run.front(), run.size(), c - c_);
                 run.clear();
             }
 
@@ -777,7 +778,8 @@ void Terminal::drawRowFg(std::vector<uint8_t> & run,
     // There may be an unterminated run to flush.
     if (!run.empty()) {
         run.push_back(NUL);
-        _observer.terminalDrawFg(Pos(r, c_), fg, attrs, &run.front(), c - c_);
+        _observer.terminalDrawFg(Pos(r, c_), fg, attrs,
+                                 &run.front(), run.size(), c - c_);
         run.clear();
     }
 }
@@ -823,7 +825,9 @@ void Terminal::drawCursor(std::vector<uint8_t> & run) {
         auto bg    = cell.style.bg;
         if (swap) { std::swap(fg, bg); }
 
-        _observer.terminalDrawCursor(pos, fg, bg, attrs, &run.front(), _cursor.wrapNext, _focused);
+        _observer.terminalDrawCursor(pos, fg, bg, attrs,
+                                     &run.front(), run.size(),
+                                     _cursor.wrapNext, _focused);
     }
 }
 

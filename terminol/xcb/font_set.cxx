@@ -3,60 +3,52 @@
 #include "terminol/xcb/font_set.hxx"
 #include "terminol/support/pattern.hxx"
 
-FontSet::FontSet(const Config & config) throw (Error) :
+#include <cairo/cairo-xcb.h>
+#include <pango/pangocairo.h>
+
+FontSet::FontSet(const Config & config,
+                 Basics       & basics) throw (Error) :
     _config(config),
-    _firstLoad(true),
-    _normal(nullptr),
-    _bold(nullptr),
-    _italic(nullptr),
-    _italicBold(nullptr),
-    _width(0),
-    _height(0),
-    _ascent(0)
+    _basics(basics)
 {
-    FcPattern * pattern;
+#if 1
+    const char * fontName = "MesloLGM";
+    int          size     = 15;
+#endif
 
-    const std::string & fontName = _config.getFontName();
+#if 0
+    const char * fontName = "inconsolata";
+    int          size     = 17;
+#endif
 
-    pattern = FcNameParse(reinterpret_cast<const FcChar8 *>(fontName.c_str()));
-    if (!pattern) {
-        throw Error("Failed to parse font name: " + fontName);
-    }
+#if 0
+    const char * fontName = "Monaco";
+    int          size     = 15;
+#endif
 
-    FcConfigSubstitute(nullptr, pattern, FcMatchPattern);
-    FcDefaultSubstitute(pattern);
+#if 0
+    const char * fontName = "pragmatapro";
+    int          size     = 17;
+#endif
 
-    // Normal
-    _normal = load(pattern);
+    //const auto & str = config.getFontName();
+    //_normal = pango_font_description_from_string(str.c_str());
+
+
+    _normal = load(fontName, size, true, false, false);
     auto normalGuard = scopeGuard([&] { unload(_normal); });
-
-    // Bold
-    FcPatternDel(pattern, FC_WEIGHT);
-    FcPatternAddInteger(pattern, FC_WEIGHT, FC_WEIGHT_BOLD);
-    _bold = load(pattern);
+    _bold = load(fontName, size, false, true, false);
     auto boldGuard = scopeGuard([&] { unload(_bold); });
-
-    // Italic
-    FcPatternDel(pattern, FC_WEIGHT);
-    FcPatternAddInteger(pattern, FC_WEIGHT, FC_WEIGHT_NORMAL);
-    FcPatternDel(pattern, FC_SLANT);
-    FcPatternAddInteger(pattern, FC_SLANT, FC_SLANT_ITALIC);
-    _italic = load(pattern);
+    _italic = load(fontName, size, false, false, true);
     auto italicGuard = scopeGuard([&] { unload(_italic); });
-
-    // Italic bold
-    FcPatternDel(pattern, FC_WEIGHT);
-    FcPatternAddInteger(pattern, FC_WEIGHT, FC_WEIGHT_BOLD);
-    _italicBold = load(pattern);
+    _italicBold = load(fontName, size, false, true, true);
     auto italicBoldGuard = scopeGuard([&] { unload(_italicBold); });
 
-    // Dismiss the guards
+    // Dismiss guards
     italicBoldGuard.dismiss();
     italicGuard.dismiss();
     boldGuard.dismiss();
     normalGuard.dismiss();
-
-    FcPatternDestroy(pattern);
 }
 
 FontSet::~FontSet() {
@@ -66,78 +58,72 @@ FontSet::~FontSet() {
     unload(_normal);
 }
 
-cairo_scaled_font_t * FontSet::load(FcPattern * pattern) throw (Error) {
-    FcResult result;
-    FcPattern * match = FcFontMatch(nullptr, pattern, &result);
-    ENFORCE(match, "");
-
-    // Disable anti-aliasing
-    //FcPatternDel(match, FC_ANTIALIAS);
-    //FcPatternAddBool(match, FC_ANTIALIAS, FcFalse);
-
-    // Disable auto-hinting
-    //FcPatternDel(match, FC_AUTOHINT);
-    //FcPatternAddBool(match, FC_AUTOHINT, FcFalse);
-
-    double pixelSize;
-    FcPatternGetDouble(match, FC_PIXEL_SIZE, 0, &pixelSize);
-    //PRINT("pixelsize: " << pixelSize);
-
-    cairo_font_face_t * fontFace = cairo_ft_font_face_create_for_pattern(match);
-    FcPatternDestroy(match);
-
-    if (!fontFace) {
-        throw Error("Failed to load font.");
+PangoFontDescription * FontSet::load(const std::string & family,
+                                     int                 size,
+                                     bool                master,
+                                     bool                bold,
+                                     bool                italic) throw (Error) {
+    {
+    auto str = _config.getFontName();
+    str = "";
     }
 
-    cairo_matrix_t fontMatrix, ctm;
-    cairo_matrix_init_identity(&fontMatrix);
-    cairo_matrix_scale(&fontMatrix, pixelSize, pixelSize);
-    cairo_matrix_init_identity(&ctm);
+    auto desc = pango_font_description_from_string(family.c_str());
+    if (!desc) { throw Error("Failed to load font: " + family); }
+    auto descGuard = scopeGuard([&] { pango_font_description_free(desc); });
+    pango_font_description_set_absolute_size(desc, size * PANGO_SCALE);
+    pango_font_description_set_weight(desc, bold ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL);
+    pango_font_description_set_style(desc, italic ? PANGO_STYLE_OBLIQUE : PANGO_STYLE_NORMAL);
 
-    cairo_font_options_t * fontOptions = cairo_font_options_create();
-    cairo_scaled_font_t  * scaledFont  = cairo_scaled_font_create(fontFace,
-                                                                  &fontMatrix,
-                                                                  &ctm,
-                                                                  fontOptions);
-    cairo_font_options_destroy(fontOptions);
+    auto surface = cairo_xcb_surface_create(_basics.connection(),
+                                            _basics.screen()->root,
+                                            _basics.visual(),
+                                            1, 1);
+    auto surfaceGuard = scopeGuard([&] { cairo_surface_destroy(surface); });
 
-    /*
-       typedef struct {
-       double ascent;
-       double descent;
-       double height;
-       double max_x_advance;
-       double max_y_advance;
-       } cairo_font_extents_t;
-       */
+    auto cr = cairo_create(surface);
+    auto crGuard = scopeGuard([&] { cairo_destroy(cr); });
 
-    cairo_font_extents_t extents;
-    cairo_scaled_font_extents(scaledFont, &extents);
+    auto layout = pango_cairo_create_layout(cr);
+    auto layoutGuard = scopeGuard([&] { g_object_unref(layout); });
 
-    /*
-       PRINT("ascent=" << extents.ascent << ", descent=" << extents.descent <<
-       ", height=" << extents.height << ", max_x_advance=" << extents.max_x_advance);
-       */
+    pango_layout_set_font_description(layout, desc);
 
-    if (_firstLoad) {
-        _width  = extents.max_x_advance;
-        _height = extents.height;
-        _ascent = extents.ascent;
-        _firstLoad = false;
+    pango_layout_set_text(layout, "M", -1);
+    pango_cairo_update_layout(cr, layout);  // Required?
+
+    PangoRectangle inkRect, logicalRect;
+    pango_layout_get_extents(layout, &inkRect, &logicalRect);
+
+#if 0
+    double d = PANGO_SCALE;
+    PRINT("inkRect: " << inkRect.x/d << " " << inkRect.y/d << " " << inkRect.width/d << " " << inkRect.height/d);
+    PRINT("logicalRect: " << logicalRect.x/d << " " << logicalRect.y/d << " " << logicalRect.width/d << " " << logicalRect.height/d);
+#endif
+
+    uint16_t width  = logicalRect.width  / PANGO_SCALE;
+    uint16_t height = logicalRect.height / PANGO_SCALE;
+
+    PRINT(family << " " <<
+          (bold ? "bold" : "normal") << " " <<
+          (italic ? "italic" : "normal") << " " <<
+          "WxH: " << width << "x" << height << std::endl);
+
+    if (master) {
+        _width  = width;
+        _height = height;
     }
     else {
-        // FIXME this is way too tough a strategy.
-        ASSERT(_width  == extents.max_x_advance, "");
-        ASSERT(_height == extents.height, "");
-        ASSERT(_ascent == extents.ascent, "");
+        if (_width != width || _height != height) {
+            FATAL("Size mismatch");
+        }
     }
 
-    return scaledFont;
+    descGuard.dismiss();
+
+    return desc;
 }
 
-void FontSet::unload(cairo_scaled_font_t * scaledFont) {
-    cairo_font_face_t * fontFace = cairo_scaled_font_get_font_face(scaledFont);
-    cairo_scaled_font_destroy(scaledFont);
-    cairo_font_face_destroy(fontFace);
+void FontSet::unload(PangoFontDescription * desc) {
+    pango_font_description_free(desc);
 }
