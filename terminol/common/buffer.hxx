@@ -458,8 +458,6 @@ protected:
         }
 
         _history.push_back(tag);
-
-        ASSERT(!_active.empty(), "");
     }
 
     void unbump() {
