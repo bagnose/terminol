@@ -47,9 +47,12 @@ public:
                                     const uint8_t * str,       // nul-terminated
                                     size_t          count) throw () = 0;
         virtual void terminalDrawCursor(Pos             pos,
-                                        Style           style,
+                                        UColor          fg,
+                                        UColor          bg,
+                                        AttrSet         attrs,
                                         const uint8_t * str,    // nul-terminated, length 1
-                                        bool            wrapNext) throw () = 0;
+                                        bool            wrapNext,
+                                        bool            focused) throw () = 0;
         virtual void terminalDrawSelection(Pos      begin,
                                            Pos      end,
                                            bool     topless,
@@ -127,6 +130,7 @@ private:
     bool                  _pressed;
     Button                _button;
     Pos                   _pointerPos;
+    bool                  _focused;
 
     //
 
@@ -169,6 +173,8 @@ public:
     void     paste(const uint8_t * data, size_t size);
 
     void     clearSelection();
+
+    void     focusChange(bool focused);
 
     // I/O:
 

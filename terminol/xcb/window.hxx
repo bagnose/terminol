@@ -47,7 +47,6 @@ private:
     bool              _open;
     Pos               _pointerPos;
     bool              _mapped;          // Is the window mapped.
-    bool              _focussed;        // Is the window focussed.
 
     bool              _hadExpose;
     xcb_pixmap_t      _pixmap;          // Created when mapped, destroyed when unmapped.
@@ -147,9 +146,12 @@ protected:
                         const uint8_t * str,
                         size_t          count) throw ();
     void terminalDrawCursor(Pos             pos,
-                            Style           style,
+                            UColor          fg,
+                            UColor          bg,
+                            AttrSet         attrs,
                             const uint8_t * str,
-                            bool            wrapNext) throw ();
+                            bool            wrapNext,
+                            bool            focused) throw ();
     void terminalDrawSelection(Pos      begin,
                                Pos      end,
                                bool     topless,
@@ -162,6 +164,22 @@ protected:
                               Pos      end,
                               bool     scrollbar) throw ();
     void terminalChildExited(int exitStatus) throw ();
+
+private:
+    XColor getColor(const UColor & ucolor) const {
+        switch (ucolor.type) {
+            case UColor::Type::FOREGROUND:
+                return _colorSet.getForegroundColor();
+            case UColor::Type::BACKGROUND:
+                return _colorSet.getBackgroundColor();
+            case UColor::Type::INDEXED:
+                return _colorSet.getIndexedColor(ucolor.index);
+            case UColor::Type::DIRECT:
+                auto v = ucolor.values;
+                auto d = 255.0;
+                return XColor(v.r / d, v.g / d, v.b / d);
+        }
+    }
 };
 
 #endif // XCB__WINDOW__HXX

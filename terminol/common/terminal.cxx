@@ -102,6 +102,7 @@ Terminal::Terminal(I_Observer   & observer,
     _damage(),
     //
     _pressed(false),
+    _focused(true),
     //
     _tty(tty),
     _dumpWrites(false),
@@ -401,6 +402,18 @@ void Terminal::clearSelection() {
     _buffer->clearSelection();
     fixDamage(Pos(), Pos(_buffer->getRows(), _buffer->getCols()),
               Damager::SCROLL);     // FIXME Damager
+}
+
+void Terminal::focusChange(bool focused) {
+    if (_focused != focused) {
+        _focused = focused;
+        PRINT(_focused);
+
+        if (_modes.get(Mode::SHOW_CURSOR)) {
+            fixDamage(_cursor.pos, _cursor.pos.right(),
+                      Damager::SCROLL);     // FIXME Damager
+        }
+    }
 }
 
 void Terminal::read() {
@@ -820,7 +833,14 @@ void Terminal::drawCursor(std::vector<uint8_t> & run) {
         run.resize(length);
         std::copy(cell.seq.bytes, cell.seq.bytes + length, &run.front());
         run.push_back(NUL);
-        _observer.terminalDrawCursor(pos, cell.style, &run.front(), _cursor.wrapNext);
+
+        auto attrs = cell.style.attrs;
+        bool swap  = XOR(_modes.get(Mode::REVERSE), attrs.get(Attr::INVERSE));
+        auto fg    = cell.style.fg;
+        auto bg    = cell.style.bg;
+        if (swap) { std::swap(fg, bg); }
+
+        _observer.terminalDrawCursor(pos, fg, bg, attrs, &run.front(), _cursor.wrapNext, _focused);
     }
 }
 

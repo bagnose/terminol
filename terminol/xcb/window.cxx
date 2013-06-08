@@ -47,7 +47,6 @@ Window::Window(I_Observer         & observer,
     _open(false),
     _pointerPos(Pos::invalid()),
     _mapped(false),
-    _focussed(false),
     _hadExpose(false),
     _pixmap(0),
     _surface(nullptr),
@@ -522,17 +521,11 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 }
 
 void Window::focusIn(xcb_focus_in_event_t * UNUSED(event)) {
-    _focussed = true;
-    // TODO damage cursor? Or tell temrinal?
-
-    //PRINT("Focus in");
+    _terminal->focusChange(true);
 }
 
 void Window::focusOut(xcb_focus_out_event_t * UNUSED(event)) {
-    _focussed = false;
-    // TODO damage cursor? Or tell temrinal?
-
-    //PRINT("Focus out: " << int(event->mode));
+    _terminal->focusChange(false);
 
 }
 
@@ -1044,31 +1037,10 @@ void Window::terminalDrawBg(Pos    pos,
         double w = count * _fontSet.getWidth();
         double h = _fontSet.getHeight();
 
-        switch (color.type) {
-            case UColor::Type::FOREGROUND: {
-                const auto & bg = _colorSet.getForegroundColor();
-                cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
-            } break;
-            case UColor::Type::BACKGROUND: {
-                const auto & bg = _colorSet.getBackgroundColor();
-                cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
-            } break;
-            case UColor::Type::INDEXED: {
-                const auto & bg = _colorSet.getIndexedColor(color.index);
-                cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
-            } break;
-            case UColor::Type::DIRECT: {
-                auto bg = color.values;
-                auto d  = 255.0;
-                cairo_set_source_rgb(_cr, bg.r / d, bg.g / d, bg.b / d);
-            } break;
-        }
+        auto bg = getColor(color);
+        cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
 
-        cairo_rectangle(_cr,
-                        x,
-                        y,
-                        w,
-                        h);
+        cairo_rectangle(_cr, x, y, w, h);
         cairo_fill(_cr);
 
         ASSERT(cairo_status(_cr) == 0,
@@ -1093,34 +1065,12 @@ void Window::terminalDrawFg(Pos             pos,
         double w = count * _fontSet.getWidth();
         double h = _fontSet.getHeight();
 
-        cairo_rectangle(_cr,
-                        x,
-                        y,
-                        w,
-                        h);
+        cairo_rectangle(_cr, x, y, w, h);
         cairo_clip(_cr);
 
         auto alpha = attrs.get(Attr::CONCEAL) ? 0.2 : 1.0;
-
-        switch (color.type) {
-            case UColor::Type::FOREGROUND: {
-                const auto & fg = _colorSet.getForegroundColor();
-                cairo_set_source_rgba(_cr, fg.r, fg.g, fg.b, alpha);
-            } break;
-            case UColor::Type::BACKGROUND: {
-                const auto & fg = _colorSet.getBackgroundColor();
-                cairo_set_source_rgba(_cr, fg.r, fg.g, fg.b, alpha);
-            } break;
-            case UColor::Type::INDEXED: {
-                const auto & fg = _colorSet.getIndexedColor(color.index);
-                cairo_set_source_rgba(_cr, fg.r, fg.g, fg.b, alpha);
-            } break;
-            case UColor::Type::DIRECT: {
-                auto fg = color.values;
-                auto d  = 255.0;
-                cairo_set_source_rgba(_cr, fg.r / d, fg.g / d, fg.b / d, alpha);
-            } break;
-        }
+        auto fg    = getColor(color);
+        cairo_set_source_rgba(_cr, fg.r, fg.g, fg.b, alpha);
 
         if (attrs.get(Attr::UNDERLINE)) {
             double yy = _fontSet.getHeight() - 0.5;
@@ -1138,75 +1088,50 @@ void Window::terminalDrawFg(Pos             pos,
 }
 
 void Window::terminalDrawCursor(Pos             pos,
-                                Style           style,
+                                UColor          fg_,
+                                UColor          bg_,
+                                AttrSet         attrs,
                                 const uint8_t * str,
-                                bool            wrapNext) throw () {
+                                bool            wrapNext,
+                                bool            focused) throw () {
     ASSERT(_cr, "");
 
-    if (style.attrs.get(Attr::INVERSE)) { std::swap(style.fg, style.bg); }
-
     cairo_save(_cr); {
-        cairo_set_scaled_font(_cr, _fontSet.get(style.attrs.get(Attr::ITALIC),
-                                                style.attrs.get(Attr::BOLD)));
+        cairo_set_scaled_font(_cr, _fontSet.get(attrs.get(Attr::ITALIC),
+                                                attrs.get(Attr::BOLD)));
+
+        auto fg =
+            _config.getCustomCursorTextColor() ?
+            _colorSet.getCursorTextColor() :
+            getColor(bg_);
+
+        auto bg =
+            _config.getCustomCursorFillColor() ?
+            _colorSet.getCursorFillColor() :
+            getColor(fg_);
 
         int x, y;
         pos2XY(pos, x, y);
 
+        if (!focused) {
+            cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
+            cairo_rectangle(_cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
+            cairo_fill(_cr);
+        }
+
         auto alpha = wrapNext ? 0.4 : 1.0;
+        cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
 
-        if (_config.getCustomCursorFillColor()) {
-            const auto & bg = _colorSet.getCursorFillColor();
-            cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
-        }
-        else {
-            switch (style.fg.type) {
-                case UColor::Type::FOREGROUND: {
-                    const auto & bg = _colorSet.getForegroundColor();
-                    cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
-                } break;
-                case UColor::Type::BACKGROUND: {
-                    const auto & bg = _colorSet.getBackgroundColor();
-                    cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
-                } break;
-                case UColor::Type::INDEXED: {
-                    const auto & bg = _colorSet.getIndexedColor(style.fg.index);
-                    cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
-                } break;
-                case UColor::Type::DIRECT: {
-                    auto bg = style.fg.values;
-                    auto d  = 255.0;
-                    cairo_set_source_rgba(_cr, bg.r / d, bg.g / d, bg.b / d, alpha);
-                } break;
-            }
-        }
-
-        cairo_rectangle(_cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
-        cairo_fill(_cr);
-
-        if (_config.getCustomCursorTextColor()) {
-            const auto & fg = _colorSet.getCursorTextColor();
+        if (focused) {
+            cairo_rectangle(_cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
+            cairo_fill(_cr);
             cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
         }
         else {
-            switch (style.bg.type) {
-                case UColor::Type::FOREGROUND: {
-                    const auto & fg = _colorSet.getForegroundColor();
-                    cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
-                } break;
-                case UColor::Type::BACKGROUND: {
-                    const auto & fg = _colorSet.getBackgroundColor();
-                    cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
-                } break;
-                case UColor::Type::INDEXED: {
-                    const auto & fg = _colorSet.getIndexedColor(style.bg.index);
-                    cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
-                } break;
-                case UColor::Type::DIRECT: {
-                    auto fg = style.bg.values;
-                    auto d  = 255.0;
-                    cairo_set_source_rgb(_cr, fg.r / d, fg.g / d, fg.b / d);
-                } break;
-            }
+            cairo_rectangle(_cr,
+                            x + 0.5, y + 0.5,
+                            _fontSet.getWidth() - 1.0, _fontSet.getHeight() - 1.0);
+            cairo_stroke(_cr);
         }
 
         cairo_move_to(_cr, x, y + _fontSet.getAscent());
