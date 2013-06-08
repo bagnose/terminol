@@ -1294,29 +1294,25 @@ void Terminal::machineCsi(bool priv,
         case 'g': // TBC
             switch (nthArg(args, 0, 0)) {
                 case 0:
-                    // "the character tabulation stop at the active presentation"
-                    // "position is cleared"
                     _tabs[_cursor.pos.col] = false;
                     break;
-                case 1:
-                    // "the line tabulation stop at the active line is cleared"
-                    NYI("");
-                    break;
-                case 2:
-                    // "all character tabulation stops in the active line are cleared"
-                    NYI("");
-                    break;
                 case 3:
-                    // "all character tabulation stops are cleared"
                     std::fill(_tabs.begin(), _tabs.end(), false);
                     break;
-                case 4:
-                    // "all line tabulation stops are cleared"
-                    NYI("");
+                default:
+                    goto default_;
+            }
+            break;
+        case 'W': // Tabulator functions
+            switch (nthArg(args, 0, 0)) {
+                case 0:
+                    _tabs[_cursor.pos.col] = true;  // HTS
+                    break;
+                case 2:
+                    _tabs[_cursor.pos.col] = false; // TBC
                     break;
                 case 5:
-                    // "all tabulation stops are cleared"
-                    NYI("");
+                    std::fill(_tabs.begin(), _tabs.end(), false);   // TBC
                     break;
                 default:
                     goto default_;
