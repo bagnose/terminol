@@ -9,6 +9,7 @@
 #include <unordered_map>
 #include <deque>
 #include <vector>
+#include <iomanip>
 
 #include <cstddef>
 #include <stdint.h>
@@ -43,41 +44,45 @@ public:
     //typedef uint16_t Tag;
     //typedef uint8_t Tag;
 
-private:
     struct Line {
-        explicit Line(std::vector<Cell> && cells_) :
+        Line(bool cont_, uint16_t wrap_, std::vector<Cell> && cells_) :
+            cont(cont_),
+            wrap(wrap_),
             cells(cells_),
             refCount(1) {}
 
+        bool              cont;
+        uint16_t          wrap;
         std::vector<Cell> cells;
         uint32_t          refCount;
     };
 
+private:
     std::unordered_map<Tag, Line> _lines;
     size_t                        _totalRefCount;
 
 public:
     Deduper() : _lines(), _totalRefCount(0) {}
 
-    Tag store(std::vector<Cell> && cells) {
+    Tag store(bool cont, uint16_t wrap, std::vector<Cell> && cells) {
         auto tag = makeTag(cells);
 
 again:
         auto iter = _lines.find(tag);
 
         if (iter == _lines.end()) {
-            _lines.insert(std::make_pair(tag, Line(std::move(cells))));
+            _lines.insert(std::make_pair(tag, Line(cont, wrap, std::move(cells))));
         }
         else {
-            auto & lineInfo = iter->second;
+            auto & line = iter->second;
 
-            if (cells != lineInfo.cells) {
+            if (cells != line.cells) {
 #if DEBUG
                 PRINT("Collision between:");
                 for (auto c : cells) { std::cerr << c.seq; }
                 std::cerr << std::endl;
                 PRINT("And:");
-                for (auto c : lineInfo.cells) { std::cerr << c.seq; }
+                for (auto c : line.cells) { std::cerr << c.seq; }
                 std::cerr << std::endl;
 #endif
 
@@ -87,7 +92,7 @@ again:
                 goto again;
             }
 
-            ++lineInfo.refCount;
+            ++line.refCount;
         }
 
         ++_totalRefCount;
@@ -101,19 +106,19 @@ again:
         return tag;
     }
 
-    const std::vector<Cell> & lookup(Tag tag) const {
+    const Line & lookup(Tag tag) const {
         auto iter = _lines.find(tag);
         ASSERT(iter != _lines.end(), "");
-        const auto & lineInfo = iter->second;
-        return lineInfo.cells;
+        const auto & line = iter->second;
+        return line;
     }
 
     void remove(Tag tag) {
         auto iter = _lines.find(tag);
         ASSERT(iter != _lines.end(), "");
-        auto & lineInfo = iter->second;
+        auto & line = iter->second;
 
-        if (--lineInfo.refCount == 0) {
+        if (--line.refCount == 0) {
             _lines.erase(iter);
         }
 
@@ -138,8 +143,11 @@ private:
 
 class Buffer {
     class Line {
-        uint16_t          _cols;        // May be more cells than this due to resize.
+        bool              _cont;        // Continuation from a 'wrap-next'
+        uint16_t          _wrap;        // Wrappable index
         std::vector<Cell> _cells;
+        //
+        uint16_t          _cols;        // May be more cells than this due to resize.
         uint16_t          _damageBegin;
         uint16_t          _damageEnd;
 
@@ -150,19 +158,23 @@ class Buffer {
         std::vector<Cell>::const_iterator begin() const { return _cells.begin(); }
         std::vector<Cell>::const_iterator end()   const { return _cells.begin() + _cols; }
 
-        explicit Line(uint16_t cols) :
+        explicit Line(uint16_t cols, bool continuation = false) :
+            _cont(continuation),
+            _wrap(0),
+            _cells(cols, Cell::blank()),
             _cols(cols),
-            _cells(cols, Cell::blank())
-        {
-            damageAll();
-        }
+            _damageBegin(0),
+            _damageEnd(cols) {}
 
-        Line(uint16_t cols, const std::vector<Cell> & cells) :
+        Line(uint16_t cols, bool cont, uint16_t wrap, const std::vector<Cell> & cells) :
+            _cont(cont),
+            _wrap(wrap),
+            _cells(cells),
             _cols(cols),
-            _cells(cells)
+            _damageBegin(0),
+            _damageEnd(cols)
         {
             resizeSoft(cols);
-            damageAll();
         }
 
         const std::vector<Cell> & cells() const { return _cells; }
@@ -199,22 +211,30 @@ class Buffer {
             damageAdd(col, _cells.size());
         }
 
-        void setCells(uint16_t col, uint16_t n, const Cell & cell) {
-            trim();
-
-            ASSERT(col + n <= _cells.size(), "");
-
-            std::fill(begin() + col, begin() + col + n, cell);
-
-            damageAdd(col, col + n);
+        void setContinuation() {
+            _cont = true;
         }
 
-        bool setCell(uint16_t col, const Cell & cell) {
+        void clearContinuation() {
+            _cont = false;
+        }
+
+        bool isContinuation() const {
+            return _cont;
+        }
+
+        uint16_t getWrap() const { return _wrap; }
+
+        bool setCell(uint16_t col, const Cell & cell, bool autoWrap) {
             trim();
 
             ASSERT(col < _cells.size(), "");
+
             bool seqChanged = _cells[col].seq != cell.seq;
             _cells[col] = cell;
+
+            if (autoWrap) { _wrap = col + 1; }
+            else          { _wrap = 0; _cont = false; }
 
             damageAdd(col, col + 1);
 
@@ -244,6 +264,7 @@ class Buffer {
         void clear() {
             trim();
 
+            _wrap = 0; _cont = false;
             std::fill(begin(), end(), Cell::blank());
             damageAll();
         }
@@ -251,6 +272,7 @@ class Buffer {
         void clearLeft(uint16_t endCol) {
             trim();
 
+            _wrap = 0; _cont = false;
             std::fill(begin(), begin() + endCol, Cell::blank());
             damageAdd(0, endCol);
         }
@@ -258,6 +280,7 @@ class Buffer {
         void clearRight(uint16_t beginCol) {
             trim();
 
+            _wrap = 0; _cont = false;
             std::fill(begin() + beginCol, end(), Cell::blank());
             damageAdd(beginCol, _cells.size());
         }
@@ -298,6 +321,39 @@ class Buffer {
                 ASSERT(_cells.size() > _cols, "");
                 _cells.erase(begin() + _cols, end());
             }
+        }
+
+        void wrapFrom(Line & previous, uint16_t n) {
+            ASSERT(previous._wrap >= n, "");
+            ASSERT(n != 0, "");
+
+            _cells.insert(begin(),
+                          previous.begin() + previous.getWrap() - n,
+                          previous.begin() + previous.getWrap());
+            _wrap += n;
+            previous._wrap -= n;
+
+            damageAll();
+        }
+
+        void unwrapTo(Line & previous, uint16_t n) {
+            ASSERT(n <= _cols, "");
+
+            for (uint16_t i = 0; i != n; ++i) {
+                previous.setCell(previous.getWrap(), getCell(i), true);
+            }
+
+            uint16_t oldWrapValue = _wrap;
+
+            std::copy(begin() + n, end(), begin());
+
+            for (uint16_t i = _cols - n; i != _cols; ++i) {
+                setCell(i, Cell::blank(), true);       // Screws up value of _wrap
+            }
+
+            _wrap = oldWrapValue - n;
+
+            damageAll();
         }
     };
 
@@ -365,8 +421,6 @@ public:
     {
         ASSERT(rows != 0, "");
         ASSERT(cols != 0, "");
-
-        _config.getScrollbarWidth();        // XXX avoid unused error
     }
 
     ~Buffer() {
@@ -454,13 +508,15 @@ protected:
     void bump() {
         ASSERT(_historyLimit != 0, "");
 
+        auto cont  = _active.front().isContinuation();
+        auto wrap  = _active.front().getWrap();
         auto cells = std::move(_active.front().cells());
         _active.pop_front();
         while (!cells.empty() && cells.back() == Cell::blank()) {
             cells.pop_back();
         }
         cells.shrink_to_fit();
-        auto tag = _deduper.store(std::move(cells));
+        auto tag = _deduper.store(cont, wrap, std::move(cells));
 
         if (_history.size() == _historyLimit) {
             _deduper.remove(_history.front());
@@ -474,8 +530,8 @@ protected:
         ASSERT(!_history.empty(), "");
 
         auto tag = _history.back();
-        const auto & cells = _deduper.lookup(tag);
-        _active.push_front(Line(_cols, cells));
+        const auto & line = _deduper.lookup(tag);
+        _active.push_front(Line(_cols, line.cont, line.wrap, line.cells));
         _history.pop_back();
         _deduper.remove(tag);
     }
@@ -512,8 +568,8 @@ public:
 
         if (pos.row < _scrollOffset) {
             auto tag = _history[_history.size() - _scrollOffset + pos.row];
-            const auto & cells = _deduper.lookup(tag);
-            return pos.col < cells.size() ? cells[pos.col] : BLANK;
+            const auto & line = _deduper.lookup(tag);
+            return pos.col < line.cells.size() ? line.cells[pos.col] : BLANK;
         }
         else {
             return _active[pos.row - _scrollOffset].getCell(pos.col);
@@ -537,11 +593,24 @@ public:
         }
     }
 
+    bool getContinuationAbs(uint32_t row) const {
+        if (row < _history.size()) {
+            auto tag = _history[row];
+            const auto & line = _deduper.lookup(tag);
+            return line.cont;
+        }
+        else {
+            uint16_t r = row - _history.size();
+            ASSERT(r < getRows(), r << " < " << getRows());
+            return _active[r].isContinuation();
+        }
+    }
+
     const Cell & getCellAbs(APos pos) const {
         if (pos.row < _history.size()) {
             auto tag = _history[pos.row];
-            const auto & cells = _deduper.lookup(tag);
-            return pos.col < cells.size() ? cells[pos.col] : BLANK;
+            const auto & line = _deduper.lookup(tag);
+            return pos.col < line.cells.size() ? line.cells[pos.col] : BLANK;
         }
         else {
             uint16_t r = pos.row - _history.size();
@@ -560,7 +629,10 @@ public:
         normalSelection(b, e);
 
         for (auto i = b; i.row <= e.row; ++i.row, i.col = 0) {
-            if (!text.empty()) { text.push_back('\n'); }
+            if (!getContinuationAbs(i.row)) {
+                if (!text.empty()) { text.push_back('\n'); }
+            }
+
             auto lastNonBlank = text.size();
 
             for (; i.col < getCols() && (i.row < e.row || i.col != e.col); ++i.col)
@@ -690,19 +762,28 @@ public:
         _active[pos.row].erase(pos.col, n);
     }
 
+    void setContinuation(uint16_t row) {
+        ASSERT(row < getRows(), "");
+        _active[row].setContinuation();
+        // FIXME clearContinuation() where appropriate
+    }
+
     void setCells(Pos pos, uint16_t n, const Cell & cell) {
         ASSERT(pos.row < getRows(), "");
         ASSERT(pos.col < getCols(), "");
         ASSERT(pos.col + n <= getCols(), "");
-        _active[pos.row].setCells(pos.col, n, cell);
+
+        for (uint16_t i = 0; i != n; ++i) {
+            setCell(pos.right(i), cell, false);
+        }
     }
 
-    void setCell(Pos pos, const Cell & cell) {
+    void setCell(Pos pos, const Cell & cell, bool autoWrap) {
         ASSERT(cell.seq.lead() != NUL, "");
         ASSERT(pos.row < getRows(), "");
         ASSERT(pos.col < getCols(), "");
 
-        if (_active[pos.row].setCell(pos.col, cell)) {
+        if (_active[pos.row].setCell(pos.col, cell, autoWrap)) {
             if (_selectMarker != _selectDelimiter) {
                 // There is a selection
                 APos b, e;
@@ -743,6 +824,14 @@ public:
                 cursor.row = rows - 1;
             }
         }
+
+        _active.shrink_to_fit();
+
+        resetMargins();
+        clearSelection();
+        damageAll();
+
+        ASSERT(getRows() == rows && getCols() == cols, "");
     }
 
     void resizeSmart(uint16_t rows, uint16_t cols, Pos & cursor) {
@@ -752,6 +841,9 @@ public:
         //
         // Cols
         //
+
+#if 0
+        // Clip / unclip
 
         if (cols != _cols) {
             for (auto & line : _active) {
@@ -764,6 +856,73 @@ public:
 
             _cols = cols;
         }
+#else
+        // Re-flow
+
+        if (cols > _cols) {
+            const uint16_t deltaCols = cols - _cols;
+
+            uint16_t availability;
+            uint16_t r = 0;
+
+            while (r != _active.size()) {
+                _active[r].resizeHard(cols);
+
+                if (r != 0 && _active[r].isContinuation()) {
+                    if (availability < _active[r].getWrap()) {
+                        // Partial consumption.
+                        _active[r].unwrapTo(_active[r - 1], availability);
+                        availability = cols - _active[r].getWrap();
+                        ++r;
+                    }
+                    else {
+                        // Complete consumption - erase line.
+                        _active[r].unwrapTo(_active[r - 1], _active[r].getWrap());
+                        _active.erase(_active.begin() + r);
+                        availability -= _active[r].getWrap();
+
+                        if (cursor.row >= r) { --cursor.row; }
+                    }
+                }
+                else {
+                    availability = deltaCols;
+                    ++r;
+                }
+            }
+
+            _cols = cols;
+        }
+        else if (cols < _cols) {
+            uint16_t r = 0;
+
+            while (r != _active.size()) {
+                if (_active[r].getWrap() > cols) {
+                    // The current line has wrappable content that would otherwise
+                    // be clipped.
+
+                    uint16_t excess = _active[r].getWrap() - cols;
+
+                    if (r + 1 == _active.size() || !_active[r + 1].isContinuation()) {
+                        _active.insert(_active.begin() + r + 1, Line(0, true));
+
+                        if (cursor.row >= r + 1) { ++cursor.row; }
+                    }
+
+                    _active[r + 1].wrapFrom(_active[r], excess);
+                }
+
+                _active[r].resizeHard(cols);
+
+                ++r;
+            }
+
+            if (cols <= cursor.col) {           // XXX Not good enough
+                cursor.col = cols - 1;
+            }
+
+            _cols = cols;
+        }
+#endif
 
         //
         // Rows
@@ -822,20 +981,22 @@ public:
             }
             else {
                 // Preserve the top line
-                //_scrollOffset = _scrollOffset - delta;
+                //_scrollOffset = _scrollOffset - delta;        // XXX
                 ASSERT(!(_scrollOffset > _history.size()), "");
             }
         }
 
-        _marginBegin = 0;
-        _marginEnd   = rows;
-        _barDamage   = true;
-
         _active.shrink_to_fit();
 
+        resetMargins();
         clearSelection();
-
         damageAll();
+
+        ASSERT(getRows() == rows && getCols() == cols, "");
+
+        // XXX temporary measures to avoid crash
+        if (cursor.row >= getRows()) { cursor.row = getRows() - 1; }
+        if (cursor.col >= getCols()) { cursor.col = getCols() - 1; }
     }
 
     void addLine() {
@@ -964,11 +1125,14 @@ public:
 
     void dump(std::ostream & ost) const {
         for (const auto & l : _active) {
+            ost << l.isContinuation() << " " << std::setw(3) << l.getWrap() << " \'";
+
             for (const auto & c : l) {
                 ost << c.seq;
             }
-            ost << '\\' << std::endl;
+            ost << "\'" << std::endl;
         }
+        ost << std::endl;
     }
 };
 

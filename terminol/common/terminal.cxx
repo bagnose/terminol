@@ -965,7 +965,9 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
         std::cerr << SGR::FG_GREEN << SGR::UNDERLINE << seq << SGR::RESET_ALL;
     }
 
-    if (_cursor.wrapNext && _modes.get(Mode::AUTO_WRAP)) {
+    bool autoWrap = _modes.get(Mode::AUTO_WRAP);
+
+    if (_cursor.wrapNext && autoWrap) {
         moveCursor(_cursor.pos.atCol(0));
 
         if (_cursor.pos.row == _buffer->getMarginEnd() - 1) {
@@ -974,6 +976,8 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
         else {
             moveCursor(_cursor.pos.down());
         }
+
+        _buffer->setContinuation(_cursor.pos.row);
     }
 
     ASSERT(_cursor.pos.col < _buffer->getCols(), "");
@@ -983,7 +987,7 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
         _buffer->insertCells(_cursor.pos, 1);
     }
 
-    _buffer->setCell(_cursor.pos, Cell::utf8(seq, _cursor.style));
+    _buffer->setCell(_cursor.pos, Cell::utf8(seq, _cursor.style), autoWrap);
 
     if (_cursor.pos.col == _buffer->getCols() - 1) {
         _cursor.wrapNext = true;
@@ -1484,7 +1488,7 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
                     Cell cell = Cell::ascii('E', _cursor.style);
                     for (uint16_t r = 0; r != _buffer->getRows(); ++r) {
                         for (uint16_t c = 0; c != _buffer->getCols(); ++c) {
-                            _buffer->setCell(Pos(r, c), cell);
+                            _buffer->setCell(Pos(r, c), cell, false);
                         }
                     }
                     break;
