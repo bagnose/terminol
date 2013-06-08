@@ -289,14 +289,6 @@ protected:
                 if (i != _windows.end()) { i->second->expose(e); }
                 break;
             }
-            /*
-               case XCB_GRAPHICS_EXPOSURE:
-               PRINT("Got graphics exposure");
-               break;
-               case XCB_NO_EXPOSURE:
-               PRINT("Got no exposure");
-               break;
-               */
             case XCB_ENTER_NOTIFY: {
                 auto e = reinterpret_cast<xcb_enter_notify_event_t *>(event);
                 auto i = _windows.find(e->event);

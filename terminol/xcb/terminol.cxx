@@ -140,14 +140,6 @@ protected:
                 _window.expose(
                         reinterpret_cast<xcb_expose_event_t *>(event));
                 break;
-                /*
-                   case XCB_GRAPHICS_EXPOSURE:
-                   PRINT("Got graphics exposure");
-                   break;
-                   case XCB_NO_EXPOSURE:
-                   PRINT("Got no exposure");
-                   break;
-                   */
             case XCB_ENTER_NOTIFY:
                 _window.enterNotify(
                         reinterpret_cast<xcb_enter_notify_event_t *>(event));
