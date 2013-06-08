@@ -1157,11 +1157,11 @@ void pathSingleLineSelection(cairo_t * cr,
     cairo_close_path(cr);
 }
 
-void pathDoubleLineSelection(cairo_t * cr,
-                             double x0, double x1, double x2, double x3,
-                             double y0, double y1, double y2,
-                             double i, double c,
-                             bool first) {
+void pathWrappedLineSelection(cairo_t * cr,
+                              double x0, double x1, double x2, double x3,
+                              double y0, double y1, double y2,
+                              double i, double c,
+                              bool first) {
     auto d = M_PI / 180.0;
 
     if (first) {
@@ -1266,7 +1266,7 @@ void Window::terminalDrawSelection(Pos  begin,
         if (topless)    { y0 = -1; }
         if (bottomless) { y2 = _height + 1; }
 
-        pathDoubleLineSelection(_cr, x0, x1, x2, x3, y0, y1, y2, halfWidth, curve, true);
+        pathWrappedLineSelection(_cr, x0, x1, x2, x3, y0, y1, y2, halfWidth, curve, true);
 
         cairo_set_source_rgba(_cr, bg[0], bg[1], bg[2], bg[3]);
         cairo_fill_preserve(_cr);
@@ -1274,7 +1274,7 @@ void Window::terminalDrawSelection(Pos  begin,
         cairo_set_source_rgba(_cr, fg[0], fg[1], fg[2], fg[3]);
         cairo_stroke(_cr);
 
-        pathDoubleLineSelection(_cr, x0, x1, x2, x3, y0, y1, y2, halfWidth, curve, false);
+        pathWrappedLineSelection(_cr, x0, x1, x2, x3, y0, y1, y2, halfWidth, curve, false);
 
         cairo_set_source_rgba(_cr, bg[0], bg[1], bg[2], bg[3]);
         cairo_fill_preserve(_cr);
