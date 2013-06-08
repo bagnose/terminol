@@ -352,19 +352,19 @@ protected:
             case XCB_SELECTION_CLEAR: {
                 auto e = reinterpret_cast<xcb_selection_clear_event_t *>(event);
                 auto i = _windows.find(e->owner);
-                if (i != _windows.end()) { i->second->selectionClear(e); } // XXX
+                if (i != _windows.end()) { i->second->selectionClear(e); }
                 break;
             }
             case XCB_SELECTION_NOTIFY: {
                 auto e = reinterpret_cast<xcb_selection_notify_event_t *>(event);
                 auto i = _windows.find(e->requestor);
-                if (i != _windows.end()) { i->second->selectionNotify(e); } // XXX
+                if (i != _windows.end()) { i->second->selectionNotify(e); }
                 break;
             }
             case XCB_SELECTION_REQUEST: {
                 auto e = reinterpret_cast<xcb_selection_request_event_t *>(event);
                 auto i = _windows.find(e->owner);
-                if (i != _windows.end()) { i->second->selectionRequest(e); } // XXX
+                if (i != _windows.end()) { i->second->selectionRequest(e); }
                 break;
             }
             default:
