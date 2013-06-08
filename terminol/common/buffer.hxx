@@ -44,8 +44,8 @@ public:
     //typedef uint8_t Tag;
 
 private:
-    struct LineInfo {
-        explicit LineInfo(std::vector<Cell> && cells_) :
+    struct Line {
+        explicit Line(std::vector<Cell> && cells_) :
             cells(cells_),
             refCount(1) {}
 
@@ -53,8 +53,8 @@ private:
         uint32_t          refCount;
     };
 
-    std::unordered_map<Tag, LineInfo> _lines;
-    size_t                            _totalRefCount;
+    std::unordered_map<Tag, Line> _lines;
+    size_t                        _totalRefCount;
 
 public:
     Deduper() : _lines(), _totalRefCount(0) {}
@@ -66,7 +66,7 @@ again:
         auto iter = _lines.find(tag);
 
         if (iter == _lines.end()) {
-            _lines.insert(std::make_pair(tag, LineInfo(std::move(cells))));
+            _lines.insert(std::make_pair(tag, Line(std::move(cells))));
         }
         else {
             auto & lineInfo = iter->second;
@@ -136,165 +136,165 @@ private:
 //
 //
 
-class Line {
-    uint16_t          _cols;        // May be more cells than this due to resize.
-    std::vector<Cell> _cells;
-    uint16_t          _damageBegin;
-    uint16_t          _damageEnd;
-
-    std::vector<Cell>::iterator begin() { return _cells.begin(); }
-    std::vector<Cell>::iterator end()   { return _cells.begin() + _cols; }
-
-public:
-    std::vector<Cell>::const_iterator begin() const { return _cells.begin(); }
-    std::vector<Cell>::const_iterator end()   const { return _cells.begin() + _cols; }
-
-    explicit Line(uint16_t cols) :
-        _cols(cols),
-        _cells(cols, Cell::blank())
-    {
-        damageAll();
-    }
-
-    Line(uint16_t cols, const std::vector<Cell> & cells) :
-        _cols(cols),
-        _cells(cells)
-    {
-        resize(cols);
-        damageAll();
-    }
-
-    const std::vector<Cell> & cells() const { return _cells; }
-
-    const Cell & getCell(uint16_t col) const {
-        ASSERT(col < _cols, "");
-        return _cells[col];
-    }
-
-    void getDamage(uint16_t & colBegin, uint16_t & colEnd) const {
-        colBegin = _damageBegin;
-        colEnd   = _damageEnd;
-    }
-
-    void insert(uint16_t col, uint16_t n) {
-        trim();
-
-        ASSERT(col + n <= _cells.size(), "");
-
-        std::copy_backward(begin() + col, end() - n, end());
-        std::fill(begin() + col, begin() + col + n, Cell::blank());
-
-        damageAdd(col, _cells.size());
-    }
-
-    void erase(uint16_t col, uint16_t n) {
-        trim();
-
-        ASSERT(col + n <= _cells.size(), "");
-
-        std::copy(begin() + col + n, end(), begin() + col);
-        std::fill(end() - n, end(), Cell::blank());
-
-        damageAdd(col, _cells.size());
-    }
-
-    void setCells(uint16_t col, uint16_t n, const Cell & cell) {
-        trim();
-
-        ASSERT(col + n <= _cells.size(), "");
-
-        std::fill(begin() + col, begin() + col + n, cell);
-
-        damageAdd(col, col + n);
-    }
-
-    bool setCell(uint16_t col, const Cell & cell) {
-        trim();
-
-        ASSERT(col < _cells.size(), "");
-        bool seqChanged = _cells[col].seq != cell.seq;
-        _cells[col] = cell;
-
-        damageAdd(col, col + 1);
-
-        return seqChanged;
-    }
-
-    void resize(uint16_t cols) {
-        if (_cells.size() < cols) {
-            uint16_t oldCols = _cells.size();
-            _cells.resize(cols, Cell::blank());
-            damageAdd(oldCols, cols);
-        }
-
-        _cols = cols;
-    }
-
-    void clear() {
-        trim();
-
-        std::fill(begin(), end(), Cell::blank());
-        damageAll();
-    }
-
-    void clearLeft(uint16_t endCol) {
-        trim();
-
-        std::fill(begin(), begin() + endCol, Cell::blank());
-        damageAdd(0, endCol);
-    }
-
-    void clearRight(uint16_t beginCol) {
-        trim();
-
-        std::fill(begin() + beginCol, end(), Cell::blank());
-        damageAdd(beginCol, _cells.size());
-    }
-
-    bool isBlank() const {
-        for (const auto & c : *this) {
-            if (c != Cell::blank()) { return false; }
-        }
-        return true;
-    }
-
-    void resetDamage() {
-        _damageBegin = _damageEnd = 0;
-    }
-
-    void damageAll() {
-        _damageBegin = 0;
-        _damageEnd   = _cells.size();
-    }
-
-    void damageAdd(uint16_t begin_, uint16_t end_) {
-        ASSERT(begin_ <= end_, "");
-        ASSERT(end_   <= _cells.size(), "");
-
-        if (_damageBegin == _damageEnd) {
-            // No damage yet.
-            _damageBegin = begin_;
-            _damageEnd   = end_;
-        }
-        else {
-            _damageBegin = std::min(_damageBegin, begin_);
-            _damageEnd   = std::max(_damageEnd,   end_);
-        }
-    }
-
-    void trim() {
-        if (_cells.size() != _cols) {
-            ASSERT(_cells.size() > _cols, "");
-            _cells.erase(begin() + _cols, end());
-        }
-    }
-};
-
-//
-//
-//
-
 class Buffer {
+    class Line {
+        uint16_t          _cols;        // May be more cells than this due to resize.
+        std::vector<Cell> _cells;
+        uint16_t          _damageBegin;
+        uint16_t          _damageEnd;
+
+        std::vector<Cell>::iterator begin() { return _cells.begin(); }
+        std::vector<Cell>::iterator end()   { return _cells.begin() + _cols; }
+
+    public:
+        std::vector<Cell>::const_iterator begin() const { return _cells.begin(); }
+        std::vector<Cell>::const_iterator end()   const { return _cells.begin() + _cols; }
+
+        explicit Line(uint16_t cols) :
+            _cols(cols),
+            _cells(cols, Cell::blank())
+        {
+            damageAll();
+        }
+
+        Line(uint16_t cols, const std::vector<Cell> & cells) :
+            _cols(cols),
+            _cells(cells)
+        {
+            resize(cols);
+            damageAll();
+        }
+
+        const std::vector<Cell> & cells() const { return _cells; }
+
+        const Cell & getCell(uint16_t col) const {
+            ASSERT(col < _cols, "");
+            return _cells[col];
+        }
+
+        void getDamage(uint16_t & colBegin, uint16_t & colEnd) const {
+            colBegin = _damageBegin;
+            colEnd   = _damageEnd;
+        }
+
+        void insert(uint16_t col, uint16_t n) {
+            trim();
+
+            ASSERT(col + n <= _cells.size(), "");
+
+            std::copy_backward(begin() + col, end() - n, end());
+            std::fill(begin() + col, begin() + col + n, Cell::blank());
+
+            damageAdd(col, _cells.size());
+        }
+
+        void erase(uint16_t col, uint16_t n) {
+            trim();
+
+            ASSERT(col + n <= _cells.size(), "");
+
+            std::copy(begin() + col + n, end(), begin() + col);
+            std::fill(end() - n, end(), Cell::blank());
+
+            damageAdd(col, _cells.size());
+        }
+
+        void setCells(uint16_t col, uint16_t n, const Cell & cell) {
+            trim();
+
+            ASSERT(col + n <= _cells.size(), "");
+
+            std::fill(begin() + col, begin() + col + n, cell);
+
+            damageAdd(col, col + n);
+        }
+
+        bool setCell(uint16_t col, const Cell & cell) {
+            trim();
+
+            ASSERT(col < _cells.size(), "");
+            bool seqChanged = _cells[col].seq != cell.seq;
+            _cells[col] = cell;
+
+            damageAdd(col, col + 1);
+
+            return seqChanged;
+        }
+
+        void resize(uint16_t cols) {
+            if (_cells.size() < cols) {
+                uint16_t oldCols = _cells.size();
+                _cells.resize(cols, Cell::blank());
+                damageAdd(oldCols, cols);
+            }
+
+            _cols = cols;
+        }
+
+        void clear() {
+            trim();
+
+            std::fill(begin(), end(), Cell::blank());
+            damageAll();
+        }
+
+        void clearLeft(uint16_t endCol) {
+            trim();
+
+            std::fill(begin(), begin() + endCol, Cell::blank());
+            damageAdd(0, endCol);
+        }
+
+        void clearRight(uint16_t beginCol) {
+            trim();
+
+            std::fill(begin() + beginCol, end(), Cell::blank());
+            damageAdd(beginCol, _cells.size());
+        }
+
+        bool isBlank() const {
+            for (const auto & c : *this) {
+                if (c != Cell::blank()) { return false; }
+            }
+            return true;
+        }
+
+        void resetDamage() {
+            _damageBegin = _damageEnd = 0;
+        }
+
+        void damageAll() {
+            _damageBegin = 0;
+            _damageEnd   = _cells.size();
+        }
+
+        void damageAdd(uint16_t begin_, uint16_t end_) {
+            ASSERT(begin_ <= end_, "");
+            ASSERT(end_   <= _cells.size(), "");
+
+            if (_damageBegin == _damageEnd) {
+                // No damage yet.
+                _damageBegin = begin_;
+                _damageEnd   = end_;
+            }
+            else {
+                _damageBegin = std::min(_damageBegin, begin_);
+                _damageEnd   = std::max(_damageEnd,   end_);
+            }
+        }
+
+        void trim() {
+            if (_cells.size() != _cols) {
+                ASSERT(_cells.size() > _cols, "");
+                _cells.erase(begin() + _cols, end());
+            }
+        }
+    };
+
+    //
+    //
+    //
+
     struct APos {
         APos() : row(0), col(0) {}
         APos(uint32_t row_, uint16_t col_) : row(row_), col(col_) {}
