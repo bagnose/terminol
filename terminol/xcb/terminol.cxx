@@ -115,7 +115,7 @@ protected:
     }
 
     void dispatch(uint8_t response_type, xcb_generic_event_t * event) {
-        switch (response_type & ~0x80) {
+        switch (response_type) {
             case XCB_KEY_PRESS:
                 _window.keyPress(
                         reinterpret_cast<xcb_key_press_event_t *>(event));
