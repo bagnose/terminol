@@ -1492,7 +1492,6 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
         case ')':
             switch (code) {
                 case '0': // set specg1
-                    PRINT("\nG1 = SPECIAL");
                     _cursor.g1 = CS_SPECIAL;
                     break;
                 case '1': // set altg1
@@ -1502,11 +1501,9 @@ void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
                     NYI("Alternate Special Character rom");
                     break;
                 case 'A': // set ukg0
-                    PRINT("\nG1 = UK");
                     _cursor.g1 = CS_UK;
                     break;
                 case 'B': // set usg0
-                    PRINT("\nG1 = US");
                     _cursor.g1 = CS_US;
                     break;
                 case '<': // Multinational character set
