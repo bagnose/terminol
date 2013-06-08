@@ -973,6 +973,13 @@ void Window::terminalSetTitle(const std::string & title) throw () {
     updateTitle();
 }
 
+void Window::terminalBeep() throw () {
+    xcb_icccm_wm_hints_t wmHints;
+    wmHints.flags = 0;
+    xcb_icccm_wm_hints_set_urgency(&wmHints);
+    xcb_icccm_set_wm_hints(_basics.connection(), _window, &wmHints);
+}
+
 void Window::terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () {
     const auto BORDER_THICKNESS = _config.getBorderThickness();
     const auto SCROLLBAR_WIDTH  = _config.getScrollbarWidth();

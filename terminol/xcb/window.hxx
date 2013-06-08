@@ -135,6 +135,7 @@ protected:
     void terminalResizeFont(int delta) throw ();
     void terminalResetTitle() throw ();
     void terminalSetTitle(const std::string & title) throw ();
+    void terminalBeep() throw ();
     void terminalResizeBuffer(uint16_t rows, uint16_t cols) throw ();
     bool terminalFixDamageBegin(bool internal) throw ();
     void terminalDrawBg(Pos    pos,

@@ -1016,7 +1016,7 @@ void Terminal::machineControl(uint8_t c) throw () {
 
     switch (c) {
         case BEL:
-            PRINT("BEL!!");
+            _observer.terminalBeep();
             break;
         case HT:
             tabCursor(TabDir::FORWARD, 1);
