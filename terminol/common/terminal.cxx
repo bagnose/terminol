@@ -192,6 +192,7 @@ void Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
                             _modes.get(Mode::ALT_SENDS_ESC),
                             str)) {
             write(&str.front(), str.size());
+            if (_modes.get(Mode::ECHO)) { echo(&str.front(), str.size()); }
         }
     }
 }
@@ -885,6 +886,42 @@ void Terminal::write(const uint8_t * data, size_t size) {
         _writeBuffer.resize(oldSize + size);
         std::copy(data, data + size, &_writeBuffer[oldSize]);
     }
+}
+
+void Terminal::echo(const uint8_t * data, size_t size) {
+    _dispatch = true;
+
+    while (size != 0) {
+        uint8_t c = *data;
+
+        if (c == ESC) {
+            processRead(reinterpret_cast<const uint8_t *>("^["), 2);
+        }
+        else if (c < SPACE) {
+            if (c != LF && c != CR && c != HT) {
+                c |= '\x40';
+                processRead(reinterpret_cast<const uint8_t *>("^"), 1);
+            }
+            processRead(&c, 1);
+        }
+        else {
+            break;
+        }
+
+        ++data; --size;
+    }
+
+    if (size != 0) {
+        processRead(data, size);
+    }
+
+    if (!_config.getSyncTty()) {
+        fixDamage(Pos(0, 0),
+                  Pos(_buffer->getRows(), _buffer->getCols()),
+                  Damager::TTY);
+    }
+
+    _dispatch = false;
 }
 
 void Terminal::resetAll() {
@@ -1928,7 +1965,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     _modes.setTo(Mode::INSERT, set);
                     break;
                 case 12: // SRM - Send/Receive
-                    _modes.setTo(Mode::ECHO, set);      // XXX correct sense
+                    _modes.setTo(Mode::ECHO, !set);
                     break;
                 case 20: // LNM - Linefeed/new line
                     _modes.setTo(Mode::CR_ON_LF, set);

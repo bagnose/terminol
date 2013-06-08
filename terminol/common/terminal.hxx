@@ -205,6 +205,7 @@ protected:
     void      drawSelection();
 
     void      write(const uint8_t * data, size_t size);
+    void      echo(const uint8_t * data, size_t size);
 
     void      resetAll();
 
