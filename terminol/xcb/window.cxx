@@ -1068,7 +1068,7 @@ void Window::terminalDrawFg(Pos             pos,
         cairo_rectangle(_cr, x, y, w, h);
         cairo_clip(_cr);
 
-        auto alpha = attrs.get(Attr::CONCEAL) ? 0.2 : 1.0;
+        auto alpha = attrs.get(Attr::CONCEAL) ? 0.1 : attrs.get(Attr::FAINT) ? 0.5 : 1.0;
         auto fg    = getColor(color);
         cairo_set_source_rgba(_cr, fg.r, fg.g, fg.b, alpha);
 

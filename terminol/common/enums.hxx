@@ -71,6 +71,7 @@ std::ostream & operator << (std::ostream & ost, Mode mode);
 
 enum class Attr {
     BOLD,
+    FAINT,
     ITALIC,
     UNDERLINE,
     BLINK,

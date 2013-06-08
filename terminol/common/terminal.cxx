@@ -1562,15 +1562,11 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
             case 0: // Reset/Normal
                 _cursor.style = Style();
                 break;
-            case 1: // Bold
+            case 1: // Bold or increased intensity
                 _cursor.style.attrs.set(Attr::BOLD);
-                // Normal -> Bright.
-                //if (_cursor.style.fg < 8) { _cursor.style.fg += 8; }
                 break;
             case 2: // Faint (low/decreased intensity)
-                _cursor.style.attrs.unset(Attr::BOLD);
-                // Bright -> Normal.
-                //if (_cursor.style.fg >= 8 && _cursor.style.fg < 16) { _cursor.style.fg -= 8; }
+                _cursor.style.attrs.set(Attr::FAINT);
                 break;
             case 3: // Italic: on
                 _cursor.style.attrs.set(Attr::ITALIC);
@@ -1582,14 +1578,11 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
             case 6: // Blink: rapid
                 _cursor.style.attrs.set(Attr::BLINK);
                 break;
-            case 7: // Image: Negative
+            case 7: // Inverse (negative)
                 _cursor.style.attrs.set(Attr::INVERSE);
                 break;
             case 8: // Conceal (not widely supported)
                 _cursor.style.attrs.set(Attr::CONCEAL);
-                break;
-            case 9: // Crossed-out (not widely supported)
-                NYI("Crossed-out");
                 break;
             case 10: // Primary (default) font
                 NYI("Primary (default) font");
@@ -1605,22 +1598,11 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
             case 19: // 9th alternative font
                 NYI(nthStr(v - 10) << " alternative font");
                 break;
-            case 20: // Fraktur (hardly ever supported)
-                NYI("Fraktur");
-                break;
-            case 21:
-                // Bold: off or Underline: Double (bold off not widely supported,
-                //                                 double underline hardly ever)
-                _cursor.style.attrs.unset(Attr::BOLD);
-                // Bright -> Normal.
-                //if (_cursor.style.fg >= 8 && _cursor.style.fg < 16) { _cursor.style.fg -= 8; }
-                break;
             case 22: // Normal color or intensity (neither bold nor faint)
                 _cursor.style.attrs.unset(Attr::BOLD);
-                // Bright -> Normal.        XXX is this right?
-                //if (_cursor.style.fg >= 8 && _cursor.style.fg < 16) { _cursor.style.fg -= 8; }
+                _cursor.style.attrs.unset(Attr::FAINT);
                 break;
-            case 23: // Not italic, not Fraktur
+            case 23: // Not italic
                 _cursor.style.attrs.unset(Attr::ITALIC);
                 break;
             case 24: // Underline: None (not singly or doubly underlined)
@@ -1629,17 +1611,11 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
             case 25: // Blink: off
                 _cursor.style.attrs.unset(Attr::BLINK);
                 break;
-            case 26: // Reserved?
-                _cursor.style.attrs.set(Attr::INVERSE);
-                break;
-            case 27: // Image: Positive
+            case 27: // Clear inverse
                 _cursor.style.attrs.unset(Attr::INVERSE);
                 break;
-            case 28: // Reveal (conceal off - not widely supported)
+            case 28: // Reveal (conceal off)
                 _cursor.style.attrs.unset(Attr::CONCEAL);
-                break;
-            case 29: // Not crossed-out (not widely supported)
-                NYI("Crossed-out");
                 break;
                 // 30..37 (set foreground colour - handled separately)
             case 38:
@@ -1659,7 +1635,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                                 // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB foreground color
                                 _cursor.style.fg =
                                     UColor::direct(args[i + 1], args[i + 2], args[i + 3]);
-                                i += 3;     // FIXME 4??
+                                i += 3;
                             }
                             else {
                                 ERROR("Insufficient args");
@@ -1779,27 +1755,6 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
             case 49:
                 _cursor.style.bg = UColor::background();
                 break;
-                // 50 Reserved
-            case 51: // Framed
-                NYI("Framed");
-                break;
-            case 52: // Encircled
-                NYI("Encircled");
-                break;
-            case 53: // Overlined
-                NYI("Overlined");
-                break;
-            case 54: // Not framed or encircled
-                NYI("Not framed or encircled");
-                break;
-            case 55: // Not overlined
-                NYI("Not overlined");
-            case 99:
-                NYI("Default BRIGHT fg");
-                break;
-            case 109:
-                NYI("Default BRIGHT bg");
-                break;
 
             default:
                 // 56..59 Reserved
@@ -1810,7 +1765,6 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 if (v >= 30 && v < 38) {
                     // normal fg
                     _cursor.style.fg = UColor::indexed(v - 30);
-                    // BOLD -> += 8
                 }
                 else if (v >= 40 && v < 48) {
                     // normal bg

@@ -94,6 +94,8 @@ std::ostream & operator << (std::ostream & ost, Attr attr) {
     switch (attr) {
         case Attr::BOLD:
             return ost << "BOLD";
+        case Attr::FAINT:
+            return ost << "FAINT";
         case Attr::ITALIC:
             return ost << "ITALIC";
         case Attr::UNDERLINE:
