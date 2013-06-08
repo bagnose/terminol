@@ -220,9 +220,9 @@ void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
         }
         else if (pos.row < 223 && pos.col < 223) {
             ost << ESC << "[M"
-                << char(32 + num)
-                << char(32 + pos.col + 1)
-                << char(32 + pos.row + 1);
+                << static_cast<char>(32 + num)
+                << static_cast<char>(32 + pos.col + 1)
+                << static_cast<char>(32 + pos.row + 1);
         }
         else {
             // Couldn't deliver it
