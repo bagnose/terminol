@@ -74,7 +74,6 @@ inline bool operator != (UColor lhs, UColor rhs) { return !(lhs == rhs); }
 
 struct Style {
     AttrSet attrs;    // 1 byte
-    uint8_t padding;  // 1 byte - helpful ???
     UColor  fg;       // 4 bytes
     UColor  bg;       // 4 bytes
 
@@ -100,8 +99,8 @@ inline bool operator != (const Style & lhs, const Style & rhs) {
 //
 
 struct Cell {
-    Style     style;        // 10 bytes
-    utf8::Seq seq;          // 4  bytes
+    Style     style;        // 9 bytes
+    utf8::Seq seq;          // 4 bytes
 
     static Cell blank(const Style & style = Style()) {
         return Cell(style, utf8::Seq(SPACE));
