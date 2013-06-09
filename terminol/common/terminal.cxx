@@ -116,7 +116,7 @@ Terminal::Terminal(I_Observer   & observer,
     _modes.set(Mode::ALT_SENDS_ESC);
 
     for (size_t i = 0; i != _tabs.size(); ++i) {
-        _tabs[i] = (i + 1) % TAB_SIZE == 0;
+        _tabs[i] = i % TAB_SIZE == 0;
     }
 }
 
@@ -167,7 +167,7 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
 
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {
-        _tabs[i] = (i + 1) % TAB_SIZE == 0;
+        _tabs[i] = i % TAB_SIZE == 0;
     }
 }
 
@@ -934,7 +934,7 @@ void Terminal::resetAll() {
     _modes.set(Mode::ALT_SENDS_ESC);
 
     for (size_t i = 0; i != _tabs.size(); ++i) {
-        _tabs[i] = (i + 1) % TAB_SIZE == 0;
+        _tabs[i] = i % TAB_SIZE == 0;
     }
 
     _cursor.reset();
