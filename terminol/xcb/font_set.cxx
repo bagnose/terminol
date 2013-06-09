@@ -11,37 +11,17 @@ FontSet::FontSet(const Config & config,
     _config(config),
     _basics(basics)
 {
-#if 1
-    const char * fontName = "MesloLGM";
-    int          size     = 15;
-#endif
-
-#if 0
-    const char * fontName = "inconsolata";
-    int          size     = 17;
-#endif
-
-#if 0
-    const char * fontName = "Monaco";
-    int          size     = 15;
-#endif
-
-#if 0
-    const char * fontName = "pragmatapro";
-    int          size     = 17;
-#endif
-
-    //const auto & str = config.getFontName();
-    //_normal = pango_font_description_from_string(str.c_str());
+    const auto & name = config.getFontName();
+    int size = config.getFontSize();
 
 
-    _normal = load(fontName, size, true, false, false);
+    _normal = load(name, size, true, false, false);
     auto normalGuard = scopeGuard([&] { unload(_normal); });
-    _bold = load(fontName, size, false, true, false);
+    _bold = load(name, size, false, true, false);
     auto boldGuard = scopeGuard([&] { unload(_bold); });
-    _italic = load(fontName, size, false, false, true);
+    _italic = load(name, size, false, false, true);
     auto italicGuard = scopeGuard([&] { unload(_italic); });
-    _italicBold = load(fontName, size, false, true, true);
+    _italicBold = load(name, size, false, true, true);
     auto italicBoldGuard = scopeGuard([&] { unload(_italicBold); });
 
     // Dismiss guards

@@ -4,6 +4,7 @@
 #include "terminol/xcb/color_set.hxx"
 #include "terminol/xcb/font_set.hxx"
 #include "terminol/xcb/basics.hxx"
+#include "terminol/xcb/config.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/key_map.hxx"
 #include "terminol/support/debug.hxx"
@@ -424,9 +425,10 @@ void showHelp(const std::string & progName, std::ostream & ost) {
 } // namespace {anonymous}
 
 int main(int argc, char * argv[]) {
-    // Command line
-
     Config config;
+    readConfig(config);
+
+    // Command line
 
     for (int i = 1; i != argc; ++i) {
         std::string arg = argv[i];

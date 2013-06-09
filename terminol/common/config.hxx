@@ -21,6 +21,7 @@ private:
     // flow control?
 
     std::string _fontName;
+    int         _fontSize;
     std::string _geometryString;
     std::string _termName;
     bool        _scrollWithHistory;
@@ -53,11 +54,13 @@ private:
     int         _borderThickness;
 
     std::string _socketPath;
+    bool        _serverFork;
 
 public:
     Config();
 
     void setFontName(const std::string & val) { _fontName = val; }
+    void setFontSize(int val) { _fontSize = val; }
     void setGeometryString(const std::string & val) { _geometryString = val; }
     void setTermName(const std::string & val) { _termName = val; }
     void setScrollOnTtyOutput(bool val) { _scrollOnTtyOutput = val; }
@@ -69,8 +72,10 @@ public:
     void setScrollBackHistory(size_t val) { _scrollBackHistory = val; }
     void setTraceTty(bool val) { _traceTty = val; }
     void setSyncTty(bool val) { _syncTty = val; }
+    void setServerFork(bool val) { _serverFork = val; }
 
     const std::string & getFontName() const { return _fontName; }
+    int                 getFontSize() const { return _fontSize; }
     const std::string & getGeometryString() const { return _geometryString; }
     const std::string & getTermName() const { return _termName; }
     bool                getScrollWithHistory() const { return _scrollWithHistory; }
@@ -116,7 +121,7 @@ public:
     uint32_t            getDoubleClickTimeout()    const { return 400; }
 
     const std::string & getSocketPath()            const { return _socketPath; }
-    bool                getServerFork()            const { return true; }
+    bool                getServerFork()            const { return _serverFork; }
 
 protected:
     static Color decodeHexColor(const std::string & hex);

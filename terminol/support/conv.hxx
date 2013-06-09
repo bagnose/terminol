@@ -29,6 +29,16 @@ template <typename T> T unstringify(const std::string & str) {
     else { FATAL("Failed to convert: " << str); }   // FIXME use exception
 }
 
+template <> inline bool unstringify<>(const std::string & str) {
+    if (str == "0" || str == "false" || str == "False") {
+        return false;
+    }
+    else if (str == "1" || str == "true" || str == "True") {
+        return true;
+    }
+    else { FATAL("Failed to convert: " << str); }   // FIXME use exception
+}
+
 /*
 // Explicit Sign
 template <typename T> std::string expSignStr(T t) {

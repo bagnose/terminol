@@ -162,8 +162,8 @@ const Color COLOURS_SOLARIZED_LIGHT[16] = {
 //
 
 Config::Config() :
-    //_fontName("inconsolata:pixelsize=18"),
-    _fontName("MesloLGM:pixelsize=15"),
+    _fontName("MesloLGM"),
+    _fontSize(15),
     _geometryString(),
     _termName("xterm-256color"),
     _scrollWithHistory(false),
@@ -184,7 +184,9 @@ Config::Config() :
     //
     _scrollbarWidth(8),
     //
-    _borderThickness(1)
+    _borderThickness(1),
+    //
+    _serverFork(true)
 {
     switch (6) {
         case 0:     // LINUX
