@@ -161,7 +161,7 @@ class Buffer {
             _cols(cols),
             _cells(cells)
         {
-            resize(cols);
+            resizeSoft(cols);
             damageAll();
         }
 
@@ -221,7 +221,17 @@ class Buffer {
             return seqChanged;
         }
 
-        void resize(uint16_t cols) {
+        void resizeHard(uint16_t cols) {
+            uint16_t oldCols = _cells.size();
+            _cells.resize(cols, Cell::blank());
+            if (oldCols < cols) {
+                damageAdd(oldCols, cols);
+            }
+
+            _cols = cols;
+        }
+
+        void resizeSoft(uint16_t cols) {
             if (_cells.size() < cols) {
                 uint16_t oldCols = _cells.size();
                 _cells.resize(cols, Cell::blank());
@@ -707,20 +717,51 @@ public:
         }
     }
 
-    int16_t resize(uint16_t rows, uint16_t cols, uint16_t cursorRow) {
+    void resizeDumb(uint16_t rows, uint16_t cols, Pos & cursor) {
         ASSERT(rows != 0, "");
         ASSERT(cols != 0, "");
 
-        int16_t delta = 0;
+        if (cols != _cols) {
+            for (auto & line : _active) {
+                line.resizeHard(cols);
+            }
+
+            if (cols <= cursor.col) {
+                cursor.col = cols - 1;
+            }
+
+            _cols = cols;
+        }
+
+        if (rows > getRows()) {
+            _active.resize(rows, Line(_cols));
+        }
+        else if (rows < getRows()) {
+            _active.erase(_active.begin() + rows, _active.end());
+
+            if (rows <= cursor.row) {
+                cursor.row = rows - 1;
+            }
+        }
+    }
+
+    void resizeSmart(uint16_t rows, uint16_t cols, Pos & cursor) {
+        ASSERT(rows != 0, "");
+        ASSERT(cols != 0, "");
 
         //
         // Cols
         //
 
-        if (cols != getCols()) {
+        if (cols != _cols) {
             for (auto & line : _active) {
-                line.resize(cols);
+                line.resizeSoft(cols);
             }
+
+            if (cols <= cursor.col) {
+                cursor.col = cols - 1;
+            }
+
             _cols = cols;
         }
 
@@ -733,7 +774,7 @@ public:
 
             while (!_history.empty() && getRows() < rows) {
                 unbump();
-                ++delta;
+                ++cursor.row;
             }
 
             // And resize the container to obtain the rest.
@@ -743,7 +784,7 @@ public:
         else if (rows < getRows()) {
             // Remove blanks lines from the back.
             while (getRows() != rows) {
-                if (_active.back().isBlank() && cursorRow != _active.size() - 1) {
+                if (_active.back().isBlank() && cursor.row != _active.size() - 1) {
                     _active.pop_back();
                 }
                 else {
@@ -751,7 +792,12 @@ public:
                 }
             }
 
-            delta = std::max(-cursorRow, rows - getRows());
+            if (getRows() - rows < cursor.row) {
+                cursor.row -= getRows() - rows;
+            }
+            else {
+                cursor.row = 0;
+            }
 
             if (_historyLimit == 0) {
                 // Optimisation, just erase lines if they aren't going into history.
@@ -776,7 +822,7 @@ public:
             }
             else {
                 // Preserve the top line
-                _scrollOffset = _scrollOffset - delta;
+                //_scrollOffset = _scrollOffset - delta;
                 ASSERT(!(_scrollOffset > _history.size()), "");
             }
         }
@@ -790,8 +836,6 @@ public:
         clearSelection();
 
         damageAll();
-
-        return delta;
     }
 
     void addLine() {

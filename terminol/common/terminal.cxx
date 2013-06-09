@@ -139,31 +139,13 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     // position on the primary buffer while we are using the alternative
     // buffer. However, it kinda seems that urxvt works this way.
 
-    auto priCursor = _cursor.pos.row;
-    auto altCursor = _savedCursor.pos.row;
+    auto priCursor = &_cursor.pos;
+    auto altCursor = &_savedCursor.pos;
 
     if (_buffer != &_priBuffer) { std::swap(priCursor, altCursor); }
 
-    auto cursorAdj      = _priBuffer.resize(rows, cols, priCursor);
-    auto savedCursorAdj = _altBuffer.resize(rows, cols, altCursor);
-
-    if (_buffer != &_priBuffer) { std::swap(cursorAdj, savedCursorAdj); }
-
-    // Note, we mustn't call moveCursor()/damageCursor() here because:
-    //  - the old coordinates might not be valid
-    //  - it will clear wrapNext, if set
-
-    _cursor.pos.row += cursorAdj;
-    _cursor.pos.col  = clamp<uint16_t>(_cursor.pos.col, 0, cols - 1);
-
-    ASSERT(_cursor.pos.row < rows, "");
-    ASSERT(_cursor.pos.col < cols, "");
-
-    _savedCursor.pos.row += savedCursorAdj;
-    _savedCursor.pos.col  = clamp<uint16_t>(_cursor.pos.col, 0, cols - 1);
-
-    ASSERT(_savedCursor.pos.row < rows, "");
-    ASSERT(_savedCursor.pos.col < cols, "");
+    _priBuffer.resizeSmart(rows, cols, *priCursor);
+    _altBuffer.resizeDumb(rows, cols, *altCursor);
 
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {
