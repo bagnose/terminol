@@ -166,7 +166,7 @@ public:
 
     const std::vector<Cell> & cells() const { return _cells; }
 
-    const Cell & nth(uint16_t col) const {
+    const Cell & getCell(uint16_t col) const {
         ASSERT(col < _cols, "");
         return _cells[col];
     }
@@ -506,7 +506,7 @@ public:
             return pos.col < cells.size() ? cells[pos.col] : BLANK;
         }
         else {
-            return _active[pos.row - _scrollOffset].nth(pos.col);
+            return _active[pos.row - _scrollOffset].getCell(pos.col);
         }
     }
 
@@ -536,7 +536,7 @@ public:
         else {
             uint16_t r = pos.row - _history.size();
             ASSERT(r < getRows(), r << " < " << getRows());
-            return _active[r].nth(pos.col);
+            return _active[r].getCell(pos.col);
         }
     }
 
