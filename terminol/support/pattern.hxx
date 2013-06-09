@@ -29,7 +29,7 @@ public:
 
     void dismiss() { _active = false; }
 
-    ScopeGuard              ()                   = delete;      // XXX necessary?
+    ScopeGuard              ()                   = delete;
     ScopeGuard              (const ScopeGuard &) = delete;
     ScopeGuard & operator = (const ScopeGuard &) = delete;
 
