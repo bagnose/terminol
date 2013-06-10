@@ -56,15 +56,15 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length length) {
                             // SOS/PM/APC
                             _state = State::IGNORE;
                         }
-                        if (lead >= SPACE && lead <= '/') {
+                        else if (lead >= SPACE && lead <= '/') {
                             _state = State::SPECIAL;
                         }
                         else if ((lead >= '0' && lead <= 'O') ||
-                            (lead >= 'Q' && lead <= 'W') ||
-                            lead == 'Y' ||
-                            lead == 'Z' ||
-                            lead == '\\' ||
-                            (lead >= '`' && lead <= '~'))
+                                 (lead >= 'Q' && lead <= 'W') ||
+                                 lead == 'Y' ||
+                                 lead == 'Z' ||
+                                 lead == '\\' ||
+                                 (lead >= '`' && lead <= '~'))
                         {
                             _observer.machineEscape(lead);
                             _escSeq.clear();
@@ -73,65 +73,57 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length length) {
                         else if (lead == DEL) {
                             // Ignore
                         }
-                        else if (lead <= ETB ||
-                                 lead == EM ||
-                                 (lead >= FS && lead <= US))
+                        else if (lead <= ETB || lead == EM || (lead >= FS && lead <= US))
                         {
                             _observer.machineControl(lead);
                         }
+                        else if (lead == ESC) {
+                            _escSeq.clear();
+                        }
                         else {
-                            ERROR("Unreachable");
+                            ERROR("Unreachable: " << Char(lead));
                         }
                         break;
                 }
             }
             else {
-                PRINT("Unexpected UTF-8: " << seq);
+                PRINT("Unexpected UTF-8 inside escape: " << seq);
             }
             break;
         case State::CSI:
             ASSERT(!_escSeq.empty(), "");
             if (length == utf8::Length::L1) {
-                if (lead < SPACE) {
+                if (lead <= ETB || lead == EM || (lead >= FS && lead <= US)) {
                     ASSERT(length == utf8::Length::L1, "");
                     _observer.machineControl(lead);
                 }
-                else if (lead == '?') {
+                else if (lead == '<') { // 0x3C
+                }
+                else if (lead == '=') { // 0x3D
+                }
+                else if (lead == '>') { // 0x3E
+                }
+                else if (lead == '?') { // 0x3F
                     // XXX For now put the '?' into _escSeq because
                     // processCsi is expecting it.
                     std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
-                    //terminal->escape_flags |= ESC_FLAG_WHAT;
-                }
-                else if (lead == '>') {
-                    //terminal->escape_flags |= ESC_FLAG_GT;
-                }
-                else if (lead == '!') {
-                    //terminal->escape_flags |= ESC_FLAG_BANG;
-                }
-                else if (lead == '$') {
-                    //terminal->escape_flags |= ESC_FLAG_CASH;
-                }
-                else if (lead == '\'') {
-                    //terminal->escape_flags |= ESC_FLAG_SQUOTE;
-                }
-                else if (lead == '"') {
-                    //terminal->escape_flags |= ESC_FLAG_DQUOTE;
-                }
-                else if (lead == ' ') {
-                    //terminal->escape_flags |= ESC_FLAG_SPACE;
                 }
                 else {
                     std::copy(seq.bytes, seq.bytes + length, std::back_inserter(_escSeq));
                 }
 
-                if (lead >= 0x40 && lead < 0x7F) {
+                if (lead >= 0x40 && lead <= 0x7E) {
                     processCsi(_escSeq);
                     _escSeq.clear();
                     _state = State::NORMAL;
                 }
+                else if (lead == ESC) {
+                    _escSeq.clear();
+                    _state = State::ESCAPE;
+                }
             }
             else {
-                PRINT("Unexpected UTF-8: " << seq);
+                PRINT("Unexpected UTF-8 inside CSI: " << seq);
             }
             break;
         case State::INNER:
