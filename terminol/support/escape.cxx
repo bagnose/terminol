@@ -4,70 +4,71 @@
 
 namespace {
 
-const char * const SGR_TABLE[] = {
-    "\033[0m",      // reset all
+const int32_t SGR_TABLE[] = {
+    0,      // reset all
 
-    "\033[1m",      // bold
-    "\033[2m",      // faint
-    "\033[3m",      // italic
-    "\033[4m",      // underline
-    "\033[5m",      // blink slow
-    "\033[6m",      // blink rapid
-    "\033[7m",      // inverse / negative
-    "\033[8m",      // conceal
+    1,      // bold
+    2,      // faint
+    3,      // italic
+    4,      // underline
+    5,      // blink slow
+    6,      // blink rapid
+    7,      // inverse / negative
+    8,      // conceal
 
-    "\033[22m",     // clear weight
-    "\033[23m",     // clear slant
-    "\033[24m",     // clear underline
-    "\033[25m",     // clear blink
-    "\033[27m",     // clear inverse
-    "\033[28m",     // clear conceal
+    22,     // clear weight
+    23,     // clear slant
+    24,     // clear underline
+    25,     // clear blink
+    27,     // clear inverse
+    28,     // clear conceal
 
-    "\033[30m",     // fg black
-    "\033[31m",     // fg red
-    "\033[32m",     // fg green
-    "\033[33m",     // fg yellow
-    "\033[34m",     // fg blue
-    "\033[35m",     // fg magenta
-    "\033[36m",     // fg cyan
-    "\033[37m",     // fg white
+    30,     // fg black
+    31,     // fg red
+    32,     // fg green
+    33,     // fg yellow
+    34,     // fg blue
+    35,     // fg magenta
+    36,     // fg cyan
+    37,     // fg white
 
-    "\033[39m",     // fg default
+    39,     // fg default
 
-    "\033[40m",     // bg black
-    "\033[41m",     // bg red
-    "\033[42m",     // bg green
-    "\033[43m",     // bg yellow
-    "\033[44m",     // bg blue
-    "\033[45m",     // bg magenta
-    "\033[46m",     // bg cyan
-    "\033[47m",     // bg white
+    40,     // bg black
+    41,     // bg red
+    42,     // bg green
+    43,     // bg yellow
+    44,     // bg blue
+    45,     // bg magenta
+    46,     // bg cyan
+    47,     // bg white
 
-    "\033[49m",     // bg default
+    49,     // bg default
 
-    "\033[90m",     // fg bright black
-    "\033[91m",     // fg bright red
-    "\033[92m",     // fg bright green
-    "\033[93m",     // fg bright yellow
-    "\033[94m",     // fg bright blue
-    "\033[95m",     // fg bright magenta
-    "\033[96m",     // fg bright cyan
-    "\033[97m",     // fg bright white
+    90,     // fg bright black
+    91,     // fg bright red
+    92,     // fg bright green
+    93,     // fg bright yellow
+    94,     // fg bright blue
+    95,     // fg bright magenta
+    96,     // fg bright cyan
+    97,     // fg bright white
 
-    "\033[100m",    // bg bright black
-    "\033[101m",    // bg bright red
-    "\033[102m",    // bg bright green
-    "\033[103m",    // bg bright yellow
-    "\033[104m",    // bg bright blue
-    "\033[105m",    // bg bright magenta
-    "\033[106m",    // bg bright cyan
-    "\033[107m"     // bg bright white
+    100,    // bg bright black
+    101,    // bg bright red
+    102,    // bg bright green
+    103,    // bg bright yellow
+    104,    // bg bright blue
+    105,    // bg bright magenta
+    106,    // bg bright cyan
+    107     // bg bright white
 };
 
 } // namespace {anonymous}
 
-std::ostream &
-operator << (std::ostream & ost, SGR sgr) {
+std::ostream & operator << (std::ostream & ost, SGR sgr) {
+    ost << '\033' << '[';
     ost << SGR_TABLE[static_cast<size_t>(sgr)];
+    ost << 'm';
     return ost;
 }
