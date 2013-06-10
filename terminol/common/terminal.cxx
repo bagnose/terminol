@@ -390,7 +390,6 @@ void Terminal::clearSelection() {
 void Terminal::focusChange(bool focused) {
     if (_focused != focused) {
         _focused = focused;
-        PRINT(_focused);
 
         if (_modes.get(Mode::SHOW_CURSOR)) {
             fixDamage(_cursor.pos, _cursor.pos.right(),

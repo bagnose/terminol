@@ -84,10 +84,12 @@ PangoFontDescription * FontSet::load(const std::string & family,
     uint16_t width  = logicalRect.width  / PANGO_SCALE;
     uint16_t height = logicalRect.height / PANGO_SCALE;
 
+    /*
     PRINT(family << " " <<
           (bold ? "bold" : "normal") << " " <<
           (italic ? "italic" : "normal") << " " <<
           "WxH: " << width << "x" << height << std::endl);
+          */
 
     if (master) {
         _width  = width;
