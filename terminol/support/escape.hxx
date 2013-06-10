@@ -4,6 +4,9 @@
 #define SUPPORT__ESCAPE__HXX
 
 #include <iostream>
+#include <vector>
+
+#include <stdint.h>
 
 enum class SGR {
     RESET_ALL,          // (normal)
@@ -66,5 +69,41 @@ enum class SGR {
 };
 
 std::ostream & operator << (std::ostream & ost, SGR sgr);
+
+class CSIEsc {
+public:
+    static CSIEsc fg24bit(uint8_t r, uint8_t g, uint8_t b) {
+        CSIEsc esc(false, 'm');
+        esc._args.push_back(38);
+        esc._args.push_back(2);
+        esc._args.push_back(r);
+        esc._args.push_back(g);
+        esc._args.push_back(b);
+        return esc;
+    }
+
+    static CSIEsc bg24bit(uint8_t r, uint8_t g, uint8_t b) {
+        CSIEsc esc(false, 'm');
+        esc._args.push_back(48);
+        esc._args.push_back(2);
+        esc._args.push_back(r);
+        esc._args.push_back(g);
+        esc._args.push_back(b);
+        return esc;
+    }
+
+    bool                         isPriv()  const { return _priv; }
+    uint8_t                      getMode() const { return _mode; }
+    const std::vector<int32_t> & getArgs() const { return _args; }
+
+private:
+    CSIEsc(bool priv, uint8_t mode) : _priv(priv), _mode(mode), _args() {}
+
+    bool                 _priv;
+    uint8_t              _mode;
+    std::vector<int32_t> _args;
+};
+
+std::ostream & operator << (std::ostream & ost, const CSIEsc & esc);
 
 #endif // SUPPORT__ESCAPE__HXX

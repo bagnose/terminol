@@ -72,3 +72,20 @@ std::ostream & operator << (std::ostream & ost, SGR sgr) {
     ost << 'm';
     return ost;
 }
+
+std::ostream & operator << (std::ostream & ost, const CSIEsc & esc) {
+    ost << '\033' << '[';
+
+    if (esc.isPriv()) { ost << '?'; }
+
+    bool first = true;
+    for (auto i : esc.getArgs()) {
+        if (first) { first = false; }
+        else       { ost << ';'; }
+        ost << i;
+    }
+
+    ost << esc.getMode();
+
+    return ost;
+}
