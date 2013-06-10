@@ -201,6 +201,11 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
         ++i;
         priv = true;
     }
+    else if (seq[i] == '!') {
+        // FIXME masking DECSTR - Soft Terminal Reset
+        // [!p
+        ++i;
+    }
 
     bool inArg = false;
 
