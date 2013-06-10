@@ -5,7 +5,7 @@
 
 #include <iostream>
 
-enum class Esc {
+enum class SGR {
     RESET_ALL,          // (normal)
 
     BOLD,               // or increased intensity
@@ -65,6 +65,6 @@ enum class Esc {
     BG_BRIGHT_WHITE,
 };
 
-std::ostream & operator << (std::ostream & ost, Esc e);
+std::ostream & operator << (std::ostream & ost, SGR sgr);
 
 #endif // SUPPORT__ESCAPE__HXX

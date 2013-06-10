@@ -4,16 +4,16 @@
 #include "terminol/support/escape.hxx"
 
 int main() {
-    std::cout << Esc::RESET_ALL << "Normal" << Esc::RESET_ALL << std::endl;
-    std::cout << Esc::BOLD << "Bold" << Esc::RESET_ALL << std::endl;
-    std::cout << Esc::ITALIC << "Italic" << Esc::RESET_ALL << std::endl;
-    std::cout << Esc::BOLD << Esc::ITALIC << "Bold/Italic" << Esc::RESET_ALL << std::endl;
-    std::cout << Esc::FAINT << "Faint" << Esc::RESET_ALL << std::endl;
-    std::cout << Esc::UNDERLINE << "Underline" << Esc::RESET_ALL << std::endl;
-    std::cout << Esc::BLINK_SLOW << "Blink slow" << Esc::RESET_ALL << std::endl;
-    std::cout << Esc::BLINK_RAPID << "Blink rapid" << Esc::RESET_ALL << std::endl;
-    std::cout << Esc::INVERSE << "Inverse" << Esc::RESET_ALL << std::endl;
-    std::cout << Esc::CONCEAL << "Conceal" << Esc::RESET_ALL << std::endl;
+    std::cout << SGR::RESET_ALL << "Normal" << SGR::RESET_ALL << std::endl;
+    std::cout << SGR::BOLD << "Bold" << SGR::RESET_ALL << std::endl;
+    std::cout << SGR::ITALIC << "Italic" << SGR::RESET_ALL << std::endl;
+    std::cout << SGR::BOLD << SGR::ITALIC << "Bold/Italic" << SGR::RESET_ALL << std::endl;
+    std::cout << SGR::FAINT << "Faint" << SGR::RESET_ALL << std::endl;
+    std::cout << SGR::UNDERLINE << "Underline" << SGR::RESET_ALL << std::endl;
+    std::cout << SGR::BLINK_SLOW << "Blink slow" << SGR::RESET_ALL << std::endl;
+    std::cout << SGR::BLINK_RAPID << "Blink rapid" << SGR::RESET_ALL << std::endl;
+    std::cout << SGR::INVERSE << "Inverse" << SGR::RESET_ALL << std::endl;
+    std::cout << SGR::CONCEAL << "Conceal" << SGR::RESET_ALL << std::endl;
 
     return 0;
 }

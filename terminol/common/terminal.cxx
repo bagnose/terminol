@@ -636,9 +636,9 @@ bool Terminal::translate(uint8_t ascii, utf8::Seq & seq) const {
         if (ascii == cs->match) {
             if (_config.getTraceTty()) {
                 std::cerr
-                    << Esc::BG_BLUE << Esc::FG_WHITE
+                    << SGR::BG_BLUE << SGR::FG_WHITE
                     << '/' << cs->match << '/' << cs->replace << '/'
-                    << Esc::RESET_ALL;
+                    << SGR::RESET_ALL;
             }
             seq = cs->replace;
             return true;
@@ -958,7 +958,7 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
     }
 
     if (_config.getTraceTty()) {
-        std::cerr << Esc::FG_GREEN << Esc::UNDERLINE << seq << Esc::RESET_ALL;
+        std::cerr << SGR::FG_GREEN << SGR::UNDERLINE << seq << SGR::RESET_ALL;
     }
 
     if (_cursor.wrapNext && _modes.get(Mode::AUTO_WRAP)) {
@@ -993,7 +993,7 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
 
 void Terminal::machineControl(uint8_t c) throw () {
     if (_config.getTraceTty()) {
-        std::cerr << Esc::FG_YELLOW << Char(c) << Esc::RESET_ALL;
+        std::cerr << SGR::FG_YELLOW << Char(c) << SGR::RESET_ALL;
     }
 
     switch (c) {
@@ -1069,7 +1069,7 @@ void Terminal::machineControl(uint8_t c) throw () {
 
 void Terminal::machineEscape(uint8_t c) throw () {
     if (_config.getTraceTty()) {
-        std::cerr << Esc::FG_MAGENTA << "ESC" << Char(c) << Esc::RESET_ALL << " ";
+        std::cerr << SGR::FG_MAGENTA << "ESC" << Char(c) << SGR::RESET_ALL << " ";
     }
 
     switch (c) {
@@ -1142,7 +1142,7 @@ void Terminal::machineCsi(bool priv,
                           const std::vector<int32_t> & args,
                           uint8_t mode) throw () {
     if (_config.getTraceTty()) {
-        std::cerr << Esc::FG_CYAN << "ESC[";
+        std::cerr << SGR::FG_CYAN << "ESC[";
         if (priv) { std::cerr << '?'; }
         auto first = true;
         for (auto & a : args) {
@@ -1150,7 +1150,7 @@ void Terminal::machineCsi(bool priv,
             else       { std::cerr << ';'; }
             std::cerr << a;
         }
-        std::cerr << mode << Esc::RESET_ALL << ' ';
+        std::cerr << mode << SGR::RESET_ALL << ' ';
     }
 
     switch (mode) {
@@ -1422,15 +1422,15 @@ default_:
 
 void Terminal::machineDcs(const std::vector<uint8_t> & seq) throw () {
     if (_config.getTraceTty()) {
-        std::cerr << Esc::FG_RED << "ESC" << Str(seq) << Esc::RESET_ALL << ' ';
+        std::cerr << SGR::FG_RED << "ESC" << Str(seq) << SGR::RESET_ALL << ' ';
     }
 }
 
 void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
     if (_config.getTraceTty()) {
-        std::cerr << Esc::FG_MAGENTA << "ESC";
+        std::cerr << SGR::FG_MAGENTA << "ESC";
         for (const auto & a : args) { std::cerr << a << ';'; }
-        std::cerr << Esc::RESET_ALL << " ";
+        std::cerr << SGR::RESET_ALL << " ";
     }
 
     if (!args.empty()) {
@@ -1458,7 +1458,7 @@ void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
 
 void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
     if (_config.getTraceTty()) {
-        std::cerr << Esc::FG_BLUE << "ESC" << Char(special) << Char(code) << Esc::RESET_ALL << " ";
+        std::cerr << SGR::FG_BLUE << "ESC" << Char(special) << Char(code) << SGR::RESET_ALL << " ";
     }
 
     switch (special) {

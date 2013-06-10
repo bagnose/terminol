@@ -4,7 +4,7 @@
 
 namespace {
 
-const char * const ESC_TABLE[] = {
+const char * const SGR_TABLE[] = {
     "\033[0m",      // reset all
 
     "\033[1m",      // bold
@@ -67,7 +67,7 @@ const char * const ESC_TABLE[] = {
 } // namespace {anonymous}
 
 std::ostream &
-operator << (std::ostream & ost, Esc e) {
-    ost << ESC_TABLE[static_cast<size_t>(e)];
+operator << (std::ostream & ost, SGR sgr) {
+    ost << SGR_TABLE[static_cast<size_t>(sgr)];
     return ost;
 }
