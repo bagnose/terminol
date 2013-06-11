@@ -42,7 +42,10 @@ void read(std::istream & ist, Config & config) {
         std::string lhs, rhs;
         if (split(line, lhs, rhs)) {
             try {
-                if (lhs == "scrollBackHistory") {
+                if (lhs == "colorScheme") {
+                    config.setColorScheme(rhs);
+                }
+                else if (lhs == "scrollBackHistory") {
                     config.setScrollBackHistory(unstringify<size_t>(rhs));
                 }
                 else if (lhs == "serverFork") {

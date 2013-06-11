@@ -227,7 +227,8 @@ bool argMatch(const std::string & arg, const std::string & opt, std::string & va
 void showHelp(const std::string & progName, std::ostream & ost) {
     ost << "Usage:" << std::endl
         << "  " << progName << " \\" << std::endl
-        << "    " << "--font=FONT --term=TERM --geometry=GEOMETRY \\" << std::endl
+        //<< "    " << "--font=FONT --term=TERM --geometry=GEOMETRY \\" << std::endl
+        << "    " << "--font=FONT --term=TERM \\" << std::endl
         << "    " << "--double-buffer --trace --sync --execute ARG0 ARG1..."
         << std::endl;
 }
@@ -268,10 +269,12 @@ int main(int argc, char * argv[]) {
         else if (argMatch(arg, "term", val)) {
             config.setTermName(val);
         }
+        /*
         else if (argMatch(arg, "geometry", val)) {
             // WidthxHeight+XPos+YPos
             config.setGeometryString(val);
         }
+        */
         else if (arg == "--help") {
             showHelp(argv[0], std::cout);
             return 0;
