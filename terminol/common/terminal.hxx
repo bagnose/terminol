@@ -171,7 +171,7 @@ public:
                          bool within, Pos pos);
     void     buttonMotion(ModifierSet modifiers, bool within, Pos pos);
     void     buttonRelease(bool broken, ModifierSet modifiers);
-    void     scrollWheel(ScrollDir dir, ModifierSet modifiers);
+    void     scrollWheel(ScrollDir dir, ModifierSet modifiers, bool within, Pos pos);
 
     void     paste(const uint8_t * data, size_t size);
 
@@ -209,6 +209,8 @@ protected:
 
     void      write(const uint8_t * data, size_t size);
     void      echo(const uint8_t * data, size_t size);
+
+    void      sendMouseButton(int num, ModifierSet modifiers, Pos pos);
 
     void      resetAll();
 

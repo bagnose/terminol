@@ -179,6 +179,36 @@ void Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
     }
 }
 
+void Terminal::sendMouseButton(int num, ModifierSet modifiers, Pos pos) {
+    if (num >= 3) { num += 64 - 3; }
+
+    if (modifiers.get(Modifier::SHIFT))   { num +=  4; }
+    if (modifiers.get(Modifier::ALT))     { num +=  8; }
+    if (modifiers.get(Modifier::CONTROL)) { num += 16; }
+
+    std::ostringstream ost;
+    if (_modes.get(Mode::MOUSE_SGR)) {
+        ost << ESC << "[<"
+            << num << ';' << pos.col + 1 << ';' << pos.row + 1
+            << 'M';
+    }
+    else if (pos.row < 223 && pos.col < 223) {
+        ost << ESC << "[M"
+            << static_cast<char>(32 + num)
+            << static_cast<char>(32 + pos.col + 1)
+            << static_cast<char>(32 + pos.row + 1);
+    }
+    else {
+        // Couldn't deliver it
+    }
+
+    const auto & str = ost.str();
+
+    if (!str.empty()) {
+        write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+    }
+}
+
 void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
                            bool UNUSED(within), Pos pos) {
     PRINT("press: " << button << ", count=" << count <<
@@ -187,34 +217,7 @@ void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
     ASSERT(!_pressed, "");
 
     if (_modes.get(Mode::MOUSE_BUTTON)) {
-        int num = static_cast<int>(button);
-        if (num >= 3) { num += 64 - 3; }
-
-        if (modifiers.get(Modifier::SHIFT))   { num +=  4; }
-        if (modifiers.get(Modifier::ALT))     { num +=  8; }
-        if (modifiers.get(Modifier::CONTROL)) { num += 16; }
-
-        std::ostringstream ost;
-        if (_modes.get(Mode::MOUSE_SGR)) {
-            ost << ESC << "[<"
-                << num << ';' << pos.col + 1 << ';' << pos.row + 1
-                << 'M';
-        }
-        else if (pos.row < 223 && pos.col < 223) {
-            ost << ESC << "[M"
-                << static_cast<char>(32 + num)
-                << static_cast<char>(32 + pos.col + 1)
-                << static_cast<char>(32 + pos.row + 1);
-        }
-        else {
-            // Couldn't deliver it
-        }
-
-        const auto & str = ost.str();
-
-        if (!str.empty()) {
-            write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
-        }
+        sendMouseButton(static_cast<int>(button), modifiers, pos);
     }
     else {
         if (button == Button::LEFT) {
@@ -337,23 +340,28 @@ void Terminal::buttonRelease(bool broken, ModifierSet modifiers) {
     _pressed = false;
 }
 
-void Terminal::scrollWheel(ScrollDir dir, ModifierSet UNUSED(modifiers)) {
-    switch (dir) {
-        case ScrollDir::UP:
-            // TODO consolidate scroll operations with method.
-            if (_buffer->scrollUpHistory(std::max(1, _buffer->getRows() / 4))) {
-                fixDamage(Pos(0, 0),
-                          Pos(_buffer->getRows(), _buffer->getCols()),
-                          Damager::SCROLL);
-            }
-            break;
-        case ScrollDir::DOWN:
-            if (_buffer->scrollDownHistory(std::max(1, _buffer->getRows() / 4))) {
-                fixDamage(Pos(0, 0),
-                          Pos(_buffer->getRows(), _buffer->getCols()),
-                          Damager::SCROLL);
-            }
-            break;
+void Terminal::scrollWheel(ScrollDir dir, ModifierSet modifiers, bool UNUSED(within), Pos pos) {
+    if (_modes.get(Mode::MOUSE_BUTTON)) {
+        sendMouseButton(dir == ScrollDir::UP ? 3 : 4, modifiers, pos);
+    }
+    else {
+        switch (dir) {
+            case ScrollDir::UP:
+                // TODO consolidate scroll operations with method.
+                if (_buffer->scrollUpHistory(std::max(1, _buffer->getRows() / 4))) {
+                    fixDamage(Pos(0, 0),
+                              Pos(_buffer->getRows(), _buffer->getCols()),
+                              Damager::SCROLL);
+                }
+                break;
+            case ScrollDir::DOWN:
+                if (_buffer->scrollDownHistory(std::max(1, _buffer->getRows() / 4))) {
+                    fixDamage(Pos(0, 0),
+                              Pos(_buffer->getRows(), _buffer->getCols()),
+                              Damager::SCROLL);
+                }
+                break;
+        }
     }
 }
 

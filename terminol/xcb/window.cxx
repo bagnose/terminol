@@ -247,12 +247,15 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
 
     auto modifiers = _basics.convertState(event->state);
 
+    Pos  pos;
+    auto within = xy2Pos(event->event_x, event->event_y, pos);
+
     switch (event->detail) {
         case XCB_BUTTON_INDEX_4:
-            _terminal->scrollWheel(Terminal::ScrollDir::UP, modifiers);
+            _terminal->scrollWheel(Terminal::ScrollDir::UP, modifiers, within, pos);
             return;
         case XCB_BUTTON_INDEX_5:
-            _terminal->scrollWheel(Terminal::ScrollDir::DOWN, modifiers);
+            _terminal->scrollWheel(Terminal::ScrollDir::DOWN, modifiers, within, pos);
             return;
     }
 
@@ -274,9 +277,6 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
 
     _button        = event->detail;
     _lastPressTime = event->time;
-
-    Pos  pos;
-    auto within = xy2Pos(event->event_x, event->event_y, pos);
 
     switch (event->detail) {
         case XCB_BUTTON_INDEX_1:
