@@ -4,14 +4,17 @@
 #define COMMON__VT_STATE_MACHINE__H
 
 #include "terminol/common/utf8.hxx"
-//#include "terminol/support/support.hxx"
 
+#include <map>
 #include <vector>
 
 #include <stdint.h>
 
 class VtStateMachine {
 public:
+    static void initialise();
+    static void finalise();
+
     class I_Observer {
     public:
         virtual void machineNormal(utf8::Seq seq, utf8::Length length) throw () = 0;
@@ -30,29 +33,50 @@ public:
     };
 
 private:
-    enum class State {
-        NORMAL,
+    enum State : uint8_t {
+        GROUND,
         ESCAPE,
-        DCS,
-        CSI,
-        OSC,
-        INNER,
-        IGNORE,
-        SPECIAL
+        ESCAPE_INTERMEDIATE,
+        SOS_PM_APC_STRING,
+        CSI_ENTRY,
+        CSI_PARAM,
+        CSI_IGNORE,
+        CSI_INTERMEDIATE,
+        OSC_STRING,
+        DCS_ENTRY,
+        DCS_PARAM,
+        DCS_IGNORE,
+        DCS_INTERMEDIATE,
+        DCS_PASSTHROUGH
     };
 
     I_Observer           & _observer;
-
     State                  _state;
-    State                  _outerState;
     std::vector<uint8_t>   _escSeq;
 
 public:
-    VtStateMachine(I_Observer & observer);
+    explicit VtStateMachine(I_Observer & observer);
 
     void consume(utf8::Seq seq, utf8::Length length);
 
 protected:
+    void ground(utf8::Seq seq, utf8::Length length);
+    void escapeIntermediate(utf8::Seq seq, utf8::Length length);
+    void escape(utf8::Seq seq, utf8::Length length);
+    void sosPmApcString(utf8::Seq seq, utf8::Length lengt);
+    void csiEntry(utf8::Seq seq, utf8::Length length);
+    void csiParam(utf8::Seq seq, utf8::Length length);
+    void csiIngore(utf8::Seq seq, utf8::Length length);
+    void csiIntermediate(utf8::Seq seq, utf8::Length length);
+    void oscString(utf8::Seq seq, utf8::Length length);
+    void dcsEntry(utf8::Seq seq, utf8::Length length);
+    void dcsParam(utf8::Seq seq, utf8::Length length);
+    void dcsIgnore(utf8::Seq seq, utf8::Length length);
+    void dcsIntermediate(utf8::Seq seq, utf8::Length length);
+    void dcsPassthrough(utf8::Seq seq, utf8::Length length);
+
+
+    void processEsc(const std::vector<uint8_t> & seq);
     void processCsi(const std::vector<uint8_t> & seq);
     void processOsc(const std::vector<uint8_t> & seq);
     void processSpecial(const std::vector<uint8_t> & seq);
