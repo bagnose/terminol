@@ -14,15 +14,24 @@
 
 #define xcb_request_failed(connection, cookie, err_msg) _xcb_request_failed(connection, cookie, err_msg, __LINE__)
 namespace {
-int _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
+
+uint8_t _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
                         const char * err_msg, int line) {
-    xcb_generic_error_t * err;
-    if ((err = xcb_request_check(connection, cookie)) != nullptr) {
-        fprintf(stderr, "[%s:%d] ERROR: %s. X Error Code: %d\n", __FILE__, line, err_msg, err->error_code);
-        return err->error_code;
+    auto error = xcb_request_check(connection, cookie);
+    if (error) {
+        auto code = error->error_code;
+        std::cerr
+            << '[' << __FILE__ << ':' << line << "] ERROR: " << err_msg
+            << ". X Error Code: " << int(code)
+            << std::endl;
+        std::free(error);
+        return code;
     }
-    return 0;
+    else {
+        return 0;
+    }
 }
+
 } // namespace {anonymous}
 
 Window::Window(I_Observer         & observer,
@@ -146,7 +155,7 @@ Window::Window(I_Observer         & observer,
                                    gcValues);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate gc")) {
         xcb_destroy_window(_basics.connection(), _window);
-        FATAL("");
+        throw Error("Failed to create GC.");
     }
 
     //
@@ -163,7 +172,13 @@ Window::Window(I_Observer         & observer,
 
     updateTitle();
 
-    xcb_map_window(_basics.connection(), _window);
+    cookie = xcb_map_window_checked(_basics.connection(), _window);
+    if (xcb_request_failed(_basics.connection(), cookie, "Failed to map window")) {
+        xcb_free_gc(_basics.connection(), _gc);
+        xcb_destroy_window(_basics.connection(), _window);
+        throw Error("Failed to map window.");
+    }
+
     xcb_flush(_basics.connection());
 }
 
@@ -178,11 +193,11 @@ Window::~Window() {
         cairo_surface_destroy(_surface);
 
         if (_config.getDoubleBuffer()) {
-            xcb_void_cookie_t cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
+            auto cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
             if (xcb_request_failed(_basics.connection(), cookie,
                                    "Failed to free pixmap"))
             {
-                FATAL("");
+                FATAL("Failed to free pixmap");
             }
         }
     }
@@ -202,7 +217,12 @@ Window::~Window() {
 
     // The window may have been destroyed exogenously.
     if (!_destroyed) {
-        xcb_destroy_window(_basics.connection(), _window);
+        auto cookie = xcb_destroy_window_checked(_basics.connection(), _window);
+        if (xcb_request_failed(_basics.connection(), cookie,
+                               "Failed to destroy window"))
+        {
+            FATAL("Failed to destroy window");
+        }
     }
 
     xcb_flush(_basics.connection());
@@ -347,14 +367,14 @@ void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
 
     if (_config.getDoubleBuffer()) {
         _pixmap = xcb_generate_id(_basics.connection());
-        xcb_void_cookie_t cookie = xcb_create_pixmap_checked(_basics.connection(),
-                                                             _basics.screen()->root_depth,
-                                                             _pixmap,
-                                                             _window,
-                                                             _width,
-                                                             _height);
+        auto cookie = xcb_create_pixmap_checked(_basics.connection(),
+                                                _basics.screen()->root_depth,
+                                                _pixmap,
+                                                _window,
+                                                _width,
+                                                _height);
         if (xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap")) {
-            FATAL("");
+            FATAL("Failed to create pixmap");
         }
     }
 
@@ -363,6 +383,8 @@ void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
                                         _basics.visual(),
                                         _width,
                                         _height);
+    ENFORCE(_surface, "Failed to create surface");
+    ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
 
     _mapped = true;
 }
@@ -372,15 +394,16 @@ void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     ASSERT(_mapped, "");
 
     ASSERT(_surface, "");
+    ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
     cairo_surface_finish(_surface);
     cairo_surface_destroy(_surface);
     _surface = nullptr;
 
     if (_config.getDoubleBuffer()) {
         ASSERT(_pixmap, "");
-        xcb_void_cookie_t cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
+        auto cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
         if (xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap")) {
-            FATAL("");
+            FATAL("Failed to free pixmap");
         }
         _pixmap = 0;
     }
@@ -403,13 +426,17 @@ void Window::expose(xcb_expose_event_t * event) {
     if (_mapped) {
         if (_config.getDoubleBuffer() && _hadExpose) {
             ASSERT(_pixmap, "");
-            xcb_copy_area(_basics.connection(),
-                          _pixmap,
-                          _window,
-                          _gc,
-                          event->x, event->y,
-                          event->x, event->y,
-                          event->width, event->height);
+            auto cookie = xcb_copy_area_checked(_basics.connection(),
+                                                _pixmap,
+                                                _window,
+                                                _gc,
+                                                event->x, event->y,
+                                                event->x, event->y,
+                                                event->width, event->height);
+            if (xcb_request_failed(_basics.connection(), cookie,
+                                   "Failed to copy area")) {
+                FATAL("Failed to copy area");
+            }
             xcb_flush(_basics.connection());
         }
         else {
@@ -450,11 +477,10 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
             cairo_surface_destroy(_surface);
             _surface = nullptr;
 
-            xcb_void_cookie_t cookie;
-            cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
+            auto cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
             if (xcb_request_failed(_basics.connection(), cookie,
                                    "Failed to free pixmap")) {
-                FATAL("");
+                FATAL("Failed to free");
             }
             _pixmap = 0;
 
@@ -469,7 +495,7 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
                                                _height);
             if (xcb_request_failed(_basics.connection(), cookie,
                                    "Failed to create pixmap")) {
-                FATAL("");
+                FATAL("Failed to create pixmap");
             }
 
             cairo_surface_finish(_surface);
@@ -478,9 +504,12 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
                                                 _basics.visual(),
                                                 _width,
                                                 _height);
+            ENFORCE(_surface, "Failed to create surface");
+            ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
         }
         else {
             cairo_xcb_surface_set_size(_surface, _width, _height);
+            ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
         }
     }
 
@@ -571,19 +600,16 @@ void Window::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
         uint32_t offset = 0;        // 32-bit quantities
 
         for (;;) {
-            xcb_get_property_cookie_t cookie =
-                xcb_get_property(_basics.connection(),
-                                 false,     // delete
-                                 _window,
-                                 XCB_ATOM_PRIMARY,
-                                 XCB_GET_PROPERTY_TYPE_ANY,
-                                 offset,
-                                 8192 / 4);
+            auto cookie = xcb_get_property(_basics.connection(),
+                                           false,     // delete
+                                           _window,
+                                           XCB_ATOM_PRIMARY,
+                                           XCB_GET_PROPERTY_TYPE_ANY,
+                                           offset,
+                                           8192 / 4);
 
-            xcb_get_property_reply_t * reply =
-                xcb_get_property_reply(_basics.connection(), cookie, nullptr);
+            auto * reply = xcb_get_property_reply(_basics.connection(), cookie, nullptr);
             if (!reply) { break; }
-
             auto guard = scopeGuard([reply] { std::free(reply); });
 
             void * value  = xcb_get_property_value(reply);
@@ -609,14 +635,18 @@ void Window::selectionRequest(xcb_selection_request_event_t * event) {
 
     if (event->target == _basics.atomTargets()) {
         xcb_atom_t atomUtf8String = _basics.atomUtf8String();
-        xcb_change_property(_basics.connection(),
-                            XCB_PROP_MODE_REPLACE,
-                            event->requestor,
-                            event->property,
-                            XCB_ATOM_ATOM,
-                            32,
-                            1,
-                            &atomUtf8String);
+        auto cookie = xcb_change_property_checked(_basics.connection(),
+                                                  XCB_PROP_MODE_REPLACE,
+                                                  event->requestor,
+                                                  event->property,
+                                                  XCB_ATOM_ATOM,
+                                                  32,
+                                                  1,
+                                                  &atomUtf8String);
+        if (xcb_request_failed(_basics.connection(), cookie,
+                               "Failed to change property")) {
+            FATAL("Failed to change property");
+        }
         response.property = event->property;
     }
     else if (event->target == _basics.atomUtf8String()) {
@@ -632,22 +662,30 @@ void Window::selectionRequest(xcb_selection_request_event_t * event) {
             ERROR("Unexpected selection");
         }
 
-        xcb_change_property(_basics.connection(),
-                            XCB_PROP_MODE_REPLACE,
-                            event->requestor,
-                            event->property,
-                            event->target,
-                            8,
-                            text.length(),
-                            text.data());
+        auto cookie = xcb_change_property_checked(_basics.connection(),
+                                                  XCB_PROP_MODE_REPLACE,
+                                                  event->requestor,
+                                                  event->property,
+                                                  event->target,
+                                                  8,
+                                                  text.length(),
+                                                  text.data());
+        if (xcb_request_failed(_basics.connection(), cookie,
+                               "Failed to change property")) {
+            FATAL("Failed to change property");
+        }
         response.property = event->property;
     }
 
-    xcb_send_event(_basics.connection(),
-                   true,
-                   event->requestor,
-                   0,
-                   reinterpret_cast<const char *>(&response));
+    auto cookie = xcb_send_event_checked(_basics.connection(),
+                                         true,
+                                         event->requestor,
+                                         0,
+                                         reinterpret_cast<const char *>(&response));
+        if (xcb_request_failed(_basics.connection(), cookie,
+                               "Failed to send event")) {
+            FATAL("Failed to send event");
+        }
 
     xcb_flush(_basics.connection());        // Required?
 }
@@ -861,15 +899,20 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     _cr = nullptr;
 
     cairo_surface_flush(_surface);      // Useful?
+    ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
 
     if (_config.getDoubleBuffer()) {
-        xcb_copy_area(_basics.connection(),
-                      _pixmap,
-                      _window,
-                      _gc,
-                      x, y, // src
-                      x, y, // dst
-                      w, h);
+        auto cookie = xcb_copy_area(_basics.connection(),
+                                    _pixmap,
+                                    _window,
+                                    _gc,
+                                    x, y, // src
+                                    x, y, // dst
+                                    w, h);
+        if (xcb_request_failed(_basics.connection(), cookie,
+                               "Failed to copy area")) {
+            FATAL("Failed to copy area");
+        }
     }
 
     xcb_flush(_basics.connection());
@@ -990,10 +1033,15 @@ void Window::terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () {
 
     if (_width != width || _height != height) {
         uint32_t values[] = { width, height };
-        xcb_configure_window(_basics.connection(),
-                             _window,
-                             XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
-                             values);
+        auto cookie = xcb_configure_window(_basics.connection(),
+                                           _window,
+                                           XCB_CONFIG_WINDOW_WIDTH |
+                                           XCB_CONFIG_WINDOW_HEIGHT,
+                                           values);
+        if (xcb_request_failed(_basics.connection(), cookie,
+                               "Failed to configure window")) {
+            FATAL("Failed to configure window");
+        }
 
         xcb_flush(_basics.connection());
 
