@@ -227,9 +227,9 @@ protected:
     }
 
     void xevent(bool block = false) throw (Error) {
-        xcb_generic_event_t * event;
-
         for (;;) {
+            xcb_generic_event_t * event;
+
             if (block) {
                 event = ::xcb_wait_for_event(_basics.connection());
                 block = false;
@@ -250,7 +250,7 @@ protected:
         }
 
         if (xcb_connection_has_error(_basics.connection())) {
-            throw Error("Lost connection (1)?");
+            throw Error("Lost display connection.");
         }
     }
 

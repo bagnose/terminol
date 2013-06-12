@@ -18,7 +18,7 @@ Basics::Basics() throw (Error) {
 
     _connection = xcb_connect(nullptr, &_screenNum);
     if (xcb_connection_has_error(_connection)) {
-        throw Error("Couldn't open display.");
+        throw Error("Failed to connect to display.");
     }
 
     const xcb_setup_t * setup = xcb_get_setup(_connection);

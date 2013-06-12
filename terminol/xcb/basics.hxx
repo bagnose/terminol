@@ -60,8 +60,10 @@ public:
     xcb_atom_t              atomUtf8String() { return _atomUtf8String; }
     xcb_atom_t              atomTargets()    { return _atomTargets; }
 
-    bool                    getKeySym(xcb_keycode_t keyCode, uint8_t state,
-                                      xcb_keysym_t & keySym, ModifierSet & modifiers) const;
+    bool                    getKeySym(xcb_keycode_t keyCode,
+                                      uint8_t state,
+                                      xcb_keysym_t & keySym,
+                                      ModifierSet & modifiers) const;
 
     ModifierSet             convertState(uint8_t state) const;
 

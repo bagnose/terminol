@@ -167,7 +167,7 @@ Window::Window(I_Observer         & observer,
     _open = true;
 
     //
-    // Update the window title the map the window.
+    // Update the window title and map the window.
     //
 
     updateTitle();
@@ -584,8 +584,8 @@ void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
     //PRINT("Destroy notify");
 
     _tty->close();
-    _open    = false;
-    _destroyed = true;
+    _open      = false;
+    _destroyed = true;      // XXX why not just zero _window
 }
 
 void Window::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) {
@@ -840,6 +840,10 @@ void Window::updateTitle() {
                          _window,
                          fullTitle.size(),
                          fullTitle.data());
+    xcb_ewmh_set_wm_icon_name(_basics.ewmhConnection(),
+                              _window,
+                              fullTitle.size(),
+                              fullTitle.data());
 #endif
 }
 

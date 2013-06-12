@@ -1456,9 +1456,10 @@ void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
     if (!args.empty()) {
         switch (unstringify<int>(args[0])) {
             case 0: // Icon name and window title
-            case 1: // Icon label
+            case 1: // Icon name
             case 2: // Window title
                 if (args.size() > 1) {
+                    // FIXME don't conflate icon name and window title
                     _observer.terminalSetTitle(args[1]);
                 }
                 break;
