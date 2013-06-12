@@ -244,9 +244,10 @@ protected:
             uint8_t response_type = XCB_EVENT_RESPONSE_TYPE(event);
             if (response_type == 0) {
                 ERROR("Zero response type");
-                break;
             }
-            dispatch(response_type & ~0x80, event);
+            else {
+                dispatch(response_type & ~0x80, event);
+            }
         }
 
         if (xcb_connection_has_error(_basics.connection())) {
