@@ -842,7 +842,7 @@ public:
         // Cols
         //
 
-#if 0
+#if 1
         // Clip / unclip
 
         if (cols != _cols) {
