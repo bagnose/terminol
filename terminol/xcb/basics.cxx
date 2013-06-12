@@ -56,6 +56,11 @@ Basics::Basics() throw (Error) {
         FATAL("Can't initialise EWMH atoms");
     }
 
+    _atomPrimary    = XCB_ATOM_PRIMARY;
+    _atomClipboard  = lookupAtom("CLIPBOARD");
+    _atomUtf8String = lookupAtom("UTF8_STRING");    // XXX fall back on XB_ATOM_STRING
+    _atomTargets    = lookupAtom("TARGETS");
+
     determineMasks();
 
     /*
@@ -182,11 +187,8 @@ ModifierSet Basics::convertState(uint8_t state) const {
 }
 
 xcb_atom_t Basics::lookupAtom(const std::string & name) throw (Error) {
-    xcb_intern_atom_cookie_t cookie =
-        xcb_intern_atom(_connection, 0, name.length(), name.data());
-
-    xcb_intern_atom_reply_t * reply =
-        xcb_intern_atom_reply(_connection, cookie, nullptr);
+    auto cookie = xcb_intern_atom(_connection, 0, name.length(), name.data());
+    auto reply  = xcb_intern_atom_reply(_connection, cookie, nullptr);
 
     if (reply) {
         xcb_atom_t atom = reply->atom;

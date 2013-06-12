@@ -23,6 +23,11 @@ class Basics : protected Uncopyable {
 
     xcb_ewmh_connection_t   _ewmhConnection;
 
+    xcb_atom_t              _atomPrimary;
+    xcb_atom_t              _atomClipboard;
+    xcb_atom_t              _atomUtf8String;
+    xcb_atom_t              _atomTargets;
+
     uint8_t                 _maskShift;
     uint8_t                 _maskAlt;
     uint8_t                 _maskControl;
@@ -50,11 +55,10 @@ public:
 
     xcb_ewmh_connection_t * ewmhConnection()       { return &_ewmhConnection; }
 
-    // FIXME make these const and return local member data
-    xcb_atom_t              atomPrimary() { return XCB_ATOM_PRIMARY; }
-    xcb_atom_t              atomClipboard() { return lookupAtom("CLIPBOARD"); }
-    xcb_atom_t              atomUtf8String() { return lookupAtom("UTF8_STRING"); }  // TODO fallback on XCB_ATOM_STRING
-    xcb_atom_t              atomTargets() { return lookupAtom("TARGETS"); }
+    xcb_atom_t              atomPrimary()    { return _atomPrimary; }
+    xcb_atom_t              atomClipboard()  { return _atomClipboard; }
+    xcb_atom_t              atomUtf8String() { return _atomUtf8String; }
+    xcb_atom_t              atomTargets()    { return _atomTargets; }
 
     bool                    getKeySym(xcb_keycode_t keyCode, uint8_t state,
                                       xcb_keysym_t & keySym, ModifierSet & modifiers) const;
