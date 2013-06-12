@@ -370,7 +370,8 @@ void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
         auto cookie = xcb_create_pixmap_checked(_basics.connection(),
                                                 _basics.screen()->root_depth,
                                                 _pixmap,
-                                                _window,
+                                                //_window,
+                                                _basics.screen()->root,
                                                 _width,
                                                 _height);
         if (xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap")) {
@@ -435,7 +436,7 @@ void Window::expose(xcb_expose_event_t * event) {
                                                 event->width, event->height);
             if (xcb_request_failed(_basics.connection(), cookie,
                                    "Failed to copy area")) {
-                FATAL("Failed to copy area");
+                ERROR("Failed to copy area");
             }
             xcb_flush(_basics.connection());
         }
@@ -490,7 +491,8 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
             cookie = xcb_create_pixmap_checked(_basics.connection(),
                                                _basics.screen()->root_depth,
                                                _pixmap,
-                                               _window,
+                                               //_window,
+                                               _basics.screen()->root,
                                                _width,
                                                _height);
             if (xcb_request_failed(_basics.connection(), cookie,
