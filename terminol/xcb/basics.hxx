@@ -65,9 +65,6 @@ public:
 
     ModifierSet             convertState(uint8_t state) const;
 
-    // FIXME don't want this, should use terminol-defined state/mask
-    std::string             stateToString(uint8_t state) const;
-
 protected:
     xcb_atom_t lookupAtom(const std::string & name) throw (Error);
     void       determineMasks();
