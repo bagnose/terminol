@@ -196,7 +196,7 @@ Config::Config() :
     //
     _serverFork(true)
 {
-    setColorScheme("solarized");
+    setColorScheme("solarized-dark");
 
     std::ostringstream ost;
     ost << "/tmp/terminols-" << ::getenv("USER");
