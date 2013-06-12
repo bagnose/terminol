@@ -64,6 +64,8 @@ inline bool operator == (UColor lhs, UColor rhs) {
                 return lhs.values == rhs.values;
         }
     }
+
+    FATAL("Unreachable");
 }
 
 inline bool operator != (UColor lhs, UColor rhs) { return !(lhs == rhs); }

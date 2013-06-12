@@ -166,10 +166,10 @@ class Buffer {
             _damageBegin(0),
             _damageEnd(cols) {}
 
-        Line(uint16_t cols, bool cont, uint16_t wrap, const std::vector<Cell> & cells) :
+        Line(uint16_t cols, bool cont, uint16_t wrap, const std::vector<Cell> & cells_) :
             _cont(cont),
             _wrap(wrap),
-            _cells(cells),
+            _cells(cells_),
             _cols(cols),
             _damageBegin(0),
             _damageEnd(cols)

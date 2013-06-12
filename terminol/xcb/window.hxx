@@ -182,6 +182,8 @@ private:
                 auto d = 255.0;
                 return XColor(v.r / d, v.g / d, v.b / d);
         }
+
+        FATAL("Unreachable");
     }
 };
 
