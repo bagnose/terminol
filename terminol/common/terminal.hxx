@@ -189,48 +189,48 @@ protected:
     enum class TabDir { FORWARD, BACKWARD };
     enum class Damager { TTY, EXPOSURE, SCROLL };
 
-    bool      handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers);
+    bool     handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers);
 
-    void      moveCursorOriginMode(Pos pos);
-    void      moveCursor(Pos pos);
-    void      tabCursor(TabDir dir, uint16_t count);
-    void      damageCursor();
+    void     moveCursorOriginMode(Pos pos);
+    void     moveCursor(Pos pos);
+    void     tabCursor(TabDir dir, uint16_t count);
+    void     damageCursor();
 
-    void      fixDamage(Pos begin, Pos end, Damager damager);
+    void     fixDamage(Pos begin, Pos end, Damager damager);
 
-    bool      translate(uint8_t ascii, utf8::Seq & seq) const;
+    bool     translate(uint8_t ascii, utf8::Seq & seq) const;
 
-    void      draw(Pos begin, Pos end, Damager damage);
-    void      drawRowBg(uint16_t row, uint16_t colBegin, uint16_t colEnd);
-    void      drawRowFg(std::vector<uint8_t> & run,
-                        uint16_t row, uint16_t colBegin, uint16_t colEnd);
-    void      drawCursor(std::vector<uint8_t> & run);
-    void      drawSelection();
+    void     draw(Pos begin, Pos end, Damager damage);
+    void     drawRowBg(uint16_t row, uint16_t colBegin, uint16_t colEnd);
+    void     drawRowFg(std::vector<uint8_t> & run,
+                       uint16_t row, uint16_t colBegin, uint16_t colEnd);
+    void     drawCursor(std::vector<uint8_t> & run);
+    void     drawSelection();
 
-    void      write(const uint8_t * data, size_t size);
-    void      echo(const uint8_t * data, size_t size);
+    void     write(const uint8_t * data, size_t size);
+    void     echo(const uint8_t * data, size_t size);
 
-    void      sendMouseButton(int num, ModifierSet modifiers, Pos pos);
+    void     sendMouseButton(int num, ModifierSet modifiers, Pos pos);
 
-    void      resetAll();
+    void     resetAll();
 
-    void      processRead(const uint8_t * data, size_t size);
-    void      processChar(utf8::Seq seq, utf8::Length length);
+    void     processRead(const uint8_t * data, size_t size);
+    void     processChar(utf8::Seq seq, utf8::Length length);
 
-    void      processAttributes(const std::vector<int32_t> & args);
-    void      processModes(bool priv, bool set, const std::vector<int32_t> & args);
+    void     processAttributes(const std::vector<int32_t> & args);
+    void     processModes(bool priv, bool set, const std::vector<int32_t> & args);
 
     // VtStateMachine::I_Observer implementation:
 
-    void      machineNormal(utf8::Seq seq, utf8::Length length) throw ();
-    void      machineControl(uint8_t c) throw ();
-    void      machineEscape(uint8_t c) throw ();
-    void      machineCsi(bool priv,
-                         const std::vector<int32_t> & args,
-                         uint8_t code) throw ();
-    void      machineDcs(const std::vector<uint8_t> & seq) throw ();
-    void      machineOsc(const std::vector<std::string> & args) throw ();
-    void      machineSpecial(uint8_t special, uint8_t code) throw ();
+    void     machineNormal(utf8::Seq seq, utf8::Length length) throw ();
+    void     machineControl(uint8_t c) throw ();
+    void     machineEscape(uint8_t c) throw ();
+    void     machineCsi(bool priv,
+                        const std::vector<int32_t> & args,
+                        uint8_t code) throw ();
+    void     machineDcs(const std::vector<uint8_t> & seq) throw ();
+    void     machineOsc(const std::vector<std::string> & args) throw ();
+    void     machineSpecial(uint8_t special, uint8_t code) throw ();
 };
 
 std::ostream & operator << (std::ostream & ost, Terminal::Button button);
