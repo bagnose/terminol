@@ -345,17 +345,22 @@ void Terminal::scrollWheel(ScrollDir dir, ModifierSet modifiers, bool UNUSED(wit
         sendMouseButton(dir == ScrollDir::UP ? 3 : 4, modifiers, pos);
     }
     else {
+        uint16_t rows =
+            modifiers.get(Modifier::SHIFT) ?
+            1 :
+            std::max(1, _buffer->getRows() / 4);
+
         switch (dir) {
             case ScrollDir::UP:
                 // TODO consolidate scroll operations with method.
-                if (_buffer->scrollUpHistory(std::max(1, _buffer->getRows() / 4))) {
+                if (_buffer->scrollUpHistory(rows)) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
                               Damager::SCROLL);
                 }
                 break;
             case ScrollDir::DOWN:
-                if (_buffer->scrollDownHistory(std::max(1, _buffer->getRows() / 4))) {
+                if (_buffer->scrollDownHistory(rows)) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
                               Damager::SCROLL);
