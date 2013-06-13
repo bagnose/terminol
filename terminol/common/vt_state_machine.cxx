@@ -410,11 +410,13 @@ void VtStateMachine::dcsParam(utf8::Seq seq, utf8::Length length) {
             // ignore
         }
         else if (inRange(c, 0x20, 0x7F)) {
-            // TODO collect
+            // collect
+            _escSeq.push_back(c);
             _state = State::DCS_INTERMEDIATE;
         }
         else if (inRange(c, 0x30, 0x39) || c == 0x3B) {
-            // TODO param
+            // param
+            _escSeq.push_back(c);
         }
         else if (c == 0x3A || inRange(c, 0x3C, 0x3F)) {
             _state = State::DCS_IGNORE;
@@ -463,7 +465,8 @@ void VtStateMachine::dcsIntermediate(utf8::Seq seq, utf8::Length length) {
             // ignore
         }
         else if (inRange(c, 0x20, 0x2F)) {
-            // TODO collect
+            // collect
+            _escSeq.push_back(c);
         }
         else if (inRange(c, 0x30, 0x3F)) {
             _state = State::DCS_IGNORE;
@@ -543,6 +546,9 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
             // FIXME masking DECSTR - Soft Terminal Reset
             // [!p
         }
+        else if (seq[i] == '>') {
+            // FIXME tmux masking >4;1m
+        }
         else {
             break;
         }
@@ -575,6 +581,7 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
         ++i;
     }
 
+    /*
     for (;;) {
         if (seq[i] == '>') {
         }
@@ -584,6 +591,7 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
 
         ++i;
     }
+    */
 
     ASSERT(i == seq.size() - 1, "i=" << i << ", seq.size=" << seq.size() << ", Seq: " << Str(seq));
 
@@ -618,7 +626,7 @@ void VtStateMachine::processOsc(const std::vector<uint8_t> & seq) {
 }
 
 void VtStateMachine::processSpecial(const std::vector<uint8_t> & seq) {
-    PRINT("SPC: " << Str(seq));
+    //PRINT("SPC: " << Str(seq));
 
     ASSERT(seq.size() == 2, "");
     uint8_t special = seq.front();
