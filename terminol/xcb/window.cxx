@@ -15,20 +15,19 @@
 #define xcb_request_failed(connection, cookie, err_msg) _xcb_request_failed(connection, cookie, err_msg, __LINE__)
 namespace {
 
-uint8_t _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
-                        const char * err_msg, int line) {
+bool _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
+                         const char * err_msg, int line) {
     auto error = xcb_request_check(connection, cookie);
     if (error) {
-        auto code = error->error_code;
         std::cerr
             << '[' << __FILE__ << ':' << line << "] ERROR: " << err_msg
-            << ". X Error Code: " << int(code)
+            << ". X Error Code: " << static_cast<int>(error->error_code)
             << std::endl;
         std::free(error);
-        return code;
+        return true;
     }
     else {
-        return 0;
+        return false;
     }
 }
 
@@ -133,6 +132,8 @@ Window::Window(I_Observer         & observer,
         throw Error("Failed to create window.");
     }
 
+    auto windowGuard = scopeGuard([&] {xcb_destroy_window(_basics.connection(), _window);});
+
     //
     // Do the ICCC jive.
     //
@@ -153,10 +154,11 @@ Window::Window(I_Observer         & observer,
                                    _window,
                                    XCB_GC_GRAPHICS_EXPOSURES,
                                    gcValues);
-    if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate gc")) {
-        xcb_destroy_window(_basics.connection(), _window);
+    if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate GC")) {
         throw Error("Failed to create GC.");
     }
+
+    auto gcGuard = scopeGuard([&] { xcb_free_gc(_basics.connection(), _window); });
 
     //
     // Create the TTY and terminal.
@@ -174,12 +176,13 @@ Window::Window(I_Observer         & observer,
 
     cookie = xcb_map_window_checked(_basics.connection(), _window);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to map window")) {
-        xcb_free_gc(_basics.connection(), _gc);
-        xcb_destroy_window(_basics.connection(), _window);
         throw Error("Failed to map window.");
     }
 
     xcb_flush(_basics.connection());
+
+    gcGuard.dismiss();
+    windowGuard.dismiss();
 }
 
 Window::~Window() {
@@ -194,11 +197,7 @@ Window::~Window() {
 
         if (_config.getDoubleBuffer()) {
             auto cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
-            if (xcb_request_failed(_basics.connection(), cookie,
-                                   "Failed to free pixmap"))
-            {
-                FATAL("Failed to free pixmap");
-            }
+            xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
         }
     }
     else {
@@ -218,11 +217,7 @@ Window::~Window() {
     // The window may have been destroyed exogenously.
     if (!_destroyed) {
         auto cookie = xcb_destroy_window_checked(_basics.connection(), _window);
-        if (xcb_request_failed(_basics.connection(), cookie,
-                               "Failed to destroy window"))
-        {
-            FATAL("Failed to destroy window");
-        }
+        xcb_request_failed(_basics.connection(), cookie, "Failed to destroy window");
     }
 
     xcb_flush(_basics.connection());
@@ -367,16 +362,16 @@ void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
 
     if (_config.getDoubleBuffer()) {
         _pixmap = xcb_generate_id(_basics.connection());
+        // Note, we create the pixmap against the root window rather than
+        // _window to avoid dealing with the case where _window may have been
+        // asynchronously destroyed.
         auto cookie = xcb_create_pixmap_checked(_basics.connection(),
                                                 _basics.screen()->root_depth,
                                                 _pixmap,
-                                                //_window,
                                                 _basics.screen()->root,
                                                 _width,
                                                 _height);
-        if (xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap")) {
-            FATAL("Failed to create pixmap");
-        }
+        xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap");
     }
 
     _surface = cairo_xcb_surface_create(_basics.connection(),
@@ -403,9 +398,7 @@ void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     if (_config.getDoubleBuffer()) {
         ASSERT(_pixmap, "");
         auto cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
-        if (xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap")) {
-            FATAL("Failed to free pixmap");
-        }
+        xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
         _pixmap = 0;
     }
 
@@ -434,10 +427,7 @@ void Window::expose(xcb_expose_event_t * event) {
                                                 event->x, event->y,
                                                 event->x, event->y,
                                                 event->width, event->height);
-            if (xcb_request_failed(_basics.connection(), cookie,
-                                   "Failed to copy area")) {
-                ERROR("Failed to copy area");
-            }
+            xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
             xcb_flush(_basics.connection());
         }
         else {
@@ -479,15 +469,15 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
             _surface = nullptr;
 
             auto cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
-            if (xcb_request_failed(_basics.connection(), cookie,
-                                   "Failed to free pixmap")) {
-                FATAL("Failed to free");
-            }
+            xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
             _pixmap = 0;
 
             //
 
             _pixmap = xcb_generate_id(_basics.connection());
+            // Note, we create the pixmap against the root window rather than
+            // _window to avoid dealing with the case where _window may have been
+            // asynchronously destroyed.
             cookie = xcb_create_pixmap_checked(_basics.connection(),
                                                _basics.screen()->root_depth,
                                                _pixmap,
@@ -495,10 +485,7 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
                                                _basics.screen()->root,
                                                _width,
                                                _height);
-            if (xcb_request_failed(_basics.connection(), cookie,
-                                   "Failed to create pixmap")) {
-                FATAL("Failed to create pixmap");
-            }
+            xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap");
 
             cairo_surface_finish(_surface);
             _surface = cairo_xcb_surface_create(_basics.connection(),
@@ -645,10 +632,7 @@ void Window::selectionRequest(xcb_selection_request_event_t * event) {
                                                   32,
                                                   1,
                                                   &atomUtf8String);
-        if (xcb_request_failed(_basics.connection(), cookie,
-                               "Failed to change property")) {
-            FATAL("Failed to change property");
-        }
+        xcb_request_failed(_basics.connection(), cookie, "Failed to change property");
         response.property = event->property;
     }
     else if (event->target == _basics.atomUtf8String()) {
@@ -672,10 +656,7 @@ void Window::selectionRequest(xcb_selection_request_event_t * event) {
                                                   8,
                                                   text.length(),
                                                   text.data());
-        if (xcb_request_failed(_basics.connection(), cookie,
-                               "Failed to change property")) {
-            FATAL("Failed to change property");
-        }
+        xcb_request_failed(_basics.connection(), cookie, "Failed to change property");
         response.property = event->property;
     }
 
@@ -684,10 +665,7 @@ void Window::selectionRequest(xcb_selection_request_event_t * event) {
                                          event->requestor,
                                          0,
                                          reinterpret_cast<const char *>(&response));
-        if (xcb_request_failed(_basics.connection(), cookie,
-                               "Failed to send event")) {
-            FATAL("Failed to send event");
-        }
+    xcb_request_failed(_basics.connection(), cookie, "Failed to send event");
 
     xcb_flush(_basics.connection());        // Required?
 }
@@ -915,10 +893,7 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
                                     x, y, // src
                                     x, y, // dst
                                     w, h);
-        if (xcb_request_failed(_basics.connection(), cookie,
-                               "Failed to copy area")) {
-            FATAL("Failed to copy area");
-        }
+        xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
     }
 
     xcb_flush(_basics.connection());
@@ -1044,14 +1019,11 @@ void Window::terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () {
                                            XCB_CONFIG_WINDOW_WIDTH |
                                            XCB_CONFIG_WINDOW_HEIGHT,
                                            values);
-        if (xcb_request_failed(_basics.connection(), cookie,
+        if (!xcb_request_failed(_basics.connection(), cookie,
                                "Failed to configure window")) {
-            FATAL("Failed to configure window");
+            xcb_flush(_basics.connection());
+            _observer.sync();
         }
-
-        xcb_flush(_basics.connection());
-
-        _observer.sync();
     }
 }
 
