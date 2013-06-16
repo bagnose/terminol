@@ -48,6 +48,12 @@ void read(std::istream & ist, Config & config) {
                 else if (lhs == "scrollBackHistory") {
                     config.setScrollBackHistory(unstringify<size_t>(rhs));
                 }
+                else if (lhs == "unlimitedScrollBack") {
+                    config.setUnlimitedScrollBack(unstringify<bool>(rhs));
+                }
+                else if (lhs == "reflowHistory") {
+                    config.setReflowHistory(unstringify<size_t>(rhs));
+                }
                 else if (lhs == "serverFork") {
                     config.setServerFork(unstringify<bool>(rhs));
                 }

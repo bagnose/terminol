@@ -176,6 +176,7 @@ Config::Config() :
     _chdir(),
     _scrollBackHistory(4096),
     _unlimitedScrollBack(true),
+    _reflowHistory(1024),
     _framesPerSecond(50),
     _traditionalWrapping(false),
     //

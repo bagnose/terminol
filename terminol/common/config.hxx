@@ -34,6 +34,7 @@ private:
     std::string _chdir;
     size_t      _scrollBackHistory;
     bool        _unlimitedScrollBack;
+    size_t      _reflowHistory;
     int         _framesPerSecond;
     bool        _traditionalWrapping;
     // Debugging support:
@@ -81,6 +82,8 @@ public:
     void setIcon(const std::string & val) { _icon = val; }
     void setChdir(const std::string & val) { _chdir = val; }
     void setScrollBackHistory(size_t val) { _scrollBackHistory = val; }
+    void setUnlimitedScrollBack(bool val) { _unlimitedScrollBack = val; }
+    void setReflowHistory(size_t val) { _reflowHistory = val; }
     void setTraceTty(bool val) { _traceTty = val; }
     void setSyncTty(bool val) { _syncTty = val; }
     void setServerFork(bool val) { _serverFork = val; }
@@ -99,6 +102,7 @@ public:
     const std::string & getChdir() const { return _chdir; }
     size_t              getScrollBackHistory() const { return _scrollBackHistory; }
     bool                getUnlimitedScrollBack() const { return _unlimitedScrollBack; }
+    size_t              getReflowHistory() const { return _reflowHistory; }
     int                 getFramesPerSecond() const { return _framesPerSecond; }
     bool                getTraditionalWrapping() const { return _traditionalWrapping; }
     bool                getTraceTty() const { return _traceTty; }

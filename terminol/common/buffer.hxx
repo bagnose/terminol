@@ -5,6 +5,7 @@
 
 #include "terminol/common/data_types.hxx"
 #include "terminol/common/config.hxx"
+#include "terminol/support/escape.hxx"
 
 #include <unordered_map>
 #include <deque>
@@ -45,44 +46,53 @@ public:
     //typedef uint8_t Tag;
 
     struct Line {
-        Line(bool cont_, uint16_t wrap_, std::vector<Cell> && cells_) :
+        Line() : cont(false), wrap(0), cells() {}
+
+        Line(bool cont_, uint16_t wrap_, std::vector<Cell> & cells_) :
             cont(cont_),
             wrap(wrap_),
-            cells(cells_),
-            refCount(1) {}
+            cells(std::move(cells_)) {}
 
         bool              cont;
         uint16_t          wrap;
         std::vector<Cell> cells;
-        uint32_t          refCount;
     };
 
 private:
-    std::unordered_map<Tag, Line> _lines;
-    size_t                        _totalRefCount;
+    struct Payload {
+        Payload(bool cont_, uint16_t wrap_, std::vector<Cell> & cells_) :
+            line(cont_, wrap_, cells_),
+            refCount(1) {}
+
+        Line     line;
+        uint32_t refCount;
+    };
+
+    std::unordered_map<Tag, Payload> _lines;
+    size_t                           _totalRefCount;
 
 public:
     Deduper() : _lines(), _totalRefCount(0) {}
 
-    Tag store(bool cont, uint16_t wrap, std::vector<Cell> && cells) {
+    Tag store(bool cont, uint16_t wrap, std::vector<Cell> & cells) {
         auto tag = makeTag(cells);
 
 again:
         auto iter = _lines.find(tag);
 
         if (iter == _lines.end()) {
-            _lines.insert(std::make_pair(tag, Line(cont, wrap, std::move(cells))));
+            _lines.insert(std::make_pair(tag, Payload(cont, wrap, cells)));
         }
         else {
-            auto & line = iter->second;
+            auto & payload = iter->second;
 
-            if (cells != line.cells) {
+            if (cells != payload.line.cells) {
 #if DEBUG
                 PRINT("Collision between:");
                 for (auto c : cells) { std::cerr << c.seq; }
                 std::cerr << std::endl;
                 PRINT("And:");
-                for (auto c : line.cells) { std::cerr << c.seq; }
+                for (auto c : payload.line.cells) { std::cerr << c.seq; }
                 std::cerr << std::endl;
 #endif
 
@@ -92,7 +102,7 @@ again:
                 goto again;
             }
 
-            ++line.refCount;
+            ++payload.refCount;
         }
 
         ++_totalRefCount;
@@ -109,16 +119,15 @@ again:
     const Line & lookup(Tag tag) const {
         auto iter = _lines.find(tag);
         ASSERT(iter != _lines.end(), "");
-        const auto & line = iter->second;
-        return line;
+        return iter->second.line;
     }
 
     void remove(Tag tag) {
         auto iter = _lines.find(tag);
         ASSERT(iter != _lines.end(), "");
-        auto & line = iter->second;
+        auto & payload = iter->second;
 
-        if (--line.refCount == 0) {
+        if (--payload.refCount == 0) {
             _lines.erase(iter);
         }
 
@@ -129,6 +138,23 @@ again:
             PRINT("--- " << 100.0 * double(_lines.size()) / double(_totalRefCount) << " %");
         }
 #endif
+    }
+
+    void lookupRemove(Tag tag, Line & line) {
+        auto iter = _lines.find(tag);
+        ASSERT(iter != _lines.end(), "");
+        auto & payload = iter->second;
+
+        if (--payload.refCount == 0) {
+            line.cont  = payload.line.cont;
+            line.wrap  = payload.line.wrap;
+            line.cells = std::move(payload.line.cells);
+            ASSERT(payload.line.cells.empty(), "");
+            _lines.erase(iter);
+        }
+        else {
+            line = payload.line;
+        }
     }
 
 private:
@@ -166,15 +192,16 @@ class Buffer {
             _damageBegin(0),
             _damageEnd(cols) {}
 
-        Line(uint16_t cols, bool cont, uint16_t wrap, const std::vector<Cell> & cells_) :
+        Line(uint16_t cols, bool cont, uint16_t wrap, std::vector<Cell> & cells_) :
             _cont(cont),
             _wrap(wrap),
-            _cells(cells_),
+            _cells(std::move(cells_)),
             _cols(cols),
             _damageBegin(0),
             _damageEnd(cols)
         {
             resizeSoft(cols);
+            ASSERT(_wrap <= _cols, "");
         }
 
         const std::vector<Cell> & cells() const { return _cells; }
@@ -213,10 +240,6 @@ class Buffer {
 
         void setContinuation() {
             _cont = true;
-        }
-
-        void clearContinuation() {
-            _cont = false;
         }
 
         bool isContinuation() const {
@@ -259,6 +282,7 @@ class Buffer {
             }
 
             _cols = cols;
+            _wrap = std::min(_wrap, _cols);
         }
 
         void clear() {
@@ -330,6 +354,11 @@ class Buffer {
             _cells.insert(begin(),
                           previous.begin() + previous.getWrap() - n,
                           previous.begin() + previous.getWrap());
+            /*
+            std::fill(previous.begin() + previous.getWrap() - n,
+                      previous.begin() + previous.getWrap(),
+                      Cell::blank());
+                      */
             _wrap += n;
             previous._wrap -= n;
 
@@ -338,20 +367,16 @@ class Buffer {
 
         void unwrapTo(Line & previous, uint16_t n) {
             ASSERT(n <= _cols, "");
+            ASSERT(n != 0, "");
 
-            for (uint16_t i = 0; i != n; ++i) {
-                previous.setCell(previous.getWrap(), getCell(i), true);
-            }
-
-            uint16_t oldWrapValue = _wrap;
-
+            previous._cells.insert(previous.begin() + previous.getWrap(),
+                                   begin(),
+                                   begin() + n);
             std::copy(begin() + n, end(), begin());
+            /* std::fill(end() - n, end(), Cell::blank()); */
 
-            for (uint16_t i = _cols - n; i != _cols; ++i) {
-                setCell(i, Cell::blank(), true);       // Screws up value of _wrap
-            }
-
-            _wrap = oldWrapValue - n;
+            previous._wrap += n;
+            _wrap -= n;
 
             damageAll();
         }
@@ -517,7 +542,7 @@ protected:
             cells.pop_back();
         }
         cells.shrink_to_fit();
-        auto tag = _deduper.store(cont, wrap, std::move(cells));
+        auto tag = _deduper.store(cont, wrap, cells);
 
         if (_history.size() == _historyLimit) {
             _deduper.remove(_history.front());
@@ -531,10 +556,10 @@ protected:
         ASSERT(!_history.empty(), "");
 
         auto tag = _history.back();
-        const auto & line = _deduper.lookup(tag);
+        Deduper::Line line;
+        _deduper.lookupRemove(tag, line);
         _active.push_front(Line(_cols, line.cont, line.wrap, line.cells));
         _history.pop_back();
-        _deduper.remove(tag);
     }
 
     void normalSelection(APos & b, APos & e) const {
@@ -766,7 +791,6 @@ public:
     void setContinuation(uint16_t row) {
         ASSERT(row < getRows(), "");
         _active[row].setContinuation();
-        // FIXME clearContinuation() where appropriate
     }
 
     void setCells(Pos pos, uint16_t n, const Cell & cell) {
@@ -839,11 +863,16 @@ public:
         ASSERT(rows != 0, "");
         ASSERT(cols != 0, "");
 
+        for (size_t i = 0; i != _config.getReflowHistory() && !_history.empty(); ++i) {
+            unbump();
+            ++cursor.row;
+        }
+
         //
         // Cols
         //
 
-#if 1
+#if 0
         // Clip / unclip
 
         if (cols != _cols) {
@@ -861,13 +890,14 @@ public:
         // Re-flow
 
         if (cols > _cols) {
-            const uint16_t deltaCols = cols - _cols;
+            //const uint16_t deltaCols = cols - _cols;
 
             uint16_t availability;
             uint16_t r = 0;
 
             while (r != _active.size()) {
                 _active[r].resizeHard(cols);
+                ASSERT(cols >= _active[r].getWrap(), "");
 
                 if (r != 0 && _active[r].isContinuation()) {
                     if (availability < _active[r].getWrap()) {
@@ -879,14 +909,13 @@ public:
                     else {
                         // Complete consumption - erase line.
                         _active[r].unwrapTo(_active[r - 1], _active[r].getWrap());
+                        availability = cols - _active[r - 1].getWrap();
                         _active.erase(_active.begin() + r);
-                        availability -= _active[r].getWrap();
-
                         if (cursor.row >= r) { --cursor.row; }
                     }
                 }
                 else {
-                    availability = deltaCols;
+                    availability = cols - _active[r].getWrap();
                     ++r;
                 }
             }
@@ -905,7 +934,6 @@ public:
 
                     if (r + 1 == _active.size() || !_active[r + 1].isContinuation()) {
                         _active.insert(_active.begin() + r + 1, Line(0, true));
-
                         if (cursor.row >= r + 1) { ++cursor.row; }
                     }
 
@@ -913,7 +941,6 @@ public:
                 }
 
                 _active[r].resizeHard(cols);
-
                 ++r;
             }
 
@@ -1130,9 +1157,18 @@ public:
         for (const auto & l : _active) {
             ost << l.isContinuation() << " " << std::setw(3) << l.getWrap() << " \'";
 
-            for (const auto & c : l) {
-                ost << c.seq;
+            uint16_t col = 0;
+
+            ost << SGR::UNDERLINE;
+            for (; col != l.getWrap(); ++col) {
+                ost << l.getCell(col).seq;
             }
+            ost << SGR::RESET_UNDERLINE;
+
+            for (; col != getCols(); ++col) {
+                ost << l.getCell(col).seq;
+            }
+
             ost << "\'" << std::endl;
         }
         ost << std::endl;
