@@ -1379,6 +1379,15 @@ void Terminal::machineCsi(uint8_t priv,
                 }
             }
             break;
+        case 'p':
+            if (priv == '!') {
+                // DECSTR - Soft Terminal Reset
+                NYI("DECSTR");
+            }
+            else {
+                goto default_;
+            }
+            break;
         case 'q': // DECSCA - Select Character Protection Attribute
             // OR IS THIS DECLL0/DECLL1/etc
             NYI("DECSCA");
