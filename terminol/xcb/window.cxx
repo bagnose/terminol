@@ -701,17 +701,23 @@ void Window::icccmConfigure() {
     const auto BORDER_THICKNESS = _config.getBorderThickness();
     const auto SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
 
+    const auto BASE_WIDTH  = 2 * BORDER_THICKNESS + SCROLLBAR_WIDTH;
+    const auto BASE_HEIGHT = 2 * BORDER_THICKNESS;
+
+    const auto MIN_COLS = 8;
+    const auto MIN_ROWS = 2;
+
     xcb_size_hints_t sizeHints;
     sizeHints.flags = 0;
     xcb_icccm_size_hints_set_min_size(&sizeHints,
-                                      2 * BORDER_THICKNESS + _fontSet.getWidth() + SCROLLBAR_WIDTH,
-                                      2 * BORDER_THICKNESS + _fontSet.getHeight());
+                                      BASE_WIDTH  + MIN_COLS * _fontSet.getWidth(),
+                                      BASE_HEIGHT + MIN_ROWS * _fontSet.getHeight());
     xcb_icccm_size_hints_set_resize_inc(&sizeHints,
                                         _fontSet.getWidth(),
                                         _fontSet.getHeight());
     xcb_icccm_size_hints_set_base_size(&sizeHints,
-                                       2 * BORDER_THICKNESS,
-                                       2 * BORDER_THICKNESS);
+                                       BASE_WIDTH,
+                                       BASE_HEIGHT);
     xcb_icccm_size_hints_set_win_gravity(&sizeHints, XCB_GRAVITY_NORTH_WEST);
     // XXX or call xcb_icccm_set_wm_normal_hints() ?
     xcb_icccm_set_wm_size_hints(_basics.connection(),
