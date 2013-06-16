@@ -30,6 +30,7 @@ class Terminal :
 public:
     class I_Observer {
     public:
+        virtual void terminalGetDisplay(std::string & display) throw () = 0;
         virtual void terminalCopy(const std::string & text, bool clipboard) throw () = 0;
         virtual void terminalPaste(bool clipboard) throw () = 0;
         virtual void terminalResizeFont(int delta) throw () = 0;

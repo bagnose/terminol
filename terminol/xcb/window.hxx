@@ -132,6 +132,7 @@ protected:
 
     // Terminal::I_Observer implementation:
 
+    void terminalGetDisplay(std::string & display) throw ();
     void terminalCopy(const std::string & text, bool clipboard) throw ();
     void terminalPaste(bool clipboard) throw ();
     void terminalResizeFont(int delta) throw ();

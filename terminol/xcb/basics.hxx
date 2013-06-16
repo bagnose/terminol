@@ -15,6 +15,7 @@
 class Basics : protected Uncopyable {
     std::string             _hostname;
 
+    std::string             _display;
     xcb_connection_t      * _connection;
     int                     _screenNum;
     xcb_screen_t          * _screen;
@@ -48,6 +49,7 @@ public:
 
     const std::string     & hostname()       const { return _hostname;        }
 
+    const std::string     & display()        const { return _display;         }
     xcb_connection_t      * connection()           { return _connection;      }
     int                     screenNum()            { return _screenNum;       }
     xcb_screen_t          * screen()               { return _screen;          }

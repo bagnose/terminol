@@ -1339,7 +1339,12 @@ void Terminal::machineCsi(uint8_t priv,
                     }
                     case 7: {
                         // Ps = 7   Request Display Name
-                        NYI("");
+                        std::string display;
+                        _observer.terminalGetDisplay(display);
+                        std::ostringstream ost;
+                        ost << display << LF;
+                        const auto & str = ost.str();
+                        write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
                         break;
                     }
                     case 8: {

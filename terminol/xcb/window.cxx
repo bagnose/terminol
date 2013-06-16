@@ -968,6 +968,10 @@ void Window::drawBorder() {
 
 // Terminal::I_Observer implementation:
 
+void Window::terminalGetDisplay(std::string & display) throw () {
+    display = _basics.display();
+}
+
 void Window::terminalCopy(const std::string & text, bool clipboard) throw () {
     //PRINT("Copy: '" << text << "', clipboard: " << clipboard);
 

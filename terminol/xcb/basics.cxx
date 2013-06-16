@@ -16,6 +16,9 @@ Basics::Basics() throw (Error) {
         _hostname = h;
     }
 
+    const char * d = ::getenv("DISPLAY");
+    _display = d ? d : ":0";
+
     _connection = xcb_connect(nullptr, &_screenNum);
     if (xcb_connection_has_error(_connection)) {
         throw Error("Failed to connect to display.");
