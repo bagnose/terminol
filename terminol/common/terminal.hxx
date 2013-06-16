@@ -227,6 +227,7 @@ protected:
     void     machineEscape(uint8_t c) throw ();
     void     machineCsi(uint8_t priv,
                         const std::vector<int32_t> & args,
+                        const std::vector<uint8_t> & inters,
                         uint8_t code) throw ();
     void     machineDcs(const std::vector<uint8_t> & seq) throw ();
     void     machineOsc(const std::vector<std::string> & args) throw ();

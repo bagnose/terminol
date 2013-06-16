@@ -1141,6 +1141,7 @@ void Terminal::machineEscape(uint8_t c) throw () {
 
 void Terminal::machineCsi(uint8_t priv,
                           const std::vector<int32_t> & args,
+                          const std::vector<uint8_t> & UNUSED(inters),
                           uint8_t mode) throw () {
     switch (mode) {
         case '@': { // ICH - Insert Character
