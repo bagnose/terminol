@@ -1789,11 +1789,11 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
     }
 }
 
-void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & args) {
+void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> & args) {
     //PRINT("processModes: priv=" << priv << ", set=" << set << ", args=" << strArgs(args));
 
     for (auto a : args) {
-        if (priv) {
+        if (priv == '?') {
             switch (a) {
                 case 1: // DECCKM - Cursor Keys Mode - Application / Cursor
                     _modes.setTo(Mode::APPCURSOR, set);
@@ -1914,7 +1914,7 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     break;
             }
         }
-        else {
+        else if (priv == NUL) {
             switch (a) {
                 case 0:  // Error (IGNORED)
                     break;
@@ -1934,6 +1934,9 @@ void Terminal::processModes(bool priv, bool set, const std::vector<int32_t> & ar
                     ERROR("erresc: unknown set/reset mode: " <<  a);
                     break;
             }
+        }
+        else {
+            ERROR("?!");
         }
     }
 }

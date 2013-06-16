@@ -218,7 +218,7 @@ protected:
     void     processChar(utf8::Seq seq, utf8::Length length);
 
     void     processAttributes(const std::vector<int32_t> & args);
-    void     processModes(bool priv, bool set, const std::vector<int32_t> & args);
+    void     processModes(uint8_t priv, bool set, const std::vector<int32_t> & args);
 
     // VtStateMachine::I_Observer implementation:
 
