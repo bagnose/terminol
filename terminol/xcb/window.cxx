@@ -415,6 +415,7 @@ void Window::expose(xcb_expose_event_t * event) {
 
     if (_mapped) {
         if (_hadExpose) {
+            // Once we've had our first expose the pixmap is always valid.
             ASSERT(_pixmap, "");
             auto cookie = xcb_copy_area_checked(_basics.connection(),
                                                 _pixmap,
@@ -444,7 +445,7 @@ void Window::expose(xcb_expose_event_t * event) {
 void Window::configureNotify(xcb_configure_notify_event_t * event) {
     ASSERT(event->window == _window, "Which window?");
 
-    // We are only interested in size changes.
+    // We are only interested in size changes (not moves).
     if (_width == event->width && _height == event->height) {
         return;
     }
@@ -480,6 +481,8 @@ void Window::deferral() {
         xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
         _pixmap = 0;
 
+        //
+        //
         //
 
         _pixmap = xcb_generate_id(_basics.connection());

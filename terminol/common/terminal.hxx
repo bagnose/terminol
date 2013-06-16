@@ -105,8 +105,8 @@ private:
         CharSet          cs;
         //
         Pos              pos;
-        bool             wrapNext;
-        bool             originMode;
+        bool             wrapNext;          // FIXME belongs in buffer
+        bool             originMode;        // FIXME belongs in buffer
         //
         Style            style;
     };

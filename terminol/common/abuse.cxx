@@ -7,6 +7,8 @@
 
 #include <cstdlib>
 
+// FIXME model this off the state machine
+
 int randomInt(int min, int max /* exclusive */) {
     return min + (random() % (max - min));
 }

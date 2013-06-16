@@ -22,7 +22,7 @@ class Buffer {
         uint16_t          _wrap;        // Wrappable index
         std::vector<Cell> _cells;
         //
-        uint16_t          _cols;        // May be more due to resizePreserve.
+        uint16_t          _cols;        // May be more cells than this due to resizePreserve.
         uint16_t          _damageBegin;
         uint16_t          _damageEnd;
 

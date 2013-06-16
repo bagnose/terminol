@@ -237,8 +237,10 @@ void Terminal::sendMouseButton(int num, ModifierSet modifiers, Pos pos) {
 
 void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
                            bool UNUSED(within), Pos pos) {
+    /*
     PRINT("press: " << button << ", count=" << count <<
           ", state=" << modifiers << ", " << pos);
+          */
 
     ASSERT(!_pressed, "");
 
@@ -319,8 +321,8 @@ void Terminal::buttonMotion(ModifierSet modifiers, bool within, Pos pos) {
     _pointerPos = pos;
 }
 
-void Terminal::buttonRelease(bool broken, ModifierSet modifiers) {
-    PRINT("release, broken=" << broken);
+void Terminal::buttonRelease(bool UNUSED(broken), ModifierSet modifiers) {
+    //PRINT("release, broken=" << broken);
 
     ASSERT(_pressed, "");
 

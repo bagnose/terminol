@@ -44,13 +44,13 @@ std::ostream & operator << (std::ostream & ost, Modifier);
 //
 
 enum class Mode {
-    AUTO_WRAP,
+    AUTO_WRAP,              // FIXME belongs in buffer
     AUTO_REPEAT,
-    SHOW_CURSOR,
+    SHOW_CURSOR,            // FIXME belongs in buffer
     ALT_SENDS_ESC,
     DELETE_SENDS_DEL,
     CR_ON_LF,
-    INSERT,
+    INSERT,                 // FIXME belongs in buffer
     ECHO,
     KBDLOCK,
     APPKEYPAD,
@@ -94,6 +94,6 @@ enum class Resize {
 };
 
 std::ostream & operator << (std::ostream & ost, Resize resize);
-std::istream & operator >> (std::istream & ist, Resize & resize);
+std::istream & operator >> (std::istream & ist, Resize & resize);       // XXX move to parser.cxx
 
 #endif // COMMON__ENUMS_HXX
