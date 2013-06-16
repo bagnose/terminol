@@ -439,6 +439,7 @@ public:
 
     uint16_t getMarginBegin() const { return _marginBegin; }
     uint16_t getMarginEnd()   const { return _marginEnd;   }
+    uint16_t getMarginSize()  const { return _marginEnd - _marginBegin; }
 
     bool     getBarDamage()   const { return _barDamage; }
 
@@ -1058,10 +1059,12 @@ public:
     }
 
     void scrollUpMargins(uint16_t n) {
+        ASSERT(n <= _marginEnd - _marginBegin, "");
         eraseLines(_marginBegin, n);
     }
 
     void scrollDownMargins(uint16_t n) {
+        ASSERT(n <= _marginEnd - _marginBegin, "");
         insertLines(_marginBegin, n);
     }
 

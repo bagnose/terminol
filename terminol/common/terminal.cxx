@@ -1267,10 +1267,12 @@ void Terminal::machineCsi(bool priv,
             break;
         }
         case 'S': // SU - Scroll Up
-            _buffer->scrollUpMargins(nthArgNonZero(args, 0, 1));
+            _buffer->scrollUpMargins(std::min<uint16_t>(nthArgNonZero(args, 0, 1),
+                                                        _buffer->getMarginSize()));
             break;
         case 'T': // SD - Scroll Down
-            _buffer->scrollDownMargins(nthArgNonZero(args, 0, 1));
+            _buffer->scrollDownMargins(std::min<uint16_t>(nthArgNonZero(args, 0, 1),
+                                                          _buffer->getMarginSize()));
             break;
         case 'X': { // ECH - Erase Char
             auto count = nthArgNonZero(args, 0, 1);
