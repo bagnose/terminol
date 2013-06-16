@@ -1323,7 +1323,7 @@ void Terminal::machineCsi(uint8_t priv,
                         std::ostringstream ost;
                         ost << ESC << "[0n";
                         const auto & str = ost.str();
-                        _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
+                        write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
                         break;
                     }
                     case 6: {
@@ -1334,7 +1334,7 @@ void Terminal::machineCsi(uint8_t priv,
                             << _cursor.pos.row + 1 << ';'
                             << _cursor.pos.col + 1 << 'R';
                         const auto & str = ost.str();
-                        _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
+                        write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
                         break;
                     }
                     case 7: {
