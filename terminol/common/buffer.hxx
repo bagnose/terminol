@@ -902,7 +902,9 @@ public:
                 if (r != 0 && _active[r].isContinuation()) {
                     if (availability < _active[r].getWrap()) {
                         // Partial consumption.
-                        _active[r].unwrapTo(_active[r - 1], availability);
+                        if (availability > 0) {
+                            _active[r].unwrapTo(_active[r - 1], availability);
+                        }
                         availability = cols - _active[r].getWrap();
                         ++r;
                     }
