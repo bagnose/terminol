@@ -4,6 +4,7 @@
 #define COMMON__VT_STATE_MACHINE__H
 
 #include "terminol/common/utf8.hxx"
+#include "terminol/common/config.hxx"
 
 #include <map>
 #include <vector>
@@ -51,11 +52,13 @@ private:
     };
 
     I_Observer           & _observer;
+    const Config         & _config;
     State                  _state;
     std::vector<uint8_t>   _escSeq;
 
 public:
-    explicit VtStateMachine(I_Observer & observer);
+    VtStateMachine(I_Observer   & observer,
+                   const Config & config);
 
     void consume(utf8::Seq seq, utf8::Length length);
 
@@ -76,10 +79,10 @@ protected:
     void dcsPassthrough(utf8::Seq seq, utf8::Length length);
 
 
+    void processControl(uint8_t c);
     void processEsc(const std::vector<uint8_t> & seq);
     void processCsi(const std::vector<uint8_t> & seq);
     void processOsc(const std::vector<uint8_t> & seq);
-    void processSpecial(const std::vector<uint8_t> & seq);
 };
 
 #endif // COMMON__VT_STATE_MACHINE__H

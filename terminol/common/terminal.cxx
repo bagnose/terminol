@@ -108,7 +108,7 @@ Terminal::Terminal(I_Observer   & observer,
     _dumpWrites(false),
     _writeBuffer(),
     _utf8Machine(),
-    _vtMachine(*this)
+    _vtMachine(*this, _config)
 {
     _modes.set(Mode::AUTO_WRAP);
     _modes.set(Mode::SHOW_CURSOR);
@@ -973,10 +973,6 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
         translate(seq.lead(), seq);
     }
 
-    if (_config.getTraceTty()) {
-        std::cerr << SGR::FG_GREEN << SGR::UNDERLINE << seq << SGR::RESET_ALL;
-    }
-
     bool autoWrap = _modes.get(Mode::AUTO_WRAP);
 
     if (_cursor.wrapNext && autoWrap) {
@@ -1012,9 +1008,6 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
 }
 
 void Terminal::machineControl(uint8_t c) throw () {
-    if (_config.getTraceTty()) {
-        std::cerr << SGR::FG_YELLOW << Char(c) << SGR::RESET_ALL;
-    }
 
     switch (c) {
         case BEL:
@@ -1053,18 +1046,12 @@ void Terminal::machineControl(uint8_t c) throw () {
         case FF:
         case VT:
             if (_cursor.pos.row == _buffer->getMarginEnd() - 1) {
-                if (_config.getTraceTty()) {
-                    std::cerr << "(ADDLINE1)" << std::endl;
-                }
                 _buffer->addLine();
             }
             else {
                 moveCursor(_cursor.pos.down());
             }
 
-            if (_config.getTraceTty()) {
-                std::cerr << std::endl;
-            }
             break;
         case SO:
             _cursor.cs = Cursor::CharSet::G1;
@@ -1088,15 +1075,10 @@ void Terminal::machineControl(uint8_t c) throw () {
 }
 
 void Terminal::machineEscape(uint8_t c) throw () {
-    if (_config.getTraceTty()) {
-        std::cerr << SGR::FG_MAGENTA << "ESC" << Char(c) << SGR::RESET_ALL << " ";
-    }
-
     switch (c) {
         case 'D':   // IND - Line Feed (opposite of RI)
             // FIXME still dubious
             if (_cursor.pos.row == _buffer->getMarginEnd() - 1) {
-                if (_config.getTraceTty()) { std::cerr << "(ADDLINE2)" << std::endl; }
                 _buffer->addLine();
             }
             else {
@@ -1107,7 +1089,6 @@ void Terminal::machineEscape(uint8_t c) throw () {
             // FIXME still dubious
             moveCursor(Pos(_cursor.pos.row, 0));
             if (_cursor.pos.row == _buffer->getMarginEnd() - 1) {
-                if (_config.getTraceTty()) { std::cerr << "(ADDLINE3)" << std::endl; }
                 _buffer->addLine();
             }
             else {
@@ -1161,18 +1142,6 @@ void Terminal::machineEscape(uint8_t c) throw () {
 void Terminal::machineCsi(uint8_t priv,
                           const std::vector<int32_t> & args,
                           uint8_t mode) throw () {
-    if (_config.getTraceTty()) {
-        std::cerr << SGR::FG_CYAN << "ESC[";
-        if (priv) { std::cerr << '?'; }
-        auto first = true;
-        for (auto & a : args) {
-            if (first) { first = false; }
-            else       { std::cerr << ';'; }
-            std::cerr << a;
-        }
-        std::cerr << mode << SGR::RESET_ALL << ' ';
-    }
-
     switch (mode) {
         case '@': { // ICH - Insert Character
             auto count = nthArgNonZero(args, 0, 1);
@@ -1203,7 +1172,6 @@ void Terminal::machineCsi(uint8_t priv,
             break;
         case 'f':       // HVP - Horizontal and Vertical Position
         case 'H':       // CUP - Cursor Position
-            if (_config.getTraceTty()) { std::cerr << std::endl; }
             moveCursorOriginMode(Pos(nthArg(args, 0, 1) - 1, nthArg(args, 1, 1) - 1));
             break;
         case 'I':       // CHT - Cursor Forward Tabulation *
@@ -1442,19 +1410,10 @@ default_:
     }
 }
 
-void Terminal::machineDcs(const std::vector<uint8_t> & seq) throw () {
-    if (_config.getTraceTty()) {
-        std::cerr << SGR::FG_RED << "ESC" << Str(seq) << SGR::RESET_ALL << ' ';
-    }
+void Terminal::machineDcs(const std::vector<uint8_t> & UNUSED(seq)) throw () {
 }
 
 void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
-    if (_config.getTraceTty()) {
-        std::cerr << SGR::FG_MAGENTA << "ESC";
-        for (const auto & a : args) { std::cerr << a << ';'; }
-        std::cerr << SGR::RESET_ALL << " ";
-    }
-
     if (!args.empty()) {
         switch (unstringify<int>(args[0])) {
             case 0: // Icon name and window title
@@ -1480,10 +1439,6 @@ void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
 }
 
 void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
-    if (_config.getTraceTty()) {
-        std::cerr << SGR::FG_BLUE << "ESC" << Char(special) << Char(code) << SGR::RESET_ALL << " ";
-    }
-
     switch (special) {
         case '#':
             switch (code) {
