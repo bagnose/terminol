@@ -61,6 +61,7 @@ Window::Window(I_Observer         & observer,
     _surface(nullptr),
     _cr(nullptr),
     _title(_config.getTitle()),
+    _icon(_config.getIcon()),
     _primarySelection(),
     _clipboardSelection(),
     _pressed(false),
@@ -808,22 +809,40 @@ void Window::updateTitle() {
                           8,
                           fullTitle.size(),
                           fullTitle.data());
-
-    xcb_icccm_set_wm_icon_name(_basics.connection(),
-                               _window,
-                               XCB_ATOM_STRING,
-                               8,
-                               fullTitle.size(),
-                               fullTitle.data());
 #else
     xcb_ewmh_set_wm_name(_basics.ewmhConnection(),
                          _window,
                          fullTitle.size(),
                          fullTitle.data());
+#endif
+}
+
+void Window::updateIcon() {
+    ASSERT(_terminal, "");
+
+    std::ostringstream ost;
+
+#if DEBUG
+    ost << "<DEBUG> ";
+#endif
+
+    ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
+    ost << _icon;
+
+    const auto & fullIcon = ost.str();
+
+#if 1
+    xcb_icccm_set_wm_icon_name(_basics.connection(),
+                               _window,
+                               XCB_ATOM_STRING,
+                               8,
+                               fullIcon.size(),
+                               fullIcon.data());
+#else
     xcb_ewmh_set_wm_icon_name(_basics.ewmhConnection(),
                               _window,
-                              fullTitle.size(),
-                              fullTitle.data());
+                              fullIcon.size(),
+                              fullIcon.data());
 #endif
 }
 
@@ -987,15 +1006,23 @@ void Window::terminalResizeFont(int delta) throw () {
     PRINT("Resize font: " << delta);
 }
 
-void Window::terminalResetTitle() throw () {
+void Window::terminalResetTitleAndIcon() throw () {
     _title = _config.getTitle();
+    _icon  = _config.getIcon();
+    updateTitle();
+    updateIcon();
+}
+
+void Window::terminalSetWindowTitle(const std::string & str) throw () {
+    //PRINT("Set title: " << title);
+    _title = str;
     updateTitle();
 }
 
-void Window::terminalSetTitle(const std::string & title) throw () {
+void Window::terminalSetIconName(const std::string & str) throw () {
     //PRINT("Set title: " << title);
-    _title = title;
-    updateTitle();
+    _icon = str;
+    updateIcon();
 }
 
 void Window::terminalBeep() throw () {

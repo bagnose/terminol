@@ -33,8 +33,9 @@ public:
         virtual void terminalCopy(const std::string & text, bool clipboard) throw () = 0;
         virtual void terminalPaste(bool clipboard) throw () = 0;
         virtual void terminalResizeFont(int delta) throw () = 0;
-        virtual void terminalResetTitle() throw () = 0;
-        virtual void terminalSetTitle(const std::string & title) throw () = 0;
+        virtual void terminalResetTitleAndIcon() throw () = 0;
+        virtual void terminalSetWindowTitle(const std::string & str) throw () = 0;
+        virtual void terminalSetIconName(const std::string & str) throw () = 0;
         virtual void terminalBeep() throw () = 0;
         virtual void terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () = 0;
         virtual bool terminalFixDamageBegin(bool internal) throw () = 0;

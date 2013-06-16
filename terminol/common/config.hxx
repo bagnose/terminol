@@ -30,6 +30,7 @@ private:
     bool        _scrollOnPaste;
     bool        _doubleBuffer;
     std::string _title;
+    std::string _icon;
     std::string _chdir;
     size_t      _scrollBackHistory;
     bool        _unlimitedScrollBack;
@@ -77,6 +78,7 @@ public:
     void setScrollOnResize(bool val) { _scrollOnResize = val; }
     void setDoubleBuffer(bool val) { _doubleBuffer = val; }
     void setTitle(const std::string & val) { _title = val; }
+    void setIcon(const std::string & val) { _icon = val; }
     void setChdir(const std::string & val) { _chdir = val; }
     void setScrollBackHistory(size_t val) { _scrollBackHistory = val; }
     void setTraceTty(bool val) { _traceTty = val; }
@@ -93,6 +95,7 @@ public:
     bool                getScrollOnPaste() const { return _scrollOnPaste; }
     bool                getDoubleBuffer() const { return _doubleBuffer; }
     const std::string & getTitle() const { return _title; }
+    const std::string & getIcon() const { return _icon; }
     const std::string & getChdir() const { return _chdir; }
     size_t              getScrollBackHistory() const { return _scrollBackHistory; }
     bool                getUnlimitedScrollBack() const { return _unlimitedScrollBack; }

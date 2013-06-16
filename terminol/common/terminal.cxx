@@ -938,7 +938,7 @@ void Terminal::resetAll() {
     _cursor.reset();
     _savedCursor.reset();
 
-    _observer.terminalResetTitle();
+    _observer.terminalResetTitleAndIcon();
 }
 
 void Terminal::processRead(const uint8_t * data, size_t size) {
@@ -1417,12 +1417,16 @@ void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
     if (!args.empty()) {
         switch (unstringify<int>(args[0])) {
             case 0: // Icon name and window title
-            case 1: // Icon name
-            case 2: // Window title
                 if (args.size() > 1) {
-                    // FIXME don't conflate icon name and window title
-                    _observer.terminalSetTitle(args[1]);
+                    _observer.terminalSetIconName(args[1]);
+                    _observer.terminalSetWindowTitle(args[1]);
                 }
+                break;
+            case 1: // Icon name
+                if (args.size() > 1) { _observer.terminalSetIconName(args[1]); }
+                break;
+            case 2: // Window title
+                if (args.size() > 1) { _observer.terminalSetWindowTitle(args[1]); }
                 break;
             case 55:
                 NYI("Log history to file");

@@ -56,6 +56,7 @@ private:
     cairo_t         * _cr;
 
     std::string       _title;
+    std::string       _icon;
 
     std::string       _primarySelection;
     std::string       _clipboardSelection;
@@ -124,6 +125,7 @@ protected:
     bool xy2Pos(int x, int y, Pos & pos) const;
 
     void updateTitle();
+    void updateIcon();
 
     void draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
     void drawBorder();
@@ -133,8 +135,9 @@ protected:
     void terminalCopy(const std::string & text, bool clipboard) throw ();
     void terminalPaste(bool clipboard) throw ();
     void terminalResizeFont(int delta) throw ();
-    void terminalResetTitle() throw ();
-    void terminalSetTitle(const std::string & title) throw ();
+    void terminalResetTitleAndIcon() throw ();
+    void terminalSetWindowTitle(const std::string & str) throw ();
+    void terminalSetIconName(const std::string & str) throw ();
     void terminalBeep() throw ();
     void terminalResizeBuffer(uint16_t rows, uint16_t cols) throw ();
     bool terminalFixDamageBegin(bool internal) throw ();

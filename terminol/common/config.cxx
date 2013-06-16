@@ -172,6 +172,7 @@ Config::Config() :
     _scrollOnPaste(true),
     _doubleBuffer(true),
     _title("terminol"),
+    _icon("terminol"),
     _chdir(),
     _scrollBackHistory(4096),
     _unlimitedScrollBack(true),
