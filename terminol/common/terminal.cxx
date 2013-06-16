@@ -1357,7 +1357,7 @@ void Terminal::machineCsi(uint8_t priv,
                     }
                     case 8: {
                         // Ps = 8   Request Version Number (place in window title)
-                        NYI("");
+                        _observer.terminalSetWindowTitle("Terminol " VERSION);
                         break;
                     }
                     default:
