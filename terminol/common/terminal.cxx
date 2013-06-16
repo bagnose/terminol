@@ -1335,6 +1335,7 @@ void Terminal::machineCsi(uint8_t priv,
                             << _cursor.pos.col + 1 << 'R';
                         const auto & str = ost.str();
                         _writeBuffer.insert(_writeBuffer.begin(), str.begin(), str.end());
+                        break;
                     }
                     case 7: {
                         // Ps = 7   Request Display Name
