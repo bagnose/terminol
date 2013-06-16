@@ -224,7 +224,7 @@ protected:
     void     machineNormal(utf8::Seq seq, utf8::Length length) throw ();
     void     machineControl(uint8_t c) throw ();
     void     machineEscape(uint8_t c) throw ();
-    void     machineCsi(bool priv,
+    void     machineCsi(uint8_t priv,
                         const std::vector<int32_t> & args,
                         uint8_t code) throw ();
     void     machineDcs(const std::vector<uint8_t> & seq) throw ();

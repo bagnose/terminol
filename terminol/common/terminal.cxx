@@ -1158,7 +1158,7 @@ void Terminal::machineEscape(uint8_t c) throw () {
     }
 }
 
-void Terminal::machineCsi(bool priv,
+void Terminal::machineCsi(uint8_t priv,
                           const std::vector<int32_t> & args,
                           uint8_t mode) throw () {
     if (_config.getTraceTty()) {

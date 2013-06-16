@@ -531,28 +531,15 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
     ASSERT(seq.size() >= 1, "");
 
     size_t i = 0;
-    bool priv = false;
+    uint8_t priv = 0;
     std::vector<int32_t> args;
 
     //
     // Parse the arguments.
     //
 
-    for (;;) {
-        if (seq[i] == '?') {
-            priv = true;
-        }
-        else if (seq[i] == '!') {
-            // FIXME masking DECSTR - Soft Terminal Reset
-            // [!p
-        }
-        else if (seq[i] == '>') {
-            // FIXME tmux masking >4;1m
-        }
-        else {
-            break;
-        }
-
+    if (inRange(seq[i], 0x3C /* < */, 0x3F /* ? */)) {
+        priv = seq[i];
         ++i;
     }
 
