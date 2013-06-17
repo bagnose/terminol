@@ -16,16 +16,17 @@ Basics::Basics() throw (Error) {
         _hostname = h;
     }
 
-    const char * d = ::getenv("DISPLAY");
+    auto d = ::getenv("DISPLAY");
     _display = d ? d : ":0";
 
     _connection = xcb_connect(nullptr, &_screenNum);
     if (xcb_connection_has_error(_connection)) {
         throw Error("Failed to connect to display.");
     }
+    auto connectionGuard = scopeGuard([&] { xcb_disconnect(_connection); });
 
-    const xcb_setup_t * setup = xcb_get_setup(_connection);
-    xcb_screen_iterator_t screenIter = xcb_setup_roots_iterator(setup);
+    auto setup      = xcb_get_setup(_connection);
+    auto screenIter = xcb_setup_roots_iterator(setup);
     for (int i = 0; i != _screenNum; ++i) {
         xcb_screen_next(&screenIter);
     }
@@ -33,14 +34,10 @@ Basics::Basics() throw (Error) {
 
     _visual = nullptr;
     for (xcb_depth_iterator_t depth_iter = xcb_screen_allowed_depths_iterator(_screen);
-         depth_iter.rem;
-         xcb_depth_next(&depth_iter))
+         depth_iter.rem; xcb_depth_next(&depth_iter))
     {
-        xcb_visualtype_iterator_t visual_iter;
-
-        for (visual_iter = xcb_depth_visuals_iterator(depth_iter.data);
-             visual_iter.rem;
-             xcb_visualtype_next(&visual_iter))
+        for (auto visual_iter = xcb_depth_visuals_iterator(depth_iter.data);
+             visual_iter.rem; xcb_visualtype_next(&visual_iter))
         {
             if (_screen->root_visual == visual_iter.data->visual_id) {
                 _visual = visual_iter.data;
@@ -48,16 +45,23 @@ Basics::Basics() throw (Error) {
             }
         }
     }
-    ENFORCE(_visual, "");
+    if (!_visual) {
+        throw Error("Failed to locate visual");
+    }
 
     _keySymbols = xcb_key_symbols_alloc(_connection);
-    ENFORCE(_keySymbols, "");
+    if (!_keySymbols) {
+        throw Error("Failed to load key symbols");
+    }
+    auto keySymbolsGuard = scopeGuard([&] { xcb_key_symbols_free(_keySymbols); });
 
     if (xcb_ewmh_init_atoms_replies(&_ewmhConnection,
                                     xcb_ewmh_init_atoms(_connection, &_ewmhConnection),
                                     nullptr) == 0) {
-        FATAL("Can't initialise EWMH atoms");
+        throw Error("Failed to initialise EWMH atoms");
     }
+    auto ewmhConnectionGuard =
+        scopeGuard([&] { xcb_ewmh_connection_wipe(&_ewmhConnection); } );
 
     _atomPrimary    = XCB_ATOM_PRIMARY;
     _atomClipboard  = lookupAtom("CLIPBOARD");
@@ -66,21 +70,13 @@ Basics::Basics() throw (Error) {
 
     determineMasks();
 
-    /*
-    PRINT("Mask: Shift: " << int(_maskShift));
-    PRINT("Mask: Alt: " << int(_maskAlt));
-    PRINT("Mask: Control: " << int(_maskControl));
-    PRINT("Mask: Super: " << int(_maskSuper));
-    PRINT("Mask: Num lock: " << int(_maskNumLock));
-    PRINT("Mask: Shift lock: " << int(_maskShiftLock));
-    PRINT("Mask: Caps lock: " << int(_maskCapsLock));
-    PRINT("Mask: Mode switch: " << int(_maskModeSwitch));
-    */
+    keySymbolsGuard.dismiss();
+    connectionGuard.dismiss();
 }
 
 Basics::~Basics() {
-    xcb_key_symbols_free(_keySymbols);
     xcb_ewmh_connection_wipe(&_ewmhConnection);
+    xcb_key_symbols_free(_keySymbols);
     xcb_disconnect(_connection);
 }
 
