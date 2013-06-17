@@ -224,7 +224,7 @@ void Basics::determineMasks() {
         _maskNumLock = _maskShiftLock = _maskCapsLock = _maskModeSwitch = 0;
 
     for (int i = 0; i != 8; ++i) {
-        for (int j = 0; j != modmapReply->keycodes_per_modifier; j++) {
+        for (int j = 0; j != modmapReply->keycodes_per_modifier; ++j) {
             xcb_keycode_t kc = modmap[i * modmapReply->keycodes_per_modifier + j];
 
 #define LOOK_FOR(mask, codes) \
