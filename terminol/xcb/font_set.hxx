@@ -43,8 +43,7 @@ public:
     uint16_t getHeight() const { return _height; }
 
 protected:
-    PangoFontDescription * load(const std::string & family,
-                                int size, bool master,
+    PangoFontDescription * load(const std::string & family, int size, bool master,
                                 bool bold, bool italic) throw (Error);
     void unload(PangoFontDescription * desc);
 

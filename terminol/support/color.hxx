@@ -3,26 +3,26 @@
 #ifndef SUPPORT__COLOR__HXX
 #define SUPPORT__COLOR__HXX
 
+#include <cmath>
+
 void hsv_to_rgb(double & h, double & s, double & v) throw () {
     if (s == 0.0) {
         h = v;
         s = v;
     }
     else {
-        double hue = h * 6.0;
-        double saturation = s;
-        double value = v;
+        auto hue        = clamp(h * 6.0, 0.0, 6.0);
+        auto saturation = s;
+        auto value      = v;
 
-        if (hue == 6.0) {
-            hue = 0.0;
-        }
+        if (hue == 6.0) { hue = 0.0; }
 
-        double f = hue - int(hue);
-        double p = value * (1.0 - saturation);
-        double q = value * (1.0 - saturation * f);
-        double t = value * (1.0 - saturation * (1.0 - f));
+        auto f = hue - std::floor(hue);
+        auto p = value * (1.0 - saturation);
+        auto q = value * (1.0 - saturation * f);
+        auto t = value * (1.0 - saturation * (1.0 - f));
 
-        switch(int(hue)) {
+        switch (static_cast<int>(hue)) {
             case 0:
                 h = value;
                 s = t;
@@ -64,9 +64,9 @@ void rgb_to_hsv(double & r, double & g, double & b) throw () {
     double min, max;
     double delta;
 
-    double red = r;
-    double green = g;
-    double blue = b;
+    auto red   = r;
+    auto green = g;
+    auto blue  = b;
 
     h = 0.0;
 

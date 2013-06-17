@@ -38,7 +38,7 @@ size_t Tty::read(uint8_t * buffer, size_t length) throw (Exited) {
     ASSERT(_fd != -1, "");
     ASSERT(length != 0, "");
 
-    ssize_t rval = TEMP_FAILURE_RETRY(::read(_fd, static_cast<void *>(buffer), length));
+    auto rval = TEMP_FAILURE_RETRY(::read(_fd, static_cast<void *>(buffer), length));
 
     if (rval == -1) {
         switch (errno) {
@@ -62,7 +62,7 @@ size_t Tty::write(const uint8_t * buffer, size_t length) throw (Error) {
     ASSERT(_fd != -1, "");
     ASSERT(length != 0, "");
 
-    ssize_t rval =
+    auto rval =
         TEMP_FAILURE_RETRY(::write(_fd, static_cast<const void *>(buffer), length));
 
     if (rval == -1) {
@@ -154,7 +154,7 @@ void Tty::execShell(const std::string & windowId,
     std::vector<const char *> args;
 
     if (command.empty()) {
-        const char * shell = std::getenv("SHELL");
+        auto shell = static_cast<const char *>(std::getenv("SHELL"));
         if (!shell) {
             shell = "/bin/sh";
             WARNING("Could not determine shell, falling back to: " << shell);

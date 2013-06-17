@@ -22,7 +22,7 @@ class Buffer {
         uint16_t          _wrap;        // Wrappable index
         std::vector<Cell> _cells;
         //
-        uint16_t          _cols;        // May be more cells than this due to resize.
+        uint16_t          _cols;        // May be more due to resizePreserve.
         uint16_t          _damageBegin;
         uint16_t          _damageEnd;
 
@@ -102,7 +102,7 @@ class Buffer {
 
             ASSERT(col < _cells.size(), "");
 
-            bool seqChanged = _cells[col].seq != cell.seq;
+            auto seqChanged = _cells[col].seq != cell.seq;
             _cells[col] = cell;
 
             if (autoWrap) { _wrap = col + 1; }
@@ -255,8 +255,8 @@ class Buffer {
     const Config             & _config;
     I_Deduper                & _deduper;
 
-    std::deque<Deduper::Tag>   _history;
-    std::deque<Line>           _active;
+    std::deque<Deduper::Tag>   _history;            // This is what scrollback shows.
+    std::deque<Line>           _active;             // The mutable lines.
     uint16_t                   _cols;
 
     size_t                     _historyLimit;

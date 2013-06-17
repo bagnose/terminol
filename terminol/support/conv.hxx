@@ -44,16 +44,6 @@ template <> inline bool unstringify<>(const std::string & str) throw (ParseError
     else { throw ParseError("Failed to unstringify: " + str); }
 }
 
-/*
-// Explicit Sign
-template <typename T> std::string expSignStr(T t) {
-    std::ostringstream ost;
-    if (t < 0) { ost <<  t; }
-    else       { ost << '+' << t; }
-    return ost.str();
-}
-*/
-
 template <typename T> std::string nthStr(T t) {
     std::ostringstream ost;
     ost << t;
@@ -89,7 +79,7 @@ inline uint8_t hexToNibble(char hex) throw (ParseError) {
     else if (hex >= 'a' && hex <= 'f') { return 10 + hex - 'a'; }
     else {
         std::ostringstream ost;
-        ost << "Bad hex char: " << hex;
+        ost << "Illegal hex char: " << hex;
         throw ParseError(ost.str());
     }
 }

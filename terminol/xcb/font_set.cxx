@@ -12,7 +12,7 @@ FontSet::FontSet(const Config & config,
     _basics(basics)
 {
     const auto & name = _config.fontName;
-    int size = _config.fontSize;
+    auto size = _config.fontSize;
 
     _normal = load(name, size, true, false, false);
     auto normalGuard = scopeGuard([&] { unload(_normal); });
@@ -74,17 +74,25 @@ PangoFontDescription * FontSet::load(const std::string & family,
     auto descGuard = scopeGuard([&] { pango_font_description_free(desc); });
     pango_font_description_set_size(desc, size * PANGO_SCALE);
     //pango_font_description_set_absolute_size(desc, size * PANGO_SCALE);
-    pango_font_description_set_weight(desc, bold ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL);
-    pango_font_description_set_style(desc, italic ? PANGO_STYLE_OBLIQUE : PANGO_STYLE_NORMAL);
+    pango_font_description_set_weight(desc,
+                                      bold ? PANGO_WEIGHT_BOLD :
+                                      PANGO_WEIGHT_NORMAL);
+    pango_font_description_set_style(desc,
+                                     italic ? PANGO_STYLE_OBLIQUE :
+                                     PANGO_STYLE_NORMAL);
 
     uint16_t width, height;
     measure(desc, width, height);
 
     if (master) {
+        // The master font (non-italic, non-bold) sets the precedence
+        // for the others to follow.
         _width  = width;
         _height = height;
     }
     else if (_width != width || _height != height) {
+        // A non-master (subsequent) font doesn't conform with the
+        // master font's metrics.
         std::ostringstream ost;
         ost << "Size mismatch: "
             << (bold ? "bold" : "") << " "

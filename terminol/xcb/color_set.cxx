@@ -48,27 +48,26 @@ ColorSet::ColorSet(const Config & config,
     // Allocate the background pixel.
     //
 
-    const double MAX = std::numeric_limits<uint16_t>::max();
+    auto max = static_cast<double>(std::numeric_limits<uint16_t>::max());
 
-    uint16_t r = static_cast<uint16_t>(_backgroundColor.r * MAX + 0.5);
-    uint16_t g = static_cast<uint16_t>(_backgroundColor.g * MAX + 0.5);
-    uint16_t b = static_cast<uint16_t>(_backgroundColor.b * MAX + 0.5);
+    auto r = static_cast<uint16_t>(_backgroundColor.r * max + 0.5);
+    auto g = static_cast<uint16_t>(_backgroundColor.g * max + 0.5);
+    auto b = static_cast<uint16_t>(_backgroundColor.b * max + 0.5);
 
-    xcb_alloc_color_reply_t * reply =
-        xcb_alloc_color_reply(_basics.connection(),
-                              xcb_alloc_color(_basics.connection(),
-                                              _basics.screen()->default_colormap,
-                                              r, g, b),
-                              nullptr);
+    auto cookie = xcb_alloc_color(_basics.connection(),
+                                  _basics.screen()->default_colormap,
+                                  r, g, b);
+    auto * reply = xcb_alloc_color_reply(_basics.connection(), cookie, nullptr);
     ENFORCE(reply, "");
     _backgroundPixel = reply->pixel;
     std::free(reply);
 }
 
 ColorSet::~ColorSet() {
+    // Freeing the colour probably does nothing due to direct-color displays...
     xcb_free_colors(_basics.connection(),
                     _basics.screen()->default_colormap,
-                    0,         // plane_mask - WTF?
+                    0,
                     1,
                     &_backgroundPixel);
 }

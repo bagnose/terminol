@@ -41,9 +41,6 @@ const KeyMap::Map KeyMap::MAP_APPLICATION[] = {
     { 0, 0, 0, 0 }
 };
 
-KeyMap::KeyMap() {}
-KeyMap::~KeyMap() {}
-
 bool KeyMap::convert(xkb_keysym_t keySym, ModifierSet modifiers,
                      bool UNUSED(appKeypad),
                      bool appCursor,

@@ -24,8 +24,7 @@ class KeyMap : protected Uncopyable {
     static const Map MAP_APPLICATION[];
 
 public:
-    KeyMap();
-    ~KeyMap();
+    KeyMap() {}
 
     bool convert(xkb_keysym_t keySym, ModifierSet modifiers,
                  bool appKeypad,

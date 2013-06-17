@@ -59,12 +59,12 @@ public:
 protected:
     void loop() throw (Error) {
         while(_window.isOpen()) {
-            int fdMax = 0;
+            auto fdMax = 0;
             fd_set readFds, writeFds;
             FD_ZERO(&readFds); FD_ZERO(&writeFds);
 
-            int xFd = xcb_get_file_descriptor(_basics.connection());
-            int wFd = _window.getFd();
+            auto xFd = xcb_get_file_descriptor(_basics.connection());
+            auto wFd = _window.getFd();
 
             // Select for read on X11
             FD_SET(xFd, &readFds);
@@ -84,8 +84,14 @@ protected:
 
             if (FD_ISSET(wFd, &readFds) && _window.isOpen()) { _window.read(); }
 
-            if (FD_ISSET(xFd, &readFds)) { xevent(); }
-            else { /* XXX */ xevent(); }
+            if (FD_ISSET(xFd, &readFds)) {
+                xevent();
+            }
+            else {
+                // XXX For some reason X events can be available even though
+                // xFd is not readable. This is effectively polling :(
+                xevent();
+            }
         }
     }
 
@@ -103,13 +109,13 @@ protected:
             }
 
             ASSERT(event, "Null event");
-            auto    guard         = scopeGuard([event] { std::free(event); });
-            uint8_t response_type = XCB_EVENT_RESPONSE_TYPE(event);
+            auto guard         = scopeGuard([event] { std::free(event); });
+            auto response_type = XCB_EVENT_RESPONSE_TYPE(event);
             if (response_type == 0) {
                 ERROR("Zero response type");
             }
             else {
-                dispatch(response_type & ~0x80, event);
+                dispatch(response_type, event);
             }
         }
 

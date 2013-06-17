@@ -5,7 +5,7 @@
 #include <iostream>
 
 std::ostream & operator << (std::ostream & ost, ModifierSet modifiers) {
-    bool first = true;
+    auto first = true;
     for (auto i = 0; i != static_cast<int>(Modifier::LAST) + 1; ++i) {
         auto a = static_cast<Modifier>(i);
         if (modifiers.get(a)) {
@@ -18,7 +18,7 @@ std::ostream & operator << (std::ostream & ost, ModifierSet modifiers) {
 }
 
 std::ostream & operator << (std::ostream & ost, AttrSet attrs) {
-    bool first = true;
+    auto first = true;
     for (auto i = 0; i != static_cast<int>(Attr::LAST) + 1; ++i) {
         auto a = static_cast<Attr>(i);
         if (attrs.get(a)) {
@@ -31,7 +31,7 @@ std::ostream & operator << (std::ostream & ost, AttrSet attrs) {
 }
 
 std::ostream & operator << (std::ostream & ost, ModeSet modes) {
-    bool first = true;
+    auto first = true;
     for (auto i = 0; i != static_cast<int>(Mode::LAST) + 1; ++i) {
         auto a = static_cast<Mode>(i);
         if (modes.get(a)) {

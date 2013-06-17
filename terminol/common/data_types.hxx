@@ -40,7 +40,7 @@ inline bool operator != (Color lhs, Color rhs) {
 }
 
 //
-//
+// Unified (hybrid) color.
 //
 
 struct UColor {

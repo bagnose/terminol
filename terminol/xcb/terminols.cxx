@@ -17,7 +17,7 @@
 #include <unistd.h>
 #include <sys/select.h>
 
-// For fifo:
+// For the server FIFO:
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -81,12 +81,10 @@ public:
 
     void read() {
         uint8_t buffer[1024];
-        ssize_t rval = TEMP_FAILURE_RETRY(
+        auto    rval = TEMP_FAILURE_RETRY(
                 ::read(_fd, static_cast<void *>(buffer), sizeof buffer));
 
         ENFORCE_SYS(rval != -1, "::read() failed");
-
-        PRINT("rval: " << rval);
 
         if (rval == 0) {
             close();
@@ -152,7 +150,9 @@ public:
         _finished(false)
     {
         if (config.serverFork) {
-            ENFORCE_SYS(::daemon(1, 0) != -1, "daemon()");
+            if (::daemon(1, 0) != -1) {
+                throw Error("Failed to daemonise");
+            }
         }
 
         loop();
@@ -164,12 +164,12 @@ public:
 protected:
     void loop() throw (Error) {
         while (!_finished) {
-            int fdMax = 0;
+            auto fdMax = 0;
             fd_set readFds, writeFds;
             FD_ZERO(&readFds); FD_ZERO(&writeFds);
 
-            int xFd = xcb_get_file_descriptor(_basics.connection());
-            int sFd = _server.getFd();
+            auto xFd = xcb_get_file_descriptor(_basics.connection());
+            auto sFd = _server.getFd();
 
             // Select for read on Server
             FD_SET(sFd, &readFds);
@@ -182,7 +182,7 @@ protected:
             // Select for read (and possibly write) on TTYs
             for (auto pair : _windows) {
                 auto window = pair.second;
-                int wFd = window->getFd();
+                auto wFd = window->getFd();
 
                 FD_SET(wFd, &readFds);
                 if (window->needsFlush()) { FD_SET(wFd, &writeFds); }
@@ -196,14 +196,20 @@ protected:
 
             for (auto pair : _windows) {
                 auto window = pair.second;
-                int wFd = window->getFd();
+                auto wFd    = window->getFd();
 
                 if (FD_ISSET(wFd, &writeFds)) { window->flush(); }
                 if (FD_ISSET(wFd, &readFds) && window->isOpen()) { window->read(); }
             }
 
-            if (FD_ISSET(xFd, &readFds)) { xevent(); }
-            else { /* XXX */ xevent(); }
+            if (FD_ISSET(xFd, &readFds)) {
+                xevent();
+            }
+            else {
+                // XXX For some reason X events can be available even though
+                // xFd is not readable. This is effectively polling :(
+                xevent();
+            }
 
             if (FD_ISSET(sFd, &readFds)) { _server.read(); }
 
@@ -219,7 +225,7 @@ protected:
             for (auto id : closedIds) {
                 auto iter = _windows.find(id);
                 ASSERT(iter != _windows.end(), "");
-                Window * window = iter->second;
+                auto window = iter->second;
                 delete window;
                 _windows.erase(iter);
             }
@@ -240,13 +246,13 @@ protected:
             }
 
             ASSERT(event, "Null event");
-            auto    guard         = scopeGuard([event] { std::free(event); });
-            uint8_t response_type = XCB_EVENT_RESPONSE_TYPE(event);
+            auto guard         = scopeGuard([event] { std::free(event); });
+            auto response_type = XCB_EVENT_RESPONSE_TYPE(event);
             if (response_type == 0) {
                 ERROR("Zero response type");
             }
             else {
-                dispatch(response_type & ~0x80, event);
+                dispatch(response_type, event);
             }
         }
 
@@ -388,9 +394,10 @@ protected:
 
     void create() throw () {
         try {
-            Window * window = new Window(*this, _config, _deduper,
-                                         _basics, _colorSet, _fontSet, _keyMap);
-            _windows.insert(std::make_pair(window->getWindowId(), window));
+            auto window = new Window(*this, _config, _deduper,
+                                     _basics, _colorSet, _fontSet, _keyMap);
+            auto id     = window->getWindowId();
+            _windows.insert(std::make_pair(id, window));
         }
         catch (const Window::Error & ex) {
             PRINT("Failed to create window: " << ex.message);

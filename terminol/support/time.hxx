@@ -11,6 +11,7 @@
 // The difference between two points in time, with nanosecond resolution.
 //
 
+#if 0
 class TimeDelta {
     int64_t _time;
     explicit TimeDelta(int64_t nanoSeconds) : _time(nanoSeconds) {}
@@ -64,6 +65,7 @@ bool operator <  (TimeStamp lhs, TimeStamp rhs);
 bool operator <= (TimeStamp lhs, TimeStamp rhs);
 bool operator >  (TimeStamp lhs, TimeStamp rhs);
 bool operator >= (TimeStamp lhs, TimeStamp rhs);
+#endif
 
 //
 // A timer that expires.
