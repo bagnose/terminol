@@ -57,15 +57,15 @@ public:
 
     xcb_ewmh_connection_t * ewmhConnection()       { return &_ewmhConnection; }
 
-    xcb_atom_t              atomPrimary()    { return _atomPrimary; }
-    xcb_atom_t              atomClipboard()  { return _atomClipboard; }
-    xcb_atom_t              atomUtf8String() { return _atomUtf8String; }
-    xcb_atom_t              atomTargets()    { return _atomTargets; }
+    xcb_atom_t              atomPrimary()          { return _atomPrimary; }
+    xcb_atom_t              atomClipboard()        { return _atomClipboard; }
+    xcb_atom_t              atomUtf8String()       { return _atomUtf8String; }
+    xcb_atom_t              atomTargets()          { return _atomTargets; }
 
-    bool                    getKeySym(xcb_keycode_t keyCode,
-                                      uint8_t state,
+    bool                    getKeySym(xcb_keycode_t  keyCode,
+                                      uint8_t        state,
                                       xcb_keysym_t & keySym,
-                                      ModifierSet & modifiers) const;
+                                      ModifierSet  & modifiers) const;
 
     ModifierSet             convertState(uint8_t state) const;
 

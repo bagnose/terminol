@@ -97,13 +97,11 @@ bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
      *
      * If Mode_Switch is ON we look into second group.
      */
-    if (modifiers.get(Modifier::MODE_SWITCH))
-    {
+    if (modifiers.get(Modifier::MODE_SWITCH)) {
         k0 = xcb_key_symbols_get_keysym(_keySymbols, keyCode, 4);
         k1 = xcb_key_symbols_get_keysym(_keySymbols, keyCode, 5);
     }
-    else
-    {
+    else {
         k0 = xcb_key_symbols_get_keysym(_keySymbols, keyCode, 0);
         k1 = xcb_key_symbols_get_keysym(_keySymbols, keyCode, 1);
     }
@@ -136,8 +134,7 @@ bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
     // The Shift modifier is off and the Lock modifier is on and is
     // interpreted as CapsLock.
     else if (!(state & XCB_MOD_MASK_SHIFT) &&
-             (state & XCB_MOD_MASK_LOCK) && (state & _maskCapsLock))
-    {
+             (state & XCB_MOD_MASK_LOCK) && (state & _maskCapsLock)) {
         // The first Keysym is used but if that KeySym is lowercase
         // alphabetic, then the corresponding uppercase KeySym is used
         // instead.
@@ -147,8 +144,7 @@ bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
     // The Shift modifier is on, and the Lock modifier is on and is
     // interpreted as CapsLock.
     else if ((state & XCB_MOD_MASK_SHIFT) && (state & XCB_MOD_MASK_LOCK) &&
-             (state & _maskCapsLock))
-    {
+             (state & _maskCapsLock)) {
         // The second Keysym is used but if that KeySym is lowercase
         // alphabetic, then the corresponding uppercase KeySym is used
         // instead.
@@ -158,8 +154,7 @@ bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
     // The Shift modifier is on, or the Lock modifier is on and is
     // interpreted as ShiftLock, or both.
     else if ((state & XCB_MOD_MASK_SHIFT) ||
-             ((state & XCB_MOD_MASK_LOCK) && (state & _maskShiftLock)))
-    {
+             ((state & XCB_MOD_MASK_LOCK) && (state & _maskShiftLock))) {
         keySym = k1;
         return true;
     }
