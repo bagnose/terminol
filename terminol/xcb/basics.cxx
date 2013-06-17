@@ -9,9 +9,10 @@
 #include <cstdlib>
 
 #include <unistd.h>
+#include <limits.h>
 
 Basics::Basics() throw (Error) {
-    char h[256];
+    char h[HOST_NAME_MAX + 1];
     if (::gethostname(h, sizeof h) == 0) {
         _hostname = h;
     }
