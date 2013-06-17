@@ -381,31 +381,43 @@ protected:
     void bump() {
         ASSERT(_historyLimit != 0, "");
 
+        // Grab the line off the front of _active.
         auto cont  = _active.front().isContinuation();
         auto wrap  = _active.front().getWrap();
         auto cells = std::move(_active.front().cells());
         _active.pop_front();
-        while (!cells.empty() && cells.back() == Cell::blank()) {
-            cells.pop_back();
-        }
+
+        // Remove trailing blank cells.
+        auto riter = std::find_if(cells.rbegin(), cells.rend(),
+                                  [](const Cell & c) { return c != Cell::blank(); });
+        cells.erase(riter.base(), cells.end());
         cells.shrink_to_fit();
+
+        // Store it in the deduper.
         auto tag = _deduper.store(cont, wrap, cells);
 
+        // Remove the oldest history line, if we have hit our limit.
         if (_history.size() == _historyLimit) {
             _deduper.remove(_history.front());
             _history.pop_front();
         }
 
+        // And store the newest history line (this one).
         _history.push_back(tag);
     }
 
     void unbump() {
         ASSERT(!_history.empty(), "");
 
+        // Retrieve the line form the deduper.
         auto tag = _history.back();
         I_Deduper::Line line;
         _deduper.lookupRemove(tag, line);
+
+        // Reconstitude the line and store it in active.
         _active.push_front(Line(_cols, line.cont, line.wrap, line.cells));
+
+        // Erase it from the newest history.
         _history.pop_back();
     }
 
