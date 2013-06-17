@@ -1103,14 +1103,18 @@ void Window::terminalDrawFg(Pos             pos,
         int x, y;
         pos2XY(pos, x, y);
 
+        double w = count * _fontSet.getWidth();
+        double h = _fontSet.getHeight();
+        cairo_rectangle(_cr, x, y, w, h);
+        cairo_clip(_cr);
+
         auto alpha = attrs.get(Attr::CONCEAL) ? 0.1 : attrs.get(Attr::FAINT) ? 0.5 : 1.0;
         auto fg    = getColor(color);
         cairo_set_source_rgba(_cr, fg.r, fg.g, fg.b, alpha);
 
         if (attrs.get(Attr::UNDERLINE)) {
-            double w = count * _fontSet.getWidth();
-            cairo_move_to(_cr, x, y + _fontSet.getHeight() - 0.5);
-            cairo_rel_line_to(_cr, w, 0);
+            cairo_move_to(_cr, x, y + h - 0.5);
+            cairo_rel_line_to(_cr, w, 0.0);
             cairo_stroke(_cr);
         }
 
