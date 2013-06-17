@@ -115,12 +115,11 @@ bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
 
     /* The numlock modifier is on and the second KeySym is a keypad
      * KeySym */
-    if (modifiers.get(Modifier::NUM_LOCK) && xcb_is_keypad_key(k1))
-    {
-        /* The Shift modifier is on, or if the Lock modifier is on and
-         * is interpreted as ShiftLock, use the first KeySym */
+    if (modifiers.get(Modifier::NUM_LOCK) && xcb_is_keypad_key(k1)) {
+        // The Shift modifier is on, or if the Lock modifier is on and
+        // is interpreted as ShiftLock, use the first KeySym.
         if ((state & XCB_MOD_MASK_SHIFT) ||
-            (state & XCB_MOD_MASK_LOCK && (state & _maskShiftLock))) {
+            ((state & XCB_MOD_MASK_LOCK) && (state & _maskShiftLock))) {
             keySym = k0;
             return true;
         }
@@ -129,38 +128,37 @@ bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
             return true;
         }
     }
-    /* The Shift and Lock modifers are both off, use the first
-     * KeySym */
+    // The Shift and Lock modifers are both off, use the first KeySym.
     else if (!(state & XCB_MOD_MASK_SHIFT) && !(state & XCB_MOD_MASK_LOCK)) {
         keySym = k0;
         return true;
     }
-    /* The Shift modifier is off and the Lock modifier is on and is
-     * interpreted as CapsLock */
+    // The Shift modifier is off and the Lock modifier is on and is
+    // interpreted as CapsLock.
     else if (!(state & XCB_MOD_MASK_SHIFT) &&
-             (state & XCB_MOD_MASK_LOCK && (state & _maskCapsLock)))
+             (state & XCB_MOD_MASK_LOCK) && (state & _maskCapsLock))
     {
-        /* The first Keysym is used but if that KeySym is lowercase
-         * alphabetic, then the corresponding uppercase KeySym is used
-         * instead */
+        // The first Keysym is used but if that KeySym is lowercase
+        // alphabetic, then the corresponding uppercase KeySym is used
+        // instead.
         keySym = k1;
         return true;
     }
-    /* The Shift modifier is on, and the Lock modifier is on and is
-     * interpreted as CapsLock */
-    else if ((state & XCB_MOD_MASK_SHIFT) &&
-             (state & XCB_MOD_MASK_LOCK && (state & _maskCapsLock)))
+    // The Shift modifier is on, and the Lock modifier is on and is
+    // interpreted as CapsLock.
+    else if ((state & XCB_MOD_MASK_SHIFT) && (state & XCB_MOD_MASK_LOCK) &&
+             (state & _maskCapsLock))
     {
-        /* The second Keysym is used but if that KeySym is lowercase
-         * alphabetic, then the corresponding uppercase KeySym is used
-         * instead */
+        // The second Keysym is used but if that KeySym is lowercase
+        // alphabetic, then the corresponding uppercase KeySym is used
+        // instead.
         keySym = k1;
         return true;
     }
-    /* The Shift modifier is on, or the Lock modifier is on and is
-     * interpreted as ShiftLock, or both */
+    // The Shift modifier is on, or the Lock modifier is on and is
+    // interpreted as ShiftLock, or both.
     else if ((state & XCB_MOD_MASK_SHIFT) ||
-             (state & XCB_MOD_MASK_LOCK && (state & _maskShiftLock)))
+             ((state & XCB_MOD_MASK_LOCK) && (state & _maskShiftLock)))
     {
         keySym = k1;
         return true;
