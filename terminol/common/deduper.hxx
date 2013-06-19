@@ -4,11 +4,13 @@
 #define COMMON__DEDUPER__HXX
 
 #include "terminol/common/data_types.hxx"
+#include "terminol/support/escape.hxx"
 
 #include <unordered_map>
 #include <algorithm>
 #include <vector>
 #include <iostream>
+#include <iomanip>
 
 class I_Deduper {
 public:
@@ -90,19 +92,39 @@ again:
         }
         else {
             auto & payload = iter->second;
+            const auto & line = payload.line;
 
-            if (cont  != payload.line.cont ||
-                wrap  != payload.line.wrap ||
-                cells != payload.line.cells) {
+            if (cont  != line.cont ||
+                wrap  != line.wrap ||
+                cells != line.cells) {
 #if DEBUG
                 std::cerr << "Collision between:" << std::endl;
-                std::cerr << "   '";
-                for (auto c : cells) { std::cerr << c.seq; }
-                std::cerr << "'" << std::endl;
+
+                {
+                    ASSERT(wrap <= cells.size(), wrap << " < " << cells.size());
+                    std::cerr << cont << " " << std::setw(3) << wrap << " \'";
+                    std::cerr << "   '";
+                    uint16_t col = 0;
+                    std::cerr << SGR::UNDERLINE;
+                    for (; col != wrap; ++col) { std::cerr << cells[col].seq; }
+                    std::cerr << SGR::RESET_UNDERLINE;
+                    for (; col != cells.size(); ++col) { std::cerr << cells[col].seq; }
+                    std::cerr << "\'" << std::endl;
+                }
+
                 std::cerr << "And:" << std::endl;
-                std::cerr << "   '";
-                for (auto c : payload.line.cells) { std::cerr << c.seq; }
-                std::cerr << "'" << std::endl << std::endl;
+
+                {
+                    ASSERT(line.wrap <= line.cells.size(), line.wrap << " < " << line.cells.size());
+                    std::cerr << line.cont << " " << std::setw(3) << line.wrap << " \'";
+                    std::cerr << "   '";
+                    uint16_t col = 0;
+                    std::cerr << SGR::UNDERLINE;
+                    for (; col != line.wrap; ++col) { std::cerr << line.cells[col].seq; }
+                    std::cerr << SGR::RESET_UNDERLINE;
+                    for (; col != line.cells.size(); ++col) { std::cerr << line.cells[col].seq; }
+                }
+                std::cerr << "\'" << std::endl;
 #endif
 
                 ENFORCE(static_cast<Tag>(_lines.size()) != 0, "No dedupe room left");
