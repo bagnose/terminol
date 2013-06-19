@@ -71,6 +71,7 @@ Basics::Basics() throw (Error) {
 
     determineMasks();
 
+    ewmhConnectionGuard.dismiss();
     keySymbolsGuard.dismiss();
     connectionGuard.dismiss();
 }
