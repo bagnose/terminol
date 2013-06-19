@@ -2,9 +2,9 @@ refer terminol/common ;
 
 static-lib xcb
   :
-  window.hxx basics.hxx font_set.hxx color_set.hxx config.hxx
+  window.hxx basics.hxx font_set.hxx color_set.hxx
   :
-  window.cxx basics.cxx font_set.cxx color_set.cxx config.cxx
+  window.cxx basics.cxx font_set.cxx color_set.cxx
   ;
 
 dist-exe terminol  : terminol.cxx ;

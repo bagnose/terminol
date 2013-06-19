@@ -4,8 +4,8 @@
 #include "terminol/xcb/color_set.hxx"
 #include "terminol/xcb/font_set.hxx"
 #include "terminol/xcb/basics.hxx"
-#include "terminol/xcb/config.hxx"
 #include "terminol/common/config.hxx"
+#include "terminol/common/parser.hxx"
 #include "terminol/common/key_map.hxx"
 #include "terminol/support/debug.hxx"
 #include "terminol/support/pattern.hxx"
@@ -454,7 +454,7 @@ void showHelp(const std::string & progName, std::ostream & ost) {
 
 int main(int argc, char * argv[]) {
     Config config;
-    readConfig(config);
+    parseConfig(config);
 
     // Command line
 
