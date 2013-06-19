@@ -67,7 +67,8 @@ Window::Window(I_Observer         & observer,
     _pressed(false),
     _pressCount(0),
     _lastPressTime(0),
-    _button(XCB_BUTTON_INDEX_ANY)
+    _button(XCB_BUTTON_INDEX_ANY),
+    _deferred(false)
 {
     auto rows = _config.initialRows;
     auto cols = _config.initialCols;
@@ -401,6 +402,8 @@ void Window::reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) {
 }
 
 void Window::expose(xcb_expose_event_t * event) {
+    if (_deferred) { return; }
+
     ASSERT(event->window == _window, "Which window?");
     /*
     PRINT("Expose: " <<
@@ -447,6 +450,11 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
     _width  = event->width;
     _height = event->height;
 
+    _observer.defer(this);
+    _deferred = true;
+}
+
+void Window::deferral() {
     if (_mapped) {
         ASSERT(_pixmap, "");
         ASSERT(_surface, "");
@@ -517,6 +525,8 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
         ASSERT(_surface, "");
         draw(0, 0, _width, _height);
     }
+
+    _deferred = false;
 }
 
 void Window::focusIn(xcb_focus_in_event_t * UNUSED(event)) {
@@ -1035,7 +1045,7 @@ bool Window::terminalFixDamageBegin(bool internal) throw () {
     //PRINT("Damage begin, internal: " << std::boolalpha << internal);
 
     if (internal) {
-        if (_mapped) {
+        if (!_deferred && _mapped) {
             ASSERT(_mapped, "");
             ASSERT(_surface, "");
 #if 0

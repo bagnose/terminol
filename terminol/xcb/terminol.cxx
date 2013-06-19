@@ -10,6 +10,8 @@
 #include "terminol/support/debug.hxx"
 #include "terminol/support/pattern.hxx"
 
+#include <set>
+
 #include <xcb/xcb.h>
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_aux.h>
@@ -21,12 +23,13 @@ class EventLoop :
     protected Window::I_Observer,
     protected Uncopyable
 {
-    Deduper  _deduper;
-    Basics   _basics;
-    ColorSet _colorSet;
-    FontSet  _fontSet;
-    KeyMap   _keyMap;
-    Window   _window;
+    Deduper               _deduper;
+    Basics                _basics;
+    ColorSet              _colorSet;
+    FontSet               _fontSet;
+    KeyMap                _keyMap;
+    Window                _window;
+    std::set<Window *>    _deferrals;
 
 public:
     struct Error {
@@ -92,6 +95,11 @@ protected:
                 // xFd is not readable. This is effectively polling :(
                 xevent();
             }
+
+            // Do the deferrals:
+
+            for (auto window : _deferrals) { window->deferral(); }
+            _deferrals.clear();
         }
     }
 
@@ -215,6 +223,10 @@ protected:
     void sync() throw () {
         xcb_aux_sync(_basics.connection());
         xevent(true);
+    }
+
+    void defer(Window * window) throw () {
+        _deferrals.insert(window);
     }
 };
 

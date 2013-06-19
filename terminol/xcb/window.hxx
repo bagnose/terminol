@@ -25,6 +25,7 @@ public:
     class I_Observer {
     public:
         virtual void sync() throw () = 0;
+        virtual void defer(Window * window) throw () = 0;
 
     protected:
         I_Observer() {}
@@ -65,6 +66,8 @@ private:
     int               _pressCount;
     xcb_timestamp_t   _lastPressTime;
     xcb_button_t      _button;
+
+    bool              _deferred;
 
 public:
     struct Error {
@@ -117,6 +120,10 @@ public:
     void selectionClear(xcb_selection_clear_event_t * event);
     void selectionNotify(xcb_selection_notify_event_t * event);
     void selectionRequest(xcb_selection_request_event_t * event);
+
+    // Deferral:
+
+    void deferral();
 
 protected:
     void icccmConfigure();

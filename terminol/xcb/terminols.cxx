@@ -10,6 +10,8 @@
 #include "terminol/support/debug.hxx"
 #include "terminol/support/pattern.hxx"
 
+#include <set>
+
 #include <xcb/xcb.h>
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_aux.h>
@@ -122,15 +124,17 @@ class EventLoop :
 {
     typedef std::map<xcb_window_t, Window *> Windows;
 
-    const Config & _config;
-    Server         _server;         // FIXME what order? socket then X, or other way around?
-    Deduper        _deduper;
-    Basics         _basics;
-    ColorSet       _colorSet;
-    FontSet        _fontSet;
-    KeyMap         _keyMap;
-    Windows        _windows;
-    bool           _finished;
+    const Config       & _config;
+    Server               _server;         // FIXME what order? socket then X, or other way around?
+    Deduper              _deduper;
+    Basics               _basics;
+    ColorSet             _colorSet;
+    FontSet              _fontSet;
+    KeyMap               _keyMap;
+    Windows              _windows;
+    std::set<Window *>   _deferrals;
+
+    bool                 _finished;
 
 public:
     struct Error {
@@ -210,6 +214,13 @@ protected:
                 // xFd is not readable. This is effectively polling :(
                 xevent();
             }
+
+            // Jolt the jolters.
+
+            for (auto window : _deferrals) { window->deferral(); }
+            _deferrals.clear();
+
+            // Service the server.
 
             if (FD_ISSET(sFd, &readFds)) { _server.read(); }
 
@@ -388,6 +399,10 @@ protected:
     void sync() throw () {
         xcb_aux_sync(_basics.connection());
         xevent(true);
+    }
+
+    void defer(Window * window) throw () {
+        _deferrals.insert(window);
     }
 
     // I_Creator implementation:
