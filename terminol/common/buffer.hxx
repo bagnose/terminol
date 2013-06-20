@@ -1087,7 +1087,7 @@ public:
         }
     }
 
-    void dump(std::ostream & ost) const {
+    void dumpBuffer(std::ostream & ost) const {
         for (const auto & l : _active) {
             ost << l.isContinuation() << " " << std::setw(3) << l.getWrap() << " \'";
 
@@ -1101,6 +1101,16 @@ public:
 
             ost << "\'" << std::endl;
         }
+        ost << std::endl;
+    }
+
+    void dumpSelection(std::ostream & ost) const {
+        std::string text;
+        getSelectedText(text);
+
+        ost << SGR::UNDERLINE;
+        ost << text;
+        ost << SGR::RESET_UNDERLINE;
         ost << std::endl;
     }
 };

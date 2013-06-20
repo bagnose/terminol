@@ -566,7 +566,10 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
 
     switch (keySym) {
         case XKB_KEY_F9:
-            _buffer->dump(std::cerr);
+            _buffer->dumpBuffer(std::cerr);
+            return true;
+        case XKB_KEY_F10:
+            _buffer->dumpSelection(std::cerr);
             return true;
     }
 
