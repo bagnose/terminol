@@ -97,6 +97,7 @@ again:
             if (cont  != line.cont ||
                 wrap  != line.wrap ||
                 cells != line.cells) {
+#if 0
 #if DEBUG
                 std::cerr << "Collision between:" << std::endl;
 
@@ -125,6 +126,7 @@ again:
                     for (; col != line.cells.size(); ++col) { std::cerr << line.cells[col].seq; }
                 }
                 std::cerr << "\'" << std::endl;
+#endif
 #endif
 
                 ENFORCE(static_cast<Tag>(_lines.size()) != 0, "No dedupe room left");
