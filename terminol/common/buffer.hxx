@@ -520,10 +520,9 @@ public:
 
         for (auto i = b; i.row <= e.row; ++i.row, i.col = 0) {
             if (!getContinuationAbs(i.row)) {
-                if (!text.empty()) { text.push_back('\n'); }
+                while (!text.empty() && text.back() == ' ') { text.pop_back(); }
+                if (i != b) { text.push_back('\n'); }
             }
-
-            auto lastNonBlank = text.size();
 
             for (; i.col < getCols() && (i.row < e.row || i.col != e.col); ++i.col)
             {
@@ -532,13 +531,7 @@ public:
                 std::copy(&seq.bytes[0],
                           &seq.bytes[utf8::leadLength(seq.lead())],
                           back_inserter(text));
-
-                if (seq != Cell::blank().seq) {
-                    lastNonBlank = text.size();
-                }
             }
-
-            text.erase(text.begin() + lastNonBlank, text.end());
         }
 
         return true;
