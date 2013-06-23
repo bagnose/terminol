@@ -838,7 +838,7 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     _cr = cairo_create(_surface);
     cairo_set_line_width(_cr, 1.0);
 
-#if DEBUG
+#if 0
     // Clear the damaged area so that we know we are completely drawing to it.
 
     xcb_rectangle_t rect = {
