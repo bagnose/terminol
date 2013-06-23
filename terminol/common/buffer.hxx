@@ -387,10 +387,15 @@ protected:
         auto cells = std::move(_active.front().cells());
         _active.pop_front();
 
+        while (cells.size() > wrap && cells.back() == Cell::blank()) {
+            cells.pop_back();
+        }
+        /*
         // Remove trailing blank cells.
         auto riter = std::find_if(cells.rbegin(), cells.rend(),
                                   [](const Cell & c) { return c != Cell::blank(); });
         cells.erase(riter.base(), cells.end());
+        */
         cells.shrink_to_fit();
 
         // Store it in the deduper.
