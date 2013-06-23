@@ -701,18 +701,24 @@ void Window::icccmConfigure() {
     xcb_icccm_size_hints_set_min_size(&sizeHints,
                                       BASE_WIDTH  + MIN_COLS * _fontSet.getWidth(),
                                       BASE_HEIGHT + MIN_ROWS * _fontSet.getHeight());
-    xcb_icccm_size_hints_set_resize_inc(&sizeHints,
-                                        _fontSet.getWidth(),
-                                        _fontSet.getHeight());
     xcb_icccm_size_hints_set_base_size(&sizeHints,
                                        BASE_WIDTH,
                                        BASE_HEIGHT);
+    xcb_icccm_size_hints_set_resize_inc(&sizeHints,
+                                        _fontSet.getWidth(),
+                                        _fontSet.getHeight());
     xcb_icccm_size_hints_set_win_gravity(&sizeHints, XCB_GRAVITY_NORTH_WEST);
     // XXX or call xcb_icccm_set_wm_normal_hints() ?
+#if 0
     xcb_icccm_set_wm_size_hints(_basics.connection(),
                                 _window,
                                 XCB_ATOM_WM_NORMAL_HINTS,
                                 &sizeHints);
+#else
+    xcb_icccm_set_wm_normal_hints(_basics.connection(),
+                                  _window,
+                                  &sizeHints);
+#endif
 
     //
     // wm?
