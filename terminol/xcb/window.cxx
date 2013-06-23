@@ -68,6 +68,7 @@ Window::Window(I_Observer         & observer,
     _pressCount(0),
     _lastPressTime(0),
     _button(XCB_BUTTON_INDEX_ANY),
+    _deferralsAllowed(true),
     _deferred(false)
 {
     auto rows = _config.initialRows;
@@ -220,6 +221,7 @@ Window::~Window() {
 }
 
 void Window::read() {
+    PRINT("TTY READ");
     ASSERT(_open, "");
     _terminal->read();
 }
@@ -452,8 +454,13 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
     _width  = event->width;
     _height = event->height;
 
-    _observer.defer(this);
-    _deferred = true;
+    if (_deferralsAllowed) {
+        _observer.defer(this);
+        _deferred = true;
+    }
+    else {
+        deferral();
+    }
 }
 
 void Window::deferral() {
@@ -1044,7 +1051,9 @@ void Window::terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () {
         if (!xcb_request_failed(_basics.connection(), cookie,
                                "Failed to configure window")) {
             xcb_flush(_basics.connection());
+            _deferralsAllowed = false;
             _observer.sync();
+            _deferralsAllowed = true;
         }
     }
 }

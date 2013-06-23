@@ -67,6 +67,7 @@ private:
     xcb_timestamp_t   _lastPressTime;
     xcb_button_t      _button;
 
+    bool              _deferralsAllowed;
     bool              _deferred;
 
 public:
