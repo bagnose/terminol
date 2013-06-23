@@ -429,8 +429,12 @@ void Window::expose(xcb_expose_event_t * event) {
         else {
             ASSERT(_surface, "");
             ASSERT(event->x == 0 && event->y == 0, "");
+#if 0
             ASSERT(event->width == _width && event->height == _height, "");
             draw(event->x, event->y, event->width, event->height);
+#else
+            draw(0, 0, _width, _height);
+#endif
         }
     }
 
