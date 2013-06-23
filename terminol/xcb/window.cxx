@@ -426,6 +426,8 @@ void Window::expose(xcb_expose_event_t * event) {
         }
         else {
             ASSERT(_surface, "");
+            ASSERT(event->x == 0 && event->y == 0, "");
+            ASSERT(event->width == _width && event->height == _height, "");
             draw(event->x, event->y, event->width, event->height);
         }
     }
@@ -895,13 +897,13 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     cairo_surface_flush(_surface);      // Useful?
     ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
 
-    auto cookie = xcb_copy_area(_basics.connection(),
-                                _pixmap,
-                                _window,
-                                _gc,
-                                x, y, // src
-                                x, y, // dst
-                                w, h);
+    auto cookie = xcb_copy_area_checked(_basics.connection(),
+                                        _pixmap,
+                                        _window,
+                                        _gc,
+                                        x, y, // src
+                                        x, y, // dst
+                                        w, h);
     xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
 
     xcb_flush(_basics.connection());
@@ -1461,14 +1463,14 @@ void Window::terminalFixDamageEnd(bool internal,
         }
 
         // Copy the buffer region
-        xcb_copy_area(_basics.connection(),
-                      _pixmap,
-                      _window,
-                      _gc,
-                      x0, y0,   // src
-                      x0, y0,   // dst
-                      x1 - x0, y1 - y0);
-
+        auto cookie = xcb_copy_area_checked(_basics.connection(),
+                                            _pixmap,
+                                            _window,
+                                            _gc,
+                                            x0, y0,   // src
+                                            x0, y0,   // dst
+                                            x1 - x0, y1 - y0);
+        xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
         //xcb_flush(_basics.connection());
         xcb_aux_sync(_basics.connection());
     }
