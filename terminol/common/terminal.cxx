@@ -1461,6 +1461,11 @@ void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
                 case 55:
                     NYI("Log history to file");
                     break;
+                case 666: // terminol extension (fix the damage)
+                    fixDamage(Pos(0, 0),
+                              Pos(_buffer->getRows(), _buffer->getCols()),
+                              Damager::TTY);
+                    break;
                 default:
                     // TODO consult http://rtfm.etla.org/xterm/ctlseq.html AND man 7 urxvt.
                     PRINT("Unandled: OSC");

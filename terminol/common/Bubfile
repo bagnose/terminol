@@ -18,3 +18,4 @@ test-exe test-support : test_support.cxx ;
 priv-exe abuse     : abuse.cxx ;
 priv-exe styles    : styles.cxx ;
 priv-exe sequencer : sequencer.cxx ;
+priv-exe droppings : droppings.cxx ;
