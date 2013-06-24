@@ -47,6 +47,8 @@ protected:
                                 int size, bool master,
                                 bool bold, bool italic) throw (Error);
     void unload(PangoFontDescription * desc);
+
+    void measure(PangoFontDescription * desc, uint16_t & width, uint16_t & height);
 };
 
 #endif // XCB__FONT_SET__HXX
