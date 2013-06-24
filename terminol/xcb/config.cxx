@@ -99,17 +99,15 @@ void readConfig(Config & config) {
         for (;;) {
             size_t j = str.find(':', i);
 
+            if (j == std::string::npos) { j = str.size(); }
+
             if (open(ifs, str.substr(i, j - i) + conf)) {
                 read(ifs, config);
                 return;
             }
 
-            if (j == std::string::npos) {
-                break;
-            }
-            else {
-                i = j + 1;
-            }
+            if (j == str.size()) { break; }
+            else { i = j + 1; }
         }
     }
 
