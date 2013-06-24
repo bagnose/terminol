@@ -354,11 +354,9 @@ class Buffer {
             _cells.insert(begin(),
                           previous.begin() + previous.getWrap() - n,
                           previous.begin() + previous.getWrap());
-            /*
             std::fill(previous.begin() + previous.getWrap() - n,
                       previous.begin() + previous.getWrap(),
                       Cell::blank());
-                      */
             _wrap += n;
             previous._wrap -= n;
 
@@ -373,7 +371,7 @@ class Buffer {
                                    begin(),
                                    begin() + n);
             std::copy(begin() + n, end(), begin());
-            /* std::fill(end() - n, end(), Cell::blank()); */
+            std::fill(end() - n, end(), Cell::blank());
 
             previous._wrap += n;
             _wrap -= n;
