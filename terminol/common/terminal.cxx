@@ -920,7 +920,7 @@ void Terminal::echo(const uint8_t * data, size_t size) {
         }
         else if (c < SPACE) {
             if (c != LF && c != CR && c != HT) {
-                c |= '\x40';
+                c |= 0x40;
                 processRead(reinterpret_cast<const uint8_t *>("^"), 1);
             }
             processRead(&c, 1);
