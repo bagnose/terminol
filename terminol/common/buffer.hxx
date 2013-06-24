@@ -4,172 +4,17 @@
 #define COMMON__BUFFER__HXX
 
 #include "terminol/common/data_types.hxx"
+#include "terminol/common/deduper.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/support/escape.hxx"
 
-#include <unordered_map>
+#include <algorithm>
 #include <deque>
 #include <vector>
 #include <iomanip>
 
 #include <cstddef>
 #include <stdint.h>
-
-namespace {
-
-template <class T> struct SDBM {
-    typedef T Type;
-    T operator () (T val, uint8_t next) {
-        return static_cast<T>(next) + (val << 6) + (val << 16) - val;
-    }
-};
-
-template <class A> typename A::Type hash(const void * buffer,
-                                         size_t       length) {
-    auto buf = static_cast<const uint8_t *>(buffer);
-    return std::accumulate(buf, buf + length, typename A::Type(0), A());
-}
-
-} // namespace {anonymous}
-
-//
-//
-//
-
-class Deduper {
-public:
-    // In reality it's a choice between 32-bit and 64-bit tags.
-
-    //typedef uint64_t Tag;
-    typedef uint32_t Tag;
-    //typedef uint16_t Tag;
-    //typedef uint8_t Tag;
-
-    struct Line {
-        Line() : cont(false), wrap(0), cells() {}
-
-        Line(bool cont_, uint16_t wrap_, std::vector<Cell> & cells_) :
-            cont(cont_),
-            wrap(wrap_),
-            cells(std::move(cells_)) {}
-
-        bool              cont;
-        uint16_t          wrap;
-        std::vector<Cell> cells;
-    };
-
-private:
-    struct Payload {
-        Payload(bool cont_, uint16_t wrap_, std::vector<Cell> & cells_) :
-            line(cont_, wrap_, cells_),
-            refCount(1) {}
-
-        Line     line;
-        uint32_t refCount;
-    };
-
-    std::unordered_map<Tag, Payload> _lines;
-    size_t                           _totalRefCount;
-
-public:
-    Deduper() : _lines(), _totalRefCount(0) {}
-
-    Tag store(bool cont, uint16_t wrap, std::vector<Cell> & cells) {
-        auto tag = makeTag(cells);
-
-again:
-        auto iter = _lines.find(tag);
-
-        if (iter == _lines.end()) {
-            _lines.insert(std::make_pair(tag, Payload(cont, wrap, cells)));
-        }
-        else {
-            auto & payload = iter->second;
-
-            if (cont  != payload.line.cont ||
-                wrap  != payload.line.wrap ||
-                cells != payload.line.cells) {
-#if DEBUG
-                std::cerr << "Collision between:" << std::endl;
-                std::cerr << "   '";
-                for (auto c : cells) { std::cerr << c.seq; }
-                std::cerr << "'" << std::endl;
-                std::cerr << "And:" << std::endl;
-                std::cerr << "   '";
-                for (auto c : payload.line.cells) { std::cerr << c.seq; }
-                std::cerr << "'" << std::endl << std::endl;
-#endif
-
-                ENFORCE(static_cast<Tag>(_lines.size()) != 0, "No dedupe room left");
-
-                ++tag;
-                goto again;
-            }
-
-            ++payload.refCount;
-        }
-
-        ++_totalRefCount;
-
-#if 0
-        if (_totalRefCount != 0) {
-            std::cerr << "+++ " << 100.0 * double(_lines.size()) / double(_totalRefCount) << " %" << std::endl;
-        }
-#endif
-
-        return tag;
-    }
-
-    const Line & lookup(Tag tag) const {
-        auto iter = _lines.find(tag);
-        ASSERT(iter != _lines.end(), "");
-        return iter->second.line;
-    }
-
-    void remove(Tag tag) {
-        auto iter = _lines.find(tag);
-        ASSERT(iter != _lines.end(), "");
-        auto & payload = iter->second;
-
-        if (--payload.refCount == 0) {
-            _lines.erase(iter);
-        }
-
-        --_totalRefCount;
-
-#if 0
-        if (_totalRefCount != 0) {
-            std::cerr << "--- " << 100.0 * double(_lines.size()) / double(_totalRefCount) << " %" << std:endl;
-        }
-#endif
-    }
-
-    void lookupRemove(Tag tag, Line & line) {
-        auto iter = _lines.find(tag);
-        ASSERT(iter != _lines.end(), "");
-        auto & payload = iter->second;
-
-        if (--payload.refCount == 0) {
-            line.cont  = payload.line.cont;
-            line.wrap  = payload.line.wrap;
-            line.cells = std::move(payload.line.cells);
-            ASSERT(payload.line.cells.empty(), "");
-            _lines.erase(iter);
-        }
-        else {
-            line = payload.line;
-        }
-    }
-
-private:
-    Tag makeTag(const std::vector<Cell> & cells) const {
-        return hash<SDBM<Tag>>(&cells.front(), sizeof(Cell) * cells.size());
-    }
-};
-
-//
-//
-//
 
 class Buffer {
     class Line {
@@ -408,7 +253,7 @@ class Buffer {
     static const Cell BLANK;
 
     const Config             & _config;
-    Deduper                  & _deduper;
+    I_Deduper                & _deduper;
 
     std::deque<Deduper::Tag>   _history;
     std::deque<Line>           _active;
@@ -428,7 +273,7 @@ class Buffer {
 
 public:
     Buffer(const Config & config,
-           Deduper      & deduper,
+           I_Deduper    & deduper,
            uint16_t       rows,
            uint16_t       cols,
            size_t         historyLimit) :
@@ -558,7 +403,7 @@ protected:
         ASSERT(!_history.empty(), "");
 
         auto tag = _history.back();
-        Deduper::Line line;
+        I_Deduper::Line line;
         _deduper.lookupRemove(tag, line);
         _active.push_front(Line(_cols, line.cont, line.wrap, line.cells));
         _history.pop_back();
