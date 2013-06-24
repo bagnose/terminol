@@ -1303,8 +1303,8 @@ void Window::terminalDrawSelection(Pos  begin,
     auto numCols = _terminal->getCols();
     auto plus    = bottomless ? 0 : 1;
 
-    double bg[4] = { 0.0, 0.0, 1.0, 0.1 };
-    double fg[4] = { 0.0, 0.5, 1.0, 0.3 };
+    double bg[4] = { 0.4, 0.0, 1.0, 0.07 };
+    double fg[4] = { 0.0, 0.5, 1.0, 1.0 };
 
     if (begin.row == end.row) {
         ASSERT(!topless && !bottomless, "");
