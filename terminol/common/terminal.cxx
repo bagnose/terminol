@@ -103,6 +103,7 @@ Terminal::Terminal(I_Observer   & observer,
     //
     _pressed(false),
     _focused(true),
+    _run(),
     //
     _tty(tty),
     _dumpWrites(false),
@@ -161,6 +162,8 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     for (size_t i = 0; i != _tabs.size(); ++i) {
         _tabs[i] = i % TAB_SIZE == 0;
     }
+
+    _run.shrink_to_fit();
 }
 
 void Terminal::redraw(Pos begin, Pos end) {
@@ -688,12 +691,6 @@ bool Terminal::translate(uint8_t ascii, utf8::Seq & seq) const {
 void Terminal::draw(Pos begin, Pos end, Damager damage) {
     _damage.clear();
 
-    // Declare run at the outer scope (rather than for each row) to
-    // minimise alloc/free.
-    std::vector<uint8_t> run;
-    // Reserve the largest amount of memory we could require.
-    run.reserve(_buffer->getCols() * utf8::Length::LMAX + 1);
-
     for (uint16_t r = begin.row; r != end.row; ++r) {
         // Determine the column extents
 
@@ -729,12 +726,11 @@ void Terminal::draw(Pos begin, Pos end, Damager damage) {
         }
 
         drawRowBg(r, colBegin, colEnd);
-        drawRowFg(run, r, colBegin, colEnd);
+        drawRowFg(r, colBegin, colEnd);
     }
 
-    drawCursor(run);
+    drawCursor();
     drawSelection();
-
 
     bool scrollbar =    // Identical in two places.
         damage == Damager::SCROLL || damage == Damager::EXPOSURE ||
@@ -745,6 +741,8 @@ void Terminal::draw(Pos begin, Pos end, Damager damage) {
                                         _buffer->getBar(),
                                         _buffer->getRows());
     }
+
+    _run.clear();
 }
 
 void Terminal::drawRowBg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
@@ -774,8 +772,9 @@ void Terminal::drawRowBg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
     }
 }
 
-void Terminal::drawRowFg(std::vector<uint8_t> & run,
-                         uint16_t r, uint16_t colBegin, uint16_t colEnd) {
+void Terminal::drawRowFg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
+    ASSERT(_run.empty(), "");
+
     auto     fg    = UColor::foreground();
     auto     attrs = AttrSet();
     uint16_t c_    = colBegin;      // Accumulation start column.
@@ -789,37 +788,38 @@ void Terminal::drawRowFg(std::vector<uint8_t> & run,
         auto attrs2 = cell.style.attrs;
 
         if (fg != fg2 || attrs != attrs2) {
-            if (!run.empty()) {
+            if (!_run.empty()) {
                 // flush run
-                run.push_back(NUL);
+                _run.push_back(NUL);
                 _observer.terminalDrawFg(Pos(r, c_), fg, attrs,
-                                         &run.front(), run.size(), c - c_);
-                run.clear();
+                                         &_run.front(), _run.size(), c - c_);
+                _run.clear();
             }
 
             c_    = c;
             fg    = fg2;
             attrs = attrs2;
-
-            run.clear();
         }
 
-        size_t oldSize = run.size();
+        size_t oldSize = _run.size();
         utf8::Length length = utf8::leadLength(cell.seq.lead());
-        run.resize(run.size() + length);
-        std::copy(cell.seq.bytes, cell.seq.bytes + length, &run[oldSize]);
+        _run.resize(_run.size() + length);
+        std::copy(cell.seq.bytes, cell.seq.bytes + length, &_run[oldSize]);
     }
 
     // There may be an unterminated run to flush.
-    if (!run.empty()) {
-        run.push_back(NUL);
+    if (!_run.empty()) {
+        // flush run
+        _run.push_back(NUL);
         _observer.terminalDrawFg(Pos(r, c_), fg, attrs,
-                                 &run.front(), run.size(), c - c_);
-        run.clear();
+                                 &_run.front(), _run.size(), c - c_);
+        _run.clear();
     }
 }
 
-void Terminal::drawCursor(std::vector<uint8_t> & run) {
+void Terminal::drawCursor() {
+    ASSERT(_run.empty(), "");
+
     if (_modes.get(Mode::SHOW_CURSOR) &&
         _buffer->getScrollOffset() + _cursor.pos.row < _buffer->getRows())
     {
@@ -849,20 +849,21 @@ void Terminal::drawCursor(std::vector<uint8_t> & run) {
         }
 
         const Cell & cell   = _buffer->getCell(pos);
-        utf8::Length length = utf8::leadLength(cell.seq.lead());
-        run.resize(length);
-        std::copy(cell.seq.bytes, cell.seq.bytes + length, &run.front());
-        run.push_back(NUL);
-
         auto attrs = cell.style.attrs;
         bool swap  = XOR(_modes.get(Mode::REVERSE), attrs.get(Attr::INVERSE));
         auto fg    = cell.style.fg;
         auto bg    = cell.style.bg;
         if (swap) { std::swap(fg, bg); }
 
+        utf8::Length length = utf8::leadLength(cell.seq.lead());
+        _run.resize(length);
+        std::copy(cell.seq.bytes, cell.seq.bytes + length, &_run.front());
+        _run.push_back(NUL);
+
         _observer.terminalDrawCursor(pos, fg, bg, attrs,
-                                     &run.front(), run.size(),
+                                     &_run.front(), _run.size(),
                                      _cursor.wrapNext, _focused);
+        _run.clear();
     }
 }
 

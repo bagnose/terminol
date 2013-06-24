@@ -138,6 +138,8 @@ private:
     Pos                   _pointerPos;
     bool                  _focused;
 
+    std::vector<uint8_t>  _run;         // Buffer for accumulating character runs.
+
     //
 
     I_Tty               & _tty;
@@ -205,9 +207,8 @@ protected:
 
     void     draw(Pos begin, Pos end, Damager damage);
     void     drawRowBg(uint16_t row, uint16_t colBegin, uint16_t colEnd);
-    void     drawRowFg(std::vector<uint8_t> & run,
-                       uint16_t row, uint16_t colBegin, uint16_t colEnd);
-    void     drawCursor(std::vector<uint8_t> & run);
+    void     drawRowFg(uint16_t row, uint16_t colBegin, uint16_t colEnd);
+    void     drawCursor();
     void     drawSelection();
 
     void     write(const uint8_t * data, size_t size);
