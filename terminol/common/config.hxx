@@ -27,7 +27,6 @@ struct Config {
     bool        scrollOnTtyKeyPress;
     bool        scrollOnResize;
     bool        scrollOnPaste;
-    bool        doubleBuffer;
     std::string title;
     std::string icon;
     std::string chdir;

@@ -170,7 +170,6 @@ Config::Config() :
     scrollOnTtyKeyPress(true),
     scrollOnResize(false),
     scrollOnPaste(true),
-    doubleBuffer(true),
     title("terminol"),
     icon("terminol"),
     chdir(),

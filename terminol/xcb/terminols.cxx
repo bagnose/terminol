@@ -440,10 +440,7 @@ int main(int argc, char * argv[]) {
         std::string arg = argv[i];
         std::string val;
 
-        if (arg == "--double-buffer") {
-            config.doubleBuffer = true;
-        }
-        else if (arg == "--trace") {
+        if (arg == "--trace") {
             config.traceTty = true;
         }
         else if (arg == "--sync") {

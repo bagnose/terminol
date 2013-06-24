@@ -188,24 +188,18 @@ Window::Window(I_Observer         & observer,
 
 Window::~Window() {
     if (_mapped) {
-        if (_config.doubleBuffer) {
-            ASSERT(_pixmap, "");
-        }
+        ASSERT(_pixmap, "");
         ASSERT(_surface, "");
 
         cairo_surface_finish(_surface);
         cairo_surface_destroy(_surface);
 
-        if (_config.doubleBuffer) {
-            auto cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
-            xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
-        }
+        auto cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
+        xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
     }
     else {
         ASSERT(!_surface, "");
-        if (_config.doubleBuffer) {
-            ASSERT(!_pixmap, "");
-        }
+        ASSERT(!_pixmap, "");
     }
 
     // Unwind constructor.
@@ -361,22 +355,20 @@ void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
     //PRINT("Map");
     ASSERT(!_mapped, "");
 
-    if (_config.doubleBuffer) {
-        _pixmap = xcb_generate_id(_basics.connection());
-        // Note, we create the pixmap against the root window rather than
-        // _window to avoid dealing with the case where _window may have been
-        // asynchronously destroyed.
-        auto cookie = xcb_create_pixmap_checked(_basics.connection(),
-                                                _basics.screen()->root_depth,
-                                                _pixmap,
-                                                _basics.screen()->root,
-                                                _width,
-                                                _height);
-        xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap");
-    }
+    _pixmap = xcb_generate_id(_basics.connection());
+    // Note, we create the pixmap against the root window rather than
+    // _window to avoid dealing with the case where _window may have been
+    // asynchronously destroyed.
+    auto cookie = xcb_create_pixmap_checked(_basics.connection(),
+                                            _basics.screen()->root_depth,
+                                            _pixmap,
+                                            _basics.screen()->root,
+                                            _width,
+                                            _height);
+    xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap");
 
     _surface = cairo_xcb_surface_create(_basics.connection(),
-                                        _config.doubleBuffer ? _pixmap : _window,
+                                        _pixmap,
                                         _basics.visual(),
                                         _width,
                                         _height);
@@ -396,12 +388,10 @@ void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     cairo_surface_destroy(_surface);
     _surface = nullptr;
 
-    if (_config.doubleBuffer) {
-        ASSERT(_pixmap, "");
-        auto cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
-        xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
-        _pixmap = 0;
-    }
+    ASSERT(_pixmap, "");
+    auto cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
+    xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
+    _pixmap = 0;
 
     _mapped = false;
 }
@@ -419,7 +409,7 @@ void Window::expose(xcb_expose_event_t * event) {
           */
 
     if (_mapped) {
-        if (_config.doubleBuffer && _hadExpose) {
+        if (_hadExpose) {
             ASSERT(_pixmap, "");
             auto cookie = xcb_copy_area_checked(_basics.connection(),
                                                 _pixmap,
@@ -458,49 +448,40 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
     _height = event->height;
 
     if (_mapped) {
-        if (_config.doubleBuffer) {
-            ASSERT(_pixmap, "");
-        }
-
+        ASSERT(_pixmap, "");
         ASSERT(_surface, "");
 
-        if (_config.doubleBuffer) {
-            cairo_surface_finish(_surface);
-            cairo_surface_destroy(_surface);
-            _surface = nullptr;
+        cairo_surface_finish(_surface);
+        cairo_surface_destroy(_surface);
+        _surface = nullptr;
 
-            auto cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
-            xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
-            _pixmap = 0;
+        auto cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
+        xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
+        _pixmap = 0;
 
-            //
+        //
 
-            _pixmap = xcb_generate_id(_basics.connection());
-            // Note, we create the pixmap against the root window rather than
-            // _window to avoid dealing with the case where _window may have been
-            // asynchronously destroyed.
-            cookie = xcb_create_pixmap_checked(_basics.connection(),
-                                               _basics.screen()->root_depth,
-                                               _pixmap,
-                                               //_window,
-                                               _basics.screen()->root,
-                                               _width,
-                                               _height);
-            xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap");
+        _pixmap = xcb_generate_id(_basics.connection());
+        // Note, we create the pixmap against the root window rather than
+        // _window to avoid dealing with the case where _window may have been
+        // asynchronously destroyed.
+        cookie = xcb_create_pixmap_checked(_basics.connection(),
+                                           _basics.screen()->root_depth,
+                                           _pixmap,
+                                           //_window,
+                                           _basics.screen()->root,
+                                           _width,
+                                           _height);
+        xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap");
 
-            cairo_surface_finish(_surface);
-            _surface = cairo_xcb_surface_create(_basics.connection(),
-                                                _config.doubleBuffer ? _pixmap : _window,
-                                                _basics.visual(),
-                                                _width,
-                                                _height);
-            ENFORCE(_surface, "Failed to create surface");
-            ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
-        }
-        else {
-            cairo_xcb_surface_set_size(_surface, _width, _height);
-            ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
-        }
+        cairo_surface_finish(_surface);
+        _surface = cairo_xcb_surface_create(_basics.connection(),
+                                            _pixmap,
+                                            _basics.visual(),
+                                            _width,
+                                            _height);
+        ENFORCE(_surface, "Failed to create surface");
+        ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
     }
 
     uint16_t rows, cols;
@@ -532,9 +513,7 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
     updateTitle();
 
     if (_mapped) {
-        if (_config.doubleBuffer) {
-            ASSERT(_pixmap, "");
-        }
+        ASSERT(_pixmap, "");
         ASSERT(_surface, "");
         draw(0, 0, _width, _height);
     }
@@ -854,9 +833,7 @@ void Window::updateIcon() {
 
 void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     ASSERT(_mapped, "");
-    if (_config.doubleBuffer) {
-        ASSERT(_pixmap, "");
-    }
+    ASSERT(_pixmap, "");
     ASSERT(_surface, "");
     _cr = cairo_create(_surface);
     cairo_set_line_width(_cr, 1.0);
@@ -864,23 +841,15 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 #if DEBUG
     // Clear the damaged area so that we know we are completely drawing to it.
 
-    if (_config.doubleBuffer) {
-        xcb_rectangle_t rect = {
-            static_cast<int16_t>(x), static_cast<int16_t>(y), w, h
-        };
+    xcb_rectangle_t rect = {
+        static_cast<int16_t>(x), static_cast<int16_t>(y), w, h
+    };
 
-        xcb_poly_rectangle(_basics.connection(),
-                           _pixmap,
-                           _gc,
-                           1,
-                           &rect);
-    }
-    else {
-        xcb_clear_area(_basics.connection(),
-                       0,       // don't generate exposure event
-                       _window,
-                       x, y, w, h);
-    }
+    xcb_poly_rectangle(_basics.connection(),
+                       _pixmap,
+                       _gc,
+                       1,
+                       &rect);
 #endif
 
     cairo_save(_cr); {
@@ -910,16 +879,14 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     cairo_surface_flush(_surface);      // Useful?
     ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
 
-    if (_config.doubleBuffer) {
-        auto cookie = xcb_copy_area(_basics.connection(),
-                                    _pixmap,
-                                    _window,
-                                    _gc,
-                                    x, y, // src
-                                    x, y, // dst
-                                    w, h);
-        xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
-    }
+    auto cookie = xcb_copy_area(_basics.connection(),
+                                _pixmap,
+                                _window,
+                                _gc,
+                                x, y, // src
+                                x, y, // dst
+                                w, h);
+    xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
 
     xcb_flush(_basics.connection());
 }
@@ -1087,9 +1054,7 @@ bool Window::terminalFixDamageBegin(bool internal) throw () {
     }
     else {
         ASSERT(_mapped, "");
-        if (_config.doubleBuffer) {
-            ASSERT(_pixmap, "");
-        }
+        ASSERT(_pixmap, "");
         ASSERT(_surface, "");
         ASSERT(_cr, "");
         return true;
@@ -1463,28 +1428,26 @@ void Window::terminalFixDamageEnd(bool internal,
 
         cairo_surface_flush(_surface);      // Useful?
 
-        if (_config.doubleBuffer) {
-            int x0, y0;
-            pos2XY(begin, x0, y0);
-            int x1, y1;
-            pos2XY(end, x1, y1);
+        int x0, y0;
+        pos2XY(begin, x0, y0);
+        int x1, y1;
+        pos2XY(end, x1, y1);
 
-            if (scrollBar) {
-                // Expand the region to include the scroll bar
-                y0 = 0;
-                x1 = _width;
-                y1 = _height;
-            }
-
-            // Copy the buffer region
-            xcb_copy_area(_basics.connection(),
-                          _pixmap,
-                          _window,
-                          _gc,
-                          x0, y0,   // src
-                          x0, y0,   // dst
-                          x1 - x0, y1 - y0);
+        if (scrollBar) {
+            // Expand the region to include the scroll bar
+            y0 = 0;
+            x1 = _width;
+            y1 = _height;
         }
+
+        // Copy the buffer region
+        xcb_copy_area(_basics.connection(),
+                      _pixmap,
+                      _window,
+                      _gc,
+                      x0, y0,   // src
+                      x0, y0,   // dst
+                      x1 - x0, y1 - y0);
 
         //xcb_flush(_basics.connection());
         xcb_aux_sync(_basics.connection());

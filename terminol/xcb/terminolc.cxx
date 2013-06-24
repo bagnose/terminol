@@ -1,5 +1,6 @@
 // vi:noai:sw=4
 
+#include "terminol/xcb/config.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/support/debug.hxx"
 
@@ -8,6 +9,7 @@
 
 int main() {
     Config config;
+    readConfig(config);
 
     const auto & socketPath = config.socketPath;
     int fd = ::open(socketPath.c_str(), O_WRONLY | O_NONBLOCK);

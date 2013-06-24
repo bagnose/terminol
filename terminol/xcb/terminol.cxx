@@ -259,9 +259,6 @@ int main(int argc, char * argv[]) {
         else if (arg == "--execute") {
             accumulateCommand = true;
         }
-        else if (arg == "--double-buffer") {
-            config.doubleBuffer = true;
-        }
         else if (arg == "--trace") {
             config.traceTty = true;
         }
