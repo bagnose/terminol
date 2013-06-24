@@ -11,8 +11,8 @@ FontSet::FontSet(const Config & config,
     _config(config),
     _basics(basics)
 {
-    const auto & name = config.getFontName();
-    int size = config.getFontSize();
+    const auto & name = config.fontName;
+    int size = config.fontSize;
 
 
     _normal = load(name, size, true, false, false);
@@ -44,7 +44,7 @@ PangoFontDescription * FontSet::load(const std::string & family,
                                      bool                bold,
                                      bool                italic) throw (Error) {
     {
-    auto str = _config.getFontName();
+    auto str = _config.fontName;
     str = "";
     }
 

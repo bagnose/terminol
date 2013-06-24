@@ -52,7 +52,7 @@ public:
         _creator(creator),
         _config(config)
     {
-        const std::string & socketPath = _config.getSocketPath();
+        const std::string & socketPath = _config.socketPath;
         if (::mkfifo(socketPath.c_str(), 0600) == -1) {
             switch (errno) {
                 case EEXIST:
@@ -70,7 +70,7 @@ public:
         ENFORCE_SYS(::close(_fd) != -1, "");
 
         /*
-        const std::string & socketPath = _config.getSocketPath();
+        const std::string & socketPath = _config.socketPath;
         if (::unlink(socketPath.c_str() == -1)) {
             ERROR("Failed to remove socket: " << socketPath);
         }
@@ -99,7 +99,7 @@ public:
 
 protected:
     void open() throw (Error) {
-        const std::string & socketPath = _config.getSocketPath();
+        const std::string & socketPath = _config.socketPath;
 
         _fd = ::open(socketPath.c_str(), O_RDONLY | O_NONBLOCK);
         if (_fd == -1) {
@@ -151,7 +151,7 @@ public:
         _keyMap(),
         _finished(false)
     {
-        if (config.getServerFork()) {
+        if (config.serverFork) {
             ENFORCE_SYS(::daemon(1, 0) != -1, "daemon()");
         }
 
@@ -441,24 +441,24 @@ int main(int argc, char * argv[]) {
         std::string val;
 
         if (arg == "--double-buffer") {
-            config.setDoubleBuffer(true);
+            config.doubleBuffer = true;
         }
         else if (arg == "--trace") {
-            config.setTraceTty(true);
+            config.traceTty = true;
         }
         else if (arg == "--sync") {
-            config.setSyncTty(true);
+            config.syncTty = true;
         }
         else if (argMatch(arg, "font", val)) {
-            config.setFontName(val);
+            config.fontName = val;
         }
         else if (argMatch(arg, "term", val)) {
-            config.setTermName(val);
+            config.termName = val;
         }
         /*
         else if (argMatch(arg, "geometry", val)) {
             // WidthxHeight+XPos+YPos
-            config.setGeometryString(val);
+            config.geometryString = val;
         }
         */
         else if (arg == "--help") {

@@ -260,19 +260,19 @@ int main(int argc, char * argv[]) {
             accumulateCommand = true;
         }
         else if (arg == "--double-buffer") {
-            config.setDoubleBuffer(true);
+            config.doubleBuffer = true;
         }
         else if (arg == "--trace") {
-            config.setTraceTty(true);
+            config.traceTty = true;
         }
         else if (arg == "--sync") {
-            config.setSyncTty(true);
+            config.syncTty = true;
         }
         else if (argMatch(arg, "font", val)) {
-            config.setFontName(val);
+            config.fontName = val;
         }
         else if (argMatch(arg, "term", val)) {
-            config.setTermName(val);
+            config.termName = val;
         }
         /*
         else if (argMatch(arg, "geometry", val)) {

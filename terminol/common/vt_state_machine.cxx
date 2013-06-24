@@ -96,7 +96,7 @@ void VtStateMachine::ground(utf8::Seq seq, utf8::Length length) {
             processControl(c);
         }
         else if (inRange(c, 0x20 /* SPACE */, 0x7F /* DEL */)) {
-            if (_config.getTraceTty()) {
+            if (_config.traceTty) {
                 std::cerr << SGR::FG_GREEN << SGR::UNDERLINE << seq << SGR::RESET_ALL;
             }
             _observer.machineNormal(seq, length);
@@ -520,7 +520,7 @@ void VtStateMachine::dcsPassthrough(utf8::Seq seq, utf8::Length length) {
 //
 
 void VtStateMachine::processControl(uint8_t c) {
-    if (_config.getTraceTty()) {
+    if (_config.traceTty) {
         std::cerr << SGR::FG_YELLOW << Char(c) << SGR::RESET_ALL;
         if (c == LF || c == FF || c == VT) {
             std::cerr << std::endl;
@@ -532,7 +532,7 @@ void VtStateMachine::processControl(uint8_t c) {
 void VtStateMachine::processEsc(const std::vector<uint8_t> & seq) {
     switch (seq.size()) {
         case 1:
-            if (_config.getTraceTty()) {
+            if (_config.traceTty) {
                 std::cerr
                     << SGR::FG_MAGENTA << "ESC" << Char(seq[0])
                     << SGR::RESET_ALL;
@@ -540,7 +540,7 @@ void VtStateMachine::processEsc(const std::vector<uint8_t> & seq) {
             _observer.machineEscape(seq[0]);
             break;
         case 2:
-            if (_config.getTraceTty()) {
+            if (_config.traceTty) {
                 std::cerr
                     << SGR::FG_BLUE << "ESC" << Char(seq[0]) << Char(seq[1])
                     << SGR::RESET_ALL;
@@ -553,7 +553,7 @@ void VtStateMachine::processEsc(const std::vector<uint8_t> & seq) {
 }
 
 void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
-    if (_config.getTraceTty()) {
+    if (_config.traceTty) {
         std::cerr << SGR::FG_CYAN << "ESC[" << Str(seq) << SGR::RESET_ALL;
     }
 
@@ -609,7 +609,7 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
 }
 
 void VtStateMachine::processOsc(const std::vector<uint8_t> & seq) {
-    if (_config.getTraceTty()) {
+    if (_config.traceTty) {
         std::cerr << SGR::FG_MAGENTA << "ESC]" << Str(seq) << SGR::RESET_ALL;
     }
 

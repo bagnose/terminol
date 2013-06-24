@@ -7,8 +7,7 @@
 #include "terminol/support/pattern.hxx"
 #include "terminol/common/data_types.hxx"
 
-class Config : protected Uncopyable {
-private:
+struct Config {
     // TODO
     // pointerfgColor
     // pointerBgColor
@@ -20,125 +19,59 @@ private:
 
     // flow control?
 
-    std::string _fontName;
-    int         _fontSize;
-    std::string _termName;
-    bool        _scrollWithHistory;
-    bool        _scrollOnTtyOutput;
-    bool        _scrollOnTtyKeyPress;
-    bool        _scrollOnResize;
-    bool        _scrollOnPaste;
-    bool        _doubleBuffer;
-    std::string _title;
-    std::string _icon;
-    std::string _chdir;
-    size_t      _scrollBackHistory;
-    bool        _unlimitedScrollBack;
-    size_t      _reflowHistory;
-    int         _framesPerSecond;
-    bool        _traditionalWrapping;
+    std::string fontName;
+    int         fontSize;
+    std::string termName;
+    bool        scrollWithHistory;
+    bool        scrollOnTtyOutput;
+    bool        scrollOnTtyKeyPress;
+    bool        scrollOnResize;
+    bool        scrollOnPaste;
+    bool        doubleBuffer;
+    std::string title;
+    std::string icon;
+    std::string chdir;
+    size_t      scrollBackHistory;
+    bool        unlimitedScrollBack;
+    size_t      reflowHistory;
+    int         framesPerSecond;
+    bool        traditionalWrapping;
     // Debugging support:
-    bool        _traceTty;
-    bool        _syncTty;
+    bool        traceTty;
+    bool        syncTty;
     //
-    int16_t     _initialX;
-    int16_t     _initialY;
-    uint16_t    _initialRows;
-    uint16_t    _initialCols;
+    int16_t     initialX;
+    int16_t     initialY;
+    uint16_t    initialRows;
+    uint16_t    initialCols;
 
-    Color       _fgColor;
-    Color       _bgColor;
-    Color       _systemColors[16];
+    Color       fgColor;
+    Color       bgColor;
+    Color       systemColors[16];
 
-    bool        _customCursorFillColor;
-    Color       _cursorFillColor;
-    bool        _customCursorTextColor;
-    Color       _cursorTextColor;
+    bool        customCursorFillColor;
+    Color       cursorFillColor;
+    bool        customCursorTextColor;
+    Color       cursorTextColor;
 
-    Color       _scrollbarFgColor;
-    Color       _scrollbarBgColor;
-    int         _scrollbarWidth;
+    Color       scrollbarFgColor;
+    Color       scrollbarBgColor;
+    int         scrollbarWidth;
 
-    Color       _borderColor;
-    int         _borderThickness;
-    uint32_t    _doubleClickTimeout;
+    Color       borderColor;
+    int         borderThickness;
+    uint32_t    doubleClickTimeout;
 
-    std::string _socketPath;
-    bool        _serverFork;
+    std::string socketPath;
+    bool        serverFork;
 
-public:
+    //
+    //
+    //
+
     Config();
 
     void setColorScheme(const std::string & name);
-
-    void setFontName(const std::string & val) { _fontName = val; }
-    void setFontSize(int val) { _fontSize = val; }
-    void setTermName(const std::string & val) { _termName = val; }
-    void setScrollOnTtyOutput(bool val) { _scrollOnTtyOutput = val; }
-    void setScrollOnTtyKeyPress(bool val) { _scrollOnTtyKeyPress = val; }
-    void setScrollOnResize(bool val) { _scrollOnResize = val; }
-    void setDoubleBuffer(bool val) { _doubleBuffer = val; }
-    void setTitle(const std::string & val) { _title = val; }
-    void setIcon(const std::string & val) { _icon = val; }
-    void setChdir(const std::string & val) { _chdir = val; }
-    void setScrollBackHistory(size_t val) { _scrollBackHistory = val; }
-    void setUnlimitedScrollBack(bool val) { _unlimitedScrollBack = val; }
-    void setReflowHistory(size_t val) { _reflowHistory = val; }
-    void setTraceTty(bool val) { _traceTty = val; }
-    void setSyncTty(bool val) { _syncTty = val; }
-    void setServerFork(bool val) { _serverFork = val; }
-    void setScrollbarFgColor(const Color & val) { _scrollbarFgColor = val; }
-    void setScrollbarBgColor(const Color & val) { _scrollbarBgColor = val; }
-
-    const std::string & getFontName() const { return _fontName; }
-    int                 getFontSize() const { return _fontSize; }
-    const std::string & getTermName() const { return _termName; }
-    bool                getScrollWithHistory() const { return _scrollWithHistory; }
-    bool                getScrollOnTtyOutput() const { return _scrollOnTtyOutput; }
-    bool                getScrollOnTtyKeyPress() const { return _scrollOnTtyKeyPress; }
-    bool                getScrollOnResize() const { return _scrollOnResize; }
-    bool                getScrollOnPaste() const { return _scrollOnPaste; }
-    bool                getDoubleBuffer() const { return _doubleBuffer; }
-    const std::string & getTitle() const { return _title; }
-    const std::string & getIcon() const { return _icon; }
-    const std::string & getChdir() const { return _chdir; }
-    size_t              getScrollBackHistory() const { return _scrollBackHistory; }
-    bool                getUnlimitedScrollBack() const { return _unlimitedScrollBack; }
-    size_t              getReflowHistory() const { return _reflowHistory; }
-    int                 getFramesPerSecond() const { return _framesPerSecond; }
-    bool                getTraditionalWrapping() const { return _traditionalWrapping; }
-    bool                getTraceTty() const { return _traceTty; }
-    bool                getSyncTty() const { return _syncTty; }
-
-    int16_t             getInitialX()    const { return _initialX; }
-    int16_t             getInitialY()    const { return _initialY; }
-    uint16_t            getInitialRows() const { return _initialRows; }
-    uint16_t            getInitialCols() const { return _initialCols; }
-
-    const Color &       getFgColor() const { return _fgColor; }
-    const Color &       getBgColor() const { return _bgColor; }
-
-    const Color &       getSystemColor(uint8_t index) const {
-        ASSERT(index <= 16, "");
-        return _systemColors[index];
-    }
-
-    bool                getCustomCursorFillColor() const { return _customCursorFillColor; }
-    const Color &       getCursorFillColor()       const { return _cursorFillColor; }
-    bool                getCustomCursorTextColor() const { return _customCursorTextColor; }
-    const Color &       getCursorTextColor()       const { return _cursorTextColor; }
-
-    const Color &       getScrollbarFgColor()      const { return _scrollbarFgColor; }
-    const Color &       getScrollbarBgColor()      const { return _scrollbarBgColor; }
-    int                 getScrollbarWidth()        const { return _scrollbarWidth; }
-
-    const Color &       getBorderColor()           const { return _borderColor; }
-    int                 getBorderThickness()       const { return _borderThickness; }
-
-    uint32_t            getDoubleClickTimeout()    const { return _doubleClickTimeout; }
-
-    const std::string & getSocketPath()            const { return _socketPath; }
-    bool                getServerFork()            const { return _serverFork; }
 };
 
 #endif // COMMON__CONFIG__HXX

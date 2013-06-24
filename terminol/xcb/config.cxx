@@ -49,25 +49,25 @@ void read(std::istream & ist, Config & config) {
                 config.setColorScheme(rhs);
             }
             else if (lhs == "scrollBackHistory") {
-                config.setScrollBackHistory(unstringify<size_t>(rhs));
+                config.scrollBackHistory = unstringify<size_t>(rhs);
             }
             else if (lhs == "unlimitedScrollBack") {
-                config.setUnlimitedScrollBack(unstringify<bool>(rhs));
+                config.unlimitedScrollBack = unstringify<bool>(rhs);
             }
             else if (lhs == "reflowHistory") {
-                config.setReflowHistory(unstringify<size_t>(rhs));
+                config.reflowHistory = unstringify<size_t>(rhs);
             }
             else if (lhs == "serverFork") {
-                config.setServerFork(unstringify<bool>(rhs));
+                config.serverFork = unstringify<bool>(rhs);
             }
             else if (lhs == "fontName") {
-                config.setFontName(rhs);
+                config.fontName = rhs;
             }
             else if (lhs == "fontSize") {
-                config.setFontSize(unstringify<int>(rhs));
+                config.fontSize = unstringify<int>(rhs);
             }
             else if (lhs == "scrollbarFgColor") {
-                config.setScrollbarFgColor(Color::fromString(rhs));
+                config.scrollbarFgColor = Color::fromString(rhs);
             }
             else {
                 ERROR("Unknown setting '" << lhs << "'");

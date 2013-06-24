@@ -10,11 +10,11 @@ ColorSet::ColorSet(const Config & config,
     _config(config),
     _basics(basics)
 {
-    _cursorFillColor  = convert(_config.getCursorFillColor());
-    _cursorTextColor  = convert(_config.getCursorTextColor());
-    _borderColor      = convert(_config.getBorderColor());
-    _scrollBarFgColor = convert(_config.getScrollbarFgColor());
-    _scrollBarBgColor = convert(_config.getScrollbarBgColor());
+    _cursorFillColor  = convert(_config.cursorFillColor);
+    _cursorTextColor  = convert(_config.cursorTextColor);
+    _borderColor      = convert(_config.borderColor);
+    _scrollBarFgColor = convert(_config.scrollbarFgColor);
+    _scrollBarBgColor = convert(_config.scrollbarBgColor);
 
     // 0..7     normal colors
     // 8..15    bright colors
@@ -24,7 +24,7 @@ ColorSet::ColorSet(const Config & config,
     uint8_t index = 0;
 
     for (; index != 16; ++index) {
-        _indexedColors[index] = convert(_config.getSystemColor(index));
+        _indexedColors[index] = convert(_config.systemColors[index]);
     }
 
     for (auto r = 0; r != 6; ++r) {
@@ -41,8 +41,8 @@ ColorSet::ColorSet(const Config & config,
 
     ASSERT(index == 0, "");
 
-    _foregroundColor = convert(_config.getFgColor());
-    _backgroundColor = convert(_config.getBgColor());
+    _foregroundColor = convert(_config.fgColor);
+    _backgroundColor = convert(_config.bgColor);
 
     //
     // Allocate the background pixel.

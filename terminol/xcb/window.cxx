@@ -60,8 +60,8 @@ Window::Window(I_Observer         & observer,
     _pixmap(0),
     _surface(nullptr),
     _cr(nullptr),
-    _title(_config.getTitle()),
-    _icon(_config.getIcon()),
+    _title(_config.title),
+    _icon(_config.icon),
     _primarySelection(),
     _clipboardSelection(),
     _pressed(false),
@@ -69,11 +69,11 @@ Window::Window(I_Observer         & observer,
     _lastPressTime(0),
     _button(XCB_BUTTON_INDEX_ANY)
 {
-    auto rows = _config.getInitialRows();
-    auto cols = _config.getInitialCols();
+    auto rows = _config.initialRows;
+    auto cols = _config.initialCols;
 
-    const auto BORDER_THICKNESS = _config.getBorderThickness();
-    const auto SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+    const auto BORDER_THICKNESS = _config.borderThickness;
+    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
     _width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
     _height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
@@ -116,7 +116,7 @@ Window::Window(I_Observer         & observer,
                                        _basics.screen()->root_depth,
                                        _window,
                                        _basics.screen()->root,
-                                       _config.getInitialX(), config.getInitialY(),
+                                       _config.initialX, config.initialY,
                                        _width, _height,
                                        0,            // border width
                                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
@@ -188,7 +188,7 @@ Window::Window(I_Observer         & observer,
 
 Window::~Window() {
     if (_mapped) {
-        if (_config.getDoubleBuffer()) {
+        if (_config.doubleBuffer) {
             ASSERT(_pixmap, "");
         }
         ASSERT(_surface, "");
@@ -196,14 +196,14 @@ Window::~Window() {
         cairo_surface_finish(_surface);
         cairo_surface_destroy(_surface);
 
-        if (_config.getDoubleBuffer()) {
+        if (_config.doubleBuffer) {
             auto cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
             xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
         }
     }
     else {
         ASSERT(!_surface, "");
-        if (_config.getDoubleBuffer()) {
+        if (_config.doubleBuffer) {
             ASSERT(!_pixmap, "");
         }
     }
@@ -283,7 +283,7 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
     _pressed = true;
 
     if (_button != event->detail ||
-        event->time - _lastPressTime > _config.getDoubleClickTimeout())
+        event->time - _lastPressTime > _config.doubleClickTimeout)
     {
         _pressCount = 1;
     }
@@ -361,7 +361,7 @@ void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
     //PRINT("Map");
     ASSERT(!_mapped, "");
 
-    if (_config.getDoubleBuffer()) {
+    if (_config.doubleBuffer) {
         _pixmap = xcb_generate_id(_basics.connection());
         // Note, we create the pixmap against the root window rather than
         // _window to avoid dealing with the case where _window may have been
@@ -376,7 +376,7 @@ void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
     }
 
     _surface = cairo_xcb_surface_create(_basics.connection(),
-                                        _config.getDoubleBuffer() ? _pixmap : _window,
+                                        _config.doubleBuffer ? _pixmap : _window,
                                         _basics.visual(),
                                         _width,
                                         _height);
@@ -396,7 +396,7 @@ void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     cairo_surface_destroy(_surface);
     _surface = nullptr;
 
-    if (_config.getDoubleBuffer()) {
+    if (_config.doubleBuffer) {
         ASSERT(_pixmap, "");
         auto cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
         xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
@@ -419,7 +419,7 @@ void Window::expose(xcb_expose_event_t * event) {
           */
 
     if (_mapped) {
-        if (_config.getDoubleBuffer() && _hadExpose) {
+        if (_config.doubleBuffer && _hadExpose) {
             ASSERT(_pixmap, "");
             auto cookie = xcb_copy_area_checked(_basics.connection(),
                                                 _pixmap,
@@ -458,13 +458,13 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
     _height = event->height;
 
     if (_mapped) {
-        if (_config.getDoubleBuffer()) {
+        if (_config.doubleBuffer) {
             ASSERT(_pixmap, "");
         }
 
         ASSERT(_surface, "");
 
-        if (_config.getDoubleBuffer()) {
+        if (_config.doubleBuffer) {
             cairo_surface_finish(_surface);
             cairo_surface_destroy(_surface);
             _surface = nullptr;
@@ -490,7 +490,7 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
             cairo_surface_finish(_surface);
             _surface = cairo_xcb_surface_create(_basics.connection(),
-                                                _config.getDoubleBuffer() ? _pixmap : _window,
+                                                _config.doubleBuffer ? _pixmap : _window,
                                                 _basics.visual(),
                                                 _width,
                                                 _height);
@@ -505,8 +505,8 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
     uint16_t rows, cols;
 
-    const auto BORDER_THICKNESS = _config.getBorderThickness();
-    const auto SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+    const auto BORDER_THICKNESS = _config.borderThickness;
+    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
     if (_width  > 2 * BORDER_THICKNESS + _fontSet.getWidth() + SCROLLBAR_WIDTH &&
         _height > 2 * BORDER_THICKNESS + _fontSet.getHeight())
@@ -532,7 +532,7 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
     updateTitle();
 
     if (_mapped) {
-        if (_config.getDoubleBuffer()) {
+        if (_config.doubleBuffer) {
             ASSERT(_pixmap, "");
         }
         ASSERT(_surface, "");
@@ -698,8 +698,8 @@ void Window::icccmConfigure() {
     // size
     //
 
-    const auto BORDER_THICKNESS = _config.getBorderThickness();
-    const auto SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+    const auto BORDER_THICKNESS = _config.borderThickness;
+    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
     const auto BASE_WIDTH  = 2 * BORDER_THICKNESS + SCROLLBAR_WIDTH;
     const auto BASE_HEIGHT = 2 * BORDER_THICKNESS;
@@ -746,7 +746,7 @@ void Window::pos2XY(Pos pos, int & x, int & y) const {
     ASSERT(pos.row <= _terminal->getRows(), "");
     ASSERT(pos.col <= _terminal->getCols(), "");
 
-    const auto BORDER_THICKNESS = _config.getBorderThickness();
+    const auto BORDER_THICKNESS = _config.borderThickness;
 
     x = BORDER_THICKNESS + pos.col * _fontSet.getWidth();
     y = BORDER_THICKNESS + pos.row * _fontSet.getHeight();
@@ -755,7 +755,7 @@ void Window::pos2XY(Pos pos, int & x, int & y) const {
 bool Window::xy2Pos(int x, int y, Pos & pos) const {
     auto within = true;
 
-    const int BORDER_THICKNESS = _config.getBorderThickness();
+    const int BORDER_THICKNESS = _config.borderThickness;
 
     // x / cols:
 
@@ -854,7 +854,7 @@ void Window::updateIcon() {
 
 void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     ASSERT(_mapped, "");
-    if (_config.getDoubleBuffer()) {
+    if (_config.doubleBuffer) {
         ASSERT(_pixmap, "");
     }
     ASSERT(_surface, "");
@@ -864,7 +864,7 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 #if DEBUG
     // Clear the damaged area so that we know we are completely drawing to it.
 
-    if (_config.getDoubleBuffer()) {
+    if (_config.doubleBuffer) {
         xcb_rectangle_t rect = {
             static_cast<int16_t>(x), static_cast<int16_t>(y), w, h
         };
@@ -910,7 +910,7 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     cairo_surface_flush(_surface);      // Useful?
     ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
 
-    if (_config.getDoubleBuffer()) {
+    if (_config.doubleBuffer) {
         auto cookie = xcb_copy_area(_basics.connection(),
                                     _pixmap,
                                     _window,
@@ -925,8 +925,8 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 }
 
 void Window::drawBorder() {
-    const auto BORDER_THICKNESS = _config.getBorderThickness();
-    const auto SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+    const auto BORDER_THICKNESS = _config.borderThickness;
+    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
     cairo_save(_cr); {
         const auto & bg = _colorSet.getBorderColor();
@@ -1017,8 +1017,8 @@ void Window::terminalResizeFont(int delta) throw () {
 }
 
 void Window::terminalResetTitleAndIcon() throw () {
-    _title = _config.getTitle();
-    _icon  = _config.getIcon();
+    _title = _config.title;
+    _icon  = _config.icon;
     updateTitle();
     updateIcon();
 }
@@ -1043,8 +1043,8 @@ void Window::terminalBeep() throw () {
 }
 
 void Window::terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () {
-    const auto BORDER_THICKNESS = _config.getBorderThickness();
-    const auto SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+    const auto BORDER_THICKNESS = _config.borderThickness;
+    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
     uint32_t width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
     uint32_t height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
@@ -1087,7 +1087,7 @@ bool Window::terminalFixDamageBegin(bool internal) throw () {
     }
     else {
         ASSERT(_mapped, "");
-        if (_config.getDoubleBuffer()) {
+        if (_config.doubleBuffer) {
             ASSERT(_pixmap, "");
         }
         ASSERT(_surface, "");
@@ -1178,12 +1178,12 @@ void Window::terminalDrawCursor(Pos             pos,
         pango_layout_set_wrap(layout, PANGO_WRAP_CHAR);
 
         auto fg =
-            _config.getCustomCursorTextColor() ?
+            _config.customCursorTextColor ?
             _colorSet.getCursorTextColor() :
             getColor(bg_);
 
         auto bg =
-            _config.getCustomCursorFillColor() ?
+            _config.customCursorFillColor ?
             _colorSet.getCursorFillColor() :
             getColor(fg_);
 
@@ -1416,7 +1416,7 @@ void Window::terminalDrawScrollbar(size_t   totalRows,
                                    uint16_t visibleRows) throw () {
     ASSERT(_cr, "");
 
-    const int SCROLLBAR_WIDTH  = _config.getScrollbarWidth();
+    const int SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
     double x = static_cast<double>(_width - SCROLLBAR_WIDTH);
     double y = 0.0;
@@ -1463,7 +1463,7 @@ void Window::terminalFixDamageEnd(bool internal,
 
         cairo_surface_flush(_surface);      // Useful?
 
-        if (_config.getDoubleBuffer()) {
+        if (_config.doubleBuffer) {
             int x0, y0;
             pos2XY(begin, x0, y0);
             int x1, y1;

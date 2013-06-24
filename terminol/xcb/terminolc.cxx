@@ -9,7 +9,7 @@
 int main() {
     Config config;
 
-    const std::string & socketPath = config.getSocketPath();
+    const auto & socketPath = config.socketPath;
     int fd = ::open(socketPath.c_str(), O_WRONLY | O_NONBLOCK);
 
     ENFORCE_SYS(fd != -1, "Failed to open: " << socketPath);

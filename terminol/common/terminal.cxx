@@ -87,9 +87,9 @@ Terminal::Terminal(I_Observer   & observer,
     //
     _priBuffer(_config, deduper,
                rows, cols,
-               _config.getUnlimitedScrollBack() ?
+               _config.unlimitedScrollBack ?
                std::numeric_limits<uint32_t>::max() :
-               _config.getScrollBackHistory()),
+               _config.scrollBackHistory),
     _altBuffer(_config, deduper, rows, cols, 0),
     _buffer(&_priBuffer),
     //
@@ -159,7 +159,7 @@ void Terminal::redraw(Pos begin, Pos end) {
 
 void Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
     if (!handleKeyBinding(keySym, modifiers) && _keyMap.isPotent(keySym)) {
-        if (_config.getScrollOnTtyKeyPress() && _buffer->scrollBottomHistory()) {
+        if (_config.scrollOnTtyKeyPress && _buffer->scrollBottomHistory()) {
             fixDamage(Pos(0, 0),
                       Pos(_buffer->getRows(), _buffer->getCols()),
                       Damager::SCROLL);
@@ -371,7 +371,7 @@ void Terminal::scrollWheel(ScrollDir dir, ModifierSet modifiers, bool UNUSED(wit
 }
 
 void Terminal::paste(const uint8_t * data, size_t size) {
-    if (_config.getScrollOnPaste() && _buffer->scrollBottomHistory()) {
+    if (_config.scrollOnPaste && _buffer->scrollBottomHistory()) {
         fixDamage(Pos(0, 0),
                   Pos(_buffer->getRows(), _buffer->getCols()),
                   Damager::SCROLL);
@@ -417,10 +417,10 @@ void Terminal::read() {
     _dispatch = true;
 
     try {
-        Timer   timer(1000 / _config.getFramesPerSecond());
+        Timer   timer(1000 / _config.framesPerSecond);
         uint8_t buf[BUFSIZ];          // 8192 last time I looked.
         auto    size = sizeof buf;
-        if (_config.getSyncTty()) { size = std::min(size, static_cast<size_t>(16)); }
+        if (_config.syncTty) { size = std::min(size, static_cast<size_t>(16)); }
         do {
             auto rval = _tty.read(buf, size);
             if (rval == 0) { break; }
@@ -431,7 +431,7 @@ void Terminal::read() {
         _observer.terminalChildExited(ex.exitCode);
     }
 
-    if (!_config.getSyncTty()) {
+    if (!_config.syncTty) {
         fixDamage(Pos(0, 0),
                   Pos(_buffer->getRows(), _buffer->getCols()),
                   Damager::TTY);
@@ -611,7 +611,7 @@ void Terminal::damageCursor() {
 
 void Terminal::fixDamage(Pos begin, Pos end, Damager damager) {
     if (damager == Damager::TTY &&
-        _config.getScrollOnTtyOutput() &&
+        _config.scrollOnTtyOutput &&
         _buffer->scrollBottomHistory())
     {
         // Promote the damage from TTY to SCROLL.
@@ -646,7 +646,7 @@ bool Terminal::translate(uint8_t ascii, utf8::Seq & seq) const {
 
     while (cs->match != NUL) {
         if (ascii == cs->match) {
-            if (_config.getTraceTty()) {
+            if (_config.traceTty) {
                 std::cerr
                     << SGR::BG_BLUE << SGR::FG_WHITE
                     << '/' << cs->match << '/' << cs->replace << '/'
@@ -913,7 +913,7 @@ void Terminal::echo(const uint8_t * data, size_t size) {
         processRead(data, size);
     }
 
-    if (!_config.getSyncTty()) {
+    if (!_config.syncTty) {
         fixDamage(Pos(0, 0),
                   Pos(_buffer->getRows(), _buffer->getCols()),
                   Damager::TTY);
@@ -961,7 +961,7 @@ void Terminal::processRead(const uint8_t * data, size_t size) {
 void Terminal::processChar(utf8::Seq seq, utf8::Length length) {
     _vtMachine.consume(seq, length);
 
-    if (_config.getSyncTty()) {        // FIXME too often, may not have been a buffer change.
+    if (_config.syncTty) {        // FIXME too often, may not have been a buffer change.
         fixDamage(Pos(0, 0),
                   Pos(_buffer->getRows(), _buffer->getCols()),
                   Damager::TTY);
@@ -1017,14 +1017,12 @@ void Terminal::machineControl(uint8_t c) throw () {
             tabCursor(TabDir::FORWARD, 1);
             break;
         case BS:
-            if (_cursor.wrapNext && !_config.getTraditionalWrapping()) {
+            if (_cursor.wrapNext && !_config.traditionalWrapping) {
                 _cursor.wrapNext = false;
             }
             else {
                 if (_cursor.pos.col == 0) {
-                    if (!_config.getTraditionalWrapping() &&
-                        _modes.get(Mode::AUTO_WRAP))
-                    {
+                    if (!_config.traditionalWrapping && _modes.get(Mode::AUTO_WRAP)) {
                         if (_cursor.pos.row > _buffer->getMarginBegin()) {
                             moveCursor(_cursor.pos.up().atCol(_buffer->getCols() - 1));
                         }

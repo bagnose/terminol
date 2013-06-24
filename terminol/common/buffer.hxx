@@ -861,7 +861,7 @@ public:
         ASSERT(rows != 0, "");
         ASSERT(cols != 0, "");
 
-        for (size_t i = 0; i != _config.getReflowHistory() && !_history.empty(); ++i) {
+        for (size_t i = 0; i != _config.reflowHistory && !_history.empty(); ++i) {
             unbump();
             ++cursor.row;
         }
@@ -1003,7 +1003,7 @@ public:
         //
 
         if (_scrollOffset != 0) {
-            if (_config.getScrollOnResize()) {
+            if (_config.scrollOnResize) {
                 // Scroll to bottom
                 _scrollOffset = 0;
             }
@@ -1041,7 +1041,7 @@ public:
             else {
                 bump();
 
-                if (!_config.getScrollWithHistory()) {
+                if (!_config.scrollWithHistory) {
                     if (_scrollOffset != 0 && _scrollOffset != _history.size()) {
                         ++_scrollOffset;
                     }
