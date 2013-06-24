@@ -82,4 +82,17 @@ enum class Attr {
 
 std::ostream & operator << (std::ostream & ost, Attr attr);
 
+//
+//
+//
+
+enum class Resize {
+    CLIP,
+    PRESERVE,
+    REFLOW
+};
+
+std::ostream & operator << (std::ostream & ost, Resize resize);
+std::istream & operator >> (std::istream & ist, Resize & resize);
+
 #endif // COMMON__ENUMS_HXX

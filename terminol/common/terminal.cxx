@@ -144,8 +144,18 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
 
     if (_buffer != &_priBuffer) { std::swap(priCursor, altCursor); }
 
-    _priBuffer.resizeSmart(rows, cols, *priCursor);
-    _altBuffer.resizeDumb(rows, cols, *altCursor);
+    switch (_config.resizeStrategy) {
+        case Resize::CLIP:
+            _priBuffer.resizeClip(rows, cols, *priCursor);
+            break;
+        case Resize::PRESERVE:
+            _priBuffer.resizePreserve(rows, cols, *priCursor);
+            break;
+        case Resize::REFLOW:
+            _priBuffer.resizeReflow(rows, cols, *priCursor);
+            break;
+    }
+    _altBuffer.resizeClip(rows, cols, *altCursor);
 
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {

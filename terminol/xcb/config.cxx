@@ -69,6 +69,9 @@ void read(std::istream & ist, Config & config) {
             else if (lhs == "scrollbarFgColor") {
                 config.scrollbarFgColor = Color::fromString(rhs);
             }
+            else if (lhs == "resizeStrategy") {
+                config.resizeStrategy = unstringify<Resize>(rhs);
+            }
             else {
                 ERROR("Unknown setting '" << lhs << "'");
             }

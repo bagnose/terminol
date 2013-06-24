@@ -19,6 +19,7 @@ struct Config {
 
     // flow control?
 
+    Resize      resizeStrategy;
     std::string fontName;
     int         fontSize;
     std::string termName;

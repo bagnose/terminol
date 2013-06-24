@@ -110,3 +110,30 @@ std::ostream & operator << (std::ostream & ost, Attr attr) {
 
     FATAL("Invalid attr: " << static_cast<int>(attr));
 }
+
+std::ostream & operator << (std::ostream & ost, Resize resize) {
+    switch (resize) {
+        case Resize::CLIP:
+            return ost << "CLIP";
+        case Resize::PRESERVE:
+            return ost << "PRESERVE";
+        case Resize::REFLOW:
+            return ost << "REFLOW";
+    }
+
+    FATAL("Invalid resize: " << static_cast<int>(resize));
+}
+
+std::istream & operator >> (std::istream & ist, Resize & resize) {
+    std::string str;
+    ist >> str;
+
+    if (ist.good()) {
+        if      (str == "clip")     { resize = Resize::CLIP; }
+        else if (str == "preserve") { resize = Resize::PRESERVE; }
+        else if (str == "reflow")   { resize = Resize::REFLOW; }
+        else                        { ist.setstate(std::ios_base::failbit); }
+    }
+
+    return ist;
+}

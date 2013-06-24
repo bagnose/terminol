@@ -821,7 +821,7 @@ public:
         }
     }
 
-    void resizeDumb(uint16_t rows, uint16_t cols, Pos & cursor) {
+    void resizeClip(uint16_t rows, uint16_t cols, Pos & cursor) {
         ASSERT(rows != 0, "");
         ASSERT(cols != 0, "");
 
@@ -857,21 +857,13 @@ public:
         ASSERT(getRows() == rows && getCols() == cols, "");
     }
 
-    void resizeSmart(uint16_t rows, uint16_t cols, Pos & cursor) {
+    void resizePreserve(uint16_t rows, uint16_t cols, Pos & cursor) {
         ASSERT(rows != 0, "");
         ASSERT(cols != 0, "");
-
-        for (size_t i = 0; i != _config.reflowHistory && !_history.empty(); ++i) {
-            unbump();
-            ++cursor.row;
-        }
 
         //
         // Cols
         //
-
-#if 0
-        // Clip / unclip
 
         if (cols != _cols) {
             for (auto & line : _active) {
@@ -884,8 +876,94 @@ public:
 
             _cols = cols;
         }
-#else
-        // Re-flow
+
+        //
+        // Rows
+        //
+
+        if (rows > getRows()) {
+            // The scrollback history is the first port of call for rows.
+
+            while (!_history.empty() && getRows() < rows) {
+                unbump();
+                ++cursor.row;
+            }
+
+            // And resize the container to obtain the rest.
+
+            _active.resize(rows, Line(_cols));
+        }
+        else if (rows < getRows()) {
+            // Remove blanks lines from the back.
+            while (getRows() != rows) {
+                if (_active.back().isBlank() && cursor.row != _active.size() - 1) {
+                    _active.pop_back();
+                }
+                else {
+                    break;
+                }
+            }
+
+            if (getRows() - rows < cursor.row) {
+                cursor.row -= getRows() - rows;
+            }
+            else {
+                cursor.row = 0;
+            }
+
+            if (_historyLimit == 0) {
+                // Optimisation, just erase lines if they aren't going into history.
+                _active.erase(_active.begin(), _active.begin() + getRows() - rows);
+            }
+            else {
+                // Move lines into history.
+                while (getRows() != rows) {
+                    bump();
+                }
+            }
+        }
+
+        //
+        // Consolidation
+        //
+
+        if (_scrollOffset != 0) {
+            if (_config.scrollOnResize) {
+                // Scroll to bottom
+                _scrollOffset = 0;
+            }
+            else {
+                // Preserve the top line
+                //_scrollOffset = _scrollOffset - delta;        // XXX
+                ASSERT(!(_scrollOffset > _history.size()), "");
+            }
+        }
+
+        _active.shrink_to_fit();
+
+        resetMargins();
+        clearSelection();
+        damageAll();
+
+        ASSERT(getRows() == rows && getCols() == cols, "");
+
+        // XXX temporary measures to avoid crash
+        if (cursor.row >= getRows()) { cursor.row = getRows() - 1; }
+        if (cursor.col >= getCols()) { cursor.col = getCols() - 1; }
+    }
+
+    void resizeReflow(uint16_t rows, uint16_t cols, Pos & cursor) {
+        ASSERT(rows != 0, "");
+        ASSERT(cols != 0, "");
+
+        for (size_t i = 0; i != _config.reflowHistory && !_history.empty(); ++i) {
+            unbump();
+            ++cursor.row;
+        }
+
+        //
+        // Cols
+        //
 
         if (cols > _cols) {
             //const uint16_t deltaCols = cols - _cols;
@@ -950,7 +1028,6 @@ public:
 
             _cols = cols;
         }
-#endif
 
         //
         // Rows
