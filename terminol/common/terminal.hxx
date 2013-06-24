@@ -98,6 +98,8 @@ private:
 
         void reset() { *this = Cursor(); }
 
+        const CharSub *  getCurrentCS() const { return cs == CharSet::G0 ? g0 : g1; }
+
         const CharSub *  g0;
         const CharSub *  g1;
         CharSet          cs;

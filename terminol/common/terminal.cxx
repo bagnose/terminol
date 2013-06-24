@@ -665,7 +665,7 @@ void Terminal::fixDamage(Pos begin, Pos end, Damager damager) {
 }
 
 bool Terminal::translate(uint8_t ascii, utf8::Seq & seq) const {
-    auto cs = _cursor.cs == Cursor::CharSet::G0 ? _cursor.g0 : _cursor.g1;
+    auto cs = _cursor.getCurrentCS();
 
     while (cs->match != NUL) {
         if (ascii == cs->match) {
@@ -1018,7 +1018,16 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
         _buffer->insertCells(_cursor.pos, 1);
     }
 
-    _buffer->setCell(_cursor.pos, Cell::utf8(seq, _cursor.style), autoWrap);
+    if (_cursor.getCurrentCS() == CS_SPECIAL) {
+        // Turn off bold and italic when special is in use.
+        auto style = _cursor.style;
+        style.attrs.unset(Attr::BOLD);
+        style.attrs.unset(Attr::ITALIC);
+        _buffer->setCell(_cursor.pos, Cell::utf8(seq, style), autoWrap);
+    }
+    else {
+        _buffer->setCell(_cursor.pos, Cell::utf8(seq, _cursor.style), autoWrap);
+    }
 
     if (_cursor.pos.col == _buffer->getCols() - 1) {
         _cursor.wrapNext = true;
