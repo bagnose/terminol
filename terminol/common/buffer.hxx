@@ -90,12 +90,14 @@ again:
                 wrap  != payload.line.wrap ||
                 cells != payload.line.cells) {
 #if DEBUG
-                PRINT("Collision between:");
+                std::cerr << "Collision between:" << std::endl;
+                std::cerr << "   '";
                 for (auto c : cells) { std::cerr << c.seq; }
-                std::cerr << std::endl;
-                PRINT("And:");
+                std::cerr << "'" << std::endl;
+                std::cerr << "And:" << std::endl;
+                std::cerr << "   '";
                 for (auto c : payload.line.cells) { std::cerr << c.seq; }
-                std::cerr << std::endl;
+                std::cerr << "'" << std::endl << std::endl;
 #endif
 
                 ENFORCE(static_cast<Tag>(_lines.size()) != 0, "No dedupe room left");
@@ -111,7 +113,7 @@ again:
 
 #if 0
         if (_totalRefCount != 0) {
-            PRINT("+++ " << 100.0 * double(_lines.size()) / double(_totalRefCount) << " %");
+            std::cerr << "+++ " << 100.0 * double(_lines.size()) / double(_totalRefCount) << " %" << std::endl;
         }
 #endif
 
@@ -137,7 +139,7 @@ again:
 
 #if 0
         if (_totalRefCount != 0) {
-            PRINT("--- " << 100.0 * double(_lines.size()) / double(_totalRefCount) << " %");
+            std::cerr << "--- " << 100.0 * double(_lines.size()) / double(_totalRefCount) << " %" << std:endl;
         }
 #endif
     }
@@ -202,7 +204,7 @@ class Buffer {
             _damageBegin(0),
             _damageEnd(cols)
         {
-            resizeSoft(cols);
+            resizePreserve(cols);
             ASSERT(_wrap <= _cols, "");
         }
 
@@ -266,7 +268,7 @@ class Buffer {
             return seqChanged;
         }
 
-        void resizeHard(uint16_t cols) {
+        void resizeClip(uint16_t cols) {
             uint16_t oldCols = _cells.size();
             _cells.resize(cols, Cell::blank());
             if (oldCols < cols) {
@@ -276,7 +278,7 @@ class Buffer {
             _cols = cols;
         }
 
-        void resizeSoft(uint16_t cols) {
+        void resizePreserve(uint16_t cols) {
             if (_cells.size() < cols) {
                 uint16_t oldCols = _cells.size();
                 _cells.resize(cols, Cell::blank());
@@ -829,7 +831,7 @@ public:
 
         if (cols != _cols) {
             for (auto & line : _active) {
-                line.resizeHard(cols);
+                line.resizeClip(cols);
             }
 
             if (cols <= cursor.col) {
@@ -869,7 +871,7 @@ public:
 
         if (cols != _cols) {
             for (auto & line : _active) {
-                line.resizeSoft(cols);
+                line.resizePreserve(cols);
             }
 
             if (cols <= cursor.col) {
@@ -974,7 +976,7 @@ public:
             uint16_t r = 0;
 
             while (r != _active.size()) {
-                _active[r].resizeHard(cols);
+                _active[r].resizeClip(cols);
                 ASSERT(cols >= _active[r].getWrap(), "");
 
                 if (r != 0 && _active[r].isContinuation()) {
@@ -1020,7 +1022,7 @@ public:
                     _active[r + 1].wrapFrom(_active[r], excess);
                 }
 
-                _active[r].resizeHard(cols);
+                _active[r].resizeClip(cols);
                 ++r;
             }
 
