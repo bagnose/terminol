@@ -1445,29 +1445,34 @@ void Terminal::machineDcs(const std::vector<uint8_t> & UNUSED(seq)) throw () {
 
 void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
     if (!args.empty()) {
-        switch (unstringify<int>(args[0])) {
-            case 0: // Icon name and window title
-                if (args.size() > 1) {
-                    _observer.terminalSetIconName(args[1]);
-                    _observer.terminalSetWindowTitle(args[1]);
-                }
-                break;
-            case 1: // Icon name
-                if (args.size() > 1) { _observer.terminalSetIconName(args[1]); }
-                break;
-            case 2: // Window title
-                if (args.size() > 1) { _observer.terminalSetWindowTitle(args[1]); }
-                break;
-            case 55:
-                NYI("Log history to file");
-                break;
-            default:
-                // TODO consult http://rtfm.etla.org/xterm/ctlseq.html AND man 7 urxvt.
-                PRINT("Unandled: OSC");
-                for (const auto & a : args) {
-                    PRINT(a);
-                }
-                break;
+        try {
+            switch (unstringify<int>(args[0])) {
+                case 0: // Icon name and window title
+                    if (args.size() > 1) {
+                        _observer.terminalSetIconName(args[1]);
+                        _observer.terminalSetWindowTitle(args[1]);
+                    }
+                    break;
+                case 1: // Icon name
+                    if (args.size() > 1) { _observer.terminalSetIconName(args[1]); }
+                    break;
+                case 2: // Window title
+                    if (args.size() > 1) { _observer.terminalSetWindowTitle(args[1]); }
+                    break;
+                case 55:
+                    NYI("Log history to file");
+                    break;
+                default:
+                    // TODO consult http://rtfm.etla.org/xterm/ctlseq.html AND man 7 urxvt.
+                    PRINT("Unandled: OSC");
+                    for (const auto & a : args) {
+                        PRINT(a);
+                    }
+                    break;
+            }
+        }
+        catch (const ParseError & ex) {
+            ERROR(ex.message);
         }
     }
 }
