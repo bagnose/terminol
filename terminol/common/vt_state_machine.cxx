@@ -613,8 +613,6 @@ void VtStateMachine::processOsc(const std::vector<uint8_t> & seq) {
         std::cerr << SGR::FG_MAGENTA << "ESC]" << Str(seq) << SGR::RESET_ALL;
     }
 
-    ASSERT(!seq.empty(), "");
-
     size_t i = 0;
     std::vector<std::string> args;
 
