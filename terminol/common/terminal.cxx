@@ -746,59 +746,59 @@ void Terminal::draw(Pos begin, Pos end, Damager damage) {
 }
 
 void Terminal::drawRowBg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
-    auto     bg = UColor::background();
-    uint16_t c_ = colBegin;     // Accumulation start column.
-    uint16_t c;
+    auto     bg0 = UColor::background();
+    uint16_t c0  = colBegin;     // Accumulation start column.
+    uint16_t c1;
 
-    for (c = colBegin; c != colEnd; ++c) {
-        const Cell & cell = _buffer->getCell(Pos(r, c));
+    for (c1 = colBegin; c1 != colEnd; ++c1) {
+        const Cell & cell = _buffer->getCell(Pos(r, c1));
 
         bool swap = XOR(_modes.get(Mode::REVERSE), cell.style.attrs.get(Attr::INVERSE));
-        auto bg2  = swap ? cell.style.fg : cell.style.bg;
+        auto bg1  = swap ? cell.style.fg : cell.style.bg;
 
-        if (bg != bg2) {
-            if (c != c_) {
-                _observer.terminalDrawBg(Pos(r, c_), bg, c - c_);
+        if (bg0 != bg1) {
+            if (c1 != c0) {
+                _observer.terminalDrawBg(Pos(r, c0), bg0, c1 - c0);
             }
 
-            c_ = c;
-            bg = bg2;
+            c0  = c1;
+            bg0 = bg1;
         }
     }
 
     // There may be an unterminated run to flush.
-    if (c != c_) {
-        _observer.terminalDrawBg(Pos(r, c_), bg, c - c_);
+    if (c1 != c0) {
+        _observer.terminalDrawBg(Pos(r, c0), bg0, c1 - c0);
     }
 }
 
 void Terminal::drawRowFg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
     ASSERT(_run.empty(), "");
 
-    auto     fg    = UColor::foreground();
-    auto     attrs = AttrSet();
-    uint16_t c_    = colBegin;      // Accumulation start column.
-    uint16_t c;
+    auto     fg0    = UColor::foreground();
+    auto     attrs0 = AttrSet();
+    uint16_t c0     = colBegin;      // Accumulation start column.
+    uint16_t c1;
 
-    for (c = colBegin; c != colEnd; ++c) {
-        const Cell & cell = _buffer->getCell(Pos(r, c));
+    for (c1 = colBegin; c1 != colEnd; ++c1) {
+        const Cell & cell = _buffer->getCell(Pos(r, c1));
 
         bool swap   = XOR(_modes.get(Mode::REVERSE), cell.style.attrs.get(Attr::INVERSE));
-        auto fg2    = swap ? cell.style.bg : cell.style.fg;
-        auto attrs2 = cell.style.attrs;
+        auto fg1    = swap ? cell.style.bg : cell.style.fg;
+        auto attrs1 = cell.style.attrs;
 
-        if (fg != fg2 || attrs != attrs2) {
+        if (fg0 != fg1 || attrs0 != attrs1) {
             if (!_run.empty()) {
                 // flush run
                 _run.push_back(NUL);
-                _observer.terminalDrawFg(Pos(r, c_), fg, attrs,
-                                         &_run.front(), _run.size(), c - c_);
+                _observer.terminalDrawFg(Pos(r, c0), fg0, attrs0,
+                                         &_run.front(), _run.size(), c1 - c0);
                 _run.clear();
             }
 
-            c_    = c;
-            fg    = fg2;
-            attrs = attrs2;
+            c0     = c1;
+            fg0    = fg1;
+            attrs0 = attrs1;
         }
 
         size_t oldSize = _run.size();
@@ -811,8 +811,8 @@ void Terminal::drawRowFg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
     if (!_run.empty()) {
         // flush run
         _run.push_back(NUL);
-        _observer.terminalDrawFg(Pos(r, c_), fg, attrs,
-                                 &_run.front(), _run.size(), c - c_);
+        _observer.terminalDrawFg(Pos(r, c0), fg0, attrs0,
+                                 &_run.front(), _run.size(), c1 - c0);
         _run.clear();
     }
 }
