@@ -789,9 +789,10 @@ void Terminal::drawRowFg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
         if (fg0 != fg1 || attrs0 != attrs1) {
             if (!_run.empty()) {
                 // flush run
+                auto size = _run.size();
                 _run.push_back(NUL);
                 _observer.terminalDrawFg(Pos(r, c0), fg0, attrs0,
-                                         &_run.front(), _run.size(), c1 - c0);
+                                         &_run.front(), size, c1 - c0);
                 _run.clear();
             }
 
@@ -807,9 +808,10 @@ void Terminal::drawRowFg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
     // There may be an unterminated run to flush.
     if (!_run.empty()) {
         // flush run
+        auto size = _run.size();
         _run.push_back(NUL);
         _observer.terminalDrawFg(Pos(r, c0), fg0, attrs0,
-                                 &_run.front(), _run.size(), c1 - c0);
+                                 &_run.front(), size, c1 - c0);
         _run.clear();
     }
 }
@@ -854,10 +856,11 @@ void Terminal::drawCursor() {
 
         utf8::Length length = utf8::leadLength(cell.seq.lead());
         std::copy(cell.seq.bytes, cell.seq.bytes + length, std::back_inserter(_run));
-        _run.push_back(NUL);
 
+        auto size = _run.size();
+        _run.push_back(NUL);
         _observer.terminalDrawCursor(pos, fg, bg, attrs,
-                                     &_run.front(), _run.size(),
+                                     &_run.front(), size,
                                      _cursor.wrapNext, _focused);
         _run.clear();
     }
