@@ -183,6 +183,19 @@ void Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
                             _modes.get(Mode::DELETE_SENDS_DEL),
                             _modes.get(Mode::ALT_SENDS_ESC),
                             str)) {
+
+            if (str.size() == 1 && _modes.get(Mode::META_8BIT) &&
+                modifiers.get(Modifier::ALT))
+            {
+                PRINT("8-bit conversion");
+                utf8::CodePoint cp = str[0] | (1 << 7);
+                uint8_t seq[utf8::Length::LMAX];
+                utf8::Length l = utf8::encode(cp, seq);
+                str.resize(l);
+                std::copy(seq, seq + l, str.begin());
+            }
+
+
             write(&str.front(), str.size());
             if (_modes.get(Mode::ECHO)) { echo(&str.front(), str.size()); }
         }
@@ -1882,7 +1895,8 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     // MOUSE FORMAT = URXVT
                     break;
                 case 1034: // ssm/rrm, meta mode on/off
-                    NYI("1034: " << set);
+                    _modes.setTo(Mode::META_8BIT, set);
+                    PRINT("Setting 8-bit to: " << set);
                     break;
                 case 1037: // deleteSendsDel
                     _modes.setTo(Mode::DELETE_SENDS_DEL, set);

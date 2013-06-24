@@ -60,7 +60,8 @@ enum class Mode {
     MOUSE_MOTION,
     MOUSE_SGR,
     BRACKETED_PASTE,
-    LAST = BRACKETED_PASTE
+    META_8BIT,
+    LAST = META_8BIT
 };
 
 std::ostream & operator << (std::ostream & ost, Mode mode);
