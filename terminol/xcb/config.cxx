@@ -12,64 +12,72 @@ bool open(std::ifstream & ifs, const std::string & path) {
     return ifs.good();
 }
 
-bool split(std::string & line, std::string & lhs, std::string & rhs) {
+bool split(std::string & line, std::string & lhs, std::string & rhs) throw (ParseError) {
     auto lhs0 = line.find_first_not_of(" \t");
 
-    if (lhs0 == std::string::npos) { return false; }
-    if (line[lhs0] == '#') { return false; }
+    if (lhs0 == std::string::npos) { return false; }    // blank line
+    if (line[lhs0] == '#') { return false; }            // comment
     auto lhs1 = line.find_first_of(" \t=", lhs0);
 
-    if (lhs1 == std::string::npos) { return false; }
+    if (lhs1 == std::string::npos) { throw ParseError(""); }
     auto equals = line.find_first_of("=", lhs1);
 
-    if (equals == std::string::npos) { return false; }
+    if (equals == std::string::npos) { throw ParseError(""); }
     auto rhs0 = line.find_first_not_of(" \t", equals + 1);
 
-    if (rhs0 == std::string::npos) { return false; }
+    if (rhs0 == std::string::npos) { throw ParseError(""); }
     auto rhs1 = line.find_last_of(" \t", rhs0);
 
     if (rhs1 == std::string::npos) { rhs1 = line.size(); }
 
     lhs = line.substr(lhs0, lhs1 - lhs0);
     rhs = line.substr(rhs0, rhs1 - rhs0);
-
     return true;
 }
 
 void read(std::istream & ist, Config & config) {
+    size_t num = 0;
     std::string line;
     while (getline(ist, line).good()) {
-        std::string lhs, rhs;
-        if (split(line, lhs, rhs)) {
-            try {
-                if (lhs == "colorScheme") {
-                    config.setColorScheme(rhs);
-                }
-                else if (lhs == "scrollBackHistory") {
-                    config.setScrollBackHistory(unstringify<size_t>(rhs));
-                }
-                else if (lhs == "unlimitedScrollBack") {
-                    config.setUnlimitedScrollBack(unstringify<bool>(rhs));
-                }
-                else if (lhs == "reflowHistory") {
-                    config.setReflowHistory(unstringify<size_t>(rhs));
-                }
-                else if (lhs == "serverFork") {
-                    config.setServerFork(unstringify<bool>(rhs));
-                }
-                else if (lhs == "fontName") {
-                    config.setFontName(rhs);
-                }
-                else if (lhs == "fontSize") {
-                    config.setFontSize(unstringify<int>(rhs));
-                }
-                else {
-                    ERROR("Unknown setting '" << lhs << "'");
-                }
+        ++num;
+
+        try {
+            std::string lhs, rhs;
+            if (!split(line, lhs, rhs)) { continue; }
+
+            if (lhs == "colorScheme") {
+                config.setColorScheme(rhs);
             }
-            catch (...) {
-                PRINT("Error handling: " << lhs << " " << rhs);
+            else if (lhs == "scrollBackHistory") {
+                config.setScrollBackHistory(unstringify<size_t>(rhs));
             }
+            else if (lhs == "unlimitedScrollBack") {
+                config.setUnlimitedScrollBack(unstringify<bool>(rhs));
+            }
+            else if (lhs == "reflowHistory") {
+                config.setReflowHistory(unstringify<size_t>(rhs));
+            }
+            else if (lhs == "serverFork") {
+                config.setServerFork(unstringify<bool>(rhs));
+            }
+            else if (lhs == "fontName") {
+                config.setFontName(rhs);
+            }
+            else if (lhs == "fontSize") {
+                config.setFontSize(unstringify<int>(rhs));
+            }
+            else if (lhs == "scrollbarFgColor") {
+                config.setScrollbarFgColor(Color::fromString(rhs));
+            }
+            else {
+                ERROR("Unknown setting '" << lhs << "'");
+            }
+        }
+        catch (const ParseError & ex) {
+            std::cerr
+                << "Config error at line " << num << ": "
+                << "'" << line << "'" << std::endl
+                << "  " << ex.message << std::endl;
         }
     }
 }

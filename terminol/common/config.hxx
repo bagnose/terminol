@@ -87,6 +87,8 @@ public:
     void setTraceTty(bool val) { _traceTty = val; }
     void setSyncTty(bool val) { _syncTty = val; }
     void setServerFork(bool val) { _serverFork = val; }
+    void setScrollbarFgColor(const Color & val) { _scrollbarFgColor = val; }
+    void setScrollbarBgColor(const Color & val) { _scrollbarBgColor = val; }
 
     const std::string & getFontName() const { return _fontName; }
     int                 getFontSize() const { return _fontSize; }

@@ -8,6 +8,11 @@
 #include <string>
 #include <sstream>
 
+struct ParseError {
+    explicit ParseError(const std::string & message_) : message(message_) {}
+    std::string message;
+};
+
 template <typename T> T clamp(T t, T min, T max) {
     ASSERT(min <= max, "");
     if      (t < min) { return min; }
@@ -21,22 +26,22 @@ template <typename T> std::string stringify(const T & t) {
     return ost.str();
 }
 
-template <typename T> T unstringify(const std::string & str) {
+template <typename T> T unstringify(const std::string & str) throw (ParseError) {
     std::istringstream ist(str + '\n');
     T t;
     ist >> t;
     if (ist.good()) { return t; }
-    else { FATAL("Failed to convert: " << str); }   // FIXME use exception
+    else { throw ParseError("Failed to unstringify: " + str); }
 }
 
-template <> inline bool unstringify<>(const std::string & str) {
+template <> inline bool unstringify<>(const std::string & str) throw (ParseError) {
     if (str == "0" || str == "false" || str == "False") {
         return false;
     }
     else if (str == "1" || str == "true" || str == "True") {
         return true;
     }
-    else { FATAL("Failed to convert: " << str); }   // FIXME use exception
+    else { throw ParseError("Failed to unstringify: " + str); }
 }
 
 /*
@@ -78,11 +83,15 @@ inline char nibbleToHex(uint8_t nibble) {
     else              { return 'A' + (nibble - 10); }
 }
 
-inline uint8_t hexToNibble(char hex) {
-    if      (hex >= '0' && hex <= '9') { return hex - '0';          }
-    else if (hex >= 'A' && hex <= 'F') { return 10 + hex - 'A';     }
-    else if (hex >= 'a' && hex <= 'f') { return 10 + hex - 'a';     }
-    else                               { FATAL("Bad hex: " << hex); }
+inline uint8_t hexToNibble(char hex) throw (ParseError) {
+    if      (hex >= '0' && hex <= '9') { return hex - '0'; }
+    else if (hex >= 'A' && hex <= 'F') { return 10 + hex - 'A'; }
+    else if (hex >= 'a' && hex <= 'f') { return 10 + hex - 'a'; }
+    else {
+        std::ostringstream ost;
+        ost << "Bad hex char: " << hex;
+        throw ParseError(ost.str());
+    }
 }
 
 inline void byteToHex(uint8_t byte, char & hex0, char & hex1) {
@@ -90,7 +99,7 @@ inline void byteToHex(uint8_t byte, char & hex0, char & hex1) {
     hex1 = nibbleToHex(byte & 0x0F);
 }
 
-inline uint8_t hexToByte(char hex0, char hex1) {
+inline uint8_t hexToByte(char hex0, char hex1) throw (ParseError) {
     return (hexToNibble(hex0) << 4) + hexToNibble(hex1);
 }
 
