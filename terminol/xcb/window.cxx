@@ -221,7 +221,6 @@ Window::~Window() {
 }
 
 void Window::read() {
-    PRINT("TTY READ");
     ASSERT(_open, "");
     _terminal->read();
 }
