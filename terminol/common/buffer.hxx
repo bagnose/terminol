@@ -86,7 +86,9 @@ again:
         else {
             auto & payload = iter->second;
 
-            if (cells != payload.line.cells) {
+            if (cont  != payload.line.cont ||
+                wrap  != payload.line.wrap ||
+                cells != payload.line.cells) {
 #if DEBUG
                 PRINT("Collision between:");
                 for (auto c : cells) { std::cerr << c.seq; }
