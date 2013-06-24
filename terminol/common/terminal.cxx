@@ -1080,17 +1080,7 @@ void Terminal::machineControl(uint8_t c) throw () {
         case SI:
             _cursor.cs = Cursor::CharSet::G0;
             break;
-        case CAN:
-        case SUB:
-            // XXX reset escape states - assertion currently prevents us getting here
-            break;
-        case ENQ:
-        case NUL:
-        case DC1:    // DC1/XON
-        case DC3:    // DC3/XOFF
-            break;
         default:
-            PRINT("Ignored control char: " << static_cast<int>(c));
             break;
     }
 }
