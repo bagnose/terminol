@@ -781,11 +781,10 @@ void Terminal::drawRowFg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
     uint16_t c1;
 
     for (c1 = colBegin; c1 != colEnd; ++c1) {
-        const Cell & cell = _buffer->getCell(Pos(r, c1));
-
-        bool swap   = XOR(_modes.get(Mode::REVERSE), cell.style.attrs.get(Attr::INVERSE));
-        auto fg1    = swap ? cell.style.bg : cell.style.fg;
-        auto attrs1 = cell.style.attrs;
+        const auto & cell   = _buffer->getCell(Pos(r, c1));
+        const auto & attrs1 = cell.style.attrs;
+        bool         swap   = XOR(_modes.get(Mode::REVERSE), attrs1.get(Attr::INVERSE));
+        auto         fg1    = swap ? cell.style.bg : cell.style.fg;
 
         if (fg0 != fg1 || attrs0 != attrs1) {
             if (!_run.empty()) {
@@ -801,10 +800,8 @@ void Terminal::drawRowFg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
             attrs0 = attrs1;
         }
 
-        size_t oldSize = _run.size();
         utf8::Length length = utf8::leadLength(cell.seq.lead());
-        _run.resize(_run.size() + length);
-        std::copy(cell.seq.bytes, cell.seq.bytes + length, &_run[oldSize]);
+        std::copy(cell.seq.bytes, cell.seq.bytes + length, std::back_inserter(_run));
     }
 
     // There may be an unterminated run to flush.
@@ -848,16 +845,15 @@ void Terminal::drawCursor() {
             _damage.end.row   = std::max(_damage.end.row,   static_cast<uint16_t>(pos.row + 1));
         }
 
-        const Cell & cell   = _buffer->getCell(pos);
-        auto attrs = cell.style.attrs;
-        bool swap  = XOR(_modes.get(Mode::REVERSE), attrs.get(Attr::INVERSE));
-        auto fg    = cell.style.fg;
-        auto bg    = cell.style.bg;
+        const auto & cell = _buffer->getCell(pos);
+        const auto & attrs = cell.style.attrs;
+        bool         swap  = XOR(_modes.get(Mode::REVERSE), attrs.get(Attr::INVERSE));
+        auto         fg    = cell.style.fg;
+        auto         bg    = cell.style.bg;
         if (swap) { std::swap(fg, bg); }
 
         utf8::Length length = utf8::leadLength(cell.seq.lead());
-        _run.resize(length);
-        std::copy(cell.seq.bytes, cell.seq.bytes + length, &_run.front());
+        std::copy(cell.seq.bytes, cell.seq.bytes + length, std::back_inserter(_run));
         _run.push_back(NUL);
 
         _observer.terminalDrawCursor(pos, fg, bg, attrs,
