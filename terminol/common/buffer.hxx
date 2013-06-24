@@ -16,223 +16,223 @@
 #include <cstddef>
 #include <stdint.h>
 
-class Buffer {
-    class Line {
-        bool              _cont;        // Continuation from a 'wrap-next'
-        uint16_t          _wrap;        // Wrappable index
-        std::vector<Cell> _cells;
-        //
-        uint16_t          _cols;        // May be more cells than this due to resizePreserve.
-        uint16_t          _damageBegin;
-        uint16_t          _damageEnd;
+class Line {
+    bool              _cont;        // Continuation from a 'wrap-next'
+    uint16_t          _wrap;        // Wrappable index
+    std::vector<Cell> _cells;
+    //
+    uint16_t          _cols;        // May be more cells than this due to resizePreserve.
+    uint16_t          _damageBegin;
+    uint16_t          _damageEnd;
 
-        std::vector<Cell>::iterator begin() { return _cells.begin(); }
-        std::vector<Cell>::iterator end()   { return _cells.begin() + _cols; }
+    std::vector<Cell>::iterator begin() { return _cells.begin(); }
+    std::vector<Cell>::iterator end()   { return _cells.begin() + _cols; }
 
-    public:
-        std::vector<Cell>::const_iterator begin() const { return _cells.begin(); }
-        std::vector<Cell>::const_iterator end()   const { return _cells.begin() + _cols; }
+public:
+    std::vector<Cell>::const_iterator begin() const { return _cells.begin(); }
+    std::vector<Cell>::const_iterator end()   const { return _cells.begin() + _cols; }
 
-        explicit Line(uint16_t cols, bool continuation = false) :
-            _cont(continuation),
-            _wrap(0),
-            _cells(cols, Cell::blank()),
-            _cols(cols),
-            _damageBegin(0),
-            _damageEnd(cols) {}
+    explicit Line(uint16_t cols, bool continuation = false) :
+        _cont(continuation),
+        _wrap(0),
+        _cells(cols, Cell::blank()),
+        _cols(cols),
+        _damageBegin(0),
+        _damageEnd(cols) {}
 
-        Line(uint16_t cols, bool cont, uint16_t wrap, std::vector<Cell> & cells_) :
-            _cont(cont),
-            _wrap(wrap),
-            _cells(std::move(cells_)),
-            _cols(cols),
-            _damageBegin(0),
-            _damageEnd(cols)
-        {
-            resizePreserve(cols);
-            ASSERT(_wrap <= _cols, "");
+    Line(uint16_t cols, bool cont, uint16_t wrap, std::vector<Cell> & cells_) :
+        _cont(cont),
+        _wrap(wrap),
+        _cells(std::move(cells_)),
+        _cols(cols),
+        _damageBegin(0),
+        _damageEnd(cols)
+    {
+        resizePreserve(cols);
+        ASSERT(_wrap <= _cols, "");
+    }
+
+    const std::vector<Cell> & cells() const { return _cells; }
+
+    const Cell & getCell(uint16_t col) const {
+        ASSERT(col < _cols, "");
+        return _cells[col];
+    }
+
+    void getDamage(uint16_t & colBegin, uint16_t & colEnd) const {
+        colBegin = _damageBegin;
+        colEnd   = _damageEnd;
+    }
+
+    void insert(uint16_t col, uint16_t n) {
+        trim();
+
+        ASSERT(col + n <= _cells.size(), "");
+
+        std::copy_backward(begin() + col, end() - n, end());
+        std::fill(begin() + col, begin() + col + n, Cell::blank());
+
+        damageAdd(col, _cells.size());
+    }
+
+    void erase(uint16_t col, uint16_t n) {
+        trim();
+
+        ASSERT(col + n <= _cells.size(), "");
+
+        std::copy(begin() + col + n, end(), begin() + col);
+        std::fill(end() - n, end(), Cell::blank());
+
+        damageAdd(col, _cells.size());
+    }
+
+    void setContinuation() {
+        _cont = true;
+    }
+
+    bool isContinuation() const {
+        return _cont;
+    }
+
+    uint16_t getWrap() const { return _wrap; }
+
+    bool setCell(uint16_t col, const Cell & cell, bool autoWrap) {
+        trim();
+
+        ASSERT(col < _cells.size(), "");
+
+        auto seqChanged = _cells[col].seq != cell.seq;
+        _cells[col] = cell;
+
+        if (autoWrap) { _wrap = col + 1; }
+        else          { _wrap = 0; _cont = false; }
+
+        damageAdd(col, col + 1);
+
+        return seqChanged;
+    }
+
+    void resizeClip(uint16_t cols) {
+        uint16_t oldCols = _cells.size();
+        _cells.resize(cols, Cell::blank());
+        if (oldCols < cols) {
+            damageAdd(oldCols, cols);
         }
 
-        const std::vector<Cell> & cells() const { return _cells; }
+        _cols = cols;
+    }
 
-        const Cell & getCell(uint16_t col) const {
-            ASSERT(col < _cols, "");
-            return _cells[col];
-        }
-
-        void getDamage(uint16_t & colBegin, uint16_t & colEnd) const {
-            colBegin = _damageBegin;
-            colEnd   = _damageEnd;
-        }
-
-        void insert(uint16_t col, uint16_t n) {
-            trim();
-
-            ASSERT(col + n <= _cells.size(), "");
-
-            std::copy_backward(begin() + col, end() - n, end());
-            std::fill(begin() + col, begin() + col + n, Cell::blank());
-
-            damageAdd(col, _cells.size());
-        }
-
-        void erase(uint16_t col, uint16_t n) {
-            trim();
-
-            ASSERT(col + n <= _cells.size(), "");
-
-            std::copy(begin() + col + n, end(), begin() + col);
-            std::fill(end() - n, end(), Cell::blank());
-
-            damageAdd(col, _cells.size());
-        }
-
-        void setContinuation() {
-            _cont = true;
-        }
-
-        bool isContinuation() const {
-            return _cont;
-        }
-
-        uint16_t getWrap() const { return _wrap; }
-
-        bool setCell(uint16_t col, const Cell & cell, bool autoWrap) {
-            trim();
-
-            ASSERT(col < _cells.size(), "");
-
-            auto seqChanged = _cells[col].seq != cell.seq;
-            _cells[col] = cell;
-
-            if (autoWrap) { _wrap = col + 1; }
-            else          { _wrap = 0; _cont = false; }
-
-            damageAdd(col, col + 1);
-
-            return seqChanged;
-        }
-
-        void resizeClip(uint16_t cols) {
+    void resizePreserve(uint16_t cols) {
+        if (_cells.size() < cols) {
             uint16_t oldCols = _cells.size();
             _cells.resize(cols, Cell::blank());
-            if (oldCols < cols) {
-                damageAdd(oldCols, cols);
-            }
-
-            _cols = cols;
+            damageAdd(oldCols, cols);
         }
 
-        void resizePreserve(uint16_t cols) {
-            if (_cells.size() < cols) {
-                uint16_t oldCols = _cells.size();
-                _cells.resize(cols, Cell::blank());
-                damageAdd(oldCols, cols);
-            }
+        _cols = cols;
+        _wrap = std::min(_wrap, _cols);
+    }
 
-            _cols = cols;
-            _wrap = std::min(_wrap, _cols);
+    void clear() {
+        trim();
+
+        _wrap = 0; _cont = false;
+        std::fill(begin(), end(), Cell::blank());
+        damageAll();
+    }
+
+    void clearLeft(uint16_t endCol) {
+        trim();
+
+        _wrap = 0; _cont = false;
+        std::fill(begin(), begin() + endCol, Cell::blank());
+        damageAdd(0, endCol);
+    }
+
+    void clearRight(uint16_t beginCol) {
+        trim();
+
+        _wrap = 0; _cont = false;
+        std::fill(begin() + beginCol, end(), Cell::blank());
+        damageAdd(beginCol, _cells.size());
+    }
+
+    bool isBlank() const {
+        for (const auto & c : *this) {
+            if (c != Cell::blank()) { return false; }
         }
+        return true;
+    }
 
-        void clear() {
-            trim();
+    void resetDamage() {
+        _damageBegin = _damageEnd = 0;
+    }
 
-            _wrap = 0; _cont = false;
-            std::fill(begin(), end(), Cell::blank());
-            damageAll();
+    void damageAll() {
+        _damageBegin = 0;
+        _damageEnd   = _cells.size();
+    }
+
+    void damageAdd(uint16_t begin_, uint16_t end_) {
+        ASSERT(begin_ <= end_, "");
+        ASSERT(end_   <= _cells.size(), "");
+
+        if (_damageBegin == _damageEnd) {
+            // No damage yet.
+            _damageBegin = begin_;
+            _damageEnd   = end_;
         }
-
-        void clearLeft(uint16_t endCol) {
-            trim();
-
-            _wrap = 0; _cont = false;
-            std::fill(begin(), begin() + endCol, Cell::blank());
-            damageAdd(0, endCol);
+        else {
+            _damageBegin = std::min(_damageBegin, begin_);
+            _damageEnd   = std::max(_damageEnd,   end_);
         }
+    }
 
-        void clearRight(uint16_t beginCol) {
-            trim();
-
-            _wrap = 0; _cont = false;
-            std::fill(begin() + beginCol, end(), Cell::blank());
-            damageAdd(beginCol, _cells.size());
+    void trim() {
+        if (_cells.size() != _cols) {
+            ASSERT(_cells.size() > _cols, "");
+            _cells.erase(begin() + _cols, end());
         }
+    }
 
-        bool isBlank() const {
-            for (const auto & c : *this) {
-                if (c != Cell::blank()) { return false; }
-            }
-            return true;
-        }
+    void wrapFrom(Line & previous, uint16_t n) {
+        ASSERT(previous._wrap >= n, "");
+        ASSERT(n != 0, "");
 
-        void resetDamage() {
-            _damageBegin = _damageEnd = 0;
-        }
+        _cells.insert(begin(),
+                      previous.begin() + previous.getWrap() - n,
+                      previous.begin() + previous.getWrap());
+        std::fill(previous.begin() + previous.getWrap() - n,
+                  previous.begin() + previous.getWrap(),
+                  Cell::blank());
+        _wrap += n;
+        previous._wrap -= n;
 
-        void damageAll() {
-            _damageBegin = 0;
-            _damageEnd   = _cells.size();
-        }
+        damageAll();
+    }
 
-        void damageAdd(uint16_t begin_, uint16_t end_) {
-            ASSERT(begin_ <= end_, "");
-            ASSERT(end_   <= _cells.size(), "");
+    void unwrapTo(Line & previous, uint16_t n) {
+        ASSERT(n <= _cols, "");
+        ASSERT(n != 0, "");
 
-            if (_damageBegin == _damageEnd) {
-                // No damage yet.
-                _damageBegin = begin_;
-                _damageEnd   = end_;
-            }
-            else {
-                _damageBegin = std::min(_damageBegin, begin_);
-                _damageEnd   = std::max(_damageEnd,   end_);
-            }
-        }
+        previous._cells.insert(previous.begin() + previous.getWrap(),
+                               begin(),
+                               begin() + n);
+        std::copy(begin() + n, end(), begin());
+        std::fill(end() - n, end(), Cell::blank());
 
-        void trim() {
-            if (_cells.size() != _cols) {
-                ASSERT(_cells.size() > _cols, "");
-                _cells.erase(begin() + _cols, end());
-            }
-        }
+        previous._wrap += n;
+        _wrap -= n;
 
-        void wrapFrom(Line & previous, uint16_t n) {
-            ASSERT(previous._wrap >= n, "");
-            ASSERT(n != 0, "");
+        damageAll();
+    }
+};
 
-            _cells.insert(begin(),
-                          previous.begin() + previous.getWrap() - n,
-                          previous.begin() + previous.getWrap());
-            std::fill(previous.begin() + previous.getWrap() - n,
-                      previous.begin() + previous.getWrap(),
-                      Cell::blank());
-            _wrap += n;
-            previous._wrap -= n;
+//
+//
+//
 
-            damageAll();
-        }
-
-        void unwrapTo(Line & previous, uint16_t n) {
-            ASSERT(n <= _cols, "");
-            ASSERT(n != 0, "");
-
-            previous._cells.insert(previous.begin() + previous.getWrap(),
-                                   begin(),
-                                   begin() + n);
-            std::copy(begin() + n, end(), begin());
-            std::fill(end() - n, end(), Cell::blank());
-
-            previous._wrap += n;
-            _wrap -= n;
-
-            damageAll();
-        }
-    };
-
-    //
-    //
-    //
-
+class Buffer {
     struct APos {
         APos() : row(0), col(0) {}
         APos(uint32_t row_, uint16_t col_) : row(row_), col(col_) {}
