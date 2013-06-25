@@ -980,7 +980,7 @@ public:
             _barDamage = true;
         }
 
-        clearSelection();
+        clearSelection();           // FIXME move selection up a line
     }
 
     void insertLines(uint16_t row, uint16_t n) {
@@ -988,8 +988,7 @@ public:
         ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n <<
                ", margin-end=" << _marginEnd);
 
-        _active.erase (_active.begin() + _marginEnd - n,
-                       _active.begin() + _marginEnd);
+        _active.erase (_active.begin() + _marginEnd - n, _active.begin() + _marginEnd);
         _active.insert(_active.begin() + row, n, Line(getCols()));
 
         damageRange(row, _marginEnd);
@@ -1002,8 +1001,7 @@ public:
         ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n <<
                ", margin-end=" << _marginEnd);
 
-        _active.erase (_active.begin() + row,
-                       _active.begin() + row + n);
+        _active.erase (_active.begin() + row, _active.begin() + row + n);
         _active.insert(_active.begin() + _marginEnd - n, n, Line(getCols()));
 
         damageRange(row, _marginEnd);
@@ -1086,14 +1084,10 @@ public:
             uint16_t col = 0;
 
             ost << SGR::UNDERLINE;
-            for (; col != l.getWrap(); ++col) {
-                ost << l.getCell(col).seq;
-            }
+            for (; col != l.getWrap(); ++col) { ost << l.getCell(col).seq; }
             ost << SGR::RESET_UNDERLINE;
 
-            for (; col != getCols(); ++col) {
-                ost << l.getCell(col).seq;
-            }
+            for (; col != getCols(); ++col) { ost << l.getCell(col).seq; }
 
             ost << "\'" << std::endl;
         }
