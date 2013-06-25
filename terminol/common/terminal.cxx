@@ -1210,7 +1210,7 @@ void Terminal::machineCsi(uint8_t priv,
             moveCursorOriginMode(Pos(nthArg(args, 0, 1) - 1, nthArg(args, 1, 1) - 1));
             break;
         case 'I':       // CHT - Cursor Forward Tabulation *
-            tabCursor(TabDir::FORWARD, nthArg(args, 0, 1));
+            tabCursor(TabDir::FORWARD, nthArgNonZero(args, 0, 1));
             break;
         case 'J': // ED - Erase Data
             // Clear screen.
