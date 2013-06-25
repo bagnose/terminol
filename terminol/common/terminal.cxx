@@ -1913,6 +1913,10 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     _modes.setTo(Mode::MOUSE_MOTION, set);
                     _modes.setTo(Mode::MOUSE_BUTTON, false);
                     break;
+                case 1003:
+                    _modes.setTo(Mode::MOUSE_MOTION, set);
+                    _modes.setTo(Mode::MOUSE_BUTTON, set);
+                    break;
                 case 1004:
                     // tmux REPORT FOCUS
                     _modes.setTo(Mode::FOCUS, set);
