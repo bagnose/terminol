@@ -44,7 +44,7 @@ std::ostream & operator << (std::ostream & ost, ModifierSet modifierSet);
 typedef GenericSet<Attr, uint8_t> AttrSet;
 std::ostream & operator << (std::ostream & ost, AttrSet attrSet);
 
-typedef GenericSet<Mode, uint16_t> ModeSet;
+typedef GenericSet<Mode, uint32_t> ModeSet;
 std::ostream & operator << (std::ostream & ost, ModeSet modeSet);
 
 #endif // COMMON__BIT_SETS__HXX
