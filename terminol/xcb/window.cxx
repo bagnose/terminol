@@ -608,7 +608,7 @@ void Window::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
                                            offset,
                                            8192 / 4);
 
-            auto * reply = xcb_get_property_reply(_basics.connection(), cookie, nullptr);
+            auto reply = xcb_get_property_reply(_basics.connection(), cookie, nullptr);
             if (!reply) { break; }
             auto guard = scopeGuard([reply] { std::free(reply); });
 
