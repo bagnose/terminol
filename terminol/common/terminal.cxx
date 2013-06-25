@@ -432,6 +432,15 @@ void Terminal::focusChange(bool focused) {
     if (_focused != focused) {
         _focused = focused;
 
+        if (_modes.get(Mode::FOCUS)) {
+            if (focused) {
+                write(reinterpret_cast<const uint8_t *>("\x1B[I"), 3);
+            }
+            else {
+                write(reinterpret_cast<const uint8_t *>("\x1B[O"), 3);
+            }
+        }
+
         if (_modes.get(Mode::SHOW_CURSOR)) {
             fixDamage(_cursor.pos, _cursor.pos.right(),
                       Damager::SCROLL);     // FIXME Damager
@@ -1905,7 +1914,8 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     _modes.setTo(Mode::MOUSE_BUTTON, false);
                     break;
                 case 1004:
-                    // ??? tmux REPORT FOCUS
+                    // tmux REPORT FOCUS
+                    _modes.setTo(Mode::FOCUS, set);
                     break;
                 case 1005:
                     // ??? tmux MOUSE FORMAT = XTERM EXT

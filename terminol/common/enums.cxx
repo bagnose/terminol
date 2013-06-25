@@ -87,6 +87,8 @@ std::ostream & operator << (std::ostream & ost, Mode mode) {
             return ost << "BRACKETED_PASTE";
         case Mode::META_8BIT:
             return ost << "META_8BIT";
+        case Mode::FOCUS:
+            return ost << "FOCUS";
     }
 
     FATAL("Invalid mode: " << static_cast<int>(mode));
