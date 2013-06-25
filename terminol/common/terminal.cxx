@@ -1289,6 +1289,9 @@ void Terminal::machineCsi(uint8_t priv,
         case '`': // HPA
             moveCursor(_cursor.pos.atCol(nthArgNonZero(args, 0, 1) - 1));
             break;
+        case 'a': // HPR - Horizontal Position Relative
+            moveCursor(_cursor.pos.right(nthArgNonZero(args, 0, 1)));
+            break;
         case 'b': // REP
             NYI("REP");
             break;
@@ -1297,6 +1300,9 @@ void Terminal::machineCsi(uint8_t priv,
             break;
         case 'd': // VPA - Vertical Position Absolute
             moveCursorOriginMode(_cursor.pos.atRow(nthArg(args, 0, 1) - 1));
+            break;
+        case 'e': // VPR - Vertical Position Relative
+            moveCursor(_cursor.pos.down(nthArgNonZero(args, 0, 1)));
             break;
         case 'g': // TBC
             switch (nthArg(args, 0, 0)) {
