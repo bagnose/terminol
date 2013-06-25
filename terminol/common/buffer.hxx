@@ -869,7 +869,9 @@ public:
 
                     uint16_t excess = _active[r].getWrap() - cols;
 
-                    if (r + 1 == _active.size() || !_active[r + 1].isContinuation()) {
+                    if (static_cast<size_t>(r + 1) == _active.size() ||
+                        !_active[r + 1].isContinuation())
+                    {
                         _active.insert(_active.begin() + r + 1, Line(0, true));
                         if (cursor.row >= r + 1) { ++cursor.row; }
                     }
