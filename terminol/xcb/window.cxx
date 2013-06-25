@@ -328,13 +328,15 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
     int16_t x, y;
 
     if (event->detail == XCB_MOTION_HINT) {
-        xcb_query_pointer_reply_t * pointer =
-            xcb_query_pointer_reply(_basics.connection(),
-                                    xcb_query_pointer(_basics.connection(), _window),
-                                    nullptr);
-        x = pointer->win_x;
-        y = pointer->win_y;
-        std::free(pointer);
+        auto cookie = xcb_query_pointer(_basics.connection(), _window);
+        auto reply  = xcb_query_pointer_reply(_basics.connection(), cookie, nullptr);
+        if (!reply) {
+            WARNING("Failed to query pointer.");
+            return;
+        }
+        x = reply->win_x;
+        y = reply->win_y;
+        std::free(reply);
     }
     else {
         x = event->event_x;
