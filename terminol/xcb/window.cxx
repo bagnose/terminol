@@ -256,6 +256,8 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
     //PRINT("Button-press: " << event->event_x << " " << event->event_y);
     if (!_open) { return; }
+    if (event->detail < XCB_BUTTON_INDEX_1 ||
+        event->detail > XCB_BUTTON_INDEX_5) { return; }
 
     auto modifiers = _basics.convertState(event->state);
 
@@ -310,6 +312,8 @@ void Window::buttonRelease(xcb_button_release_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
     //PRINT("Button-release: " << event->event_x << " " << event->event_y);
     if (!_open) { return; }
+    if (event->detail < XCB_BUTTON_INDEX_1 ||
+        event->detail > XCB_BUTTON_INDEX_5) { return; }
 
     auto modifiers = _basics.convertState(event->state);
 
