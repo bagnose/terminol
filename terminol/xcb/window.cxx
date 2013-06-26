@@ -330,6 +330,7 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
     if (!_pressed) { return; }
 
     int16_t x, y;
+    uint16_t mask;
 
     if (event->detail == XCB_MOTION_HINT) {
         auto cookie = xcb_query_pointer(_basics.connection(), _window);
@@ -338,20 +339,22 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
             WARNING("Failed to query pointer.");
             return;
         }
-        x = reply->win_x;
-        y = reply->win_y;
+        x    = reply->win_x;
+        y    = reply->win_y;
+        mask = reply->mask;
         std::free(reply);
     }
     else {
-        x = event->event_x;
-        y = event->event_y;
+        x    = event->event_x;
+        y    = event->event_y;
+        mask = event->state;
     }
 
     Pos  pos;
     auto within = xy2Pos(x, y, pos);
 
     if (_pointerPos != pos) {
-        auto modifiers = _basics.convertState(event->state);
+        auto modifiers = _basics.convertState(mask);
 
         _pointerPos = pos;
         _terminal->buttonMotion(modifiers, within, pos);
