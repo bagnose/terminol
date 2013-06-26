@@ -215,7 +215,7 @@ protected:
                 xevent();
             }
 
-            // Jolt the jolters.
+            // Do the deferrals:
 
             for (auto window : _deferrals) { window->deferral(); }
             _deferrals.clear();
