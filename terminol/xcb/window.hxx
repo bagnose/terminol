@@ -47,9 +47,9 @@ private:
     Terminal        * _terminal;
     bool              _open;
     Pos               _pointerPos;
-    bool              _mapped;          // Is the window mapped.
+    bool              _mapped;          // Is the window mapped?
 
-    bool              _hadExpose;
+    bool              _pixmapCurrent;   // Is the pixmap up-to-date?
     xcb_pixmap_t      _pixmap;          // Created when mapped, destroyed when unmapped.
 
     cairo_surface_t * _surface;
@@ -62,7 +62,7 @@ private:
     std::string       _primarySelection;
     std::string       _clipboardSelection;
 
-    bool              _pressed;
+    bool              _pressed;         // Is there an active button press?
     int               _pressCount;
     xcb_timestamp_t   _lastPressTime;
     xcb_button_t      _button;
@@ -137,6 +137,8 @@ protected:
 
     void draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
     void drawBorder();
+
+    void resize();
 
     // Terminal::I_Observer implementation:
 

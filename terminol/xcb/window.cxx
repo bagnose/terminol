@@ -56,7 +56,7 @@ Window::Window(I_Observer         & observer,
     _open(false),
     _pointerPos(Pos::invalid()),
     _mapped(false),
-    _hadExpose(false),
+    _pixmapCurrent(false),
     _pixmap(0),
     _surface(nullptr),
     _cr(nullptr),
@@ -403,6 +403,7 @@ void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     auto cookie = xcb_free_pixmap(_basics.connection(), _pixmap);
     xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
     _pixmap = 0;
+    _pixmapCurrent = false;
 
     _mapped = false;
 }
@@ -421,8 +422,10 @@ void Window::expose(xcb_expose_event_t * event) {
           event->width << " " << event->height);
           */
 
+    ASSERT(_mapped, "");
+
     if (_mapped) {
-        if (_hadExpose) {
+        if (_pixmapCurrent) {
             // Once we've had our first expose the pixmap is always valid.
             ASSERT(_pixmap, "");
             auto cookie = xcb_copy_area_checked(_basics.connection(),
@@ -437,11 +440,12 @@ void Window::expose(xcb_expose_event_t * event) {
         }
         else {
             ASSERT(_surface, "");
+            // Make the entire pixmap valid.
             draw(0, 0, _width, _height);
+            _pixmapCurrent = true;
         }
-    }
 
-    _hadExpose = true;
+    }
 }
 
 void Window::configureNotify(xcb_configure_notify_event_t * event) {
@@ -462,89 +466,14 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
     _height = event->height;
 
     if (_deferralsAllowed) {
-        _observer.defer(this);
-        _deferred = true;
+        if (!_deferred) {
+            _observer.defer(this);
+            _deferred = true;
+        }
     }
     else {
-        deferral();
+        resize();
     }
-}
-
-void Window::deferral() {
-    if (_mapped) {
-        ASSERT(_pixmap, "");
-        ASSERT(_surface, "");
-
-        cairo_surface_finish(_surface);
-        cairo_surface_destroy(_surface);
-        _surface = nullptr;
-
-        auto cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
-        xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
-        _pixmap = 0;
-
-        //
-        //
-        //
-
-        _pixmap = xcb_generate_id(_basics.connection());
-        // Note, we create the pixmap against the root window rather than
-        // _window to avoid dealing with the case where _window may have been
-        // asynchronously destroyed.
-        cookie = xcb_create_pixmap_checked(_basics.connection(),
-                                           _basics.screen()->root_depth,
-                                           _pixmap,
-                                           //_window,
-                                           _basics.screen()->root,
-                                           _width,
-                                           _height);
-        xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap");
-
-        cairo_surface_finish(_surface);
-        _surface = cairo_xcb_surface_create(_basics.connection(),
-                                            _pixmap,
-                                            _basics.visual(),
-                                            _width,
-                                            _height);
-        ENFORCE(_surface, "Failed to create surface");
-        ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
-    }
-
-    uint16_t rows, cols;
-
-    const auto BORDER_THICKNESS = _config.borderThickness;
-    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
-
-    if (_width  > 2 * BORDER_THICKNESS + _fontSet.getWidth() + SCROLLBAR_WIDTH &&
-        _height > 2 * BORDER_THICKNESS + _fontSet.getHeight())
-    {
-        uint16_t w = _width  - (2 * BORDER_THICKNESS + SCROLLBAR_WIDTH);
-        uint16_t h = _height - (2 * BORDER_THICKNESS);
-
-        rows = h / _fontSet.getHeight();
-        cols = w / _fontSet.getWidth();
-    }
-    else {
-        rows = cols = 1;
-    }
-
-    ASSERT(rows > 0 && cols > 0, "");
-
-    if (_open) {
-        _tty->resize(rows, cols);
-    }
-
-    _terminal->resize(rows, cols);      // Ok to resize if not open?
-
-    updateTitle();
-
-    if (_mapped) {
-        ASSERT(_pixmap, "");
-        ASSERT(_surface, "");
-        draw(0, 0, _width, _height);
-    }
-
-    _deferred = false;
 }
 
 void Window::focusIn(xcb_focus_in_event_t * UNUSED(event)) {
@@ -676,6 +605,12 @@ void Window::selectionRequest(xcb_selection_request_event_t * event) {
     xcb_request_failed(_basics.connection(), cookie, "Failed to send event");
 
     xcb_flush(_basics.connection());        // Required?
+}
+
+void Window::deferral() {
+    ASSERT(_deferred, "");
+    resize();
+    _deferred = false;
 }
 
 void Window::icccmConfigure() {
@@ -957,6 +892,84 @@ void Window::drawBorder() {
                         y2 - y1);
         cairo_fill(_cr);
     } cairo_restore(_cr);
+}
+
+void Window::resize() {
+    if (_mapped) {
+        ASSERT(_pixmap, "");
+        ASSERT(_surface, "");
+
+        cairo_surface_finish(_surface);
+        cairo_surface_destroy(_surface);
+        _surface = nullptr;
+
+        auto cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
+        xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
+        _pixmap = 0;
+
+        //
+        //
+        //
+
+        _pixmap = xcb_generate_id(_basics.connection());
+        // Note, we create the pixmap against the root window rather than
+        // _window to avoid dealing with the case where _window may have been
+        // asynchronously destroyed.
+        cookie = xcb_create_pixmap_checked(_basics.connection(),
+                                           _basics.screen()->root_depth,
+                                           _pixmap,
+                                           //_window,
+                                           _basics.screen()->root,
+                                           _width,
+                                           _height);
+        xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap");
+
+        cairo_surface_finish(_surface);
+        _surface = cairo_xcb_surface_create(_basics.connection(),
+                                            _pixmap,
+                                            _basics.visual(),
+                                            _width,
+                                            _height);
+        ENFORCE(_surface, "Failed to create surface");
+        ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
+    }
+
+    uint16_t rows, cols;
+
+    const auto BORDER_THICKNESS = _config.borderThickness;
+    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
+
+    if (_width  > 2 * BORDER_THICKNESS + _fontSet.getWidth() + SCROLLBAR_WIDTH &&
+        _height > 2 * BORDER_THICKNESS + _fontSet.getHeight())
+    {
+        uint16_t w = _width  - (2 * BORDER_THICKNESS + SCROLLBAR_WIDTH);
+        uint16_t h = _height - (2 * BORDER_THICKNESS);
+
+        rows = h / _fontSet.getHeight();
+        cols = w / _fontSet.getWidth();
+    }
+    else {
+        rows = cols = 1;
+    }
+
+    ASSERT(rows > 0 && cols > 0, "");
+
+    if (_open) {
+        _tty->resize(rows, cols);
+    }
+
+    _terminal->resize(rows, cols);      // Ok to resize if not open?
+
+    updateTitle();
+
+    if (_mapped) {
+        ASSERT(_pixmap, "");
+        ASSERT(_surface, "");
+        draw(0, 0, _width, _height);
+    }
+    else {
+        _pixmapCurrent = false;
+    }
 }
 
 // Terminal::I_Observer implementation:
