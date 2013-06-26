@@ -1864,6 +1864,10 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     _cursor.cs = Cursor::CharSet::G0;
                     break;
                 case 3: // DECCOLM - Column Mode
+                    // How much should we reset
+                    _buffer->clear();
+                    _cursor.reset();
+                    _savedCursor.reset();
                     if (set) {
                         // resize 132x24
                         _observer.terminalResizeBuffer(24, 132);
