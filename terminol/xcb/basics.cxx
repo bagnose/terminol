@@ -67,6 +67,7 @@ Basics::Basics() throw (Error) {
     _atomPrimary    = XCB_ATOM_PRIMARY;
     _atomClipboard  = lookupAtom("CLIPBOARD");
     _atomUtf8String = lookupAtom("UTF8_STRING");    // XXX fall back on XB_ATOM_STRING
+    if (_atomUtf8String == XCB_ATOM_NONE) { _atomUtf8String = XCB_ATOM_STRING; }
     _atomTargets    = lookupAtom("TARGETS");
 
     determineMasks();
