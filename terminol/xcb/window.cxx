@@ -437,13 +437,7 @@ void Window::expose(xcb_expose_event_t * event) {
         }
         else {
             ASSERT(_surface, "");
-#if 0
-            ASSERT(event->x == 0 && event->y == 0, "");
-            ASSERT(event->width == _width && event->height == _height, "");
-            draw(event->x, event->y, event->width, event->height);
-#else
             draw(0, 0, _width, _height);
-#endif
         }
     }
 
@@ -878,20 +872,6 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
     _cr = cairo_create(_surface);
     cairo_set_line_width(_cr, 1.0);
 
-#if 0
-    // Clear the damaged area so that we know we are completely drawing to it.
-
-    xcb_rectangle_t rect = {
-        static_cast<int16_t>(x), static_cast<int16_t>(y), w, h
-    };
-
-    xcb_poly_rectangle(_basics.connection(),
-                       _pixmap,
-                       _gc,
-                       1,
-                       &rect);
-#endif
-
     cairo_save(_cr); {
         cairo_rectangle(_cr, x, y, w, h);       // implicit cast to double
         cairo_clip(_cr);
@@ -1080,12 +1060,6 @@ bool Window::terminalFixDamageBegin(bool internal) throw () {
         if (!_deferred && _mapped) {
             ASSERT(_mapped, "");
             ASSERT(_surface, "");
-#if 0
-            xcb_clear_area(_basics.connection(),
-                           0,       // don't generate exposure event
-                           _window,
-                           0, 0, _width, _height);
-#endif
             _cr = cairo_create(_surface);
             cairo_set_line_width(_cr, 1.0);
             return true;
