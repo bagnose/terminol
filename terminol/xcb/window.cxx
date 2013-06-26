@@ -800,7 +800,7 @@ bool Window::xy2Pos(int x, int y, Pos & pos) const {
                _terminal->getRows());
     }
     else {
-        pos.row = _terminal->getRows();
+        pos.row = _terminal->getRows() - 1;
         within = false;
     }
 
