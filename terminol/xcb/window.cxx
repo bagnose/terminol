@@ -769,6 +769,8 @@ void Window::updateTitle() {
                          fullTitle.size(),
                          fullTitle.data());
 #endif
+
+    xcb_flush(_basics.connection());
 }
 
 void Window::updateIcon() {
