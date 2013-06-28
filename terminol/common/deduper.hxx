@@ -33,6 +33,7 @@ public:
     virtual const Line & lookup(Tag tag) const = 0;
     virtual void remove(Tag tag) = 0;
     virtual void lookupRemove(Tag tag, Line & line) = 0;
+    virtual double getReduction() const = 0;
 
 protected:
     I_Deduper() {}
@@ -187,6 +188,17 @@ again:
         }
         else {
             line = payload.line;
+        }
+    }
+
+    double getReduction() const {
+        if (_lines.empty()) {
+            return 1.0;
+        }
+        else {
+            return
+                static_cast<double>(_totalRefCount) /
+                static_cast<double>(_lines.size());
         }
     }
 

@@ -119,6 +119,7 @@ private:
     bool                  _dispatch;
 
     const Config        & _config;
+    const I_Deduper     & _deduper;
     const KeyMap        & _keyMap;
 
     Buffer                _priBuffer;

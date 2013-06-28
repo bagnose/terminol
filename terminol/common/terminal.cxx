@@ -83,6 +83,7 @@ Terminal::Terminal(I_Observer   & observer,
     _dispatch(false),
     //
     _config(config),
+    _deduper(deduper),
     _keyMap(keyMap),
     //
     _priBuffer(_config, deduper,
@@ -576,6 +577,13 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
     }
 
     switch (keySym) {
+        case XKB_KEY_F8: {
+            std::ostringstream ost;
+            ost << "Dedupe: " << _deduper.getReduction()
+                << ", History: " << _priBuffer.getHistory();
+            _observer.terminalSetWindowTitle(ost.str());
+            return true;
+        }
         case XKB_KEY_F9:
             _buffer->dumpBuffer(std::cerr);
             return true;
