@@ -143,6 +143,9 @@ void FontSet::measure(PangoFontDescription * desc, uint16_t & width, uint16_t & 
           "WxH: " << width << "x" << height << std::endl);
           */
 
+    if (int i = logicalRect.width % PANGO_SCALE) { WARNING("Width remainder: " << i); }
+    if (int i = logicalRect.height % PANGO_SCALE) { WARNING("Height remainder: " << i); }
+
     width  = logicalRect.width / PANGO_SCALE;
     height = logicalRect.height / PANGO_SCALE;
 }

@@ -825,8 +825,6 @@ public:
         //
 
         if (cols > _cols) {
-            //const uint16_t deltaCols = cols - _cols;
-
             uint16_t availability;
             uint16_t r = 0;
 

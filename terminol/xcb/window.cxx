@@ -661,7 +661,6 @@ void Window::icccmConfigure() {
                                         _fontSet.getWidth(),
                                         _fontSet.getHeight());
     xcb_icccm_size_hints_set_win_gravity(&sizeHints, XCB_GRAVITY_NORTH_WEST);
-    // XXX or call xcb_icccm_set_wm_normal_hints() ?
 #if 0
     xcb_icccm_set_wm_size_hints(_basics.connection(),
                                 _window,
@@ -994,8 +993,7 @@ void Window::terminalCopy(const std::string & text, bool clipboard) throw () {
         _primarySelection = text;
     }
 
-    xcb_set_selection_owner(_basics.connection(), _window,
-                            atom, XCB_CURRENT_TIME);
+    xcb_set_selection_owner(_basics.connection(), _window, atom, XCB_CURRENT_TIME);
     xcb_flush(_basics.connection());
 }
 
@@ -1300,6 +1298,7 @@ void Window::terminalDrawSelection(Pos  begin,
 
     auto numCols = _terminal->getCols();
     auto plus    = bottomless ? 0 : 1;
+    auto extra   = 10;
 
     double bg[4] = { 0.4, 0.0, 1.0, 0.07 };
     double fg[4] = { 0.0, 0.5, 1.0, 1.0 };
@@ -1345,8 +1344,8 @@ void Window::terminalDrawSelection(Pos  begin,
         pos2XY(Pos(end.row + plus, begin.col), x2, y2);
         pos2XY(Pos(end.row + plus, numCols),   x3, y2);      // clobber y2 with same value
 
-        if (topless)    { y0 = -1; }
-        if (bottomless) { y2 = _height + 1; }
+        if (topless)    { y0 = -extra; }
+        if (bottomless) { y2 = _height + extra; }
 
         pathWrappedLineSelection(_cr, x0, x1, x2, x3, y0, y1, y2, halfWidth, curve, true);
 
@@ -1398,8 +1397,8 @@ void Window::terminalDrawSelection(Pos  begin,
         pos2XY(Pos(end.row,        end.col),   x2, y2);  // #3
         pos2XY(Pos(end.row + plus, numCols),   x3, y3);  // bottom right
 
-        if (topless)    { y0 = -1; }
-        if (bottomless) { y3 = _height + 1; }
+        if (topless)    { y0 = -extra; }
+        if (bottomless) { y3 = _height + extra; }
 
         pathMultiLineSelection(_cr, x0, x1, x2, x3, y0, y1, y2, y3, halfWidth, curve);
 

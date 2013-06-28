@@ -278,7 +278,7 @@ void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
 void Terminal::buttonMotion(ModifierSet modifiers, bool within, Pos pos) {
     //PRINT("motion: within=" << within << ", " << pos);
 
-    ASSERT(_pressed, "");
+    //ASSERT(_pressed, "");
 
     if (_modes.get(Mode::MOUSE_MOTION)) {
         if (within) {
@@ -1400,6 +1400,18 @@ void Terminal::machineCsi(uint8_t priv,
                         _observer.terminalSetWindowTitle("Terminol " VERSION);
                         break;
                     }
+                    case 15: {
+                        NYI("Print status");
+                        break;
+                    }
+                    case 25: {
+                        NYI("UDK status");
+                        break;
+                    }
+                    case 26: {
+                        NYI("Keyboard status");
+                        break;
+                    }
                     default:
                         NYI("");
                         break;
@@ -1412,6 +1424,7 @@ void Terminal::machineCsi(uint8_t priv,
                 NYI("DECSTR");
             }
             else {
+                // XXX vttest gives soft-reset without priv == '!'
                 goto default_;
             }
             break;
@@ -1488,6 +1501,9 @@ void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
                     break;
                 case 55:
                     NYI("Log history to file");
+                    break;
+                case 112:
+                    // tmux gives us this...
                     break;
                 case 666: // terminol extension (fix the damage)
                     fixDamage(Pos(0, 0),
