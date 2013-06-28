@@ -94,12 +94,11 @@ bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
 
     xcb_keysym_t k0, k1;
 
-    /* 'col' (third parameter) is used to get the proper KeySym
-     * according to modifier (XCB doesn't provide an equivalent to
-     * XLookupString()).
-     *
-     * If Mode_Switch is ON we look into second group.
-     */
+    // 'col' (third parameter) is used to get the proper KeySym
+    // according to modifier (XCB doesn't provide an equivalent to
+    // XLookupString()).
+    //
+    // If Mode_Switch is ON we look into second group.
     if (modifiers.get(Modifier::MODE_SWITCH)) {
         k0 = xcb_key_symbols_get_keysym(_keySymbols, keyCode, 4);
         k1 = xcb_key_symbols_get_keysym(_keySymbols, keyCode, 5);
@@ -109,13 +108,12 @@ bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
         k1 = xcb_key_symbols_get_keysym(_keySymbols, keyCode, 1);
     }
 
-    /* If the second column does not exists use the first one. */
+    // If the second column does not exists use the first one.
     if (k1 == XCB_NO_SYMBOL) {
         k1 = k0;
     }
 
-    /* The numlock modifier is on and the second KeySym is a keypad
-     * KeySym */
+    // The numlock modifier is on and the second KeySym is a keypad KeySym.
     if (modifiers.get(Modifier::NUM_LOCK) && xcb_is_keypad_key(k1)) {
         // The Shift modifier is on, or if the Lock modifier is on and
         // is interpreted as ShiftLock, use the first KeySym.
