@@ -10,8 +10,13 @@ void test(uint8_t num, const char ascii[2]) {
            "Mismatch byte --> hex: " <<
            tmpAscii[0] << tmpAscii[1] << " == " << ascii[0] << ascii[1]);
 
-    uint8_t tmpNum = hexToByte(ascii[0], ascii[1]);
-    ENFORCE(tmpNum == num, "Mismatch hex --> byte: " << tmpNum << " == " << num);
+    try {
+        uint8_t tmpNum = hexToByte(ascii[0], ascii[1]);
+        ENFORCE(tmpNum == num, "Mismatch hex --> byte: " << tmpNum << " == " << num);
+    }
+    catch (const ParseError & ex) {
+        FATAL(ex.message);
+    }
 }
 
 int main() {

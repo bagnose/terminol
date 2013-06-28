@@ -70,8 +70,13 @@ void writeRandomString(std::ostream & ost) {
 
 int main(int argc, char * argv[]) {
     if (argc > 1) {
-        int seed = unstringify<int>(argv[1]);
-        ::srandom(seed);
+        try {
+            auto seed = unstringify<int>(argv[1]);
+            ::srandom(seed);
+        }
+        catch (const ParseError & ex) {
+            FATAL("Bad seed: " << ex.message);
+        }
     }
 
     for (;;) {
