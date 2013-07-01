@@ -252,24 +252,24 @@ class Buffer {
 
     static const Cell BLANK;
 
-    const Config             & _config;
-    I_Deduper                & _deduper;
+    const Config               & _config;
+    I_Deduper                  & _deduper;
 
     std::deque<I_Deduper::Tag>   _history;            // This is what scrollback shows.
-    std::deque<Line>           _active;             // The mutable lines.
-    uint16_t                   _cols;
+    std::deque<Line>             _active;             // The mutable lines.
+    uint16_t                     _cols;
 
-    size_t                     _historyLimit;
-    size_t                     _scrollOffset;
+    size_t                       _historyLimit;
+    size_t                       _scrollOffset;
 
-    uint16_t                   _marginBegin;
-    uint16_t                   _marginEnd;
+    uint16_t                     _marginBegin;
+    uint16_t                     _marginEnd;
 
-    bool                       _barDamage;
+    bool                         _barDamage;
 
-    int                        _selectExpansion;
-    APos                       _selectMarker;
-    APos                       _selectDelimiter;
+    int                          _selectExpansion;
+    APos                         _selectMarker;
+    APos                         _selectDelimiter;
 
 public:
     Buffer(const Config & config,

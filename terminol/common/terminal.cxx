@@ -775,7 +775,7 @@ void Terminal::drawRowBg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
     for (c1 = colBegin; c1 != colEnd; ++c1) {
         const Cell & cell = _buffer->getCell(Pos(r, c1));
 
-        bool swap = XOR(_modes.get(Mode::REVERSE), cell.style.attrs.get(Attr::INVERSE));
+        auto swap = XOR(_modes.get(Mode::REVERSE), cell.style.attrs.get(Attr::INVERSE));
         auto bg1  = swap ? cell.style.fg : cell.style.bg;
 
         if (bg0 != bg1) {
@@ -805,7 +805,7 @@ void Terminal::drawRowFg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
     for (c1 = colBegin; c1 != colEnd; ++c1) {
         const auto & cell   = _buffer->getCell(Pos(r, c1));
         const auto & attrs1 = cell.style.attrs;
-        bool         swap   = XOR(_modes.get(Mode::REVERSE), attrs1.get(Attr::INVERSE));
+        auto         swap   = XOR(_modes.get(Mode::REVERSE), attrs1.get(Attr::INVERSE));
         auto         fg1    = swap ? cell.style.bg : cell.style.fg;
 
         if (fg0 != fg1 || attrs0 != attrs1) {
@@ -871,12 +871,12 @@ void Terminal::drawCursor() {
 
         const auto & cell = _buffer->getCell(pos);
         const auto & attrs = cell.style.attrs;
-        bool         swap  = XOR(_modes.get(Mode::REVERSE), attrs.get(Attr::INVERSE));
+        auto         swap  = XOR(_modes.get(Mode::REVERSE), attrs.get(Attr::INVERSE));
         auto         fg    = cell.style.fg;
         auto         bg    = cell.style.bg;
         if (swap) { std::swap(fg, bg); }
 
-        utf8::Length length = utf8::leadLength(cell.seq.lead());
+        auto length = utf8::leadLength(cell.seq.lead());
         std::copy(cell.seq.bytes, cell.seq.bytes + length, std::back_inserter(_run));
 
         auto size = _run.size();
@@ -935,7 +935,7 @@ void Terminal::echo(const uint8_t * data, size_t size) {
     _dispatch = true;
 
     while (size != 0) {
-        uint8_t c = *data;
+        auto c = *data;
 
         if (c == ESC) {
             processRead(reinterpret_cast<const uint8_t *>("^["), 2);
