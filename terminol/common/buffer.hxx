@@ -4,7 +4,7 @@
 #define COMMON__BUFFER__HXX
 
 #include "terminol/common/data_types.hxx"
-#include "terminol/common/deduper.hxx"
+#include "terminol/common/deduper_interface.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/support/escape.hxx"
 
@@ -255,7 +255,7 @@ class Buffer {
     const Config             & _config;
     I_Deduper                & _deduper;
 
-    std::deque<Deduper::Tag>   _history;            // This is what scrollback shows.
+    std::deque<I_Deduper::Tag>   _history;            // This is what scrollback shows.
     std::deque<Line>           _active;             // The mutable lines.
     uint16_t                   _cols;
 

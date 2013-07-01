@@ -74,7 +74,7 @@ const Terminal::CharSub Terminal::CS_SPECIAL[] = {
 
 Terminal::Terminal(I_Observer   & observer,
                    const Config & config,
-                   Deduper      & deduper,
+                   I_Deduper    & deduper,
                    uint16_t       rows,
                    uint16_t       cols,
                    const KeyMap & keyMap,

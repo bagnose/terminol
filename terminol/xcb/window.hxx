@@ -78,7 +78,7 @@ public:
 
     Window(I_Observer         & observer,
            const Config       & config,
-           Deduper            & deduper,
+           I_Deduper          & deduper,
            Basics             & basics,
            const ColorSet     & colorSet,
            FontSet            & fontSet,

@@ -35,7 +35,7 @@ bool _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie
 
 Window::Window(I_Observer         & observer,
                const Config       & config,
-               Deduper            & deduper,
+               I_Deduper          & deduper,
                Basics             & basics,
                const ColorSet     & colorSet,
                FontSet            & fontSet,

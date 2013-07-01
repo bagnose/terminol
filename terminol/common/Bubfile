@@ -5,7 +5,7 @@ static-lib common
   enums.hxx utf8.hxx terminal.hxx key_map.hxx deduper.hxx
   bit_sets.hxx data_types.hxx buffer.hxx ascii.hxx tty.hxx config.hxx
   vt_state_machine.hxx parser.hxx
-  tty_interface.hxx
+  tty_interface.hxx deduper_interface.hxx
   :
   enums.cxx utf8.cxx terminal.cxx key_map.cxx deduper.cxx
   bit_sets.cxx data_types.cxx buffer.cxx ascii.cxx tty.cxx config.cxx

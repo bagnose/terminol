@@ -4,6 +4,7 @@
 #include "terminol/xcb/color_set.hxx"
 #include "terminol/xcb/font_set.hxx"
 #include "terminol/xcb/basics.hxx"
+#include "terminol/common/deduper.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/parser.hxx"
 #include "terminol/common/key_map.hxx"
