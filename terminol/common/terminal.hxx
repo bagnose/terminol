@@ -33,7 +33,8 @@ public:
         virtual void terminalGetDisplay(std::string & display) throw () = 0;
         virtual void terminalCopy(const std::string & text, bool clipboard) throw () = 0;
         virtual void terminalPaste(bool clipboard) throw () = 0;
-        virtual void terminalResizeFont(int delta) throw () = 0;
+        virtual void terminalResizeLocalFont(int delta) throw () = 0;
+        virtual void terminalResizeGlobalFont(int delta) throw () = 0;
         virtual void terminalResetTitleAndIcon() throw () = 0;
         virtual void terminalSetWindowTitle(const std::string & str) throw () = 0;
         virtual void terminalSetIconName(const std::string & str) throw () = 0;
@@ -152,13 +153,13 @@ private:
     VtStateMachine        _vtMachine;
 
 public:
-    Terminal(I_Observer   & observer,
-             const Config & config,
-             I_Deduper    & deduper,
-             uint16_t       rows,
-             uint16_t       cols,
-             const KeyMap & keyMap,
-             I_Tty        & tty);
+    Terminal(I_Observer    & observer,
+             const Config  & config,
+             I_Deduper     & deduper,
+             uint16_t        rows,
+             uint16_t        cols,
+             const KeyMap  & keyMap,
+             I_Tty         & tty);
     virtual ~Terminal();
 
     // Geometry:

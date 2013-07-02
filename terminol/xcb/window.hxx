@@ -5,7 +5,7 @@
 
 #include "terminol/xcb/basics.hxx"
 #include "terminol/xcb/color_set.hxx"
-#include "terminol/xcb/font_set.hxx"
+#include "terminol/xcb/font_manager.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/key_map.hxx"
 #include "terminol/common/tty.hxx"
@@ -19,6 +19,7 @@
 
 class Window :
     protected Terminal::I_Observer,
+    protected FontManager::I_Client,
     protected Uncopyable
 {
 public:
@@ -37,7 +38,8 @@ private:
     const Config    & _config;
     Basics          & _basics;
     const ColorSet  & _colorSet;
-    FontSet         & _fontSet;
+    FontManager     & _fontManager;
+    FontSet         * _fontSet;
     xcb_window_t      _window;
     bool              _destroyed;
     xcb_gcontext_t    _gc;
@@ -83,7 +85,7 @@ public:
            I_Deduper          & deduper,
            Basics             & basics,
            const ColorSet     & colorSet,
-           FontSet            & fontSet,
+           FontManager        & fontManager,
            const KeyMap       & keyMap,
            const Tty::Command & command = Tty::Command()) throw (Error);
 
@@ -142,14 +144,18 @@ protected:
     void draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
     void drawBorder();
 
-    void resize();
+    void handleResize();
+    void resizeToAccommodate(uint16_t rows, uint16_t cols);
+
+    void sizeToRowsCols(uint16_t & rows, uint16_t & cols) const;
 
     // Terminal::I_Observer implementation:
 
     void terminalGetDisplay(std::string & display) throw ();
     void terminalCopy(const std::string & text, bool clipboard) throw ();
     void terminalPaste(bool clipboard) throw ();
-    void terminalResizeFont(int delta) throw ();
+    void terminalResizeLocalFont(int delta) throw ();
+    void terminalResizeGlobalFont(int delta) throw ();
     void terminalResetTitleAndIcon() throw ();
     void terminalSetWindowTitle(const std::string & str) throw ();
     void terminalSetIconName(const std::string & str) throw ();
@@ -185,6 +191,10 @@ protected:
                               Pos      end,
                               bool     scrollbar) throw ();
     void terminalChildExited(int exitStatus) throw ();
+
+    // FontManager::I_Client implementation:
+
+    void useFontSet(FontSet * fontSet, int delta) throw ();
 
 private:
     XColor getColor(const UColor & ucolor) const {

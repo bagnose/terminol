@@ -72,13 +72,13 @@ const Terminal::CharSub Terminal::CS_SPECIAL[] = {
 //
 //
 
-Terminal::Terminal(I_Observer   & observer,
-                   const Config & config,
-                   I_Deduper    & deduper,
-                   uint16_t       rows,
-                   uint16_t       cols,
-                   const KeyMap & keyMap,
-                   I_Tty        & tty) :
+Terminal::Terminal(I_Observer    & observer,
+                   const Config  & config,
+                   I_Deduper     & deduper,
+                   uint16_t        rows,
+                   uint16_t        cols,
+                   const KeyMap  & keyMap,
+                   I_Tty         & tty) :
     _observer(observer),
     _dispatch(false),
     //
@@ -529,10 +529,31 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                 _observer.terminalPaste(true);
                 return true;
             }
+            case ')':
+                _observer.terminalResizeGlobalFont(0);
+                return true;
+            case '_':
+                _observer.terminalResizeGlobalFont(-1);
+                return true;
+            case '+':
+                _observer.terminalResizeGlobalFont(1);
+                return true;
         }
     }
-
-    if (modifiers.get(Modifier::SHIFT)) {
+    else if (modifiers.get(Modifier::CONTROL)) {
+        switch (keySym) {
+            case '0':
+                _observer.terminalResizeLocalFont(0);
+                return true;
+            case '-':
+                _observer.terminalResizeLocalFont(-1);
+                return true;
+            case '=':
+                _observer.terminalResizeLocalFont(1);
+                return true;
+        }
+    }
+    else if (modifiers.get(Modifier::SHIFT)) {
         switch (keySym) {
             case XKB_KEY_Up:
                 if (_buffer->scrollUpHistory(1)) {

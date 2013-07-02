@@ -38,14 +38,15 @@ Window::Window(I_Observer         & observer,
                I_Deduper          & deduper,
                Basics             & basics,
                const ColorSet     & colorSet,
-               FontSet            & fontSet,
+               FontManager        & fontManager,
                const KeyMap       & keyMap,
                const Tty::Command & command) throw (Error) :
     _observer(observer),
     _config(config),
     _basics(basics),
     _colorSet(colorSet),
-    _fontSet(fontSet),
+    _fontManager(fontManager),
+    _fontSet(nullptr),
     _window(0),
     _destroyed(false),
     _gc(0),
@@ -72,14 +73,18 @@ Window::Window(I_Observer         & observer,
     _deferred(false),
     _transientTitle(false)
 {
+    _fontSet = _fontManager.addClient(this);
+    ASSERT(_fontSet, "");
+    auto fontGuard = scopeGuard([&] { _fontManager.removeClient(this); });
+
     auto rows = _config.initialRows;
     auto cols = _config.initialCols;
 
     const auto BORDER_THICKNESS = _config.borderThickness;
     const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
-    _width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
-    _height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
+    _width  = 2 * BORDER_THICKNESS + cols * _fontSet->getWidth() + SCROLLBAR_WIDTH;
+    _height = 2 * BORDER_THICKNESS + rows * _fontSet->getHeight();
 
     xcb_void_cookie_t cookie;
 
@@ -187,6 +192,7 @@ Window::Window(I_Observer         & observer,
 
     gcGuard.dismiss();
     windowGuard.dismiss();
+    fontGuard.dismiss();
 }
 
 Window::~Window() {
@@ -219,6 +225,8 @@ Window::~Window() {
     }
 
     xcb_flush(_basics.connection());
+
+    _fontManager.removeClient(this);
 }
 
 void Window::read() {
@@ -478,7 +486,7 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
         }
     }
     else {
-        resize();
+        handleResize();
     }
 }
 
@@ -615,7 +623,7 @@ void Window::selectionRequest(xcb_selection_request_event_t * event) {
 
 void Window::deferral() {
     ASSERT(_deferred, "");
-    resize();
+    handleResize();
     _deferred = false;
 }
 
@@ -658,14 +666,14 @@ void Window::icccmConfigure() {
     xcb_size_hints_t sizeHints;
     sizeHints.flags = 0;
     xcb_icccm_size_hints_set_min_size(&sizeHints,
-                                      BASE_WIDTH  + MIN_COLS * _fontSet.getWidth(),
-                                      BASE_HEIGHT + MIN_ROWS * _fontSet.getHeight());
+                                      BASE_WIDTH  + MIN_COLS * _fontSet->getWidth(),
+                                      BASE_HEIGHT + MIN_ROWS * _fontSet->getHeight());
     xcb_icccm_size_hints_set_base_size(&sizeHints,
                                        BASE_WIDTH,
                                        BASE_HEIGHT);
     xcb_icccm_size_hints_set_resize_inc(&sizeHints,
-                                        _fontSet.getWidth(),
-                                        _fontSet.getHeight());
+                                        _fontSet->getWidth(),
+                                        _fontSet->getHeight());
     xcb_icccm_size_hints_set_win_gravity(&sizeHints, XCB_GRAVITY_NORTH_WEST);
 #if 0
     xcb_icccm_set_wm_size_hints(_basics.connection(),
@@ -701,8 +709,8 @@ void Window::pos2XY(Pos pos, int & x, int & y) const {
 
     const auto BORDER_THICKNESS = _config.borderThickness;
 
-    x = BORDER_THICKNESS + pos.col * _fontSet.getWidth();
-    y = BORDER_THICKNESS + pos.row * _fontSet.getHeight();
+    x = BORDER_THICKNESS + pos.col * _fontSet->getWidth();
+    y = BORDER_THICKNESS + pos.row * _fontSet->getHeight();
 }
 
 bool Window::xy2Pos(int x, int y, Pos & pos) const {
@@ -716,8 +724,8 @@ bool Window::xy2Pos(int x, int y, Pos & pos) const {
         pos.col = 0;
         within = false;
     }
-    else if (x < BORDER_THICKNESS + _fontSet.getWidth() * _terminal->getCols()) {
-        pos.col = (x - BORDER_THICKNESS) / _fontSet.getWidth();
+    else if (x < BORDER_THICKNESS + _fontSet->getWidth() * _terminal->getCols()) {
+        pos.col = (x - BORDER_THICKNESS) / _fontSet->getWidth();
         ASSERT(pos.col < _terminal->getCols(),
                "col is: " << pos.col << ", getCols() is: " <<
                _terminal->getCols());
@@ -733,8 +741,8 @@ bool Window::xy2Pos(int x, int y, Pos & pos) const {
         pos.row = 0;
         within = false;
     }
-    else if (y < BORDER_THICKNESS + _fontSet.getHeight() * _terminal->getRows()) {
-        pos.row = (y - BORDER_THICKNESS) / _fontSet.getHeight();
+    else if (y < BORDER_THICKNESS + _fontSet->getHeight() * _terminal->getRows()) {
+        pos.row = (y - BORDER_THICKNESS) / _fontSet->getHeight();
         ASSERT(pos.row < _terminal->getRows(),
                "row is: " << pos.row << ", getRows() is: " <<
                _terminal->getRows());
@@ -864,10 +872,10 @@ void Window::drawBorder() {
         const auto & bg = _colorSet.getBorderColor();
         cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
 
-        double x1 = BORDER_THICKNESS + _fontSet.getWidth() * _terminal->getCols();
+        double x1 = BORDER_THICKNESS + _fontSet->getWidth() * _terminal->getCols();
         double x2 = _width - SCROLLBAR_WIDTH;
 
-        double y1 = BORDER_THICKNESS + _fontSet.getHeight() * _terminal->getRows();
+        double y1 = BORDER_THICKNESS + _fontSet->getHeight() * _terminal->getRows();
         double y2 = _height;
 
         // Left edge.
@@ -904,7 +912,7 @@ void Window::drawBorder() {
     } cairo_restore(_cr);
 }
 
-void Window::resize() {
+void Window::handleResize() {
     if (_mapped) {
         ASSERT(_pixmap, "");
         ASSERT(_surface, "");
@@ -945,24 +953,7 @@ void Window::resize() {
     }
 
     uint16_t rows, cols;
-
-    const auto BORDER_THICKNESS = _config.borderThickness;
-    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
-
-    if (_width  > 2 * BORDER_THICKNESS + _fontSet.getWidth() + SCROLLBAR_WIDTH &&
-        _height > 2 * BORDER_THICKNESS + _fontSet.getHeight())
-    {
-        uint16_t w = _width  - (2 * BORDER_THICKNESS + SCROLLBAR_WIDTH);
-        uint16_t h = _height - (2 * BORDER_THICKNESS);
-
-        rows = h / _fontSet.getHeight();
-        cols = w / _fontSet.getWidth();
-    }
-    else {
-        rows = cols = 1;
-    }
-
-    ASSERT(rows > 0 && cols > 0, "");
+    sizeToRowsCols(rows, cols);
 
     if (_open) {
         _tty->resize(rows, cols);
@@ -982,6 +973,50 @@ void Window::resize() {
     else {
         _pixmapCurrent = false;
     }
+}
+
+void Window::resizeToAccommodate(uint16_t rows, uint16_t cols) {
+    const auto BORDER_THICKNESS = _config.borderThickness;
+    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
+
+    uint32_t width  = 2 * BORDER_THICKNESS + cols * _fontSet->getWidth() + SCROLLBAR_WIDTH;
+    uint32_t height = 2 * BORDER_THICKNESS + rows * _fontSet->getHeight();
+
+    if (_width != width || _height != height) {
+        uint32_t values[] = { width, height };
+        auto cookie = xcb_configure_window(_basics.connection(),
+                                           _window,
+                                           XCB_CONFIG_WINDOW_WIDTH |
+                                           XCB_CONFIG_WINDOW_HEIGHT,
+                                           values);
+        if (!xcb_request_failed(_basics.connection(), cookie,
+                               "Failed to configure window")) {
+            xcb_flush(_basics.connection());
+            _deferralsAllowed = false;
+            _observer.sync();
+            _deferralsAllowed = true;
+        }
+    }
+}
+
+void Window::sizeToRowsCols(uint16_t & rows, uint16_t & cols) const {
+    const auto BORDER_THICKNESS = _config.borderThickness;
+    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
+
+    if (_width  > 2 * BORDER_THICKNESS + _fontSet->getWidth() + SCROLLBAR_WIDTH &&
+        _height > 2 * BORDER_THICKNESS + _fontSet->getHeight())
+    {
+        uint16_t w = _width  - (2 * BORDER_THICKNESS + SCROLLBAR_WIDTH);
+        uint16_t h = _height - (2 * BORDER_THICKNESS);
+
+        rows = h / _fontSet->getHeight();
+        cols = w / _fontSet->getWidth();
+    }
+    else {
+        rows = cols = 1;
+    }
+
+    ASSERT(rows > 0 && cols > 0, "");
 }
 
 // Terminal::I_Observer implementation:
@@ -1023,8 +1058,12 @@ void Window::terminalPaste(bool clipboard) throw () {
     xcb_flush(_basics.connection());
 }
 
-void Window::terminalResizeFont(int delta) throw () {
-    PRINT("Resize font: " << delta);
+void Window::terminalResizeLocalFont(int delta) throw () {
+    _fontManager.localDelta(this, delta);
+}
+
+void Window::terminalResizeGlobalFont(int delta) throw () {
+    _fontManager.globalDelta(delta);
 }
 
 void Window::terminalResetTitleAndIcon() throw () {
@@ -1054,11 +1093,13 @@ void Window::terminalBeep() throw () {
 }
 
 void Window::terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () {
+    resizeToAccommodate(rows, cols);
+
     const auto BORDER_THICKNESS = _config.borderThickness;
     const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
-    uint32_t width  = 2 * BORDER_THICKNESS + cols * _fontSet.getWidth() + SCROLLBAR_WIDTH;
-    uint32_t height = 2 * BORDER_THICKNESS + rows * _fontSet.getHeight();
+    uint32_t width  = 2 * BORDER_THICKNESS + cols * _fontSet->getWidth() + SCROLLBAR_WIDTH;
+    uint32_t height = 2 * BORDER_THICKNESS + rows * _fontSet->getHeight();
 
     if (_width != width || _height != height) {
         uint32_t values[] = { width, height };
@@ -1110,8 +1151,8 @@ void Window::terminalDrawBg(Pos    pos,
         int x, y;
         pos2XY(pos, x, y);
 
-        double w = count * _fontSet.getWidth();
-        double h = _fontSet.getHeight();
+        double w = count * _fontSet->getWidth();
+        double h = _fontSet->getHeight();
 
         auto bg = getColor(color);
         cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
@@ -1136,15 +1177,15 @@ void Window::terminalDrawFg(Pos             pos,
         auto layout = pango_cairo_create_layout(_cr);
         auto layoutGuard = scopeGuard([&] { g_object_unref(layout); });
 
-        auto font = _fontSet.get(attrs.get(Attr::ITALIC), attrs.get(Attr::BOLD));
+        auto font = _fontSet->get(attrs.get(Attr::ITALIC), attrs.get(Attr::BOLD));
         pango_layout_set_font_description(layout, font);
         pango_layout_set_width(layout, -1);
 
         int x, y;
         pos2XY(pos, x, y);
 
-        double w = count * _fontSet.getWidth();
-        double h = _fontSet.getHeight();
+        double w = count * _fontSet->getWidth();
+        double h = _fontSet->getHeight();
         cairo_rectangle(_cr, x, y, w, h);
         cairo_clip(_cr);
 
@@ -1180,7 +1221,7 @@ void Window::terminalDrawCursor(Pos             pos,
 
     cairo_save(_cr); {
         auto layout = pango_cairo_create_layout(_cr);
-        auto font   = _fontSet.get(attrs.get(Attr::ITALIC), attrs.get(Attr::BOLD));
+        auto font   = _fontSet->get(attrs.get(Attr::ITALIC), attrs.get(Attr::BOLD));
         pango_layout_set_font_description(layout, font);
 
         pango_layout_set_width(layout, -1);
@@ -1201,7 +1242,7 @@ void Window::terminalDrawCursor(Pos             pos,
 
         if (!focused) {
             cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
-            cairo_rectangle(_cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
+            cairo_rectangle(_cr, x, y, _fontSet->getWidth(), _fontSet->getHeight());
             cairo_fill(_cr);
         }
 
@@ -1209,14 +1250,14 @@ void Window::terminalDrawCursor(Pos             pos,
         cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
 
         if (focused) {
-            cairo_rectangle(_cr, x, y, _fontSet.getWidth(), _fontSet.getHeight());
+            cairo_rectangle(_cr, x, y, _fontSet->getWidth(), _fontSet->getHeight());
             cairo_fill(_cr);
             cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
         }
         else {
             cairo_rectangle(_cr,
                             x + 0.5, y + 0.5,
-                            _fontSet.getWidth() - 1.0, _fontSet.getHeight() - 1.0);
+                            _fontSet->getWidth() - 1.0, _fontSet->getHeight() - 1.0);
             cairo_stroke(_cr);
         }
 
@@ -1502,4 +1543,33 @@ void Window::terminalFixDamageEnd(bool internal,
 void Window::terminalChildExited(int exitStatus) throw () {
     PRINT("Child exited: " << exitStatus);
     _open = false;
+}
+
+// FontManager::I_Client implementation:
+
+void Window::useFontSet(FontSet * fontSet, int delta) throw () {
+    _fontSet = fontSet;
+
+    std::ostringstream ost;
+    ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
+    ost << "font: " << explicitSign(delta);
+    _temporaryTitle = true;
+    setTitle(ost.str());
+
+    resizeToAccommodate(_terminal->getRows(), _terminal->getCols());
+
+    uint16_t rows, cols;
+    sizeToRowsCols(rows, cols);
+
+    if (rows != _terminal->getRows() || cols != _terminal->getCols()) {
+        if (_open) {
+            _tty->resize(rows, cols);
+        }
+
+        _terminal->resize(rows, cols);      // Ok to resize if not open?
+    }
+
+    if (_mapped) {
+        draw(0, 0, _width, _height);
+    }
 }

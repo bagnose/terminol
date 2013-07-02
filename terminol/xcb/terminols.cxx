@@ -2,7 +2,7 @@
 
 #include "terminol/xcb/window.hxx"
 #include "terminol/xcb/color_set.hxx"
-#include "terminol/xcb/font_set.hxx"
+#include "terminol/xcb/font_manager.hxx"
 #include "terminol/xcb/basics.hxx"
 #include "terminol/common/deduper.hxx"
 #include "terminol/common/config.hxx"
@@ -130,7 +130,7 @@ class EventLoop :
     Deduper              _deduper;
     Basics               _basics;
     ColorSet             _colorSet;
-    FontSet              _fontSet;
+    FontManager          _fontManager;
     KeyMap               _keyMap;
     Windows              _windows;
     std::set<Window *>   _deferrals;
@@ -150,7 +150,7 @@ public:
         _deduper(),
         _basics(),
         _colorSet(config, _basics),
-        _fontSet(config, _basics),
+        _fontManager(config, _basics),
         _keyMap(),
         _finished(false)
     {
@@ -413,7 +413,7 @@ protected:
     void create() throw () {
         try {
             auto window = new Window(*this, _config, _deduper,
-                                     _basics, _colorSet, _fontSet, _keyMap);
+                                     _basics, _colorSet, _fontManager, _keyMap);
             auto id     = window->getWindowId();
             _windows.insert(std::make_pair(id, window));
         }

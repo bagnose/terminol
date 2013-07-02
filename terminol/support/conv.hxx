@@ -44,6 +44,14 @@ template <> inline bool unstringify<>(const std::string & str) throw (ParseError
     else { throw ParseError("Failed to unstringify: " + str); }
 }
 
+template <typename T> std::string explicitSign(T t) {
+    std::ostringstream ost;
+    if (t < 0) { ost << '-'; }
+    else       { ost << '+'; }
+    ost << std::abs(t);
+    return ost.str();
+}
+
 template <typename T> std::string nthStr(T t) {
     std::ostringstream ost;
     ost << t;

@@ -26,7 +26,7 @@ public:
         std::string message;
     };
 
-    FontSet(const Config & config, Basics & basics) throw (Error);
+    FontSet(const Config & config, Basics & basics, int delta) throw (Error);
     ~FontSet();
 
     PangoFontDescription * get(bool italic, bool bold) {

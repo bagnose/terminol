@@ -2,7 +2,7 @@
 
 #include "terminol/xcb/window.hxx"
 #include "terminol/xcb/color_set.hxx"
-#include "terminol/xcb/font_set.hxx"
+#include "terminol/xcb/font_manager.hxx"
 #include "terminol/xcb/basics.hxx"
 #include "terminol/common/deduper.hxx"
 #include "terminol/common/config.hxx"
@@ -27,7 +27,7 @@ class EventLoop :
     Deduper               _deduper;
     Basics                _basics;
     ColorSet              _colorSet;
-    FontSet               _fontSet;
+    FontManager           _fontManager;
     KeyMap                _keyMap;
     Window                _window;
     std::set<Window *>    _deferrals;
@@ -44,14 +44,14 @@ public:
         _deduper(),
         _basics(),
         _colorSet(config, _basics),
-        _fontSet(config, _basics),
+        _fontManager(config, _basics),
         _keyMap(),
         _window(*this,
                 config,
                 _deduper,
                 _basics,
                 _colorSet,
-                _fontSet,
+                _fontManager,
                 _keyMap,
                 command)
     {

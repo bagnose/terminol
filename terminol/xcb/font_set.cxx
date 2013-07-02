@@ -7,12 +7,15 @@
 #include <pango/pangocairo.h>
 
 FontSet::FontSet(const Config & config,
-                 Basics       & basics) throw (Error) :
+                 Basics       & basics,
+                 int            delta) throw (Error) :
     _config(config),
     _basics(basics)
 {
     const auto & name = _config.fontName;
-    auto size = _config.fontSize;
+    auto size = _config.fontSize + delta;
+
+    if (size <= 0) { throw Error("Too small"); }
 
     _normal = load(name, size, true, false, false);
     auto normalGuard = scopeGuard([&] { unload(_normal); });
