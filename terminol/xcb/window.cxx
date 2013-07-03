@@ -20,8 +20,8 @@ bool _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie
     auto error = xcb_request_check(connection, cookie);
     if (error) {
         std::cerr
-            << '[' << __FILE__ << ':' << line << "] ERROR: " << err_msg
-            << ". X Error Code: " << static_cast<int>(error->error_code)
+            << __FILE__ << ':' << line << ' ' << err_msg
+            << " (X Error Code: " << static_cast<int>(error->error_code) << ')'
             << std::endl;
         std::free(error);
         return true;

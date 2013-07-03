@@ -30,7 +30,7 @@ Tty::~Tty() {
 
 void Tty::resize(uint16_t rows, uint16_t cols) {
     ASSERT(_fd != -1, "");
-    struct winsize winsize = { rows, cols, 0, 0 };
+    const struct winsize winsize = { rows, cols, 0, 0 };
     ENFORCE_SYS(::ioctl(_fd, TIOCSWINSZ, &winsize) != -1, "");
 }
 
@@ -213,8 +213,8 @@ bool Tty::pollReap(int & exitCode, int msec) {
     ASSERT(msec >= 0, "");
 
     for (;;) {
-        int stat;
-        pid_t pid = ::waitpid(_pid, &stat, WNOHANG);
+        int  stat;
+        auto pid = TEMP_FAILURE_RETRY(::waitpid(_pid, &stat, WNOHANG));
         ENFORCE_SYS(pid != -1, "::waitpid() failed.");
         if (pid != 0) {
             ENFORCE(pid == _pid, "pid mismatch.");
