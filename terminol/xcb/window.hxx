@@ -70,6 +70,8 @@ private:
     bool              _deferralsAllowed;
     bool              _deferred;
 
+    bool              _transientTitle;
+
 public:
     struct Error {
         explicit Error(const std::string & message_) : message(message_) {}
@@ -134,6 +136,8 @@ protected:
 
     void updateTitle();
     void updateIcon();
+
+    void setTitle(const std::string & title);
 
     void draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
     void drawBorder();

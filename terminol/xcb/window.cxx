@@ -69,7 +69,8 @@ Window::Window(I_Observer         & observer,
     _lastPressTime(0),
     _button(XCB_BUTTON_INDEX_ANY),
     _deferralsAllowed(true),
-    _deferred(false)
+    _deferred(false),
+    _transientTitle(false)
 {
     auto rows = _config.initialRows;
     auto cols = _config.initialCols;
@@ -244,7 +245,12 @@ void Window::keyPress(xcb_key_press_event_t * event) {
     ModifierSet  modifiers;
 
     if (_basics.getKeySym(event->detail, event->state, keySym, modifiers)) {
-        _terminal->keyPress(keySym, modifiers);
+        if (_terminal->keyPress(keySym, modifiers)) {
+            if (_transientTitle) {
+                _transientTitle = false;
+                updateTitle();
+            }
+        }
     }
 }
 
@@ -753,23 +759,7 @@ void Window::updateTitle() {
     ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
     ost << _title;
 
-    const auto & fullTitle = ost.str();
-
-#if 1
-    xcb_icccm_set_wm_name(_basics.connection(),
-                          _window,
-                          XCB_ATOM_STRING,
-                          8,
-                          fullTitle.size(),
-                          fullTitle.data());
-#else
-    xcb_ewmh_set_wm_name(_basics.ewmhConnection(),
-                         _window,
-                         fullTitle.size(),
-                         fullTitle.data());
-#endif
-
-    xcb_flush(_basics.connection());
+    setTitle(ost.str());
 }
 
 void Window::updateIcon() {
@@ -799,6 +789,25 @@ void Window::updateIcon() {
                               fullIcon.size(),
                               fullIcon.data());
 #endif
+}
+
+void Window::setTitle(const std::string & title) {
+
+#if 1
+    xcb_icccm_set_wm_name(_basics.connection(),
+                          _window,
+                          XCB_ATOM_STRING,
+                          8,
+                          title.size(),
+                          title.data());
+#else
+    xcb_ewmh_set_wm_name(_basics.ewmhConnection(),
+                         _window,
+                         title.size(),
+                         title.data());
+#endif
+
+    xcb_flush(_basics.connection());
 }
 
 void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
@@ -961,7 +970,9 @@ void Window::resize() {
 
     _terminal->resize(rows, cols);      // Ok to resize if not open?
 
-    updateTitle();
+    if (!_transientTitle) {
+        updateTitle();
+    }
 
     if (_mapped) {
         ASSERT(_pixmap, "");

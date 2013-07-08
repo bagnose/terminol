@@ -172,7 +172,7 @@ public:
 
     void     redraw(Pos begin, Pos end);
 
-    void     keyPress(xkb_keysym_t keySym, ModifierSet modifiers);
+    bool     keyPress(xkb_keysym_t keySym, ModifierSet modifiers);
     void     buttonPress(Button button, int count, ModifierSet modifiers,
                          bool within, Pos pos);
     void     buttonMotion(ModifierSet modifiers, bool within, Pos pos);

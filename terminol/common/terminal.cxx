@@ -171,7 +171,7 @@ void Terminal::redraw(Pos begin, Pos end) {
     fixDamage(begin, end, Damager::EXPOSURE);
 }
 
-void Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
+bool Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
     if (!handleKeyBinding(keySym, modifiers) && _keyMap.isPotent(keySym)) {
         if (_config.scrollOnTtyKeyPress && _buffer->scrollBottomHistory()) {
             fixDamage(Pos(0, 0),
@@ -203,6 +203,11 @@ void Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
             write(&str.front(), str.size());
             if (_modes.get(Mode::ECHO)) { echo(&str.front(), str.size()); }
         }
+
+        return true;
+    }
+    else {
+        return false;
     }
 }
 
