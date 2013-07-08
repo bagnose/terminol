@@ -391,6 +391,12 @@ protected:
                 if (i != _windows.end()) { i->second->selectionRequest(e); }
                 break;
             }
+            case XCB_CLIENT_MESSAGE: {
+                auto e = reinterpret_cast<xcb_client_message_event_t *>(event);
+                auto i = _windows.find(e->window);
+                if (i != _windows.end()) { i->second->clientMessage(e); }
+                break;
+            }
             default:
                 PRINT("Unrecognised event: " << static_cast<int>(responseType));
                 break;

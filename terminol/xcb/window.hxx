@@ -73,6 +73,7 @@ private:
     bool              _deferred;
 
     bool              _transientTitle;
+    bool              _hadDeleteRequest;
 
 public:
     struct Error {
@@ -125,6 +126,7 @@ public:
     void selectionClear(xcb_selection_clear_event_t * event);
     void selectionNotify(xcb_selection_notify_event_t * event);
     void selectionRequest(xcb_selection_request_event_t * event);
+    void clientMessage(xcb_client_message_event_t * event);
 
     // Deferral:
 
@@ -148,6 +150,8 @@ protected:
     void resizeToAccommodate(uint16_t rows, uint16_t cols);
 
     void sizeToRowsCols(uint16_t & rows, uint16_t & cols) const;
+
+    void handleDelete();
 
     // Terminal::I_Observer implementation:
 

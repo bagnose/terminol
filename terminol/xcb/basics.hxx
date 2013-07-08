@@ -28,6 +28,8 @@ class Basics : protected Uncopyable {
     xcb_atom_t              _atomClipboard;
     xcb_atom_t              _atomUtf8String;
     xcb_atom_t              _atomTargets;
+    xcb_atom_t              _atomWmProtocols;
+    xcb_atom_t              _atomWmDeleteWindow;
 
     uint8_t                 _maskShift;
     uint8_t                 _maskAlt;
@@ -61,6 +63,8 @@ public:
     xcb_atom_t              atomClipboard()        { return _atomClipboard; }
     xcb_atom_t              atomUtf8String()       { return _atomUtf8String; }
     xcb_atom_t              atomTargets()          { return _atomTargets; }
+    xcb_atom_t              atomWmProtocols()      { return _atomWmProtocols; }
+    xcb_atom_t              atomWmDeleteWindow()   { return _atomWmDeleteWindow; }
 
     bool                    getKeySym(xcb_keycode_t  keyCode,
                                       uint8_t        state,

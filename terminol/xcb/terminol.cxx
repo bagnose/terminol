@@ -213,6 +213,10 @@ protected:
                 _window.selectionRequest(
                         reinterpret_cast<xcb_selection_request_event_t *>(event));
                 break;
+            case XCB_CLIENT_MESSAGE:
+                _window.clientMessage(
+                        reinterpret_cast<xcb_client_message_event_t *>(event));
+                break;
             default:
                 PRINT("Unrecognised event: " << static_cast<int>(responseType));
                 break;

@@ -64,11 +64,13 @@ Basics::Basics() throw (Error) {
     auto ewmhConnectionGuard =
         scopeGuard([&] { xcb_ewmh_connection_wipe(&_ewmhConnection); } );
 
-    _atomPrimary    = XCB_ATOM_PRIMARY;
-    _atomClipboard  = lookupAtom("CLIPBOARD");
-    _atomUtf8String = lookupAtom("UTF8_STRING");    // XXX fall back on XB_ATOM_STRING
+    _atomPrimary        = XCB_ATOM_PRIMARY;
+    _atomClipboard      = lookupAtom("CLIPBOARD");
+    _atomUtf8String     = lookupAtom("UTF8_STRING");    // XXX fall back on XB_ATOM_STRING
     if (_atomUtf8String == XCB_ATOM_NONE) { _atomUtf8String = XCB_ATOM_STRING; }
-    _atomTargets    = lookupAtom("TARGETS");
+    _atomTargets        = lookupAtom("TARGETS");
+    _atomWmProtocols    = lookupAtom("WM_PROTOCOLS");
+    _atomWmDeleteWindow = lookupAtom("WM_DELETE_WINDOW");
 
     determineMasks();
 

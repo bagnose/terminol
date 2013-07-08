@@ -31,6 +31,7 @@ public:
     int  getFd() { ASSERT(_fd != -1, ""); return _fd; } // Only perform select() on me.
     void resize(uint16_t rows, uint16_t cols);
     int  close();
+    bool hasSubprocess();
 
     // I_Tty implementation (Used by Terminal):
 

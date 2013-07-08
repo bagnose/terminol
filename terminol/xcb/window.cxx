@@ -71,7 +71,8 @@ Window::Window(I_Observer         & observer,
     _button(XCB_BUTTON_INDEX_ANY),
     _deferralsAllowed(true),
     _deferred(false),
-    _transientTitle(false)
+    _transientTitle(false),
+    _hadDeleteRequest(false)
 {
     _fontSet = _fontManager.addClient(this);
     ASSERT(_fontSet, "");
@@ -254,6 +255,10 @@ void Window::keyPress(xcb_key_press_event_t * event) {
 
     if (_basics.getKeySym(event->detail, event->state, keySym, modifiers)) {
         if (_terminal->keyPress(keySym, modifiers)) {
+            if (_hadDeleteRequest) {
+                _hadDeleteRequest = false;
+            }
+
             if (_transientTitle) {
                 _transientTitle = false;
                 updateTitle();
@@ -621,6 +626,14 @@ void Window::selectionRequest(xcb_selection_request_event_t * event) {
     xcb_flush(_basics.connection());        // Required?
 }
 
+void Window::clientMessage(xcb_client_message_event_t * event) {
+    if (event->type == _basics.atomWmProtocols()) {
+        if (event->data.data32[0] == _basics.atomWmDeleteWindow()) {
+            handleDelete();
+        }
+    }
+}
+
 void Window::deferral() {
     ASSERT(_deferred, "");
     handleResize();
@@ -700,7 +713,10 @@ void Window::icccmConfigure() {
     // xcb_icccm_set_wm_protocols
     //
 
-    // TODO
+    xcb_atom_t wmDeleteWindow = _basics.atomWmDeleteWindow();
+    xcb_icccm_set_wm_protocols(_basics.connection(), _window,
+                               _basics.atomWmProtocols(),
+                               1, &wmDeleteWindow);
 }
 
 void Window::pos2XY(Pos pos, int & x, int & y) const {
@@ -1017,6 +1033,22 @@ void Window::sizeToRowsCols(uint16_t & rows, uint16_t & cols) const {
     }
 
     ASSERT(rows > 0 && cols > 0, "");
+}
+
+void Window::handleDelete() {
+    if (_tty->hasSubprocess()) {
+        if (_hadDeleteRequest) {
+            xcb_destroy_window(_basics.connection(), _window);
+        }
+        else {
+            _hadDeleteRequest = true;
+            _transientTitle   = true;
+            setTitle("Process is running, once more to verify...");
+        }
+    }
+    else {
+        xcb_destroy_window(_basics.connection(), _window);
+    }
 }
 
 // Terminal::I_Observer implementation:
@@ -1553,7 +1585,7 @@ void Window::useFontSet(FontSet * fontSet, int delta) throw () {
     std::ostringstream ost;
     ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
     ost << "font: " << explicitSign(delta);
-    _temporaryTitle = true;
+    _transientTitle = true;
     setTitle(ost.str());
 
     resizeToAccommodate(_terminal->getRows(), _terminal->getCols());

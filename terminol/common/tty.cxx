@@ -208,6 +208,41 @@ int Tty::close() {
     return waitReap();
 }
 
+#include <fstream>
+
+namespace {
+
+std::string nthToken(const std::string & str, size_t n) throw (ParseError) {
+    size_t i = 0;
+    size_t j = 0;
+
+    do {
+        if (j == std::string::npos) { throw ParseError(""); }
+        i = str.find_first_not_of(" \t", j);
+        if (i == std::string::npos) { throw ParseError(""); }
+        j = str.find_first_of(" \t", i);
+        --n;
+    } while (n != 0);
+
+    if (j == std::string::npos) { j = str.size(); }
+    if (i == j) { throw ParseError(""); }
+
+    return str.substr(i, j - i);
+}
+
+} // namespace {anonymous}
+
+bool Tty::hasSubprocess() {
+    std::ostringstream ost;
+    ost << "/proc/" << _pid << "/stat";
+    std::ifstream ifs(ost.str().c_str());
+    if (!ifs.good()) { return false; }
+    std::string line;
+    if (!getline(ifs, line).good()) { return false; }
+    auto pid = unstringify<pid_t>(nthToken(line, 8));
+    return pid != _pid;
+}
+
 bool Tty::pollReap(int & exitCode, int msec) {
     ASSERT(_pid != 0, "");
     ASSERT(msec >= 0, "");
