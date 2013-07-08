@@ -261,12 +261,12 @@ protected:
 
             ASSERT(event, "Null event");
             auto guard         = scopeGuard([event] { std::free(event); });
-            auto response_type = XCB_EVENT_RESPONSE_TYPE(event);
-            if (response_type == 0) {
+            auto responseType = XCB_EVENT_RESPONSE_TYPE(event);
+            if (responseType == 0) {
                 ERROR("Zero response type");
             }
             else {
-                dispatch(response_type, event);
+                dispatch(responseType, event);
             }
         }
 
@@ -275,8 +275,8 @@ protected:
         }
     }
 
-    void dispatch(uint8_t response_type, xcb_generic_event_t * event) {
-        switch (response_type) {
+    void dispatch(uint8_t responseType, xcb_generic_event_t * event) {
+        switch (responseType) {
             case XCB_KEY_PRESS: {
                 auto e = reinterpret_cast<xcb_key_press_event_t *>(event);
                 auto i = _windows.find(e->event);
@@ -392,7 +392,7 @@ protected:
                 break;
             }
             default:
-                PRINT("Unrecognised event: " << static_cast<int>(response_type));
+                PRINT("Unrecognised event: " << static_cast<int>(responseType));
                 break;
         }
     }
