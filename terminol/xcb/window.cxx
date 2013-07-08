@@ -1388,7 +1388,7 @@ void Window::terminalDrawSelection(Pos  begin,
     double fg[4] = { 0.0, 0.5, 1.0, 1.0 };
 
     if (begin.row == end.row) {
-        ASSERT(!topless && !bottomless, "");
+        ASSERT(!topless && !bottomless, "");            // THIS HAS FIRED with topless == true
         ASSERT(begin.col < end.col, "");
 
         //       0                  1
