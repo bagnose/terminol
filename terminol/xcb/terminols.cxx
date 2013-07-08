@@ -244,13 +244,15 @@ protected:
         }
     }
 
-    void xevent(bool block = false) throw (Error) {
+    void xevent(bool waitForConfigure = false) throw (Error) {
         for (;;) {
             xcb_generic_event_t * event;
 
-            if (block) {
+            if (waitForConfigure) {
                 event = ::xcb_wait_for_event(_basics.connection());
-                block = false;
+                if (XCB_EVENT_RESPONSE_TYPE(event) == XCB_CONFIGURE_NOTIFY) {
+                    waitForConfigure = false;
+                }
             }
             else {
                 event = ::xcb_poll_for_event(_basics.connection());
