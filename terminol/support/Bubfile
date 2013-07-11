@@ -1,6 +1,0 @@
-static-lib support
-  :
-  debug.hxx conv.hxx time.hxx pattern.hxx escape.hxx
-  :
-  debug.cxx conv.cxx time.cxx pattern.cxx escape.cxx
-  ;
