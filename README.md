@@ -9,20 +9,17 @@ change CC/CXX to gcc/g++, respectively).
 
 Brief build instructions:
 
-    # get and install 'bub' from: https://github.com/GrahamStJack/bottom-up-build
-    # get terminol:
-    git clone https://github.com/bagnose/terminol
-    cd terminol
-    bub-config --mode=debug ${BUILDDIR}
-    # or --mode=release
-    cd ${BUILDDIR}
-    bub -j3
+    # Build only
+    make MODE=debug BUILDDIR=build/debug
     # launch a standalone window:
-    ./dist/bin/terminol
+    ./build/debug/dist/bin/terminol
     # or launch the daemon (FIFO is /tmp/terminols-${USER}, by default)
-    ./dist/bin/terminols
+    ./build/debug/dist/bin/terminols
     # and start windows with:
-    ./dist/bin/terminolc
+    ./build/debug/dist/bin/terminolc
+
+    # Install binaries
+    make MODE=debug BUILDDIR=build/debug INSTALLDIR=/usr/local install
 
 Noteworthy Features:
 
