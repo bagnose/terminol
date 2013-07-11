@@ -152,7 +152,7 @@ public:
     void clearRight(uint16_t beginCol) {
         trim();
 
-        _wrap = 0; _cont = false;
+        _wrap = std::min(_wrap, beginCol);
         std::fill(begin() + beginCol, end(), Cell::blank());
         damageAdd(beginCol, _cells.size());
     }
