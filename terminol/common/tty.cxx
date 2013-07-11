@@ -185,22 +185,22 @@ int Tty::close() {
     int exitCode;
 
     // Maybe the child has already died.
-    if (pollReap(exitCode, 0)) { return exitCode; }
+    if (pollReap(0, exitCode)) { return exitCode; }
 
     ::kill(_pid, SIGCONT);
     ::kill(_pid, SIGPIPE);
 
     // Give the child a chance to exit nicely.
-    if (pollReap(exitCode, 100)) { return exitCode; }
+    if (pollReap(100, exitCode)) { return exitCode; }
     PRINT("Sending SIGINT.");
     ::kill(_pid, SIGINT);
-    if (pollReap(exitCode, 100)) { return exitCode; }
+    if (pollReap(100, exitCode)) { return exitCode; }
     PRINT("Sending SIGTERM.");
     ::kill(_pid, SIGTERM);
-    if (pollReap(exitCode, 100)) { return exitCode; }
+    if (pollReap(100, exitCode)) { return exitCode; }
     PRINT("Sending SIGQUIT.");
     ::kill(_pid, SIGQUIT);
-    if (pollReap(exitCode, 100)) { return exitCode; }
+    if (pollReap(100, exitCode)) { return exitCode; }
     PRINT("Sending SIGKILL.");
 
     // Too slow - knock it on the head.
@@ -243,7 +243,7 @@ bool Tty::hasSubprocess() {
     return pid != _pid;
 }
 
-bool Tty::pollReap(int & exitCode, int msec) {
+bool Tty::pollReap(int msec, int & exitCode) {
     ASSERT(_pid != 0, "");
     ASSERT(msec >= 0, "");
 

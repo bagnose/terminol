@@ -46,7 +46,7 @@ protected:
     void execShell(const std::string & windowId,
                    const Command     & command);
 
-    bool pollReap(int & exitCode, int msec);
+    bool pollReap(int msec, int & exitCode);
     int  waitReap();
 };
 
