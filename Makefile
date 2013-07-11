@@ -73,6 +73,9 @@ install: all
 clean:
 	rm -rf $(BUILDDIR)/obj $(BUILDDIR)/dist
 
+aur:
+	cd pkg && rm -f *.xz && makepkg -s && rm -rf pkg src terminol
+
 $(BUILDDIR)/obj/%.o: %.cxx
 ifeq ($(VERBOSE),false)
 	@echo " [CXX] $(<F)"
