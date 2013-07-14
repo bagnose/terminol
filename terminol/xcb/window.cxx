@@ -777,7 +777,7 @@ void Window::updateTitle() {
     std::ostringstream ost;
 
 #if DEBUG
-    ost << "<DEBUG> ";
+    ost << VERSION " ";
 #endif
 
     ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
@@ -792,7 +792,7 @@ void Window::updateIcon() {
     std::ostringstream ost;
 
 #if DEBUG
-    ost << "<DEBUG> ";
+    ost << VERSION " ";
 #endif
 
     ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";

@@ -1,18 +1,18 @@
 pkgname=terminol-git
 _pkgname=terminol
-pkgver=20130711.02f5ac0
+pkgver=20130711.240aee8
 pkgrel=1
 pkgdesc='A simple terminal emulator'
+arch=(i686 x86_64)
 url='https://github.com/bagnose/terminol'
 arch=('i686' 'x86_64')
 license=('GPL')
 depends=('pango' 'fontconfig' 'xcb-util' 'xcb-util-wm' 'libxkbcommon')
 makedepends=('git')
 source=('git://github.com/bagnose/terminol.git')
-sha1sums=('SKIP')
-
 provides=("${_pkgname}")
 conflicts=("${_pkgname}")
+sha1sums=('SKIP')
 
 pkgver() {
     cd "${srcdir}/${_pkgname}"
@@ -25,10 +25,12 @@ prepare() {
 
 build() {
     cd "${srcdir}/${_pkgname}"
+    ./configure "${srcdir}/${_pkgname}-build" release gnu
+    cd "${srcdir}/${_pkgname}-build"
     make
 }
 
 package() {
-    cd "${srcdir}/${_pkgname}"
+    cd "${srcdir}/${_pkgname}-build"
     make INSTALLDIR="${pkgdir}/usr" install
 }
