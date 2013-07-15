@@ -1,6 +1,6 @@
 pkgname=terminol-git
 _pkgname=terminol
-pkgver=20130711.240aee8
+pkgver=20130715.0122ec4
 pkgrel=1
 pkgdesc='A simple terminal emulator'
 arch=(i686 x86_64)
@@ -25,12 +25,12 @@ prepare() {
 
 build() {
     cd "${srcdir}/${_pkgname}"
-    ./configure "${srcdir}/${_pkgname}-build" release gnu
-    cd "${srcdir}/${_pkgname}-build"
+    ./configure "${srcdir}/build" release gnu
+    cd "${srcdir}/build"
     make
 }
 
 package() {
-    cd "${srcdir}/${_pkgname}-build"
+    cd "${srcdir}/build"
     make INSTALLDIR="${pkgdir}/usr" install
 }
