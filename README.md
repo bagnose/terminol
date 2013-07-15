@@ -3,23 +3,24 @@ terminol
 
 A simple terminal emulator currently under heavy development.
 
-Requires bub (bottom-up-build), xkb, xcb, pango, cairo and a C++11
-compiler (uses clang by default - you may want to edit bub.cfg and
-change CC/CXX to gcc/g++, respectively).
+Requires xkb, xcb, pango, cairo and a C++11 compiler.
 
-Brief build instructions:
+Brief build instructions (see notes below on setting up a configuration file
+or your fonts may suck):
 
-    # Build only
-    make MODE=debug BUILDDIR=build/debug
+    # Build
+    ./configure ./build debug gnu
+    cd build
+    make
     # launch a standalone window:
-    ./build/debug/dist/bin/terminol
+    ./dist/bin/terminol
     # or launch the daemon (FIFO is /tmp/terminols-${USER}, by default)
-    ./build/debug/dist/bin/terminols
+    ./dist/bin/terminols
     # and start windows with:
-    ./build/debug/dist/bin/terminolc
+    ./dist/bin/terminolc
 
     # Install binaries
-    make MODE=debug BUILDDIR=build/debug INSTALLDIR=/usr/local install
+    make INSTALLDIR=/usr/local install
 
 Noteworthy Features:
 
@@ -44,6 +45,11 @@ To come:
 You may wish to create a config file like the following:
 
     # ~/.config/terminol/config
+    #
+    # Search order:
+    #   ${XDG_CONFIG_HOME}/terminol/config
+    #   ${XDG_CONFIG_DIRS...}/terminol/config
+    #   ${HOME}/.config/terminol/config
     
     set serverFork true
     
