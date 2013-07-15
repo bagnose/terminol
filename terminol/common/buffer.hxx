@@ -825,7 +825,7 @@ public:
         //
 
         if (cols > _cols) {
-            uint16_t availability;
+            uint16_t availability = 0;
             uint16_t r = 0;
 
             while (r != _active.size()) {
