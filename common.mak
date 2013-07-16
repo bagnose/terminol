@@ -1,19 +1,23 @@
 INSTALLDIR  ?= ~/local/terminol
 VERBOSE     ?= false
-VERSION     ?= $(shell cd $(SRCDIR) && git log -1 --format='%cd.%h' --date=short | tr -d -)
+VERSION     ?= $(shell cd src && git log -1 --format='%cd.%h' --date=short | tr -d -)
 
 PCMODULES   := pangocairo pango cairo fontconfig xcb-keysyms xcb-icccm xcb-ewmh xcb-util xkbcommon
 
 ifeq ($(shell pkg-config $(PCMODULES) && echo installed),)
-  $(error Some package is not installed from: $(PCMODULES))
+  $(error Missing packages from: $(PCMODULES))
 endif
 
 PKG_CFLAGS  := $(shell pkg-config --cflags $(PCMODULES))
 PKG_LDFLAGS := $(shell pkg-config --libs   $(PCMODULES))
 
-CPPFLAGS    := -MD -iquotesrc -DVERSION=\"$(VERSION)\"
+CPPFLAGS    := -iquotesrc -DVERSION=\"$(VERSION)\"
 CXXFLAGS    := -fpic -fno-rtti -pedantic -std=c++11
-WFLAGS      := -Werror -Wextra -Wall -Wno-long-long -Wundef -Wredundant-decls -Wshadow -Wsign-compare -Wredundant-decls -Wmissing-field-initializers -Wno-format-zero-length -Wno-unused-function -Woverloaded-virtual -Wsign-promo -Wctor-dtor-privacy -Wnon-virtual-dtor
+WFLAGS      := -Werror -Wextra -Wall -Wno-long-long -Wundef \
+               -Wredundant-decls -Wshadow -Wsign-compare \
+               -Wmissing-field-initializers -Wno-format-zero-length \
+               -Wno-unused-function -Woverloaded-virtual -Wsign-promo \
+               -Wctor-dtor-privacy -Wnon-virtual-dtor
 AR          := ar
 ARFLAGS     := csr
 LDFLAGS     :=
@@ -75,7 +79,6 @@ all:
 info:
 	@echo 'CPPFLAGS: $(CPPFLAGS)'
 	@echo 'CXXFLAGS: $(CXXFLAGS)'
-	@echo 'WFLAGS:   $(WFLAGS)'
 	@echo 'LDFLAGS:  $(LDFLAGS)'
 
 install: all
@@ -84,7 +87,7 @@ install: all
 	install -D dist/bin/terminolc $(INSTALLDIR)/bin/terminolc
 
 clean:
-	rm -rf obj dist $(CACHE_FILE)
+	rm -rf obj priv dist
 
 ifeq ($(MODE),coverage)
 reset-coverage:
@@ -99,9 +102,9 @@ endif
 
 obj/%.o: src/%.cxx
 ifeq ($(VERBOSE),false)
-	@echo ' [CXX] $(<F)'
+	@echo ' [CXX] $(@F)'
 endif
-	$(V)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(WFLAGS) -c $< -o $@ -DVERSION=\"$(VERSION)\"
+	$(V)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(WFLAGS) -c $< -o $@ -DVERSION=\"$(VERSION)\" -MMD -MF $(patsubst %.o,%.dep,$@)
 
 # $(1) stem
 # $(2) name
@@ -111,7 +114,7 @@ endif
 define LIBRARY
 $(1)_SRC := $$(addprefix $(3)/src/,$(4))
 $(1)_OBJ := $$(addprefix obj/$(3)/,$$(patsubst %.cxx,%.o,$(4)))
-$(1)_DEP := $$(patsubst %.o,%.d,$$($(1)_OBJ))
+$(1)_DEP := $$(patsubst %.o,%.dep,$$($(1)_OBJ))
 $(1)_LIB := $$(addprefix obj/,lib$(2)-s.a)
 
 -include $$($(1)_DEP)
@@ -141,18 +144,21 @@ endef
 # $(5) CXXFLAGS
 # $(6) libraries
 # $(7) LDFLAGS
-define EXE
-$(1)_SRC := $$(addprefix $(3)/src/,$(4))
-$(1)_OBJ := $$(addprefix obj/$(3)/,$$(patsubst %.cxx,%.o,$(4)))
-$(1)_DEP := $$(patsubst %.o,%.d,$$($(1)_OBJ))
-$(1)_EXE := $$(addprefix dist/bin/,$(2))
-$(1)_LIB := $$(addsuffix -s.a,$$(addprefix obj/lib,$(6)))
+define TEST
+$(1)_SRC  := $$(addprefix $(3)/src/,$(4))
+$(1)_OBJ  := $$(addprefix obj/$(3)/,$$(patsubst %.cxx,%.o,$(4)))
+$(1)_DEP  := $$(patsubst %.o,%.dep,$$($(1)_OBJ))
+$(1)_LIB  := $$(addsuffix -s.a,$$(addprefix obj/lib,$(6)))
+$(1)_DIR  := priv/$(3)
+$(1)_TEST := $$(addprefix $$($(1)_DIR)/,$(2))
+$(1)_OUT  := $$($(1)_TEST).out
+$(1)_PASS := $$($(1)_TEST).pass
 
 -include $$($(1)_DEP)
 
-ifeq (,$(findstring dist/bin,$(DIRS_DONE)))
-DIRS_DONE += dist/bin
-dist/bin:
+ifeq (,$$(findstring $$($(1)_DIR),$(DIRS_DONE)))
+DIRS_DONE += $$($(1)_DIR)
+$$($(1)_DIR):
 ifeq ($(VERBOSE),false)
 	@echo ' [DIR] $$@'
 endif
@@ -161,7 +167,48 @@ endif
 
 $$($(1)_OBJ): | obj/$(3)
 
-$$($(1)_EXE): $$($(1)_OBJ) $$($(1)_LIB) | dist/bin
+$$($(1)_TEST): $$($(1)_OBJ) $$($(1)_LIB) | $$($(1)_DIR)
+ifeq ($(VERBOSE),false)
+	@echo ' [TST] $$(@F)'
+endif
+	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(1)_OBJ) $$($(1)_LIB) $(7)
+
+$$($(1)_PASS): $$($(1)_TEST)
+	@echo ' [RUN] $$(<F)'
+	@$$($(1)_TEST) > $$($(1)_OUT) 2>&1 && touch $$@ || (rm -f $$@ && echo "Test failed '$(2)'." && cat $$($(1)_OUT))
+
+all: $$($(1)_PASS)
+endef
+
+# $(1) stem
+# $(2) name
+# $(3) directory
+# $(4) sources
+# $(5) CXXFLAGS
+# $(6) libraries
+# $(7) LDFLAGS
+define EXE
+$(1)_SRC := $$(addprefix $(3)/src/,$(4))
+$(1)_OBJ := $$(addprefix obj/$(3)/,$$(patsubst %.cxx,%.o,$(4)))
+$(1)_DEP := $$(patsubst %.o,%.dep,$$($(1)_OBJ))
+$(1)_LIB := $$(addsuffix -s.a,$$(addprefix obj/lib,$(6)))
+$(1)_DIR := dist/bin
+$(1)_EXE := $$(addprefix $$($(1)_DIR)/,$(2))
+
+-include $$($(1)_DEP)
+
+ifeq (,$$(findstring $$($(1)_DIR),$(DIRS_DONE)))
+DIRS_DONE += $$($(1)_DIR)
+$$($(1)_DIR):
+ifeq ($(VERBOSE),false)
+	@echo ' [DIR] $$@'
+endif
+	$(V)mkdir -p $$@
+endif
+
+$$($(1)_OBJ): | obj/$(3)
+
+$$($(1)_EXE): $$($(1)_OBJ) $$($(1)_LIB) | $$($(1)_DIR)
 ifeq ($(VERBOSE),false)
 	@echo ' [EXE] $$($(1)_EXE)'
 endif
@@ -170,17 +217,23 @@ endif
 all: $$($(1)_EXE)
 endef
 
+#
+# SUPPORT
+#
+
 $(eval $(call LIBRARY,SUPPORT,terminol-support,terminol/support,conv.cxx debug.cxx escape.cxx pattern.cxx time.cxx,))
 
-$(eval $(call LIBRARY,COMMON,terminol-common,terminol/common,ascii.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx test_parser.cxx test_support.cxx test_utf8.cxx tty.cxx utf8.cxx vt_state_machine.cxx,))
+$(eval $(call TEST,TEST_SUPPORT,test-support,terminol/support,test_support.cxx,,terminol-support))
 
-$(eval $(call LIBRARY,XCB,terminol-xcb,terminol/xcb,basics.cxx color_set.cxx font_manager.cxx font_set.cxx window.cxx,$(PKG_CFLAGS)))
+#
+# COMMON
+#
 
-$(eval $(call EXE,TERMINOL,terminol,terminol/xcb,terminol.cxx,$(PKG_CFLAGS),terminol-xcb terminol-common terminol-support,$(PKG_LDFLAGS) -lutil))
+$(eval $(call LIBRARY,COMMON,terminol-common,terminol/common,ascii.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,))
 
-$(eval $(call EXE,TERMINOLS,terminols,terminol/xcb,terminols.cxx,$(PKG_CFLAGS),terminol-xcb terminol-common terminol-support,$(PKG_LDFLAGS) -lutil))
+$(eval $(call TEST,PARSER,test-parser,terminol/common,test_parser.cxx,,terminol-common terminol-support))
 
-$(eval $(call EXE,TERMINOLC,terminolc,terminol/xcb,terminolc.cxx,,terminol-common terminol-support,))
+$(eval $(call TEST,UTF8,test-utf8,terminol/common,test_utf8.cxx,,terminol-common terminol-support))
 
 $(eval $(call EXE,ABUSE,abuse,terminol/common,abuse.cxx,,terminol-common terminol-support,))
 
@@ -189,3 +242,15 @@ $(eval $(call EXE,SEQUENCER,sequencer,terminol/common,sequencer.cxx,,terminol-co
 $(eval $(call EXE,STYLES,styles,terminol/common,styles.cxx,,terminol-common terminol-support,))
 
 $(eval $(call EXE,DROPPINGS,droppings,terminol/common,droppings.cxx,,terminol-common terminol-support,))
+
+#
+# XCB
+#
+
+$(eval $(call LIBRARY,XCB,terminol-xcb,terminol/xcb,basics.cxx color_set.cxx font_manager.cxx font_set.cxx window.cxx,$(PKG_CFLAGS)))
+
+$(eval $(call EXE,TERMINOL,terminol,terminol/xcb,terminol.cxx,$(PKG_CFLAGS),terminol-xcb terminol-common terminol-support,$(PKG_LDFLAGS) -lutil))
+
+$(eval $(call EXE,TERMINOLS,terminols,terminol/xcb,terminols.cxx,$(PKG_CFLAGS),terminol-xcb terminol-common terminol-support,$(PKG_LDFLAGS) -lutil))
+
+$(eval $(call EXE,TERMINOLC,terminolc,terminol/xcb,terminolc.cxx,,terminol-common terminol-support,))

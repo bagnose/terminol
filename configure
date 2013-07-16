@@ -23,15 +23,14 @@ if [ -e ${BUILDDIR} ]; then
   exit 1
 fi
 
-mkdir -p ${BUILDDIR}/src
-ln -s ${PWD}/terminol ${BUILDDIR}/src
+mkdir -p ${BUILDDIR}
+ln -s ${PWD} ${BUILDDIR}/src
 
 cat <<EOF > ${BUILDDIR}/Makefile
 MODE     ?= ${MODE}
 COMPILER ?= ${COMPILER}
-SRCDIR   ?= ${PWD}
 
-include ${PWD}/common.mak
+include src/common.mak
 EOF
 
 echo "${BUILDDIR} is ready to roll."
