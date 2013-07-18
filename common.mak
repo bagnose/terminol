@@ -1,6 +1,7 @@
 INSTALLDIR  ?= ~/local/terminol
 VERBOSE     ?= false
-VERSION     ?= $(shell cd src && git log -1 --format='%cd.%h' --date=short | tr -d -)
+VERSION     ?= $(shell git --git-dir=src/.git log -1 --format='%cd.%h' --date=short | tr -d -)
+BROWSER     ?= chromium
 
 PCMODULES   := pangocairo pango cairo fontconfig xcb-keysyms xcb-icccm xcb-ewmh xcb-util xkbcommon
 
@@ -13,17 +14,14 @@ PKG_LDFLAGS := $(shell pkg-config --libs   $(PCMODULES))
 
 CPPFLAGS    := -iquotesrc -DVERSION=\"$(VERSION)\"
 CXXFLAGS    := -fpic -fno-rtti -pedantic -std=c++11
-WFLAGS      := -Werror -Wextra -Wall -Wno-long-long -Wundef \
-               -Wredundant-decls -Wshadow -Wsign-compare \
-               -Wmissing-field-initializers -Wno-format-zero-length \
+WFLAGS      := -Werror -Wextra -Wall -Wno-long-long -Wundef           \
+               -Wredundant-decls -Wshadow -Wsign-compare              \
+               -Wmissing-field-initializers -Wno-format-zero-length   \
                -Wno-unused-function -Woverloaded-virtual -Wsign-promo \
                -Wctor-dtor-privacy -Wnon-virtual-dtor
 AR          := ar
 ARFLAGS     := csr
 LDFLAGS     :=
-
-# XXX global kludge (until we get the argument working):
-CXXFLAGS += $(PKG_CFLAGS)
 
 ifeq ($(COMPILER),gnu)
   CXX := g++
@@ -40,8 +38,6 @@ ifeq ($(MODE),release)
     CXXFLAGS += -Os
   else
     CXXFLAGS += -Oz
-    #CXXFLAGS += -O4
-    #LDFLAGS  += -O4
   endif
 else ifeq ($(MODE),debug)
   CPPFLAGS += -DDEBUG=1
@@ -72,9 +68,9 @@ else
   $(error Unrecognised VERBOSE: $(VERBOSE))
 endif
 
-all:
+.PHONY: all info install clean
 
-.PHONY: clean
+all:
 
 info:
 	@echo 'CPPFLAGS: $(CPPFLAGS)'
@@ -90,21 +86,22 @@ clean:
 	rm -rf obj priv dist
 
 ifeq ($(MODE),coverage)
-reset-coverage:
-	lcov --directory . --zerocounters
+.PHONY: reset-coverage report-coverage
 
-coverage: all
-	dist/bin/terminol
-	lcov --directory . --capture --output-file app.info > /dev/null 2>&1
-	genhtml --output-directory output app.info > /dev/null 2>&1
-	chromium output/index.html
+reset-coverage:
+	lcov --directory obj --zerocounters
+
+report-coverage:
+	lcov --directory obj --capture --output-file priv/coverage.trace > /dev/null 2>&1
+	genhtml --output-directory priv/coverage-report priv/coverage.trace > /dev/null 2>&1
+	$(BROWSER) priv/coverage-report/index.html
 endif
 
 obj/%.o: src/%.cxx
 ifeq ($(VERBOSE),false)
 	@echo ' [CXX] $(@F)'
 endif
-	$(V)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(WFLAGS) -c $< -o $@ -DVERSION=\"$(VERSION)\" -MMD -MF $(patsubst %.o,%.dep,$@)
+	$(V)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(WFLAGS) -c $< -o $@ -MMD -MF $(patsubst %.o,%.dep,$@) $($(<)_CXXFLAGS) -DVERSION=\"$(VERSION)\"
 
 # $(1) stem
 # $(2) name
@@ -112,19 +109,21 @@ endif
 # $(4) sources
 # $(5) CXXFLAGS
 define LIBRARY
-$(1)_SRC := $$(addprefix $(3)/src/,$(4))
+$(1)_SRC := $$(addprefix src/$(3)/,$(4))
 $(1)_OBJ := $$(addprefix obj/$(3)/,$$(patsubst %.cxx,%.o,$(4)))
 $(1)_DEP := $$(patsubst %.o,%.dep,$$($(1)_OBJ))
 $(1)_LIB := $$(addprefix obj/,lib$(2)-s.a)
 
+$$(foreach SRC,$$($(1)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(5)))
+
 -include $$($(1)_DEP)
 
 ifeq (,$(findstring obj/$(3),$(DIRS_DONE)))
-  DIRS_DONE += obj/$(3)
-  obj/$(3):
-  ifeq ($(VERBOSE),false)
+DIRS_DONE += obj/$(3)
+obj/$(3):
+ifeq ($(VERBOSE),false)
 	@echo ' [DIR] $$@'
-  endif
+endif
 	$(V)mkdir -p $$@
 endif
 
@@ -145,7 +144,7 @@ endef
 # $(6) libraries
 # $(7) LDFLAGS
 define TEST
-$(1)_SRC  := $$(addprefix $(3)/src/,$(4))
+$(1)_SRC  := $$(addprefix src/$(3)/,$(4))
 $(1)_OBJ  := $$(addprefix obj/$(3)/,$$(patsubst %.cxx,%.o,$(4)))
 $(1)_DEP  := $$(patsubst %.o,%.dep,$$($(1)_OBJ))
 $(1)_LIB  := $$(addsuffix -s.a,$$(addprefix obj/lib,$(6)))
@@ -153,6 +152,8 @@ $(1)_DIR  := priv/$(3)
 $(1)_TEST := $$(addprefix $$($(1)_DIR)/,$(2))
 $(1)_OUT  := $$($(1)_TEST).out
 $(1)_PASS := $$($(1)_TEST).pass
+
+$$(foreach SRC,$$($(1)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(5)))
 
 -include $$($(1)_DEP)
 
@@ -174,7 +175,9 @@ endif
 	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(1)_OBJ) $$($(1)_LIB) $(7)
 
 $$($(1)_PASS): $$($(1)_TEST)
+ifeq ($(VERBOSE),false)
 	@echo ' [RUN] $$(<F)'
+endif
 	@$$($(1)_TEST) > $$($(1)_OUT) 2>&1 && touch $$@ || (rm -f $$@ && echo "Test failed '$(2)'." && cat $$($(1)_OUT))
 
 all: $$($(1)_PASS)
@@ -188,12 +191,14 @@ endef
 # $(6) libraries
 # $(7) LDFLAGS
 define EXE
-$(1)_SRC := $$(addprefix $(3)/src/,$(4))
+$(1)_SRC := $$(addprefix src/$(3)/,$(4))
 $(1)_OBJ := $$(addprefix obj/$(3)/,$$(patsubst %.cxx,%.o,$(4)))
 $(1)_DEP := $$(patsubst %.o,%.dep,$$($(1)_OBJ))
 $(1)_LIB := $$(addsuffix -s.a,$$(addprefix obj/lib,$(6)))
 $(1)_DIR := dist/bin
 $(1)_EXE := $$(addprefix $$($(1)_DIR)/,$(2))
+
+$$(foreach SRC,$$($(1)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(5)))
 
 -include $$($(1)_DEP)
 
