@@ -103,31 +103,29 @@ ifeq ($(VERBOSE),false)
 endif
 	$(V)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(WFLAGS) -c $< -o $@ -MMD -MF $(patsubst %.o,%.dep,$@) $($(<)_CXXFLAGS) -DVERSION=\"$(VERSION)\"
 
-# $(1) stem
-# $(2) name
-# $(3) directory
-# $(4) sources
-# $(5) CXXFLAGS
+# $(1) directory
+# $(2) sources
+# $(3) CXXFLAGS
 define LIBRARY
-$(1)_SRC := $$(addprefix src/$(3)/,$(4))
-$(1)_OBJ := $$(addprefix obj/$(3)/,$$(patsubst %.cxx,%.o,$(4)))
+$(1)_SRC := $$(addprefix src/$(1)/,$(2))
+$(1)_OBJ := $$(addprefix obj/$(1)/,$$(patsubst %.cxx,%.o,$(2)))
 $(1)_DEP := $$(patsubst %.o,%.dep,$$($(1)_OBJ))
-$(1)_LIB := $$(addprefix obj/,lib$(2)-s.a)
+$(1)_LIB := $$(addprefix obj/,lib$$(subst /,-,$(1))-s.a)
 
-$$(foreach SRC,$$($(1)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(5)))
+$$(foreach SRC,$$($(1)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(3)))
 
 -include $$($(1)_DEP)
 
-ifeq (,$(findstring obj/$(3),$(DIRS_DONE)))
-DIRS_DONE += obj/$(3)
-obj/$(3):
+ifeq (,$(findstring obj/$(1),$(DIRS_DONE)))
+DIRS_DONE += obj/$(1)
+obj/$(1):
 ifeq ($(VERBOSE),false)
 	@echo ' [DIR] $$@'
 endif
 	$(V)mkdir -p $$@
 endif
 
-$$($(1)_OBJ): | obj/$(3)
+$$($(1)_OBJ): | obj/$(1)
 
 $$($(1)_LIB): $$($(1)_OBJ)
 ifeq ($(VERBOSE),false)
@@ -136,88 +134,88 @@ endif
 	$(V)$(AR) $(ARFLAGS) $$@ $$($(1)_OBJ)
 endef
 
-# $(1) stem
-# $(2) name
-# $(3) directory
-# $(4) sources
-# $(5) CXXFLAGS
-# $(6) libraries
-# $(7) LDFLAGS
+# $(1) path
+# $(2) sources
+# $(3) CXXFLAGS
+# $(4) libraries (directories)
+# $(5) LDFLAGS
 define TEST
-$(1)_SRC  := $$(addprefix src/$(3)/,$(4))
-$(1)_OBJ  := $$(addprefix obj/$(3)/,$$(patsubst %.cxx,%.o,$(4)))
+$(1)_SDIR := $$(patsubst %/,%,$$(dir $(1)))
+$(1)_NAME := $$(notdir $(1))
+$(1)_SRC  := $$(addprefix src/$$($(1)_SDIR)/,$(2))
+$(1)_OBJ  := $$(addprefix obj/$$($(1)_SDIR)/,$$(patsubst %.cxx,%.o,$(2)))
 $(1)_DEP  := $$(patsubst %.o,%.dep,$$($(1)_OBJ))
-$(1)_LIB  := $$(addsuffix -s.a,$$(addprefix obj/lib,$(6)))
-$(1)_DIR  := priv/$(3)
-$(1)_TEST := $$(addprefix $$($(1)_DIR)/,$(2))
+$(1)_LIB  := $$(addsuffix -s.a,$$(addprefix obj/lib,$$(subst /,-,$(4))))
+$(1)_TDIR := priv/$$($(1)_SDIR)
+$(1)_TEST := $$(addprefix $$($(1)_TDIR)/,$$($(1)_NAME))
 $(1)_OUT  := $$($(1)_TEST).out
 $(1)_PASS := $$($(1)_TEST).pass
 
-$$(foreach SRC,$$($(1)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(5)))
+$$(foreach SRC,$$($(1)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(3)))
 
 -include $$($(1)_DEP)
 
-ifeq (,$$(findstring $$($(1)_DIR),$(DIRS_DONE)))
-DIRS_DONE += $$($(1)_DIR)
-$$($(1)_DIR):
+ifeq (,$$(findstring $$($(1)_TDIR),$(DIRS_DONE)))
+DIRS_DONE += $$($(1)_TDIR)
+$$($(1)_TDIR):
 ifeq ($(VERBOSE),false)
 	@echo ' [DIR] $$@'
 endif
 	$(V)mkdir -p $$@
 endif
 
-$$($(1)_OBJ): | obj/$(3)
+$$($(1)_OBJ): | obj/$$($(1)_SDIR)
 
-$$($(1)_TEST): $$($(1)_OBJ) $$($(1)_LIB) | $$($(1)_DIR)
+$$($(1)_TEST): $$($(1)_OBJ) $$($(1)_LIB) | $$($(1)_TDIR)
 ifeq ($(VERBOSE),false)
 	@echo ' [TST] $$(@F)'
 endif
-	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(1)_OBJ) $$($(1)_LIB) $(7)
+	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(1)_OBJ) $$($(1)_LIB) $(5)
 
 $$($(1)_PASS): $$($(1)_TEST)
 ifeq ($(VERBOSE),false)
 	@echo ' [RUN] $$(<F)'
 endif
-	@$$($(1)_TEST) > $$($(1)_OUT) 2>&1 && touch $$@ || (rm -f $$@ && echo "Test failed '$(2)'." && cat $$($(1)_OUT))
+	@$$($(1)_TEST) > $$($(1)_OUT) 2>&1 && touch $$@ || (rm -f $$@ && echo "Test failed '$$($(1)_NAME)'." && cat $$($(1)_OUT))
 
 all: $$($(1)_PASS)
 endef
 
-# $(1) stem
-# $(2) name
-# $(3) directory
-# $(4) sources
-# $(5) CXXFLAGS
-# $(6) libraries
-# $(7) LDFLAGS
+# $(1) path
+# $(2) sources
+# $(3) CXXFLAGS
+# $(4) libraries (directories)
+# $(5) LDFLAGS
 define EXE
-$(1)_SRC := $$(addprefix src/$(3)/,$(4))
-$(1)_OBJ := $$(addprefix obj/$(3)/,$$(patsubst %.cxx,%.o,$(4)))
-$(1)_DEP := $$(patsubst %.o,%.dep,$$($(1)_OBJ))
-$(1)_LIB := $$(addsuffix -s.a,$$(addprefix obj/lib,$(6)))
-$(1)_DIR := dist/bin
-$(1)_EXE := $$(addprefix $$($(1)_DIR)/,$(2))
+$(1)_SDIR := $$(patsubst %/,%,$$(dir $(1)))
+$(1)_NAME := $$(notdir $(1))
+$(1)_SRC  := $$(addprefix src/$$($(1)_SDIR)/,$(2))
+$(1)_OBJ  := $$(addprefix obj/$$($(1)_SDIR)/,$$(patsubst %.cxx,%.o,$(2)))
+$(1)_DEP  := $$(patsubst %.o,%.dep,$$($(1)_OBJ))
+$(1)_LIB  := $$(addsuffix -s.a,$$(addprefix obj/lib,$$(subst /,-,$(4))))
+$(1)_TDIR := dist/bin
+$(1)_EXE  := $$(addprefix $$($(1)_TDIR)/,$$($(1)_NAME))
 
-$$(foreach SRC,$$($(1)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(5)))
+$$(foreach SRC,$$($(1)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(3)))
 
 -include $$($(1)_DEP)
 
-ifeq (,$$(findstring $$($(1)_DIR),$(DIRS_DONE)))
-DIRS_DONE += $$($(1)_DIR)
-$$($(1)_DIR):
+ifeq (,$$(findstring $$($(1)_TDIR),$(DIRS_DONE)))
+DIRS_DONE += $$($(1)_TDIR)
+$$($(1)_TDIR):
 ifeq ($(VERBOSE),false)
 	@echo ' [DIR] $$@'
 endif
 	$(V)mkdir -p $$@
 endif
 
-$$($(1)_OBJ): | obj/$(3)
+$$($(1)_OBJ): | obj/$$($(1)_SDIR)
 
-$$($(1)_EXE): $$($(1)_OBJ) $$($(1)_LIB) | $$($(1)_DIR)
+$$($(1)_EXE): $$($(1)_OBJ) $$($(1)_LIB) | $$($(1)_TDIR)
 ifeq ($(VERBOSE),false)
 	@echo ' [EXE] $$($(1)_EXE)'
 endif
-	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(1)_OBJ) $$($(1)_LIB) $(7)
+	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(1)_OBJ) $$($(1)_LIB) $(5)
 
 all: $$($(1)_EXE)
 endef
@@ -226,36 +224,36 @@ endef
 # SUPPORT
 #
 
-$(eval $(call LIBRARY,SUPPORT,terminol-support,terminol/support,conv.cxx debug.cxx escape.cxx pattern.cxx time.cxx,))
+$(eval $(call LIBRARY,terminol/support,conv.cxx debug.cxx escape.cxx pattern.cxx time.cxx,))
 
-$(eval $(call TEST,TEST_SUPPORT,test-support,terminol/support,test_support.cxx,,terminol-support))
+$(eval $(call TEST,terminol/support/test-support,test_support.cxx,,terminol/support,))
 
 #
 # COMMON
 #
 
-$(eval $(call LIBRARY,COMMON,terminol-common,terminol/common,ascii.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,))
+$(eval $(call LIBRARY,terminol/common,ascii.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,))
 
-$(eval $(call TEST,PARSER,test-parser,terminol/common,test_parser.cxx,,terminol-common terminol-support))
+$(eval $(call TEST,terminol/common/test-parser,test_parser.cxx,,terminol/common terminol/support,))
 
-$(eval $(call TEST,UTF8,test-utf8,terminol/common,test_utf8.cxx,,terminol-common terminol-support))
+$(eval $(call TEST,terminol/common/test-utf8,test_utf8.cxx,,terminol/common terminol/support,))
 
-$(eval $(call EXE,ABUSE,abuse,terminol/common,abuse.cxx,,terminol-common terminol-support,))
+$(eval $(call EXE,terminol/common/abuse,abuse.cxx,,terminol/common terminol/support,))
 
-$(eval $(call EXE,SEQUENCER,sequencer,terminol/common,sequencer.cxx,,terminol-common terminol-support,))
+$(eval $(call EXE,terminol/common/sequencer,sequencer.cxx,,terminol/common terminol/support,))
 
-$(eval $(call EXE,STYLES,styles,terminol/common,styles.cxx,,terminol-common terminol-support,))
+$(eval $(call EXE,terminol/common/styles,styles.cxx,,terminol/common terminol/support,))
 
-$(eval $(call EXE,DROPPINGS,droppings,terminol/common,droppings.cxx,,terminol-common terminol-support,))
+$(eval $(call EXE,terminol/common/droppings,droppings.cxx,,terminol/common terminol/support,))
 
 #
 # XCB
 #
 
-$(eval $(call LIBRARY,XCB,terminol-xcb,terminol/xcb,basics.cxx color_set.cxx font_manager.cxx font_set.cxx window.cxx,$(PKG_CFLAGS)))
+$(eval $(call LIBRARY,terminol/xcb,basics.cxx color_set.cxx font_manager.cxx font_set.cxx window.cxx,$(PKG_CFLAGS)))
 
-$(eval $(call EXE,TERMINOL,terminol,terminol/xcb,terminol.cxx,$(PKG_CFLAGS),terminol-xcb terminol-common terminol-support,$(PKG_LDFLAGS) -lutil))
+$(eval $(call EXE,terminol/xcb/terminol,terminol.cxx,$(PKG_CFLAGS),terminol/xcb terminol/common terminol/support,$(PKG_LDFLAGS) -lutil))
 
-$(eval $(call EXE,TERMINOLS,terminols,terminol/xcb,terminols.cxx,$(PKG_CFLAGS),terminol-xcb terminol-common terminol-support,$(PKG_LDFLAGS) -lutil))
+$(eval $(call EXE,terminol/xcb/terminols,terminols.cxx,$(PKG_CFLAGS),terminol/xcb terminol/common terminol/support,$(PKG_LDFLAGS) -lutil))
 
-$(eval $(call EXE,TERMINOLC,terminolc,terminol/xcb,terminolc.cxx,,terminol-common terminol-support,))
+$(eval $(call EXE,terminol/xcb/terminolc,terminolc.cxx,,terminol/common terminol/support,))
