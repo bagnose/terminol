@@ -12,7 +12,7 @@ endif
 PKG_CFLAGS  := $(shell pkg-config --cflags $(PCMODULES))
 PKG_LDFLAGS := $(shell pkg-config --libs   $(PCMODULES))
 
-CPPFLAGS    := -iquotesrc -DVERSION=\"$(VERSION)\"
+CPPFLAGS    := -DVERSION=\"$(VERSION)\" -iquotesrc
 CXXFLAGS    := -fpic -fno-rtti -pedantic -std=c++11
 WFLAGS      := -Werror -Wextra -Wall -Wno-long-long -Wundef           \
                -Wredundant-decls -Wshadow -Wsign-compare              \
@@ -101,12 +101,13 @@ obj/%.o: src/%.cxx
 ifeq ($(VERBOSE),false)
 	@echo ' [CXX] $(@F)'
 endif
-	$(V)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(WFLAGS) -c $< -o $@ -MMD -MF $(patsubst %.o,%.dep,$@) $($(<)_CXXFLAGS) -DVERSION=\"$(VERSION)\"
+	$(V)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(WFLAGS) -c $< -o $@ -MMD -MF $(patsubst %.o,%.dep,$@) $($(<)_CXXFLAGS)
 
+# Create a static library.
 # $(1) directory
 # $(2) sources
 # $(3) CXXFLAGS
-define LIBRARY
+define LIB
 $(1)_SRC := $$(addprefix src/$(1)/,$(2))
 $(1)_OBJ := $$(addprefix obj/$(1)/,$$(patsubst %.cxx,%.o,$(2)))
 $(1)_DEP := $$(patsubst %.o,%.dep,$$($(1)_OBJ))
@@ -134,126 +135,102 @@ endif
 	$(V)$(AR) $(ARFLAGS) $$@ $$($(1)_OBJ)
 endef
 
-# $(1) path
-# $(2) sources
-# $(3) CXXFLAGS
-# $(4) libraries (directories)
-# $(5) LDFLAGS
-define TEST
-$(1)_SDIR := $$(patsubst %/,%,$$(dir $(1)))
-$(1)_NAME := $$(notdir $(1))
-$(1)_SRC  := $$(addprefix src/$$($(1)_SDIR)/,$(2))
-$(1)_OBJ  := $$(addprefix obj/$$($(1)_SDIR)/,$$(patsubst %.cxx,%.o,$(2)))
-$(1)_DEP  := $$(patsubst %.o,%.dep,$$($(1)_OBJ))
-$(1)_LIB  := $$(addsuffix -s.a,$$(addprefix obj/lib,$$(subst /,-,$(4))))
-$(1)_TDIR := priv/$$($(1)_SDIR)
-$(1)_TEST := $$(addprefix $$($(1)_TDIR)/,$$($(1)_NAME))
-$(1)_OUT  := $$($(1)_TEST).out
-$(1)_PASS := $$($(1)_TEST).pass
+# Create an executable.
+# $(1) type (DIST|PRIV|TEST)
+# $(2) path
+# $(3) sources
+# $(4) CXXFLAGS
+# $(5) libraries (directories)
+# $(6) LDFLAGS
+define EXE
+ifeq (,$$(findstring $(1),DIST PRIV TEST))
+  $$(error Bad EXE type $1)
+endif
 
-$$(foreach SRC,$$($(1)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(3)))
+$(2)_SDIR := $$(patsubst %/,%,$$(dir $(2)))
+$(2)_NAME := $$(notdir $(2))
+$(2)_SRC  := $$(addprefix src/$$($(2)_SDIR)/,$(3))
+$(2)_OBJ  := $$(addprefix obj/$$($(2)_SDIR)/,$$(patsubst %.cxx,%.o,$(3)))
+$(2)_DEP  := $$(patsubst %.o,%.dep,$$($(2)_OBJ))
+$(2)_LIB  := $$(addsuffix -s.a,$$(addprefix obj/lib,$$(subst /,-,$(5))))
+ifeq (DIST,$(1))
+$(2)_TDIR := dist/bin
+else
+$(2)_TDIR := priv/$$($(2)_SDIR)
+endif
+$(2)_EXE  := $$(addprefix $$($(2)_TDIR)/,$$($(2)_NAME))
 
--include $$($(1)_DEP)
+$$(foreach SRC,$$($(2)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(4)))
 
-ifeq (,$$(findstring $$($(1)_TDIR),$(DIRS_DONE)))
-DIRS_DONE += $$($(1)_TDIR)
-$$($(1)_TDIR):
+-include $$($(2)_DEP)
+
+ifeq (,$$(findstring $$($(2)_TDIR),$(DIRS_DONE)))
+DIRS_DONE += $$($(2)_TDIR)
+$$($(2)_TDIR):
 ifeq ($(VERBOSE),false)
 	@echo ' [DIR] $$@'
 endif
 	$(V)mkdir -p $$@
 endif
 
-$$($(1)_OBJ): | obj/$$($(1)_SDIR)
+$$($(2)_OBJ): | obj/$$($(2)_SDIR)
 
-$$($(1)_TEST): $$($(1)_OBJ) $$($(1)_LIB) | $$($(1)_TDIR)
+$$($(2)_EXE): $$($(2)_OBJ) $$($(2)_LIB) | $$($(2)_TDIR)
 ifeq ($(VERBOSE),false)
-	@echo ' [TST] $$(@F)'
+	@echo ' [EXE] $$(@F)'
 endif
-	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(1)_OBJ) $$($(1)_LIB) $(5)
+	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(2)_OBJ) $$($(2)_LIB) $(6)
 
-$$($(1)_PASS): $$($(1)_TEST)
+ifeq (TEST,$(1))
+$(2)_OUT  := $$($(2)_EXE).out
+$(2)_PASS := $$($(2)_EXE).pass
+
+$$($(2)_PASS): $$($(2)_EXE)
 ifeq ($(VERBOSE),false)
 	@echo ' [RUN] $$(<F)'
 endif
-	@$$($(1)_TEST) > $$($(1)_OUT) 2>&1 && touch $$@ || (rm -f $$@ && echo "Test failed '$$($(1)_NAME)'." && cat $$($(1)_OUT))
+	$(V)$$($(2)_EXE) > $$($(2)_OUT) 2>&1 && touch $$@ || (rm -f $$@ && echo "Test failed '$$($(2)_NAME)'." && cat $$($(2)_OUT))
 
-all: $$($(1)_PASS)
-endef
-
-# $(1) path
-# $(2) sources
-# $(3) CXXFLAGS
-# $(4) libraries (directories)
-# $(5) LDFLAGS
-define EXE
-$(1)_SDIR := $$(patsubst %/,%,$$(dir $(1)))
-$(1)_NAME := $$(notdir $(1))
-$(1)_SRC  := $$(addprefix src/$$($(1)_SDIR)/,$(2))
-$(1)_OBJ  := $$(addprefix obj/$$($(1)_SDIR)/,$$(patsubst %.cxx,%.o,$(2)))
-$(1)_DEP  := $$(patsubst %.o,%.dep,$$($(1)_OBJ))
-$(1)_LIB  := $$(addsuffix -s.a,$$(addprefix obj/lib,$$(subst /,-,$(4))))
-$(1)_TDIR := dist/bin
-$(1)_EXE  := $$(addprefix $$($(1)_TDIR)/,$$($(1)_NAME))
-
-$$(foreach SRC,$$($(1)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(3)))
-
--include $$($(1)_DEP)
-
-ifeq (,$$(findstring $$($(1)_TDIR),$(DIRS_DONE)))
-DIRS_DONE += $$($(1)_TDIR)
-$$($(1)_TDIR):
-ifeq ($(VERBOSE),false)
-	@echo ' [DIR] $$@'
+all: $$($(2)_PASS)
+else
+all: $$($(2)_EXE)
 endif
-	$(V)mkdir -p $$@
-endif
-
-$$($(1)_OBJ): | obj/$$($(1)_SDIR)
-
-$$($(1)_EXE): $$($(1)_OBJ) $$($(1)_LIB) | $$($(1)_TDIR)
-ifeq ($(VERBOSE),false)
-	@echo ' [EXE] $$($(1)_EXE)'
-endif
-	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(1)_OBJ) $$($(1)_LIB) $(5)
-
-all: $$($(1)_EXE)
 endef
 
 #
 # SUPPORT
 #
 
-$(eval $(call LIBRARY,terminol/support,conv.cxx debug.cxx escape.cxx pattern.cxx time.cxx,))
+$(eval $(call LIB,terminol/support,conv.cxx debug.cxx escape.cxx pattern.cxx time.cxx,))
 
-$(eval $(call TEST,terminol/support/test-support,test_support.cxx,,terminol/support,))
+$(eval $(call EXE,TEST,terminol/support/test-support,test_support.cxx,,terminol/support,))
 
 #
 # COMMON
 #
 
-$(eval $(call LIBRARY,terminol/common,ascii.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,))
+$(eval $(call LIB,terminol/common,ascii.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,))
 
-$(eval $(call TEST,terminol/common/test-parser,test_parser.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,TEST,terminol/common/test-parser,test_parser.cxx,,terminol/common terminol/support,))
 
-$(eval $(call TEST,terminol/common/test-utf8,test_utf8.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,TEST,terminol/common/test-utf8,test_utf8.cxx,,terminol/common terminol/support,))
 
-$(eval $(call EXE,terminol/common/abuse,abuse.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,PRIV,terminol/common/abuse,abuse.cxx,,terminol/common terminol/support,))
 
-$(eval $(call EXE,terminol/common/sequencer,sequencer.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,PRIV,terminol/common/sequencer,sequencer.cxx,,terminol/common terminol/support,))
 
-$(eval $(call EXE,terminol/common/styles,styles.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,PRIV,terminol/common/styles,styles.cxx,,terminol/common terminol/support,))
 
-$(eval $(call EXE,terminol/common/droppings,droppings.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,PRIV,terminol/common/droppings,droppings.cxx,,terminol/common terminol/support,))
 
 #
 # XCB
 #
 
-$(eval $(call LIBRARY,terminol/xcb,basics.cxx color_set.cxx font_manager.cxx font_set.cxx window.cxx,$(PKG_CFLAGS)))
+$(eval $(call LIB,terminol/xcb,basics.cxx color_set.cxx font_manager.cxx font_set.cxx window.cxx,$(PKG_CFLAGS)))
 
-$(eval $(call EXE,terminol/xcb/terminol,terminol.cxx,$(PKG_CFLAGS),terminol/xcb terminol/common terminol/support,$(PKG_LDFLAGS) -lutil))
+$(eval $(call EXE,DIST,terminol/xcb/terminol,terminol.cxx,$(PKG_CFLAGS),terminol/xcb terminol/common terminol/support,$(PKG_LDFLAGS) -lutil))
 
-$(eval $(call EXE,terminol/xcb/terminols,terminols.cxx,$(PKG_CFLAGS),terminol/xcb terminol/common terminol/support,$(PKG_LDFLAGS) -lutil))
+$(eval $(call EXE,DIST,terminol/xcb/terminols,terminols.cxx,$(PKG_CFLAGS),terminol/xcb terminol/common terminol/support,$(PKG_LDFLAGS) -lutil))
 
-$(eval $(call EXE,terminol/xcb/terminolc,terminolc.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,DIST,terminol/xcb/terminolc,terminolc.cxx,,terminol/common terminol/support,))
