@@ -22,18 +22,24 @@ bool possibility(int percent) {
 }
 
 void writeRandomControl(std::ostream & ost) {
-again:
-    uint8_t c = randomChar(0x0, 0x20);
-    if (c == 0x18 || c == 0x1A || c == 0x1B) { goto again; }
+    uint8_t c;
+
+    do {
+        c = randomChar(0x0, 0x20);
+    } while (c == 0x18 || c == 0x1A || c == 0x1B);
+
     ost << c;
 }
 
 void writeRandomEsc(std::ostream & ost) {
     ost << ESC;
-again:
-    uint8_t c = randomChar(0x30, 0x7F);
-    if (c == 0x50 || c == 0x58 || c == 0x5B || c == 0x5D ||
-        c == 0x5E || c == 0x5F) { goto again; }
+
+    uint8_t c;
+
+    do {
+        c = randomChar(0x30, 0x7F);
+    } while (c == 0x50 || c == 0x58 || c == 0x5B || c == 0x5D || c == 0x5E || c == 0x5F);
+
     ost << c;
 }
 
