@@ -75,8 +75,8 @@ PangoFontDescription * FontSet::load(const std::string & family,
     auto desc = pango_font_description_from_string(family.c_str());
     if (!desc) { throw Error("Failed to load font: " + family); }
     auto descGuard = scopeGuard([&] { pango_font_description_free(desc); });
-    pango_font_description_set_size(desc, size * PANGO_SCALE);
-    //pango_font_description_set_absolute_size(desc, size * PANGO_SCALE);
+    //pango_font_description_set_size(desc, size * PANGO_SCALE);
+    pango_font_description_set_absolute_size(desc, size * PANGO_SCALE);
     pango_font_description_set_weight(desc,
                                       bold ? PANGO_WEIGHT_BOLD :
                                       PANGO_WEIGHT_NORMAL);

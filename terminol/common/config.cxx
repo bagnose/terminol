@@ -163,8 +163,8 @@ const Color COLOURS_SOLARIZED_LIGHT[16] = {
 
 Config::Config() :
     resizeStrategy(Resize::PRESERVE),
-    fontName("MesloLGM"),
-    fontSize(15),
+    fontName("Monospace"),
+    fontSize(12),
     termName("xterm-256color"),
     scrollWithHistory(false),
     scrollOnTtyOutput(false),
