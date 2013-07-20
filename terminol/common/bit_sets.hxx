@@ -19,6 +19,7 @@ public:
     void set(T t)       { _bits |=  bit(t);      }
     void unset(T t)     { _bits &= ~bit(t);      }
     bool get(T t) const { return _bits & bit(t); }
+    I    bits()   const { return _bits;          }
 
     void setTo(T t, bool to) {
         if (to) { set(t);   }

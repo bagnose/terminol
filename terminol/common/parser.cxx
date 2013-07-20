@@ -9,8 +9,9 @@
 #include <xkbcommon/xkbcommon.h>
 
 bool split(const std::string        & line,
-           std::vector<std::string> & tokens) throw (ParseError) {
-    auto i = line.find_first_not_of(" \t");
+           std::vector<std::string> & tokens,
+           const std::string        & delim) throw (ParseError) {
+    auto i = line.find_first_not_of(delim);
 
     if (i == std::string::npos) { return false; }   // blank line
     if (line[i] == '#')         { return false; }   // comment
@@ -18,7 +19,7 @@ bool split(const std::string        & line,
     for (;;) {
         bool quote = line[i] == '"';
 
-        auto j = line.find_first_of(quote ? "\"" : " \t", i + 1);
+        auto j = line.find_first_of(quote ? "\"" : delim, i + 1);
         if (quote) { ++i; }
 
         if (j == std::string::npos) {
@@ -34,7 +35,7 @@ bool split(const std::string        & line,
 
         if (j == line.size()) { break; }
 
-        i = line.find_first_not_of(" \t", j + 1);
+        i = line.find_first_not_of(delim, j + 1);
 
         if (i == std::string::npos) { break; }
     }
@@ -55,6 +56,7 @@ std::string lowercase(const std::string & str) {
     for (auto & c : copy) { c = tolower(c); }
     return copy;
 }
+#endif
 
 bool lookupModifier(const std::string & name, Modifier & modifier) {
     if (name == "shift") {
@@ -73,19 +75,19 @@ bool lookupModifier(const std::string & name, Modifier & modifier) {
         modifier = Modifier::SUPER;
         return true;
     }
-    else if (name == "num_lock") {      // XXX ??
+    else if (name == "num_lock" || name == "num-lock") {
         modifier = Modifier::NUM_LOCK;
         return true;
     }
-    else if (name == "shift_lock") {      // XXX ??
+    else if (name == "shift_lock" || name == "shift-lock") {
         modifier = Modifier::SHIFT_LOCK;
         return true;
     }
-    else if (name == "caps_lock") {      // XXX ??
+    else if (name == "caps_lock" || name == "caps-lock") {
         modifier = Modifier::CAPS_LOCK;
         return true;
     }
-    else if (name == "mode_switch") {      // XXX ??
+    else if (name == "mode_switch" || name == "mode-switch") {
         modifier = Modifier::MODE_SWITCH;
         return true;
     }
@@ -94,11 +96,22 @@ bool lookupModifier(const std::string & name, Modifier & modifier) {
     }
 }
 
-bool lookupKeySym(const std::string & name, xkb_keysym_t & keySym) {
-    keySym = xkb_keysym_from_name(name.c_str(), XKB_KEYSYM_CASE_INSENSITIVE);
-    return keySym != XKB_KEY_NoSymbol;
+xkb_keysym_t lookupKeySym(const std::string & name) throw (ParseError) {
+    auto keySym = xkb_keysym_from_name(name.c_str(), static_cast<xkb_keysym_flags>(0));
+    if (keySym == XKB_KEY_NoSymbol) {
+        throw ParseError("Bad keysym: " + name);
+    }
+    else {
+        return keySym;
+    }
 }
-#endif
+
+std::string stringifyKeySym(xkb_keysym_t keySym) {
+    char buf[128];
+    auto size = xkb_keysym_get_name(keySym, buf, sizeof buf);
+    ENFORCE(size != -1, "Bad keysym");
+    return std::string(buf, buf + size);
+}
 
 //bool lookupButton(const std::string & name, 
 
@@ -207,17 +220,94 @@ void handleSet(const std::string & key,
     }
 }
 
-void handleBindSym(const std::vector<std::string> & UNUSED(tokens),
-                   Config & UNUSED(config)) {
-    /*
-    xkb_keysym_t keySym;
-    if (lookupKeySym(t, keySym)) {
-        PRINT(t << " == " << keySym);
+Action lookupAction(const std::string & str) throw (ParseError) {
+    if (str == "local-font-reset") {
+        return Action::LOCAL_FONT_RESET;
+    }
+    else if (str == "local-font-smaller") {
+        return Action::LOCAL_FONT_SMALLER;
+    }
+    else if (str == "local-font-bigger") {
+        return Action::LOCAL_FONT_BIGGER;
+    }
+    else if (str == "global-font-reset") {
+        return Action::GLOBAL_FONT_RESET;
+    }
+    else if (str == "global-font-smaller") {
+        return Action::GLOBAL_FONT_SMALLER;
+    }
+    else if (str == "global-font-bigger") {
+        return Action::GLOBAL_FONT_BIGGER;
+    }
+    else if (str == "copy-to-clipboard") {
+        return Action::COPY_TO_CLIPBOARD;
+    }
+    else if (str == "paste-from-clipboard") {
+        return Action::PASTE_FROM_CLIPBOARD;
+    }
+    else if (str == "scroll-up-one-line") {
+        return Action::SCROLL_UP_ONE_LINE;
+    }
+    else if (str == "scroll-down-one-line") {
+        return Action::SCROLL_DOWN_ONE_LINE;
+    }
+    else if (str == "scroll-up-one-page") {
+        return Action::SCROLL_UP_ONE_PAGE;
+    }
+    else if (str == "scroll-down-one-page") {
+        return Action::SCROLL_DOWN_ONE_PAGE;
+    }
+    else if (str == "scroll-top") {
+        return Action::SCROLL_TOP;
+    }
+    else if (str == "scroll-bottom") {
+        return Action::SCROLL_BOTTOM;
+    }
+    else if (str == "debug-1") {
+        return Action::DEBUG_1;
+    }
+    else if (str == "debug-2") {
+        return Action::DEBUG_2;
+    }
+    else if (str == "debug-3") {
+        return Action::DEBUG_3;
     }
     else {
-        PRINT("Failed to resolve: " << t);
+        throw ParseError("Bad action: " + str);
     }
-    */
+}
+
+void handleBindSym(const std::string & sym,
+                   const std::string & action,
+                   Config & config) throw (ParseError) {
+    //PRINT("sym=" << sym << ", action=" << action);
+
+    std::vector<std::string> tokens;
+    if (split(sym, tokens, "+")) {
+        auto key = tokens.back(); tokens.pop_back();
+
+        ModifierSet modifiers;
+
+        for (const auto & m : tokens) {
+            Modifier modifier;
+            if (lookupModifier(m, modifier)) {
+                //PRINT("Got modifier: " << modifier);
+                modifiers.set(modifier);
+            }
+            else {
+                throw ParseError("Bad modifier: " + m);
+            }
+        }
+
+        auto keySym = lookupKeySym(key);
+
+        KeyCombo keyCombo(keySym, modifiers);
+        Action   action2 = lookupAction(action);
+
+        PRINT("Bound: " << modifiers << "-" << stringifyKeySym(keySym) << " to " << action);
+
+        config.bindings.insert(std::make_pair(keyCombo, action2));
+    }
 }
 
 void interpretTokens(const std::vector<std::string> & tokens,
@@ -233,8 +323,14 @@ void interpretTokens(const std::vector<std::string> & tokens,
             ERROR("Wrong number of tokens: " << tokens.size());
         }
     }
-    else if (tokens[0] == "bindSym") {
-        handleBindSym(tokens, config);
+    else if (tokens[0] == "bindsym") {
+        if (tokens.size() == 3) {
+            handleBindSym(tokens[1], tokens[2], config);
+        }
+        else {
+            // ERROR
+            ERROR("Wrong number of tokens: " << tokens.size());
+        }
     }
     else {
         // ERROR

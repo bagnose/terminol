@@ -504,103 +504,84 @@ void Terminal::flush() {
 }
 
 bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
-    // FIXME no hard-coded keybindings. Use config.
+    auto iter = _config.bindings.find(KeyCombo(keySym, modifiers));
 
-    if (modifiers.get(Modifier::SHIFT) && modifiers.get(Modifier::CONTROL)) {
-        switch (keySym) {
-            case XKB_KEY_X: {
-                std::string text;
-                if (_buffer->getSelectedText(text)) {
-                    _observer.terminalCopy(text, false);
-                }
+    if (iter != _config.bindings.end()) {
+        auto action = iter->second;
+
+        switch (action) {
+            case Action::LOCAL_FONT_RESET:
+                _observer.terminalResizeLocalFont(0);
                 return true;
-            }
-            case XKB_KEY_C: {
+            case Action::LOCAL_FONT_BIGGER:
+                _observer.terminalResizeLocalFont(1);
+                return true;
+            case Action::LOCAL_FONT_SMALLER:
+                _observer.terminalResizeLocalFont(-1);
+                return true;
+            case Action::GLOBAL_FONT_RESET:
+                _observer.terminalResizeGlobalFont(0);
+                return true;
+            case Action::GLOBAL_FONT_BIGGER:
+                _observer.terminalResizeGlobalFont(1);
+                return true;
+            case Action::GLOBAL_FONT_SMALLER:
+                _observer.terminalResizeGlobalFont(-1);
+                return true;
+            case Action::COPY_TO_CLIPBOARD: {
                 std::string text;
                 if (_buffer->getSelectedText(text)) {
                     _observer.terminalCopy(text, true);
                 }
                 return true;
             }
-            case XKB_KEY_V: {
+            case Action::PASTE_FROM_CLIPBOARD:
                 _observer.terminalPaste(true);
                 return true;
-            }
-            case ')':
-                _observer.terminalResizeGlobalFont(0);
-                return true;
-            case '_':
-                _observer.terminalResizeGlobalFont(-1);
-                return true;
-            case '+':
-                _observer.terminalResizeGlobalFont(1);
-                return true;
-        }
-    }
-    else if (modifiers.get(Modifier::CONTROL)) {
-        switch (keySym) {
-            case '0':
-                _observer.terminalResizeLocalFont(0);
-                return true;
-            case '-':
-                _observer.terminalResizeLocalFont(-1);
-                return true;
-            case '=':
-                _observer.terminalResizeLocalFont(1);
-                return true;
-        }
-    }
-    else if (modifiers.get(Modifier::SHIFT)) {
-        switch (keySym) {
-            case XKB_KEY_Up:
+            case Action::SCROLL_UP_ONE_LINE:
                 if (_buffer->scrollUpHistory(1)) {
                     fixDamage(Trigger::SCROLL);
                 }
                 return true;
-            case XKB_KEY_Down:
+            case Action::SCROLL_DOWN_ONE_LINE:
                 if (_buffer->scrollDownHistory(1)) {
                     fixDamage(Trigger::SCROLL);
                 }
                 return true;
-            case XKB_KEY_Page_Up:
+            case Action::SCROLL_UP_ONE_PAGE:
                 if (_buffer->scrollUpHistory(_buffer->getRows())) {
                     fixDamage(Trigger::SCROLL);
                 }
                 return true;
-            case XKB_KEY_Page_Down:
+            case Action::SCROLL_DOWN_ONE_PAGE:
                 if (_buffer->scrollDownHistory(_buffer->getRows())) {
                     fixDamage(Trigger::SCROLL);
                 }
                 return true;
-            case XKB_KEY_Home:
+            case Action::SCROLL_TOP:
                 if (_buffer->scrollTopHistory()) {
                     fixDamage(Trigger::SCROLL);
                 }
                 return true;
-            case XKB_KEY_End:
+            case Action::SCROLL_BOTTOM:
                 if (_buffer->scrollBottomHistory()) {
                     fixDamage(Trigger::SCROLL);
                 }
                 return true;
-            default:
-                return false;
+            case Action::DEBUG_1: {
+                std::ostringstream ost;
+                ost << "Dedupe: " << _deduper.getReduction()
+                    << ", History: " << _priBuffer.getHistory();
+                _observer.terminalSetWindowTitle(ost.str());
+                return true;
+            }
+            case Action::DEBUG_2:
+                _buffer->dumpBuffer(std::cerr);
+                return true;
+            case Action::DEBUG_3:
+                _buffer->dumpSelection(std::cerr);
+                return true;
         }
-    }
-
-    switch (keySym) {
-        case XKB_KEY_F8: {
-            std::ostringstream ost;
-            ost << "Dedupe: " << _deduper.getReduction()
-                << ", History: " << _priBuffer.getHistory();
-            _observer.terminalSetWindowTitle(ost.str());
-            return true;
-        }
-        case XKB_KEY_F9:
-            _buffer->dumpBuffer(std::cerr);
-            return true;
-        case XKB_KEY_F10:
-            _buffer->dumpSelection(std::cerr);
-            return true;
     }
 
     return false;

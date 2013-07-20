@@ -9,7 +9,8 @@
 #include "terminol/common/config.hxx"
 
 bool split(const std::string & line,
-           std::vector<std::string> & tokens) throw (ParseError);
+           std::vector<std::string> & tokens,
+           const std::string & delim = " \t") throw (ParseError);
 
 void parseConfig(Config & config);
 

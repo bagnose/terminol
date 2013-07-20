@@ -6,6 +6,7 @@
 #include "terminol/support/debug.hxx"
 #include "terminol/support/pattern.hxx"
 #include "terminol/common/data_types.hxx"
+#include "terminol/common/bindings.hxx"
 
 struct Config {
     // TODO
@@ -69,6 +70,8 @@ struct Config {
 
     std::string socketPath;
     bool        serverFork;
+
+    Bindings    bindings;
 
     //
     //

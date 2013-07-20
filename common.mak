@@ -3,14 +3,19 @@ VERBOSE     ?= false
 VERSION     ?= $(shell git --git-dir=src/.git log -1 --format='%cd.%h' --date=short | tr -d -)
 BROWSER     ?= chromium
 
-PCMODULES   := pangocairo pango cairo fontconfig xcb-keysyms xcb-icccm xcb-ewmh xcb-util xkbcommon
+ALL_MODULES := pangocairo pango cairo fontconfig xcb-keysyms xcb-icccm xcb-ewmh xcb-util xkbcommon
 
-ifeq ($(shell pkg-config $(PCMODULES) && echo installed),)
-  $(error Missing packages from: $(PCMODULES))
+ifeq ($(shell pkg-config $(ALL_MODULES) && echo installed),)
+  $(error Missing packages from: $(ALL_MODULES))
 endif
 
-PKG_CFLAGS  := $(shell pkg-config --cflags $(PCMODULES))
-PKG_LDFLAGS := $(shell pkg-config --libs   $(PCMODULES))
+XKB_MODULES := xkbcommon
+XKB_CFLAGS  := $(shell pkg-config --cflags $(XKB_MODULES))
+XKB_LDFLAGS := $(shell pkg-config --libs   $(XKB_MODULES))
+
+XCB_MODULES := $(ALL_MODULES)
+XCB_CFLAGS  := $(shell pkg-config --cflags $(XCB_MODULES))
+XCB_LDFLAGS := $(shell pkg-config --libs   $(XCB_MODULES))
 
 CPPFLAGS    := -DVERSION=\"$(VERSION)\" -iquotesrc
 CXXFLAGS    := -fpic -fno-rtti -pedantic -std=c++11
@@ -209,9 +214,9 @@ $(eval $(call EXE,TEST,terminol/support/test-support,test_support.cxx,,terminol/
 # COMMON
 #
 
-$(eval $(call LIB,terminol/common,ascii.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,))
+$(eval $(call LIB,terminol/common,ascii.cxx bindings.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,))
 
-$(eval $(call EXE,TEST,terminol/common/test-parser,test_parser.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,TEST,terminol/common/test-parser,test_parser.cxx,$(XKB_CFLAGS),terminol/common terminol/support,$(XKB_LDFLAGS)))
 
 $(eval $(call EXE,TEST,terminol/common/test-utf8,test_utf8.cxx,,terminol/common terminol/support,))
 
@@ -227,10 +232,10 @@ $(eval $(call EXE,PRIV,terminol/common/droppings,droppings.cxx,,terminol/common 
 # XCB
 #
 
-$(eval $(call LIB,terminol/xcb,basics.cxx color_set.cxx font_manager.cxx font_set.cxx window.cxx,$(PKG_CFLAGS)))
+$(eval $(call LIB,terminol/xcb,basics.cxx color_set.cxx font_manager.cxx font_set.cxx window.cxx,$(XCB_CFLAGS)))
 
-$(eval $(call EXE,DIST,terminol/xcb/terminol,terminol.cxx,$(PKG_CFLAGS),terminol/xcb terminol/common terminol/support,$(PKG_LDFLAGS) -lutil))
+$(eval $(call EXE,DIST,terminol/xcb/terminol,terminol.cxx,$(XCB_CFLAGS),terminol/xcb terminol/common terminol/support,$(XCB_LDFLAGS) -lutil))
 
-$(eval $(call EXE,DIST,terminol/xcb/terminols,terminols.cxx,$(PKG_CFLAGS),terminol/xcb terminol/common terminol/support,$(PKG_LDFLAGS) -lutil))
+$(eval $(call EXE,DIST,terminol/xcb/terminols,terminols.cxx,$(XCB_CFLAGS),terminol/xcb terminol/common terminol/support,$(XCB_LDFLAGS) -lutil))
 
-$(eval $(call EXE,DIST,terminol/xcb/terminolc,terminolc.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,DIST,terminol/xcb/terminolc,terminolc.cxx,$(XKB_CFLAGS),terminol/common terminol/support,$(XKB_LDFLAGS)))
