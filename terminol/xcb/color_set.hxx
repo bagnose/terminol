@@ -24,15 +24,17 @@ class ColorSet {
     Basics       & _basics;
     XColor         _cursorFgColor;
     XColor         _cursorBgColor;
+    XColor         _selectFgColor;
+    XColor         _selectBgColor;
+    XColor         _cursorFillColor;
+    XColor         _cursorTextColor;
     XColor         _borderColor;
     XColor         _scrollBarFgColor;
     XColor         _scrollBarBgColor;
     XColor         _indexedColors[256];
-    XColor         _foregroundColor;
-    XColor         _backgroundColor;
+    XColor         _normalFgColor;
+    XColor         _normalBgColor;
     uint32_t       _backgroundPixel;
-    XColor         _cursorFillColor;
-    XColor         _cursorTextColor;
 
 public:
     ColorSet(const Config & config, Basics & basics);
@@ -40,14 +42,17 @@ public:
 
     const XColor & getCursorFillColor()  const { return _cursorFillColor; }
     const XColor & getCursorTextColor()  const { return _cursorTextColor; }
+    const XColor & getSelectFgColor()    const { return _selectFgColor; }
+    const XColor & getSelectBgColor()    const { return _selectBgColor; }
     const XColor & getBorderColor()      const { return _borderColor; }
     const XColor & getScrollBarFgColor() const { return _scrollBarFgColor; }
     const XColor & getScrollBarBgColor() const { return _scrollBarBgColor; }
     const XColor & getIndexedColor(uint8_t index) const { return _indexedColors[index]; }
-    const XColor & getForegroundColor()  const { return _foregroundColor; }
-    const XColor & getBackgroundColor()  const { return _backgroundColor; }
+    const XColor & getNormalFgColor()  const { return _normalFgColor; }
+    const XColor & getNormalBgColor()  const { return _normalBgColor; }
     uint32_t       getBackgroundPixel()  const { return _backgroundPixel; }
 
+private:
     static XColor convert(const Color & color);
 };
 

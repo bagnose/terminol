@@ -1253,21 +1253,16 @@ void Window::terminalDrawCursor(Pos             pos,
 
     cairo_save(_cr); {
         auto layout = pango_cairo_create_layout(_cr);
-        auto font   = _fontSet->get(attrs.get(Attr::ITALIC), attrs.get(Attr::BOLD));
+        auto layoutGuard = scopeGuard([&] { g_object_unref(layout); });
+
+        auto font = _fontSet->get(attrs.get(Attr::ITALIC), attrs.get(Attr::BOLD));
         pango_layout_set_font_description(layout, font);
 
         pango_layout_set_width(layout, -1);
         pango_layout_set_wrap(layout, PANGO_WRAP_CHAR);
 
-        auto fg =
-            _config.customCursorTextColor ?
-            _colorSet.getCursorTextColor() :
-            getColor(bg_);
-
-        auto bg =
-            _config.customCursorFillColor ?
-            _colorSet.getCursorFillColor() :
-            getColor(fg_);
+        auto fg = getColor(bg_);
+        auto bg = getColor(fg_);
 
         int x, y;
         pos2XY(pos, x, y);
@@ -1304,9 +1299,6 @@ void Window::terminalDrawCursor(Pos             pos,
 
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
-
-        /* Free resources */
-        g_object_unref(layout);
     } cairo_restore(_cr);
 }
 

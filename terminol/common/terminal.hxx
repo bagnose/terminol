@@ -133,8 +133,6 @@ private:
     Pos                   _pointerPos;
     bool                  _focused;
 
-    std::vector<uint8_t>  _run;         // Buffer for accumulating character runs.
-
     //
 
     I_Tty               & _tty;
@@ -187,7 +185,7 @@ public:
 
 protected:
     enum class TabDir { FORWARD, BACKWARD };
-    enum class Damager { TTY, EXPOSURE, SCROLL };
+    enum class Trigger { TTY, EXPOSURE, SCROLL, FOCUS };
 
     bool     handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers);
 
@@ -196,14 +194,14 @@ protected:
     void     tabCursor(TabDir dir, uint16_t count);
     void     damageCursor();
 
-    void     fixDamage(Pos begin, Pos end, Damager damager);
+    void     fixDamage(Pos begin, Pos end, Trigger trigger);
 
     bool     translate(uint8_t ascii, utf8::Seq & seq) const;
 
-    void     draw(Pos begin, Pos end, Damager damager, Region & damage);
+    void     draw(Pos begin, Pos end, Trigger trigger, Region & damage);
     void     drawRowBg(uint16_t row, uint16_t colBegin, uint16_t colEnd);
     void     drawRowFg(uint16_t row, uint16_t colBegin, uint16_t colEnd);
-    void     drawCursor(Region & damage /* FIXME */);
+    void     drawCursor();
 
     void     write(const uint8_t * data, size_t size);
     void     echo(const uint8_t * data, size_t size);

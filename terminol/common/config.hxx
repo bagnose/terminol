@@ -45,9 +45,14 @@ struct Config {
     uint16_t    initialRows;
     uint16_t    initialCols;
 
-    Color       fgColor;
-    Color       bgColor;
+    Color       normalFgColor;
+    Color       normalBgColor;
     Color       systemColors[16];
+
+    bool        customSelectBgColor;
+    Color       selectBgColor;
+    bool        customSelectFgColor;
+    Color       selectFgColor;
 
     bool        customCursorFillColor;
     Color       cursorFillColor;

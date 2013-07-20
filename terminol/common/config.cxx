@@ -188,6 +188,8 @@ Config::Config() :
     initialRows(24),
     initialCols(80),
     //
+    customSelectBgColor(false),
+    customSelectFgColor(false),
     customCursorFillColor(false),
     customCursorTextColor(false),
     //
@@ -209,58 +211,61 @@ void Config::setColorScheme(const std::string & name) {
     if (name == "linux") {
         std::copy(COLOURS_LINUX, COLOURS_LINUX + 16, systemColors);
 
-        fgColor = systemColors[7];
-        bgColor = systemColors[0];
-        customCursorFillColor = false;
+        normalFgColor = systemColors[7];
+        normalBgColor = systemColors[0];
     }
     else if (name == "rxvt") {
         std::copy(COLOURS_RXVT, COLOURS_RXVT + 16, systemColors);
 
-        fgColor = systemColors[7];
-        bgColor = systemColors[0];
-        customCursorFillColor = false;
+        normalFgColor = systemColors[7];
+        normalBgColor = systemColors[0];
     }
     else if (name == "tango") {
         std::copy(COLOURS_TANGO, COLOURS_TANGO + 16, systemColors);
 
-        fgColor = systemColors[7];
-        bgColor = systemColors[0];
-        customCursorFillColor = false;
+        normalFgColor = systemColors[7];
+        normalBgColor = systemColors[0];
     }
     else if (name == "xterm") {
         std::copy(COLOURS_XTERM, COLOURS_XTERM + 16, systemColors);
 
-        fgColor = systemColors[7];
-        bgColor = systemColors[0];
-        customCursorFillColor = false;
+        normalFgColor = systemColors[7];
+        normalBgColor = systemColors[0];
     }
     else if (name == "zenburn-dark") {
         std::copy(COLOURS_ZENBURN_DARK, COLOURS_ZENBURN_DARK + 16, systemColors);
 
-        fgColor = systemColors[7];
-        bgColor = systemColors[0];
-        customCursorFillColor = false;
+        normalFgColor = systemColors[7];
+        normalBgColor = systemColors[0];
     }
     else if (name == "zenburn") {
         std::copy(COLOURS_ZENBURN, COLOURS_ZENBURN + 16, systemColors);
 
-        fgColor = systemColors[7];
-        bgColor = systemColors[0];
-        customCursorFillColor = false;
+        normalFgColor = systemColors[7];
+        normalBgColor = systemColors[0];
     }
     else if (name == "solarized-dark") {
         std::copy(COLOURS_SOLARIZED_DARK, COLOURS_SOLARIZED_DARK + 16, systemColors);
 
-        fgColor = systemColors[12];
-        bgColor = systemColors[8];
+        normalFgColor = systemColors[12];
+        normalBgColor = systemColors[8];
 
-        customCursorFillColor = true;
-        cursorFillColor       = systemColors[14];
+        //customSelectFgColor   = true;
+        selectFgColor         = Color(255, 0, 0);
+
+        //customSelectBgColor   = true;
+        selectBgColor         = Color(100, 130, 205);
+
+        //customCursorFillColor = true;
+        cursorFillColor       = Color(255, 0, 0);
+
+        //customCursorTextColor = true;
+        cursorTextColor       = Color(255, 0, 0);
     }
     else if (name == "solarized-light") {
         std::copy(COLOURS_SOLARIZED_LIGHT, COLOURS_SOLARIZED_LIGHT + 16, systemColors);
-        fgColor = systemColors[12];
-        bgColor = systemColors[8];
+        normalFgColor = systemColors[12];
+        normalBgColor = systemColors[8];
 
         customCursorFillColor = true;
         cursorFillColor       = systemColors[14];
@@ -270,6 +275,6 @@ void Config::setColorScheme(const std::string & name) {
     }
 
     scrollbarFgColor = { 0x7F, 0x7F, 0x7F };
-    scrollbarBgColor = bgColor;
-    borderColor      = bgColor;
+    scrollbarBgColor = normalBgColor;
+    borderColor      = normalBgColor;
 }

@@ -102,7 +102,6 @@ Terminal::Terminal(I_Observer    & observer,
     //
     _pressed(false),
     _focused(true),
-    _run(),
     //
     _tty(tty),
     _dumpWrites(false),
@@ -161,12 +160,10 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     for (size_t i = 0; i != _tabs.size(); ++i) {
         _tabs[i] = i % TAB_SIZE == 0;
     }
-
-    _run.shrink_to_fit();
 }
 
 void Terminal::redraw(Pos begin, Pos end) {
-    fixDamage(begin, end, Damager::EXPOSURE);
+    fixDamage(begin, end, Trigger::EXPOSURE);
 }
 
 bool Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
@@ -174,7 +171,7 @@ bool Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
         if (_config.scrollOnTtyKeyPress && _buffer->scrollBottomHistory()) {
             fixDamage(Pos(0, 0),
                       Pos(_buffer->getRows(), _buffer->getCols()),
-                      Damager::SCROLL);
+                      Trigger::SCROLL);
         }
 
         std::vector<uint8_t> str;
@@ -261,7 +258,7 @@ void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
             }
 
             fixDamage(Pos(), Pos(_buffer->getRows(), _buffer->getCols()),
-                      Damager::SCROLL);     // FIXME Damager
+                      Trigger::SCROLL);     // FIXME Trigger
         }
         else if (button == Button::MIDDLE) {
             _observer.terminalPaste(false);
@@ -269,7 +266,7 @@ void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
         else if (button == Button::RIGHT) {
             _buffer->adjustSelection(pos);
             fixDamage(Pos(), Pos(_buffer->getRows(), _buffer->getCols()),
-                      Damager::SCROLL);     // FIXME Damager
+                      Trigger::SCROLL);     // FIXME Trigger
         }
     }
 
@@ -318,7 +315,7 @@ void Terminal::buttonMotion(ModifierSet modifiers, bool within, Pos pos) {
         if (_button == Button::LEFT) {
             _buffer->delimitSelection(pos);
             fixDamage(Pos(), Pos(_buffer->getRows(), _buffer->getCols()),
-                      Damager::SCROLL);     // FIXME Damager
+                      Trigger::SCROLL);     // FIXME Trigger
         }
     }
 
@@ -388,14 +385,14 @@ void Terminal::scrollWheel(ScrollDir dir, ModifierSet modifiers, bool UNUSED(wit
                 if (_buffer->scrollUpHistory(rows)) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
-                              Damager::SCROLL);
+                              Trigger::SCROLL);
                 }
                 break;
             case ScrollDir::DOWN:
                 if (_buffer->scrollDownHistory(rows)) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
-                              Damager::SCROLL);
+                              Trigger::SCROLL);
                 }
                 break;
         }
@@ -406,7 +403,7 @@ void Terminal::paste(const uint8_t * data, size_t size) {
     if (_config.scrollOnPaste && _buffer->scrollBottomHistory()) {
         fixDamage(Pos(0, 0),
                   Pos(_buffer->getRows(), _buffer->getCols()),
-                  Damager::SCROLL);
+                  Trigger::SCROLL);
     }
 
     if (_modes.get(Mode::BRACKETED_PASTE)) {
@@ -429,7 +426,7 @@ void Terminal::paste(const uint8_t * data, size_t size) {
 void Terminal::clearSelection() {
     _buffer->clearSelection();
     fixDamage(Pos(), Pos(_buffer->getRows(), _buffer->getCols()),
-              Damager::SCROLL);     // FIXME Damager
+              Trigger::SCROLL);     // FIXME Trigger
 }
 
 void Terminal::focusChange(bool focused) {
@@ -446,8 +443,8 @@ void Terminal::focusChange(bool focused) {
         }
 
         if (_modes.get(Mode::SHOW_CURSOR)) {
-            fixDamage(_cursor.pos, _cursor.pos.right(),
-                      Damager::SCROLL);     // FIXME Damager
+            damageCursor();
+            fixDamage(_cursor.pos, _cursor.pos.right().down(), Trigger::FOCUS);
         }
     }
 }
@@ -475,7 +472,7 @@ void Terminal::read() {
     if (!_config.syncTty) {
         fixDamage(Pos(0, 0),
                   Pos(_buffer->getRows(), _buffer->getCols()),
-                  Damager::TTY);
+                  Trigger::TTY);
     }
 
     _dispatch = false;
@@ -557,42 +554,42 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                 if (_buffer->scrollUpHistory(1)) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
-                              Damager::SCROLL);
+                              Trigger::SCROLL);
                 }
                 return true;
             case XKB_KEY_Down:
                 if (_buffer->scrollDownHistory(1)) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
-                              Damager::SCROLL);
+                              Trigger::SCROLL);
                 }
                 return true;
             case XKB_KEY_Page_Up:
                 if (_buffer->scrollUpHistory(_buffer->getRows())) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
-                              Damager::SCROLL);
+                              Trigger::SCROLL);
                 }
                 return true;
             case XKB_KEY_Page_Down:
                 if (_buffer->scrollDownHistory(_buffer->getRows())) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
-                              Damager::SCROLL);
+                              Trigger::SCROLL);
                 }
                 return true;
             case XKB_KEY_Home:
                 if (_buffer->scrollTopHistory()) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
-                              Damager::SCROLL);
+                              Trigger::SCROLL);
                 }
                 return true;
             case XKB_KEY_End:
                 if (_buffer->scrollBottomHistory()) {
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
-                              Damager::SCROLL);
+                              Trigger::SCROLL);
                 }
                 return true;
             default:
@@ -683,30 +680,30 @@ void Terminal::damageCursor() {
     _buffer->damageCell(_cursor.pos);
 }
 
-void Terminal::fixDamage(Pos begin, Pos end, Damager damager) {
-    if (damager == Damager::TTY &&
+void Terminal::fixDamage(Pos begin, Pos end, Trigger trigger) {
+    if (trigger == Trigger::TTY &&
         _config.scrollOnTtyOutput &&
         _buffer->scrollBottomHistory())
     {
         // Promote the damage from TTY to SCROLL.
-        damager = Damager::SCROLL;
+        trigger = Trigger::SCROLL;
     }
 
-    bool internal = damager != Damager::EXPOSURE;
+    bool internal = trigger != Trigger::EXPOSURE;
 
     if (_observer.terminalFixDamageBegin(internal)) {
         Region damage;
-        draw(begin, end, damager, damage);
+        draw(begin, end, trigger, damage);
 
         bool scrollbar =    // Identical in two places.
-            damager == Damager::SCROLL || damager == Damager::EXPOSURE ||
-            (damager == Damager::TTY && _buffer->getBarDamage());
+            trigger == Trigger::SCROLL || trigger == Trigger::EXPOSURE ||
+            (trigger == Trigger::TTY && _buffer->getBarDamage());
 
-        _observer.terminalFixDamageEnd(damager != Damager::EXPOSURE,
+        _observer.terminalFixDamageEnd(trigger != Trigger::EXPOSURE,
                                        damage,
                                        scrollbar);
 
-        if (damager == Damager::TTY) {
+        if (trigger == Trigger::TTY) {
             _buffer->resetDamage();
         }
     }
@@ -739,7 +736,7 @@ bool Terminal::translate(uint8_t ascii, utf8::Seq & seq) const {
     return false;
 }
 
-void Terminal::draw(Pos begin, Pos end, Damager damager, Region & damage) {
+void Terminal::draw(Pos begin, Pos end, Trigger trigger, Region & damage) {
     damage.clear();
 
     for (uint16_t r = begin.row; r != end.row; ++r) {
@@ -747,7 +744,7 @@ void Terminal::draw(Pos begin, Pos end, Damager damager, Region & damage) {
 
         uint16_t colBegin, colEnd;
 
-        if (damager == Damager::TTY) {
+        if (trigger == Trigger::TTY) {
             _buffer->getDamage(r, colBegin, colEnd);
             /*
             PRINT("Buffer damage: row=" << r <<
@@ -767,34 +764,53 @@ void Terminal::draw(Pos begin, Pos end, Damager damager, Region & damage) {
 
         drawRowBg(r, colBegin, colEnd);
         drawRowFg(r, colBegin, colEnd);
+
+        if (_modes.get(Mode::SHOW_CURSOR)) {
+            if (r == _cursor.pos.row + _buffer->getScrollOffset()) {
+                if (_cursor.pos.col >= colBegin && _cursor.pos.col < colEnd) {
+                    drawCursor();
+                }
+            }
+        }
     }
 
     bool scrollbar =    // Identical in two places.
-        damager == Damager::SCROLL || damager == Damager::EXPOSURE ||
-        (damager == Damager::TTY && _buffer->getBarDamage());
+        trigger == Trigger::SCROLL || trigger == Trigger::EXPOSURE ||
+        (trigger == Trigger::TTY && _buffer->getBarDamage());
 
     if (scrollbar) {
         _observer.terminalDrawScrollbar(_buffer->getTotal(),
                                         _buffer->getBar(),
                                         _buffer->getRows());
     }
-
-    _run.clear();
 }
 
 void Terminal::drawRowBg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
-    auto     bg0 = UColor::background();
+    auto     bg0 = UColor::stock(UColor::Name::TEXT_BG);
     uint16_t c0  = colBegin;     // Accumulation start column.
     uint16_t c1;
 
     for (c1 = colBegin; c1 != colEnd; ++c1) {
-        const Cell & cell = _buffer->getCell(Pos(r, c1));
+        auto         selected = _buffer->isCellSelected(Pos(r, c1));
+        const Cell & cell     = _buffer->getCell(Pos(r, c1));
+        const auto & attrs    = cell.style.attrs;
+        auto         swap     = XOR(_modes.get(Mode::REVERSE), attrs.get(Attr::INVERSE));
 
-        auto swap = XOR(_modes.get(Mode::REVERSE), cell.style.attrs.get(Attr::INVERSE));
-        auto bg1  = swap ? cell.style.fg : cell.style.bg;
+        auto bg1 = bg0;
 
-        if (_buffer->isCellSelected(Pos(r, c1))) {
-            bg1 = UColor::direct(72, 82, 175);
+        if (selected) {
+            if (_config.customSelectBgColor) {
+                bg1 = UColor::stock(UColor::Name::SELECT_BG);
+            }
+            else if (_config.customSelectFgColor) {
+                bg1 = swap ? cell.style.fg : cell.style.bg;
+            }
+            else {
+                bg1 = !swap ? cell.style.fg : cell.style.bg;
+            }
+        }
+        else {
+            bg1 = swap ? cell.style.fg : cell.style.bg;
         }
 
         if (bg0 != bg1) {
@@ -811,39 +827,46 @@ void Terminal::drawRowBg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
     if (c1 != c0) {
         _observer.terminalDrawBg(Pos(r, c0), bg0, c1 - c0);
     }
-
-    if (_modes.get(Mode::SHOW_CURSOR)) {
-        if (r == _cursor.pos.row + _buffer->getScrollOffset()) {
-            if (_cursor.pos.col >= colBegin && _cursor.pos.col < colEnd) {
-                _observer.terminalDrawBg(Pos(r, _cursor.pos.col),
-                                         UColor::direct(90, 90, 90), 1);
-            }
-        }
-    }
 }
 
 void Terminal::drawRowFg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
-    ASSERT(_run.empty(), "");
+    std::vector<uint8_t> run;         // Buffer for accumulating character runs.
 
-    auto     fg0    = UColor::foreground();
+    auto     fg0    = UColor::stock(UColor::Name::TEXT_FG);
     auto     attrs0 = AttrSet();
     uint16_t c0     = colBegin;      // Accumulation start column.
     uint16_t c1;
 
     for (c1 = colBegin; c1 != colEnd; ++c1) {
-        const auto & cell   = _buffer->getCell(Pos(r, c1));
-        const auto & attrs1 = cell.style.attrs;
-        auto         swap   = XOR(_modes.get(Mode::REVERSE), attrs1.get(Attr::INVERSE));
-        auto         fg1    = swap ? cell.style.bg : cell.style.fg;
+        auto         selected = _buffer->isCellSelected(Pos(r, c1));
+        const auto & cell     = _buffer->getCell(Pos(r, c1));
+        const auto & attrs1   = cell.style.attrs;
+        auto         swap     = XOR(_modes.get(Mode::REVERSE), attrs1.get(Attr::INVERSE));
+        auto         fg1      = fg0;
+
+        if (selected) {
+            if (_config.customSelectFgColor) {
+                fg1 = UColor::stock(UColor::Name::SELECT_FG);
+            }
+            else if (_config.customSelectBgColor) {
+                fg1 = swap ? cell.style.bg : cell.style.fg;
+            }
+            else {
+                fg1 = !swap ? cell.style.bg : cell.style.fg;
+            }
+        }
+        else {
+            fg1 = swap ? cell.style.bg : cell.style.fg;
+        }
 
         if (fg0 != fg1 || attrs0 != attrs1) {
-            if (!_run.empty()) {
+            if (c1 != c0) {
                 // flush run
-                auto size = _run.size();
-                _run.push_back(NUL);
+                auto size = run.size();
+                run.push_back(NUL);
                 _observer.terminalDrawFg(Pos(r, c0), fg0, attrs0,
-                                         &_run.front(), size, c1 - c0);
-                _run.clear();
+                                         &run.front(), size, c1 - c0);
+                run.clear();
             }
 
             c0     = c1;
@@ -852,18 +875,54 @@ void Terminal::drawRowFg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
         }
 
         utf8::Length length = utf8::leadLength(cell.seq.lead());
-        std::copy(cell.seq.bytes, cell.seq.bytes + length, std::back_inserter(_run));
+        std::copy(cell.seq.bytes, cell.seq.bytes + length, std::back_inserter(run));
     }
 
     // There may be an unterminated run to flush.
-    if (!_run.empty()) {
+    if (c1 != c0) {
         // flush run
-        auto size = _run.size();
-        _run.push_back(NUL);
+        auto size = run.size();
+        run.push_back(NUL);
         _observer.terminalDrawFg(Pos(r, c0), fg0, attrs0,
-                                 &_run.front(), size, c1 - c0);
-        _run.clear();
+                                 &run.front(), size, c1 - c0);
+        run.clear();
     }
+}
+
+void Terminal::drawCursor() {
+    ASSERT(_modes.get(Mode::SHOW_CURSOR) &&
+           _buffer->getScrollOffset() + _cursor.pos.row < _buffer->getRows(), "");
+
+    Pos pos(_cursor.pos.row + _buffer->getScrollOffset(), _cursor.pos.col);
+
+    ASSERT(pos.row < _buffer->getRows(), "");
+    ASSERT(pos.col < _buffer->getCols(), "");
+
+    auto         selected = _buffer->isCellSelected(pos);
+    const auto & cell = _buffer->getCell(pos);
+    const auto & attrs = cell.style.attrs;
+    auto         swap  = XOR(_modes.get(Mode::REVERSE), attrs.get(Attr::INVERSE));
+    auto         fg    = cell.style.fg;
+    auto         bg    = cell.style.bg;
+    if (XOR(selected, swap)) { std::swap(fg, bg); }
+
+    if (_config.customCursorFillColor) {
+        fg = UColor::stock(UColor::Name::CURSOR_FILL);
+    }
+
+    if (_config.customCursorTextColor) {
+        bg = UColor::stock(UColor::Name::CURSOR_TEXT);
+    }
+
+    auto length = utf8::leadLength(cell.seq.lead());
+    std::vector<uint8_t> run;         // Buffer for accumulating character runs.
+    std::copy(cell.seq.bytes, cell.seq.bytes + length, std::back_inserter(run));
+
+    auto size = run.size();
+    run.push_back(NUL);
+    _observer.terminalDrawCursor(pos, fg, bg, attrs,
+                                 &run.front(), size,
+                                 _cursor.wrapNext, _focused);
 }
 
 void Terminal::write(const uint8_t * data, size_t size) {
@@ -929,7 +988,7 @@ void Terminal::echo(const uint8_t * data, size_t size) {
     if (!_config.syncTty) {
         fixDamage(Pos(0, 0),
                   Pos(_buffer->getRows(), _buffer->getCols()),
-                  Damager::TTY);
+                  Trigger::TTY);
     }
 
     _dispatch = false;
@@ -977,7 +1036,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length length) {
     if (_config.syncTty) {        // FIXME too often, may not have been a buffer change.
         fixDamage(Pos(0, 0),
                   Pos(_buffer->getRows(), _buffer->getCols()),
-                  Damager::TTY);
+                  Trigger::TTY);
     }
 }
 
@@ -1476,7 +1535,7 @@ void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
                 case 666: // terminol extension (fix the damage)
                     fixDamage(Pos(0, 0),
                               Pos(_buffer->getRows(), _buffer->getCols()),
-                              Damager::TTY);
+                              Trigger::TTY);
                     break;
                 default:
                     // TODO consult http://rtfm.etla.org/xterm/ctlseq.html AND man 7 urxvt.
@@ -1732,7 +1791,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 }
                 break;
             case 39:
-                _cursor.style.fg = UColor::foreground();
+                _cursor.style.fg = UColor::stock(UColor::Name::TEXT_FG);
                 break;
                 // 40..47 (set background colour - handled separately)
             case 48:
@@ -1801,7 +1860,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 }
                 break;
             case 49:
-                _cursor.style.bg = UColor::background();
+                _cursor.style.bg = UColor::stock(UColor::Name::TEXT_BG);
                 break;
 
             default:

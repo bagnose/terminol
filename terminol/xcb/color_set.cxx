@@ -12,6 +12,8 @@ ColorSet::ColorSet(const Config & config,
 {
     _cursorFillColor  = convert(_config.cursorFillColor);
     _cursorTextColor  = convert(_config.cursorTextColor);
+    _selectFgColor    = convert(_config.selectFgColor);
+    _selectBgColor    = convert(_config.selectBgColor);
     _borderColor      = convert(_config.borderColor);
     _scrollBarFgColor = convert(_config.scrollbarFgColor);
     _scrollBarBgColor = convert(_config.scrollbarBgColor);
@@ -41,8 +43,8 @@ ColorSet::ColorSet(const Config & config,
 
     ASSERT(index == 0, "");
 
-    _foregroundColor = convert(_config.fgColor);
-    _backgroundColor = convert(_config.bgColor);
+    _normalFgColor = convert(_config.normalFgColor);
+    _normalBgColor = convert(_config.normalBgColor);
 
     //
     // Allocate the background pixel.
@@ -50,9 +52,9 @@ ColorSet::ColorSet(const Config & config,
 
     auto max = static_cast<double>(std::numeric_limits<uint16_t>::max());
 
-    auto r = static_cast<uint16_t>(_backgroundColor.r * max + 0.5);
-    auto g = static_cast<uint16_t>(_backgroundColor.g * max + 0.5);
-    auto b = static_cast<uint16_t>(_backgroundColor.b * max + 0.5);
+    auto r = static_cast<uint16_t>(_normalBgColor.r * max + 0.5);
+    auto g = static_cast<uint16_t>(_normalBgColor.g * max + 0.5);
+    auto b = static_cast<uint16_t>(_normalBgColor.b * max + 0.5);
 
     auto cookie = xcb_alloc_color(_basics.connection(),
                                   _basics.screen()->default_colormap,

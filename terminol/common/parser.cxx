@@ -163,11 +163,11 @@ void handleSet(const std::string & key,
         config.syncTty = unstringify<bool>(value);
     }
     // initialX/Y/Rows/Columns
-    else if (key == "fgColor") {
-        config.fgColor = Color::fromString(value);
+    else if (key == "normalFgColor") {
+        config.normalFgColor = Color::fromString(value);
     }
-    else if (key == "bgColor") {
-        config.bgColor = Color::fromString(value);
+    else if (key == "normalBgColor") {
+        config.normalBgColor = Color::fromString(value);
     }
     // systemColors[16]
     else if (key == "cursorFillColor") {

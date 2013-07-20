@@ -198,10 +198,23 @@ protected:
 private:
     XColor getColor(const UColor & ucolor) const {
         switch (ucolor.type) {
-            case UColor::Type::FOREGROUND:
-                return _colorSet.getForegroundColor();
-            case UColor::Type::BACKGROUND:
-                return _colorSet.getBackgroundColor();
+            case UColor::Type::STOCK:
+                switch (ucolor.name) {
+                    case UColor::Name::TEXT_FG:
+                        return _colorSet.getNormalFgColor();
+                    case UColor::Name::TEXT_BG:
+                        return _colorSet.getNormalBgColor();
+                    case UColor::Name::SELECT_FG:
+                        return _colorSet.getSelectFgColor();
+                    case UColor::Name::SELECT_BG:
+                        return _colorSet.getSelectBgColor();
+                    case UColor::Name::CURSOR_FILL:
+                        return _colorSet.getCursorFillColor();
+                    case UColor::Name::CURSOR_TEXT:
+                        return _colorSet.getCursorTextColor();
+                }
+
+                FATAL("Unreachable");
             case UColor::Type::INDEXED:
                 return _colorSet.getIndexedColor(ucolor.index);
             case UColor::Type::DIRECT:

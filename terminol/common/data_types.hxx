@@ -44,22 +44,26 @@ inline bool operator != (Color lhs, Color rhs) {
 //
 
 struct UColor {
-    enum class Type : uint8_t { FOREGROUND, BACKGROUND, INDEXED, DIRECT };
+    // TODO NORMAL_FG, CURSOR_FG
+    enum class Type : uint8_t { STOCK, INDEXED, DIRECT };
+    enum class Name : uint8_t {
+        TEXT_FG, TEXT_BG, SELECT_FG, SELECT_BG, CURSOR_FILL, CURSOR_TEXT
+    };
 
-    static UColor foreground() { return UColor(Type::FOREGROUND); }
-    static UColor background() { return UColor(Type::BACKGROUND); }
+    static UColor stock(Name name) { return UColor(name); }
     static UColor indexed(uint8_t index) { return UColor(index); }
     static UColor direct(uint8_t r, uint8_t g, uint8_t b) { return UColor(r, g, b); }
 
     Type type;
 
     union {
+        Name    name;
         uint8_t index;
         Color   values;
     };
 
 private:
-    explicit UColor(Type type_) : type(type_) {}
+    explicit UColor(Name name_) : type(Type::STOCK), name(name_) {}
     explicit UColor(uint8_t index_) : type(Type::INDEXED), index(index_) {}
     UColor(uint8_t r, uint8_t g, uint8_t b) : type(Type::DIRECT), values(r, g, b) {}
 };
@@ -70,9 +74,8 @@ inline bool operator == (UColor lhs, UColor rhs) {
     }
     else {
         switch (lhs.type) {
-            case UColor::Type::FOREGROUND:
-            case UColor::Type::BACKGROUND:
-                return true;
+            case UColor::Type::STOCK:
+                return lhs.name == rhs.name;
             case UColor::Type::INDEXED:
                 return lhs.index == rhs.index;
             case UColor::Type::DIRECT:
@@ -94,7 +97,10 @@ struct Style {
     UColor  fg;       // 4 bytes
     UColor  bg;       // 4 bytes
 
-    Style() : attrs(), fg(UColor::foreground()), bg(UColor::background()) {}
+    Style() :
+        attrs(),
+        fg(UColor::stock(UColor::Name::TEXT_FG)),
+        bg(UColor::stock(UColor::Name::TEXT_BG)) {}
 
     Style(AttrSet attrs_, UColor fg_, UColor bg_) :
         attrs(attrs_), fg(fg_), bg(bg_) {}
