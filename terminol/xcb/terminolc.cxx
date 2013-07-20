@@ -12,12 +12,12 @@ int main() {
     parseConfig(config);
 
     const auto & socketPath = config.socketPath;
-    int fd = ::open(socketPath.c_str(), O_WRONLY | O_NONBLOCK);
+    auto fd = ::open(socketPath.c_str(), O_WRONLY | O_NONBLOCK);
 
     ENFORCE_SYS(fd != -1, "Failed to open: " << socketPath);
 
     char c = 0;
-    ssize_t rval = ::write(fd, &c, 1) != -1;
+    auto rval = TEMP_FAILURE_RETRY(::write(fd, &c, 1));
 
     if (rval == -1) {
         switch (errno) {

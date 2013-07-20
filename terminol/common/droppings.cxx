@@ -8,15 +8,9 @@
 #include <stdio.h>
 #include <unistd.h>
 
-void drop() {
-    for (auto i = SPACE; i != DEL; ++i) {
-        std::cout << CR << i;
-    }
-}
-
 int main() {
     struct winsize w;
-    ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
+    ::ioctl(STDOUT_FILENO, TIOCGWINSZ, &w);
 
     uint16_t rows = w.ws_row;
     uint16_t cols = w.ws_col;
@@ -49,7 +43,7 @@ int main() {
         }
     }
 
-    sleep(5);
+    ::sleep(5);
 
     return 0;
 }
