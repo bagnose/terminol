@@ -58,17 +58,12 @@ public:
                                         size_t          size,
                                         bool            wrapNext,
                                         bool            focused) throw () = 0;
-        virtual void terminalDrawSelection(Pos      begin,
-                                           Pos      end,
-                                           bool     topless,
-                                           bool     bottomless) throw () = 0;
         virtual void terminalDrawScrollbar(size_t   totalRows,
                                            size_t   historyOffset,
                                            uint16_t visibleRows) throw () = 0;
-        virtual void terminalFixDamageEnd(bool     internal,
-                                          Pos      begin,
-                                          Pos      end,
-                                          bool     scrollbar) throw () = 0;
+        virtual void terminalFixDamageEnd(bool           internal,
+                                          const Region & damage,
+                                          bool           scrollbar) throw () = 0;
         virtual void terminalChildExited(int exitStatus) throw () = 0;
 
     protected:
@@ -132,8 +127,6 @@ private:
 
     Cursor                _cursor;
     Cursor                _savedCursor;
-
-    Region                _damage;
 
     bool                  _pressed;
     Button                _button;
@@ -207,11 +200,10 @@ protected:
 
     bool     translate(uint8_t ascii, utf8::Seq & seq) const;
 
-    void     draw(Pos begin, Pos end, Damager damage);
+    void     draw(Pos begin, Pos end, Damager damager, Region & damage);
     void     drawRowBg(uint16_t row, uint16_t colBegin, uint16_t colEnd);
     void     drawRowFg(uint16_t row, uint16_t colBegin, uint16_t colEnd);
-    void     drawCursor();
-    void     drawSelection();
+    void     drawCursor(Region & damage /* FIXME */);
 
     void     write(const uint8_t * data, size_t size);
     void     echo(const uint8_t * data, size_t size);

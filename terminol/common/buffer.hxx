@@ -537,6 +537,32 @@ public:
         return true;
     }
 
+    bool isCellSelected(Pos pos) const {
+        if (_selectMarker == _selectDelimiter) {
+            return false;
+        }
+
+        APos b, e;
+        normalSelection(b, e);
+
+        APos apos(pos, _history.size() - _scrollOffset);
+
+        if (apos.row >= b.row && apos.row <= e.row) {
+            if (apos.row == b.row && apos.col < b.col) {
+                return false;
+            }
+            else if (apos.row == e.row && apos.col >= e.col) {
+                return false;
+            }
+            else {
+                return true;
+            }
+        }
+        else {
+            return false;
+        }
+    }
+
     bool getSelectedArea(Pos & begin, Pos & end, bool & topless, bool & bottomless) const {
         // If the marker and delimiter are the same then the selection is empty.
         if (_selectMarker == _selectDelimiter) {

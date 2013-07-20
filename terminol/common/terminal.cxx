@@ -100,8 +100,6 @@ Terminal::Terminal(I_Observer    & observer,
     _cursor(),
     _savedCursor(),
     //
-    _damage(),
-    //
     _pressed(false),
     _focused(true),
     _run(),
@@ -639,6 +637,8 @@ void Terminal::moveCursor(Pos pos) {
 
     _cursor.pos.col  = clamp<int32_t>(pos.col, 0, _buffer->getCols() - 1);
     _cursor.wrapNext = false;
+
+    damageCursor();
 }
 
 void Terminal::tabCursor(TabDir dir, uint16_t count) {
@@ -692,16 +692,18 @@ void Terminal::fixDamage(Pos begin, Pos end, Damager damager) {
         damager = Damager::SCROLL;
     }
 
-    if (_observer.terminalFixDamageBegin(damager != Damager::EXPOSURE)) {
-        draw(begin, end, damager);
+    bool internal = damager != Damager::EXPOSURE;
+
+    if (_observer.terminalFixDamageBegin(internal)) {
+        Region damage;
+        draw(begin, end, damager, damage);
 
         bool scrollbar =    // Identical in two places.
             damager == Damager::SCROLL || damager == Damager::EXPOSURE ||
             (damager == Damager::TTY && _buffer->getBarDamage());
 
-        // FIXME discrepancy between _damage and begin/end
         _observer.terminalFixDamageEnd(damager != Damager::EXPOSURE,
-                                       _damage.begin, _damage.end,
+                                       damage,
                                        scrollbar);
 
         if (damager == Damager::TTY) {
@@ -709,9 +711,10 @@ void Terminal::fixDamage(Pos begin, Pos end, Damager damager) {
         }
     }
     else {
-        // If we received a redraw() then the observer had better be able
-        // to handle it.
-        ENFORCE(damager != Damager::EXPOSURE, "");
+        // Only internally generated damage is allowed to not be handled
+        // by the observer. If the damage was external, then they instigated it
+        // and had better be able to handle it.
+        ENFORCE(internal, "");
     }
 }
 
@@ -736,53 +739,39 @@ bool Terminal::translate(uint8_t ascii, utf8::Seq & seq) const {
     return false;
 }
 
-void Terminal::draw(Pos begin, Pos end, Damager damage) {
-    _damage.clear();
+void Terminal::draw(Pos begin, Pos end, Damager damager, Region & damage) {
+    damage.clear();
 
     for (uint16_t r = begin.row; r != end.row; ++r) {
         // Determine the column extents
 
         uint16_t colBegin, colEnd;
 
-        if (damage == Damager::TTY) {
+        if (damager == Damager::TTY) {
             _buffer->getDamage(r, colBegin, colEnd);
-            //PRINT("Consulted buffer damage, got: " << colBegin << ", " << colEnd);
+            /*
+            PRINT("Buffer damage: row=" << r <<
+                  ", colB=" << colBegin << ", colEnd=" << colEnd);
+                  */
         }
         else {
             colBegin = begin.col;
             colEnd   = end.col;
-            //PRINT("External damage damage, got: " << colBegin << ", " << colEnd);
+            /*
+            PRINT("External damage: row=" << r <<
+                  ", colB=" << colBegin << ", colEnd=" << colEnd);
+                  */
         }
 
-        // Update _damage.colBegin and _damage.colEnd.
-        if (_damage.begin.col == _damage.end.col) {
-            _damage.begin.col = colBegin;
-            _damage.end.col   = colEnd;
-        }
-        else if (colBegin != colEnd) {
-            _damage.begin.col = std::min(_damage.begin.col, colBegin);
-            _damage.end.col   = std::max(_damage.end.col,   colEnd);
-        }
-
-        // Update _damage.rowBegin and _damage.rowEnd.
-        if (colBegin != colEnd) {
-            if (_damage.begin.row == _damage.end.row) {
-                _damage.begin.row = r;
-            }
-
-            _damage.end.row = r + 1;
-        }
+        damage.accommodateRow(r, colBegin, colEnd);
 
         drawRowBg(r, colBegin, colEnd);
         drawRowFg(r, colBegin, colEnd);
     }
 
-    drawCursor();
-    drawSelection();
-
     bool scrollbar =    // Identical in two places.
-        damage == Damager::SCROLL || damage == Damager::EXPOSURE ||
-        (damage == Damager::TTY && _buffer->getBarDamage());
+        damager == Damager::SCROLL || damager == Damager::EXPOSURE ||
+        (damager == Damager::TTY && _buffer->getBarDamage());
 
     if (scrollbar) {
         _observer.terminalDrawScrollbar(_buffer->getTotal(),
@@ -804,6 +793,10 @@ void Terminal::drawRowBg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
         auto swap = XOR(_modes.get(Mode::REVERSE), cell.style.attrs.get(Attr::INVERSE));
         auto bg1  = swap ? cell.style.fg : cell.style.bg;
 
+        if (_buffer->isCellSelected(Pos(r, c1))) {
+            bg1 = UColor::direct(72, 82, 175);
+        }
+
         if (bg0 != bg1) {
             if (c1 != c0) {
                 _observer.terminalDrawBg(Pos(r, c0), bg0, c1 - c0);
@@ -817,6 +810,15 @@ void Terminal::drawRowBg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
     // There may be an unterminated run to flush.
     if (c1 != c0) {
         _observer.terminalDrawBg(Pos(r, c0), bg0, c1 - c0);
+    }
+
+    if (_modes.get(Mode::SHOW_CURSOR)) {
+        if (r == _cursor.pos.row + _buffer->getScrollOffset()) {
+            if (_cursor.pos.col >= colBegin && _cursor.pos.col < colEnd) {
+                _observer.terminalDrawBg(Pos(r, _cursor.pos.col),
+                                         UColor::direct(90, 90, 90), 1);
+            }
+        }
     }
 }
 
@@ -861,66 +863,6 @@ void Terminal::drawRowFg(uint16_t r, uint16_t colBegin, uint16_t colEnd) {
         _observer.terminalDrawFg(Pos(r, c0), fg0, attrs0,
                                  &_run.front(), size, c1 - c0);
         _run.clear();
-    }
-}
-
-void Terminal::drawCursor() {
-    ASSERT(_run.empty(), "");
-
-    if (_modes.get(Mode::SHOW_CURSOR) &&
-        _buffer->getScrollOffset() + _cursor.pos.row < _buffer->getRows())
-    {
-        Pos pos(_cursor.pos.row + _buffer->getScrollOffset(), _cursor.pos.col);
-
-        ASSERT(pos.row < _buffer->getRows(), "");
-        ASSERT(pos.col < _buffer->getCols(), "");
-
-        // Update _damage.colBegin and _damage.colEnd.
-        if (_damage.begin.col == _damage.end.col) {
-            _damage.begin.col = pos.col;
-            _damage.end.col   = pos.col + 1;
-        }
-        else {
-            _damage.begin.col = std::min(_damage.begin.col, pos.col);
-            _damage.end.col   = std::max(_damage.end.col,   static_cast<uint16_t>(pos.col + 1));
-        }
-
-        // Update _damage.rowBegin and _damage.rowEnd.
-        if (_damage.begin.row == _damage.end.row) {
-            _damage.begin.row = pos.row;
-            _damage.end.row   = pos.row + 1;
-        }
-        else {
-            _damage.begin.row = std::min(_damage.begin.row, pos.row);
-            _damage.end.row   = std::max(_damage.end.row,   static_cast<uint16_t>(pos.row + 1));
-        }
-
-        const auto & cell = _buffer->getCell(pos);
-        const auto & attrs = cell.style.attrs;
-        auto         swap  = XOR(_modes.get(Mode::REVERSE), attrs.get(Attr::INVERSE));
-        auto         fg    = cell.style.fg;
-        auto         bg    = cell.style.bg;
-        if (swap) { std::swap(fg, bg); }
-
-        auto length = utf8::leadLength(cell.seq.lead());
-        std::copy(cell.seq.bytes, cell.seq.bytes + length, std::back_inserter(_run));
-
-        auto size = _run.size();
-        _run.push_back(NUL);
-        _observer.terminalDrawCursor(pos, fg, bg, attrs,
-                                     &_run.front(), size,
-                                     _cursor.wrapNext, _focused);
-        _run.clear();
-    }
-}
-
-void Terminal::drawSelection() {
-    if (true) {
-        Pos sBegin, sEnd;
-        bool topless, bottomless;
-        if (_buffer->getSelectedArea(sBegin, sEnd, topless, bottomless)) {
-            _observer.terminalDrawSelection(sBegin, sEnd, topless, bottomless);
-        }
     }
 }
 

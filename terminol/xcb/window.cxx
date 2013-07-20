@@ -1306,194 +1306,6 @@ void Window::terminalDrawCursor(Pos             pos,
     } cairo_restore(_cr);
 }
 
-namespace {
-
-void pathSingleLineSelection(cairo_t * cr,
-                             double x0, double y0, double x1, double y1,
-                             double i, double c) {
-    auto d = M_PI / 180.0;
-
-    cairo_new_sub_path(cr);
-    cairo_arc(cr, x0 + i + c, y0 + i + c, c, 180 * d, 270 * d);
-    cairo_line_to(cr, x1 - i, y0 + i);
-    cairo_arc(cr, x1 - i - c, y1 - i - c, c, 0 * d, 90 * d);
-    cairo_line_to(cr, x0 + i, y1 - i);
-    cairo_close_path(cr);
-}
-
-void pathWrappedLineSelection(cairo_t * cr,
-                              double x0, double x1, double x2, double x3,
-                              double y0, double y1, double y2,
-                              double i, double c,
-                              bool first) {
-    auto d = M_PI / 180.0;
-
-    if (first) {
-        cairo_new_sub_path(cr);
-        cairo_arc(cr, x2 + i + c, y0 + i + c, c, 180 * d, 270 * d);
-        cairo_line_to(cr, x3 - i, y0 + i);
-        cairo_line_to(cr, x3 - i, y1 - i);
-        cairo_line_to(cr, x2 + i, y1 - i);
-        cairo_close_path(cr);
-    }
-    else {
-        cairo_new_sub_path(cr);
-        cairo_move_to(cr, x0 + i, y1 + i);
-        cairo_line_to(cr, x1 - i, y1 + i);
-        cairo_arc(cr, x1 - i - c, y2 - i - c, c, 0 * d, 90 * d);
-        cairo_line_to(cr, x0 + i, y2 - i);
-        cairo_close_path(cr);
-    }
-}
-
-void pathMultiLineSelection(cairo_t * cr,
-                            double x0, double x1, double x2, double x3,
-                            double y0, double y1, double y2, double y3,
-                            double i, double c) {
-    auto d = M_PI / 180.0;
-
-    cairo_new_sub_path(cr);
-    cairo_arc(cr, x1 + i + c, y0 + i + c, c, 180 * d, 270 * d);
-    cairo_line_to(cr, x3 - i, y0 + i);
-    cairo_line_to(cr, x3 - i, y2 - i);
-    cairo_line_to(cr, x2 - i, y2 - i);
-    cairo_arc(cr, x2 - i - c, y3 - i - c, c, 0 * d, 90 * d);
-    cairo_line_to(cr, x0 + i, y3 - i);
-    cairo_line_to(cr, x0 + i, y1 + i);
-    cairo_line_to(cr, x1 + i, y1 + i);
-    cairo_close_path(cr);
-}
-
-} // namespace {anonymous}
-
-void Window::terminalDrawSelection(Pos  begin,
-                                   Pos  end,
-                                   bool topless,
-                                   bool bottomless) throw () {
-    ASSERT(!topless    || begin.row == 0, "");
-    ASSERT(!bottomless || end.row   == _terminal->getRows(), "");
-    ASSERT(begin.row <= end.row, "");
-
-    ASSERT(_cr, "");
-
-    double lineWidth = 1.0;
-    double halfWidth = lineWidth / 2.0;
-    double curve = 4.0;
-
-    auto numCols = _terminal->getCols();
-    auto plus    = bottomless ? 0 : 1;
-    auto extra   = 10;
-
-    double bg[4] = { 0.4, 0.0, 1.0, 0.07 };
-    double fg[4] = { 0.0, 0.5, 1.0, 1.0 };
-
-    if (begin.row == end.row) {
-        ASSERT(!topless && !bottomless, "");            // THIS HAS FIRED with topless == true
-        ASSERT(begin.col < end.col, "");
-
-        //       0                  1
-        //
-        //   0   0------------------1
-        //   1   3------------------2
-
-        int x0, y0;
-        int x1, y1;
-        pos2XY(begin,      x0, y0);
-        pos2XY(end.down(), x1, y1);
-
-        pathSingleLineSelection(_cr,
-                                x0, y0, x1, y1,
-                                halfWidth,
-                                curve);
-
-        cairo_set_source_rgba(_cr, bg[0], bg[1], bg[2], bg[3]);
-        cairo_fill_preserve(_cr);
-
-        cairo_set_source_rgba(_cr, fg[0], fg[1], fg[2], fg[3]);
-        cairo_stroke(_cr);
-    }
-    else if (begin.row + 1 == end.row && begin.col >= end.col)
-    {
-        //       0   1   2                  3
-        //
-        //   0           0------------------1
-        //   1   4---5   3------------------2
-        //   2   7---6
-
-        int x0, x1, x2, x3;
-        int y0, y1, y2;
-
-        pos2XY(Pos(begin.row,      0),         x0, y0);
-        pos2XY(Pos(end.row,        end.col),   x1, y1);
-        pos2XY(Pos(end.row + plus, begin.col), x2, y2);
-        pos2XY(Pos(end.row + plus, numCols),   x3, y2);      // clobber y2 with same value
-
-        if (topless)    { y0 = -extra; }
-        if (bottomless) { y2 = _height + extra; }
-
-        pathWrappedLineSelection(_cr, x0, x1, x2, x3, y0, y1, y2, halfWidth, curve, true);
-
-        cairo_set_source_rgba(_cr, bg[0], bg[1], bg[2], bg[3]);
-        cairo_fill_preserve(_cr);
-
-        cairo_set_source_rgba(_cr, fg[0], fg[1], fg[2], fg[3]);
-        cairo_stroke(_cr);
-
-        pathWrappedLineSelection(_cr, x0, x1, x2, x3, y0, y1, y2, halfWidth, curve, false);
-
-        cairo_set_source_rgba(_cr, bg[0], bg[1], bg[2], bg[3]);
-        cairo_fill_preserve(_cr);
-
-        cairo_set_source_rgba(_cr, fg[0], fg[1], fg[2], fg[3]);
-        cairo_stroke(_cr);
-    }
-    else {
-        // There are 8 distinct points, but they are defined by
-        // 8 coordinates (not 16).
-        // The general shape is:
-        //
-        //       0       1      2           3
-        //
-        //   0           0------------------1
-        //   1   6-------7                  |
-        //       |                          |
-        //   2   |              3-----------2
-        //   3   5--------------4
-        //
-        // Points are:
-        //
-        //   #: x, y
-        //   -------
-        //   0: 1, 0
-        //   1: 3, 0
-        //   2: 3, 2
-        //   3: 2, 2
-        //   4: 2, 3
-        //   5: 0, 3
-        //   6: 0, 1
-        //   7: 1, 1
-
-        int x0, x1, x2, x3;
-        int y0, y1, y2, y3;
-
-        pos2XY(Pos(begin.row,      0),         x0, y0);  // top left
-        pos2XY(Pos(begin.row + 1,  begin.col), x1, y1);  // #7
-        pos2XY(Pos(end.row,        end.col),   x2, y2);  // #3
-        pos2XY(Pos(end.row + plus, numCols),   x3, y3);  // bottom right
-
-        if (topless)    { y0 = -extra; }
-        if (bottomless) { y3 = _height + extra; }
-
-        pathMultiLineSelection(_cr, x0, x1, x2, x3, y0, y1, y2, y3, halfWidth, curve);
-
-        cairo_set_source_rgba(_cr, bg[0], bg[1], bg[2], bg[3]);
-        cairo_fill_preserve(_cr);
-
-        cairo_set_source_rgba(_cr, fg[0], fg[1], fg[2], fg[3]);
-        cairo_stroke(_cr);
-    }
-}
-
 void Window::terminalDrawScrollbar(size_t   totalRows,
                                    size_t   historyOffset,
                                    uint16_t visibleRows) throw () {
@@ -1534,10 +1346,9 @@ void Window::terminalDrawScrollbar(size_t   totalRows,
     cairo_fill(_cr);
 }
 
-void Window::terminalFixDamageEnd(bool internal,
-                                  Pos  begin,
-                                  Pos  end,
-                                  bool scrollBar) throw () {
+void Window::terminalFixDamageEnd(bool           internal,
+                                  const Region & damage,
+                                  bool           scrollBar) throw () {
     ASSERT(_cr, "");
 
     if (internal) {
@@ -1547,9 +1358,9 @@ void Window::terminalFixDamageEnd(bool internal,
         cairo_surface_flush(_surface);      // Useful?
 
         int x0, y0;
-        pos2XY(begin, x0, y0);
+        pos2XY(damage.begin, x0, y0);
         int x1, y1;
-        pos2XY(end, x1, y1);
+        pos2XY(damage.end, x1, y1);
 
         if (scrollBar) {
             // Expand the region to include the scroll bar

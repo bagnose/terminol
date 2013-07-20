@@ -183,17 +183,12 @@ protected:
                             size_t          size,
                             bool            wrapNext,
                             bool            focused) throw ();
-    void terminalDrawSelection(Pos      begin,
-                               Pos      end,
-                               bool     topless,
-                               bool     bottomless) throw ();
     void terminalDrawScrollbar(size_t   totalRows,
                                size_t   historyOffset,
                                uint16_t visibleRows) throw ();
-    void terminalFixDamageEnd(bool     internal,
-                              Pos      begin,
-                              Pos      end,
-                              bool     scrollbar) throw ();
+    void terminalFixDamageEnd(bool           internal,
+                              const Region & damage,
+                              bool           scrollbar) throw ();
     void terminalChildExited(int exitStatus) throw ();
 
     // FontManager::I_Client implementation:

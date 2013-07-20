@@ -197,9 +197,37 @@ struct Region {
     Region() : begin(), end() {}
     Region(Pos begin_, Pos end_) : begin(begin_), end(end_) {}
 
-    void clear() { *this = Region(); }
     Pos begin;
     Pos end;
+
+    void clear() { *this = Region(); }
+
+    void accommodateCell(Pos pos) {
+        accommodateRow(pos.row, pos.col, pos.col + 1);
+    }
+
+    void accommodateRow(uint16_t row, uint16_t colBegin, uint16_t colEnd) {
+        if (begin.col == end.col) {
+            begin.col = colBegin;
+            end.col   = colEnd;
+        }
+        else {
+            begin.col = std::min(begin.col, colBegin);
+            end.col   = std::max(end.col,   colEnd);
+        }
+
+        uint16_t rowBegin = row;
+        uint16_t rowEnd   = row + 1;
+
+        if (begin.row == end.row) {
+            begin.row = rowBegin;
+            end.row   = rowEnd;
+        }
+        else {
+            begin.row = std::min(begin.row, rowBegin);
+            end.row   = std::max(end.row,   rowEnd);
+        }
+    }
 };
 
 #endif // COMMON__DATA_TYPES__HXX
