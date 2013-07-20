@@ -1,3 +1,3 @@
 #!/bin/bash
 
-rm -f *.xz && makepkg -s && rm -rf pkg src terminol
+rm -f *.xz && makepkg --source && makepkg && rm -rf pkg src terminol
