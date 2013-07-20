@@ -3,10 +3,10 @@ terminol
 
 A simple terminal emulator currently under heavy development.
 
-Requires xkb, xcb, pango, cairo and a C++11 compiler.
+Requires xkbcommon, xcb, pango, cairo and a C++11 compiler.
 
 Brief build instructions (see notes below on setting up a configuration file
-or your fonts may suck):
+or your fonts might suck):
 
     # Build
     ./configure ./build debug gnu
