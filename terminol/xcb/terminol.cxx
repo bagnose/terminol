@@ -255,12 +255,17 @@ bool argMatch(const std::string & arg, const std::string & opt, std::string & va
 }
 
 void showHelp(const std::string & progName, std::ostream & ost) {
-    ost << "Usage:" << std::endl
-        << "  " << progName << " \\" << std::endl
-        //<< "    " << "--font=FONT --term=TERM --geometry=GEOMETRY \\" << std::endl
-        << "    " << "--font=FONT --term=TERM \\" << std::endl
-        << "    " << "--double-buffer --trace --sync --execute ARG0 ARG1..."
-        << std::endl;
+    ost << "terminol " << VERSION << std::endl
+        << "Usage: " << progName << " [OPTION]... [--execute COMMAND]" << std::endl
+        << std::endl
+        << "Options:" << std::endl
+        << "  --help" << std::endl
+        << "  --font-name=NAME" << std::endl
+        << "  --font-size=SIZE" << std::endl
+        << "  --term=NAME" << std::endl
+        << "  --trace" << std::endl
+        << "  --sync" << std::endl
+        ;
 }
 
 } // namespace {anonymous}
@@ -274,43 +279,47 @@ int main(int argc, char * argv[]) {
     Tty::Command command;
     bool         accumulateCommand = false;
 
-    for (int i = 1; i != argc; ++i) {
-        std::string arg = argv[i];
-        std::string val;
+    try {
+        for (int i = 1; i != argc; ++i) {
+            std::string arg = argv[i];
+            std::string val;
 
-        if (accumulateCommand) {
-            command.push_back(arg);
+            if (accumulateCommand) {
+                command.push_back(arg);
+            }
+            else if (arg == "--help") {
+                showHelp(argv[0], std::cout);
+                return 0;
+            }
+            else if (argMatch(arg, "font-name", val)) {
+                config.fontName = val;
+            }
+            else if (argMatch(arg, "font-size", val)) {
+                config.fontSize = unstringify<int>(val);
+            }
+            else if (arg == "--trace") {
+                config.traceTty = true;
+            }
+            else if (arg == "--sync") {
+                config.syncTty = true;
+            }
+            else if (argMatch(arg, "term", val)) {
+                config.termName = val;
+            }
+            else if (arg == "--execute") {
+                accumulateCommand = true;
+            }
+            else {
+                std::cerr
+                    << "Error: Unrecognised argument '" << arg << "'" << std::endl
+                    << std::endl;
+                showHelp(argv[0], std::cerr);
+                return 2;
+            }
         }
-        else if (arg == "--execute") {
-            accumulateCommand = true;
-        }
-        else if (arg == "--trace") {
-            config.traceTty = true;
-        }
-        else if (arg == "--sync") {
-            config.syncTty = true;
-        }
-        else if (argMatch(arg, "font", val)) {
-            config.fontName = val;
-        }
-        else if (argMatch(arg, "term", val)) {
-            config.termName = val;
-        }
-        /*
-        else if (argMatch(arg, "geometry", val)) {
-            // WidthxHeight+XPos+YPos
-            config.setGeometryString(val);
-        }
-        */
-        else if (arg == "--help") {
-            showHelp(argv[0], std::cout);
-            return 0;
-        }
-        else {
-            std::cerr << "Unrecognised argument '" << arg << "'" << std::endl;
-            showHelp(argv[0], std::cerr);
-            return 2;
-        }
+    }
+    catch (const ParseError & ex) {
+        FATAL(ex.message);
     }
 
     try {

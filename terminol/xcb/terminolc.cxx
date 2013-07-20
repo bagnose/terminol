@@ -7,9 +7,59 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-int main() {
+namespace {
+
+bool argMatch(const std::string & arg, const std::string & opt, std::string & val) {
+    std::string optComposed = "--" + opt + "=";
+    if (arg.substr(0, optComposed.size()) ==  optComposed) {
+        val = arg.substr(optComposed.size());
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+void showHelp(const std::string & progName, std::ostream & ost) {
+    ost << "terminolc " << VERSION << std::endl
+        << "Usage: " << progName << " [OPTION]..." << std::endl
+        << std::endl
+        << "Options:" << std::endl
+        << "  --help" << std::endl
+        << "  --socket=SOCKET" << std::endl
+        ;
+}
+
+} // namespace {anonymous}
+
+int main(int argc, char * argv[]) {
     Config config;
     parseConfig(config);
+
+    // Command line
+
+    try {
+        for (int i = 1; i != argc; ++i) {
+            std::string arg = argv[i];
+            std::string val;
+
+            if (arg == "--help") {
+                showHelp(argv[0], std::cout);
+                return 0;
+            }
+            else if (argMatch(arg, "socket", val)) {
+                config.socketPath = val;
+            }
+            else {
+                std::cerr << "Unrecognised argument '" << arg << "'" << std::endl;
+                showHelp(argv[0], std::cerr);
+                return 2;
+            }
+        }
+    }
+    catch (const ParseError & ex) {
+        FATAL(ex.message);
+    }
 
     const auto & socketPath = config.socketPath;
     auto fd = ::open(socketPath.c_str(), O_WRONLY | O_NONBLOCK);
