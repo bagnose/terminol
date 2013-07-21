@@ -647,7 +647,7 @@ public:
             _selectMarker    = APos();
             _selectDelimiter = _selectMarker;
 
-            // FIXME this doesn't work for historical
+            // FIXME this doesn't work for historical    - that shouldn't matter with Trigger::SELECTION?
             damageAll();
         }
 
@@ -1087,7 +1087,7 @@ public:
         clearSelection();
     }
 
-    // Called by Terminal::damageCursor()
+    // Called by Terminal::damageCursor()   FIXME this will go when cursor becomes subordinate
     void damageCell(Pos pos) {
         ASSERT(pos.row < getRows(), "");
         ASSERT(pos.col < getCols(), "");

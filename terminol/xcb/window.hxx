@@ -165,7 +165,7 @@ protected:
     void terminalSetIconName(const std::string & str) throw ();
     void terminalBeep() throw ();
     void terminalResizeBuffer(uint16_t rows, uint16_t cols) throw ();
-    bool terminalFixDamageBegin(bool internal) throw ();
+    bool terminalFixDamageBegin() throw ();
     void terminalDrawBg(Pos    pos,
                         UColor color,
                         size_t count) throw ();
@@ -186,8 +186,7 @@ protected:
     void terminalDrawScrollbar(size_t   totalRows,
                                size_t   historyOffset,
                                uint16_t visibleRows) throw ();
-    void terminalFixDamageEnd(bool           internal,
-                              const Region & damage,
+    void terminalFixDamageEnd(const Region & damage,
                               bool           scrollbar) throw ();
     void terminalChildExited(int exitStatus) throw ();
 

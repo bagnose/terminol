@@ -856,7 +856,7 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
         xy2Pos(x + w, y + h, posEnd);
         if (posEnd.col != _terminal->getCols()) { ++posEnd.col; }
         if (posEnd.row != _terminal->getRows()) { ++posEnd.row; }
-        _terminal->redraw(posBegin, posEnd);
+        _terminal->redraw(posBegin, posEnd, true /* ??? */);
 
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
@@ -1150,27 +1150,16 @@ void Window::terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () {
     }
 }
 
-bool Window::terminalFixDamageBegin(bool internal) throw () {
-    //PRINT("Damage begin, internal: " << std::boolalpha << internal);
-
-    if (internal) {
-        if (!_deferred && _mapped) {
-            ASSERT(_mapped, "");
-            ASSERT(_surface, "");
-            _cr = cairo_create(_surface);
-            cairo_set_line_width(_cr, 1.0);
-            return true;
-        }
-        else {
-            return false;
-        }
+bool Window::terminalFixDamageBegin() throw () {
+    if (!_deferred && _mapped) {
+        ASSERT(_mapped, "");
+        ASSERT(_surface, "");
+        _cr = cairo_create(_surface);
+        cairo_set_line_width(_cr, 1.0);
+        return true;
     }
     else {
-        ASSERT(_mapped, "");
-        ASSERT(_pixmap, "");
-        ASSERT(_surface, "");
-        ASSERT(_cr, "");
-        return true;
+        return false;
     }
 }
 
@@ -1342,41 +1331,38 @@ void Window::terminalDrawScrollbar(size_t   totalRows,
     cairo_fill(_cr);
 }
 
-void Window::terminalFixDamageEnd(bool           internal,
-                                  const Region & damage,
+void Window::terminalFixDamageEnd(const Region & damage,
                                   bool           scrollBar) throw () {
     ASSERT(_cr, "");
 
-    if (internal) {
-        cairo_destroy(_cr);
-        _cr = nullptr;
+    cairo_destroy(_cr);
+    _cr = nullptr;
 
-        cairo_surface_flush(_surface);      // Useful?
+    cairo_surface_flush(_surface);      // Useful?
 
-        int x0, y0;
-        pos2XY(damage.begin, x0, y0);
-        int x1, y1;
-        pos2XY(damage.end, x1, y1);
+    int x0, y0;
+    pos2XY(damage.begin, x0, y0);
+    int x1, y1;
+    pos2XY(damage.end, x1, y1);
 
-        if (scrollBar) {
-            // Expand the region to include the scroll bar
-            y0 = 0;
-            x1 = _width;
-            y1 = _height;
-        }
-
-        // Copy the buffer region
-        auto cookie = xcb_copy_area_checked(_basics.connection(),
-                                            _pixmap,
-                                            _window,
-                                            _gc,
-                                            x0, y0,   // src
-                                            x0, y0,   // dst
-                                            x1 - x0, y1 - y0);
-        xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
-        //xcb_flush(_basics.connection());
-        xcb_aux_sync(_basics.connection());
+    if (scrollBar) {
+        // Expand the region to include the scroll bar
+        y0 = 0;
+        x1 = _width;
+        y1 = _height;
     }
+
+    // Copy the buffer region
+    auto cookie = xcb_copy_area_checked(_basics.connection(),
+                                        _pixmap,
+                                        _window,
+                                        _gc,
+                                        x0, y0,   // src
+                                        x0, y0,   // dst
+                                        x1 - x0, y1 - y0);
+    xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
+    //xcb_flush(_basics.connection());
+    xcb_aux_sync(_basics.connection());
 }
 
 void Window::terminalChildExited(int UNUSED(exitStatus)) throw () {

@@ -40,7 +40,7 @@ public:
         virtual void terminalSetIconName(const std::string & str) throw () = 0;
         virtual void terminalBeep() throw () = 0;
         virtual void terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () = 0;
-        virtual bool terminalFixDamageBegin(bool internal) throw () = 0;
+        virtual bool terminalFixDamageBegin() throw () = 0;
         virtual void terminalDrawBg(Pos    pos,
                                     UColor color,
                                     size_t count) throw () = 0;
@@ -61,8 +61,7 @@ public:
         virtual void terminalDrawScrollbar(size_t   totalRows,
                                            size_t   historyOffset,
                                            uint16_t visibleRows) throw () = 0;
-        virtual void terminalFixDamageEnd(bool           internal,
-                                          const Region & damage,
+        virtual void terminalFixDamageEnd(const Region & damage,
                                           bool           scrollbar) throw () = 0;
         virtual void terminalChildExited(int exitStatus) throw () = 0;
 
@@ -162,7 +161,7 @@ public:
 
     void     resize(uint16_t rows, uint16_t cols);
 
-    void     redraw(Pos begin, Pos end);
+    void     redraw(Pos begin, Pos end, bool scrollbar);
 
     bool     keyPress(xkb_keysym_t keySym, ModifierSet modifiers);
     void     buttonPress(Button button, int count, ModifierSet modifiers,
@@ -185,7 +184,7 @@ public:
 
 protected:
     enum class TabDir { FORWARD, BACKWARD };
-    enum class Trigger { TTY, EXPOSURE, SCROLL, FOCUS };
+    enum class Trigger { TTY, SCROLL, FOCUS };
 
     bool     handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers);
 
@@ -194,11 +193,11 @@ protected:
     void     tabCursor(TabDir dir, uint16_t count);
     void     damageCursor();
 
-    void     fixDamage(Pos begin, Pos end, Trigger trigger);
+    void     fixDamage(Trigger trigger);
 
     bool     translate(uint8_t ascii, utf8::Seq & seq) const;
 
-    void     draw(Pos begin, Pos end, Trigger trigger, Region & damage);
+    void     draw(Trigger trigger, Region & damage);
     void     drawRowBg(uint16_t row, uint16_t colBegin, uint16_t colEnd);
     void     drawRowFg(uint16_t row, uint16_t colBegin, uint16_t colEnd);
     void     drawCursor();
