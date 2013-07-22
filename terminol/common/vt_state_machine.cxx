@@ -576,7 +576,7 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
     std::vector<uint8_t> inters;
     uint8_t mode;
 
-    // priv:
+    // Private:
 
     if (inRange(seq[i], 0x3C /* < */, 0x3F /* ? */)) {
         priv = seq[i];
@@ -586,7 +586,7 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
         priv = NUL;
     }
 
-    // arguments:
+    // Arguments:
 
     bool inArg = false;
 
@@ -605,7 +605,7 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
         ++i;
     }
 
-    // inter
+    // Intermediates:
 
     while (inRange(seq[i], 0x20 /* SPACE */, 0x2F /* ? */)) {
         inters.push_back(seq[i]);
@@ -614,7 +614,11 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
 
     ASSERT(i == seq.size() - 1, "i=" << i << ", seq.size=" << seq.size() << ", Seq: " << Str(seq));
 
+    // Mode:
+
     mode = seq[i];
+
+    // Dispatch:
 
     _observer.machineCsi(priv, args, inters, mode);
 }
@@ -627,9 +631,7 @@ void VtStateMachine::processOsc(const std::vector<uint8_t> & seq) {
     size_t i = 0;
     std::vector<std::string> args;
 
-    //
-    // Parse the arguments.
-    //
+    // Arguments:
 
     bool next = true;
     while (i != seq.size()) {
@@ -642,6 +644,8 @@ void VtStateMachine::processOsc(const std::vector<uint8_t> & seq) {
 
         ++i;
     }
+
+    // Dispatch:
 
     _observer.machineOsc(args);
 }
