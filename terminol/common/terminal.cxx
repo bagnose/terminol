@@ -97,7 +97,8 @@ Terminal::Terminal(I_Observer    & observer,
     _tabs(_buffer->getCols()),
     //
     _cursor(),
-    _savedCursor(),
+    _priSaveCursor(),
+    _altSaveCursor(),
     //
     _pressed(false),
     _focused(true),
@@ -139,7 +140,7 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
     // buffer. However, it kinda seems that urxvt works this way.
 
     auto priCursor = &_cursor.pos;
-    auto altCursor = &_savedCursor.pos;
+    auto altCursor = &_priSaveCursor.pos;       // FIXME
 
     if (_buffer != &_priBuffer) { std::swap(priCursor, altCursor); }
 
@@ -155,6 +156,9 @@ void Terminal::resize(uint16_t rows, uint16_t cols) {
             break;
     }
     _altBuffer.resizeClip(rows, cols, *altCursor);
+
+    if (rows <= _altSaveCursor.pos.row) { _altSaveCursor.pos.row = rows - 1; }
+    if (cols <= _altSaveCursor.pos.col) { _altSaveCursor.pos.col = cols - 1; }
 
     _tabs.resize(cols);
     for (size_t i = 0; i != _tabs.size(); ++i) {
@@ -664,6 +668,28 @@ void Terminal::damageCursor() {
     _buffer->damageCell(_cursor.pos);
 }
 
+void Terminal::saveCursor(bool /* posOnly */) {
+    if (_buffer == &_priBuffer) {
+        _priSaveCursor = _cursor;
+    }
+    else {
+        _altSaveCursor = _cursor;
+    }
+}
+
+void Terminal::restoreCursor(bool /* posOnly */) {
+    damageCursor();
+
+    if (_buffer == &_priBuffer) {
+        _cursor = _priSaveCursor;
+    }
+    else {
+        _cursor = _altSaveCursor;
+    }
+
+    damageCursor();
+}
+
 void Terminal::fixDamage(Trigger trigger) {
     if (trigger == Trigger::TTY &&
         _config.scrollOnTtyOutput &&
@@ -984,7 +1010,10 @@ void Terminal::resetAll() {
     }
 
     _cursor.reset();
-    _savedCursor.reset();
+    _priSaveCursor.reset();     // FIXME
+    _altSaveCursor.reset();
+
+    // FIXME Buffer??
 
     _observer.terminalResetTitleAndIcon();
 }
@@ -1172,11 +1201,10 @@ void Terminal::machineEscape(uint8_t code) throw () {
             _modes.unset(Mode::APPKEYPAD);
             break;
         case '7':   // DECSC - Save Cursor
-            _savedCursor = _cursor;
+            saveCursor(false);
             break;
         case '8':   // DECRC - Restore Cursor
-            damageCursor();
-            _cursor = _savedCursor;
+            restoreCursor(false);
             break;
         default:
             ERROR("Unknown escape sequence: ESC" << Char(code));
@@ -1388,6 +1416,7 @@ void Terminal::machineCsi(uint8_t priv,
                         case 6: {
                             // QCP - Query Cursor Position
                             // RCP - Report Cursor Position
+                            //PRINT("Reporting cursor: " << _cursor.pos);
                             std::ostringstream ost;
                             ost << ESC << '['
                                 << _cursor.pos.row + 1 << ';'
@@ -1476,14 +1505,14 @@ void Terminal::machineCsi(uint8_t priv,
                 }
                 break;
             case 's': // save cursor
-                _savedCursor.pos = _cursor.pos;
+                saveCursor(true);
                 break;
             case 't': // window ops?
                 // FIXME see 'Window Operations' in man 7 urxvt.
                 NYI("Window ops");
                 break;
             case 'u': // restore cursor
-                moveCursor(_savedCursor.pos);
+                restoreCursor(true);
                 break;
             case 'y': // DECTST
                 NYI("DECTST");
@@ -1920,7 +1949,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
 }
 
 void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> & args) {
-    //PRINT("processModes: priv=" << priv << ", set=" << set << ", args=" << strArgs(args));
+    //PRINT("processModes: priv=" << priv << ", set=" << set << ", args=" << args.front() /*XXX*/);
 
     for (auto a : args) {
         if (priv == '?') {
@@ -1938,7 +1967,8 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     // How much should we reset
                     _buffer->clear();
                     _cursor.reset();
-                    _savedCursor.reset();
+                    _priSaveCursor.reset();     // FIXME
+                    _altSaveCursor.reset();
                     if (set) {
                         // resize 132x24
                         _observer.terminalResizeBuffer(24, 132);
@@ -1986,6 +2016,10 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                 case 42: // DECNRCM - National characters (IGNORED)
                     NYI("Ignored: "  << a << ", " << set);
                     break;
+                case 47:
+                    _buffer = set ? &_altBuffer : &_priBuffer;
+                    _buffer->damageAll();
+                    break;
                 case 1000: // 1000,1002: enable xterm mouse report
                     _modes.setTo(Mode::MOUSE_BUTTON, set);
                     _modes.setTo(Mode::MOUSE_MOTION, false);
@@ -2022,29 +2056,38 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                 case 1039: // altSendsEscape
                     _modes.setTo(Mode::ALT_SENDS_ESC, set);
                     break;
-                case 1049: // rmcup/smcup, alternative screen
-                case 47:   // XXX ???
                 case 1047:
-                    if (_buffer == &_altBuffer) {
+                    _buffer = set ? &_altBuffer : &_priBuffer;
+
+                    if (set) {
                         _buffer->clear();
+                    }
+                    else {
+                        _buffer->damageAll();
+                    }
+                    break;
+                case 1048:
+                    if (set) {
+                        saveCursor(false);
+                    }
+                    else {
+                        restoreCursor(false);
+                    }
+                    break;
+                case 1049: // rmcup/smcup, alternative screen        WORKS
+                    if (set) {
+                        saveCursor(false);
                     }
 
                     _buffer = set ? &_altBuffer : &_priBuffer;
-                    if (a != 1049) {
-                        _buffer->damageAll();
-                        break;
-                    }
-                    // Fall-through:
-                case 1048:
+
                     if (set) {
-                        _savedCursor = _cursor;
+                        _buffer->clear();
                     }
                     else {
-                        damageCursor();
-                        _cursor = _savedCursor;
+                        _buffer->damageAll();
+                        restoreCursor(false);
                     }
-
-                    _buffer->damageAll();
                     break;
                 case 2004:
                     _modes.setTo(Mode::BRACKETED_PASTE, set);

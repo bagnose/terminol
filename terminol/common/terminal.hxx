@@ -123,7 +123,8 @@ private:
     std::vector<bool>     _tabs;
 
     Cursor                _cursor;
-    Cursor                _savedCursor;
+    Cursor                _priSaveCursor;
+    Cursor                _altSaveCursor;
 
     bool                  _pressed;
     Button                _button;
@@ -191,6 +192,8 @@ protected:
     void     moveCursor(Pos pos);
     void     tabCursor(TabDir dir, uint16_t count);
     void     damageCursor();
+    void     saveCursor(bool posOnly);
+    void     restoreCursor(bool posOnly);
 
     void     fixDamage(Trigger trigger);
 
