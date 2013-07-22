@@ -70,7 +70,7 @@ protected:
     void sosPmApcString(utf8::Seq seq, utf8::Length lengt);
     void csiEntry(utf8::Seq seq, utf8::Length length);
     void csiParam(utf8::Seq seq, utf8::Length length);
-    void csiIngore(utf8::Seq seq, utf8::Length length);
+    void csiIgnore(utf8::Seq seq, utf8::Length length);
     void csiIntermediate(utf8::Seq seq, utf8::Length length);
     void oscString(utf8::Seq seq, utf8::Length length);
     void dcsEntry(utf8::Seq seq, utf8::Length length);

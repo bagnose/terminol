@@ -62,7 +62,7 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length length) {
             csiParam(seq, length);
             break;
         case CSI_IGNORE:
-            csiIngore(seq, length);
+            csiIgnore(seq, length);
             break;
         case CSI_INTERMEDIATE:
             csiIntermediate(seq, length);
@@ -280,7 +280,7 @@ void VtStateMachine::csiParam(utf8::Seq seq, utf8::Length length) {
     }
 }
 
-void VtStateMachine::csiIngore(utf8::Seq seq, utf8::Length length) {
+void VtStateMachine::csiIgnore(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
         uint8_t c = seq.lead();
 
