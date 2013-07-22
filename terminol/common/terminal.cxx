@@ -1494,6 +1494,27 @@ default_:
                 break;
         }
     }
+    else if (inters.size() == 1) {
+        auto i = inters.back();
+
+        if (i == '$') {
+            switch (mode) {
+                case 'p': { // DECRQM
+                    if (priv == '?') {}
+
+                    auto m = nthArgNonZero(args, 0, 1);
+
+                    std::ostringstream ost;
+                    ost << ESC << "[?" << m << ";0$y";
+                    const auto & str = ost.str();
+                    write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+    }
     else {
     }
 }
