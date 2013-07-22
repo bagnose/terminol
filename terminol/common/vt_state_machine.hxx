@@ -19,15 +19,15 @@ public:
     class I_Observer {
     public:
         virtual void machineNormal(utf8::Seq seq, utf8::Length length) throw () = 0;
-        virtual void machineControl(uint8_t c) throw () = 0;
-        virtual void machineEscape(uint8_t c) throw () = 0;
+        virtual void machineControl(uint8_t control) throw () = 0;
+        virtual void machineEscape(uint8_t code) throw () = 0;
         virtual void machineCsi(uint8_t priv,
                                 const std::vector<int32_t> & args,
                                 const std::vector<uint8_t> & inters,
                                 uint8_t mode) throw () = 0;
         virtual void machineDcs(const std::vector<uint8_t> & seq) throw () = 0;
         virtual void machineOsc(const std::vector<std::string> & args) throw () = 0;
-        virtual void machineSpecial(uint8_t special, uint8_t code) throw () = 0;
+        virtual void machineSpecial(uint8_t inter, uint8_t code) throw () = 0;
 
     protected:
         I_Observer() {}

@@ -1061,9 +1061,9 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
     ASSERT(_cursor.pos.col < _buffer->getCols(), "");
 }
 
-void Terminal::machineControl(uint8_t c) throw () {
+void Terminal::machineControl(uint8_t control) throw () {
 
-    switch (c) {
+    switch (control) {
         case BEL:
             _observer.terminalBeep();
             break;
@@ -1116,8 +1116,8 @@ void Terminal::machineControl(uint8_t c) throw () {
     }
 }
 
-void Terminal::machineEscape(uint8_t c) throw () {
-    switch (c) {
+void Terminal::machineEscape(uint8_t code) throw () {
+    switch (code) {
         case 'D':   // IND - Line Feed (opposite of RI)
             // FIXME still dubious
             if (_cursor.pos.row == _buffer->getMarginEnd() - 1) {
@@ -1176,7 +1176,7 @@ void Terminal::machineEscape(uint8_t c) throw () {
             _cursor = _savedCursor;
             break;
         default:
-            ERROR("Unknown escape sequence: ESC" << Char(c));
+            ERROR("Unknown escape sequence: ESC" << Char(code));
             break;
     }
 }
@@ -1523,8 +1523,8 @@ void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
     }
 }
 
-void Terminal::machineSpecial(uint8_t special, uint8_t code) throw () {
-    switch (special) {
+void Terminal::machineSpecial(uint8_t inter, uint8_t code) throw () {
+    switch (inter) {
         case '#':
             switch (code) {
                 case '3':   // DECDHL - Double height/width (top half of char)
