@@ -553,7 +553,7 @@ void VtStateMachine::processEsc(const std::vector<uint8_t> & seq) {
             _observer.machineSpecial(seq[0], seq[1]);
             break;
         default:
-            break;
+            FATAL("Unreachable");
     }
 }
 
