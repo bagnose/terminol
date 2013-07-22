@@ -1411,7 +1411,11 @@ void Terminal::machineCsi(uint8_t priv,
                         break;
                     }
                     case 15: {
-                        NYI("Print status");
+                        // TPS - Test Printer Status
+                        std::ostringstream ost;
+                        ost << ESC << "[?13n";
+                        const auto & str = ost.str();
+                        write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
                         break;
                     }
                     case 25: {
