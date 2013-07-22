@@ -212,6 +212,7 @@ void VtStateMachine::csiEntry(utf8::Seq seq, utf8::Length length) {
             processControl(c);
         }
         else if (inRange(c, 0x20 /* SPACE */, 0x2F /* / */)) {
+            _escSeq.push_back(c);
             _state = State::CSI_INTERMEDIATE;
         }
         else if (c == 0x3A /* : */) {
@@ -253,6 +254,10 @@ void VtStateMachine::csiParam(utf8::Seq seq, utf8::Length length) {
 
         if (inRange(c, 0x00, 0x17) || c == 0x19 || inRange(c, 0x1C, 0x1F)) {
             processControl(c);
+        }
+        else if (inRange(c, 0x20 /* SPACE */, 0x2F /* / */)) {
+            _escSeq.push_back(c);
+            _state = State::CSI_INTERMEDIATE;
         }
         else if (inRange(c, 0x30 /* 0 */, 0x39 /* 9 */) || c == 0x3B /* ; */) {
             // param
