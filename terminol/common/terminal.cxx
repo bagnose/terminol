@@ -1186,311 +1186,315 @@ void Terminal::machineEscape(uint8_t code) throw () {
 
 void Terminal::machineCsi(uint8_t priv,
                           const std::vector<int32_t> & args,
-                          const std::vector<uint8_t> & UNUSED(inters),
+                          const std::vector<uint8_t> & inters,
                           uint8_t mode) throw () {
-    switch (mode) {
-        case '@': { // ICH - Insert Character
-            auto count = nthArgNonZero(args, 0, 1);
-            count = std::min(count, _buffer->getCols() - _cursor.pos.col);
-            _buffer->insertCells(_cursor.pos, count);
-            break;
-        }
-        case 'A': // CUU - Cursor Up
-            moveCursor(_cursor.pos.up(nthArgNonZero(args, 0, 1)));
-            break;
-        case 'B': // CUD - Cursor Down
-            moveCursor(_cursor.pos.down(nthArgNonZero(args, 0, 1)));
-            break;
-        case 'C': // CUF - Cursor Forward
-            moveCursor(_cursor.pos.right(nthArgNonZero(args, 0, 1)));
-            break;
-        case 'D': // CUB - Cursor Backward
-            moveCursor(_cursor.pos.left(nthArgNonZero(args, 0, 1)));
-            break;
-        case 'E': // CNL - Cursor Next Line
-            moveCursor(Pos(_cursor.pos.row + nthArgNonZero(args, 0, 1), 0));
-            break;
-        case 'F': // CPL - Cursor Preceding Line
-            moveCursor(Pos(_cursor.pos.row - nthArgNonZero(args, 0, 1), 0));
-            break;
-        case 'G': // CHA - Cursor Horizontal Absolute
-            moveCursor(_cursor.pos.atCol(nthArgNonZero(args, 0, 1) - 1));
-            break;
-        case 'f':       // HVP - Horizontal and Vertical Position
-        case 'H':       // CUP - Cursor Position
-            moveCursorOriginMode(Pos(nthArg(args, 0, 1) - 1, nthArg(args, 1, 1) - 1));
-            break;
-        case 'I':       // CHT - Cursor Forward Tabulation *
-            tabCursor(TabDir::FORWARD, nthArgNonZero(args, 0, 1));
-            break;
-        case 'J': // ED - Erase Data
-            // Clear screen.
-            switch (nthArg(args, 0)) {
-                default:
-                case 0: // ED0 - Below
-                    _buffer->clearLineRight(_cursor.pos);
-                    _buffer->clearBelow(_cursor.pos.row + 1);
-                    break;
-                case 1: // ED1 - Above
-                    _buffer->clearAbove(_cursor.pos.row);
-                    _buffer->clearLineLeft(_cursor.pos.right());
-                    break;
-                case 2: // ED2 - All
-                    _buffer->clear();
-                    moveCursor(Pos());      // XXX moveCursorOriginMode???
-                    break;
-            }
-            break;
-        case 'K':   // EL - Erase line
-            switch (nthArg(args, 0)) {
-                default:
-                case 0: // EL0 - Right (inclusive of cursor position)
-                    _buffer->clearLineRight(_cursor.pos);
-                    break;
-                case 1: // EL1 - Left (inclusive of cursor position)
-                    _buffer->clearLineLeft(_cursor.pos.right());
-                    break;
-                case 2: // EL2 - All
-                    _buffer->clearLine(_cursor.pos.row);
-                    break;
-            }
-            break;
-        case 'L': // IL - Insert Lines
-            if (_cursor.pos.row >= _buffer->getMarginBegin() &&
-                _cursor.pos.row <  _buffer->getMarginEnd())
-            {
+    if (inters.empty()) {
+        switch (mode) {
+            case '@': { // ICH - Insert Character
                 auto count = nthArgNonZero(args, 0, 1);
-                count = std::min(count, _buffer->getMarginEnd() - _cursor.pos.row);
-                _buffer->insertLines(_cursor.pos.row, count);
+                count = std::min(count, _buffer->getCols() - _cursor.pos.col);
+                _buffer->insertCells(_cursor.pos, count);
+                break;
             }
-            break;
-        case 'M': // DL - Delete Lines
-            if (_cursor.pos.row >= _buffer->getMarginBegin() &&
-                _cursor.pos.row <  _buffer->getMarginEnd())
-            {
-                auto count = nthArgNonZero(args, 0, 1);
-                count = std::min(count, _buffer->getMarginEnd() - _cursor.pos.row);
-                _buffer->eraseLines(_cursor.pos.row, count);
-            }
-            break;
-        case 'P': { // DCH - Delete Character
-            // FIXME what about wrap-next?
-            auto count = nthArgNonZero(args, 0, 1);
-            count = std::min(count, _buffer->getCols() - _cursor.pos.col);
-            _buffer->eraseCells(_cursor.pos, count);
-            break;
-        }
-        case 'S': // SU - Scroll Up
-            _buffer->scrollUpMargins(std::min<uint16_t>(nthArgNonZero(args, 0, 1),
-                                                        _buffer->getMarginSize()));
-            break;
-        case 'T': // SD - Scroll Down
-            _buffer->scrollDownMargins(std::min<uint16_t>(nthArgNonZero(args, 0, 1),
-                                                          _buffer->getMarginSize()));
-            break;
-        case 'X': { // ECH - Erase Char
-            auto count = nthArgNonZero(args, 0, 1);
-            count = std::min(count, _buffer->getCols() - _cursor.pos.col);
-            _buffer->setCells(_cursor.pos, count, Cell::ascii(SPACE, _cursor.style));
-            break;
-        }
-        case 'Z': // CBT - Cursor Backward Tabulation
-            tabCursor(TabDir::BACKWARD, nthArgNonZero(args, 0, 1));
-            break;
-        case '`': // HPA
-            moveCursor(_cursor.pos.atCol(nthArgNonZero(args, 0, 1) - 1));
-            break;
-        case 'a': // HPR - Horizontal Position Relative
-            moveCursor(_cursor.pos.right(nthArgNonZero(args, 0, 1)));
-            break;
-        case 'b': { // REP
-            auto count = nthArgNonZero(args, 0, 1);
-            if (_lastSeq.lead() != NUL) {
-                for (auto i = 0; i != count; ++i) {
-                    machineNormal(_lastSeq, utf8::leadLength(_lastSeq.lead()));
-                }
-                _lastSeq.clear();
-            }
-            break;
-        }
-        case 'c': // Primary DA
-            write(reinterpret_cast<const uint8_t *>("\x1B[?6c"), 5);
-            break;
-        case 'd': // VPA - Vertical Position Absolute
-            moveCursorOriginMode(_cursor.pos.atRow(nthArg(args, 0, 1) - 1));
-            break;
-        case 'e': // VPR - Vertical Position Relative
-            moveCursor(_cursor.pos.down(nthArgNonZero(args, 0, 1)));
-            break;
-        case 'g': // TBC
-            switch (nthArg(args, 0, 0)) {
-                case 0:
-                    _tabs[_cursor.pos.col] = false;
-                    break;
-                case 3:
-                    std::fill(_tabs.begin(), _tabs.end(), false);
-                    break;
-                default:
-                    goto default_;
-            }
-            break;
-        case 'W': // Tabulator functions
-            switch (nthArg(args, 0, 0)) {
-                case 0:
-                    _tabs[_cursor.pos.col] = true;  // HTS
-                    break;
-                case 2:
-                    _tabs[_cursor.pos.col] = false; // TBC
-                    break;
-                case 5:
-                    std::fill(_tabs.begin(), _tabs.end(), false);   // TBC
-                    break;
-                default:
-                    goto default_;
-            }
-            break;
-        case 'h': // SM
-            //PRINT("CSI: Set terminal mode: " << strArgs(args));
-            processModes(priv, true, args);
-            break;
-        case 'l': // RM
-            //PRINT("CSI: Reset terminal mode: " << strArgs(args));
-            processModes(priv, false, args);
-            break;
-        case 'm': // SGR - Select Graphic Rendition
-            if (args.empty()) {
-                std::vector<int32_t> args2;
-                args2.push_back(0);
-                processAttributes(args2);
-            }
-            else {
-                processAttributes(args);
-            }
-            break;
-        case 'n': // DSR - Device Status Report
-            if (args.empty()) {
-                // QDC - Query Device Code
-                // RDC - Report Device Code: <ESC>[{code}0c
-                NYI("What code should I send?");
-            }
-            else {
+            case 'A': // CUU - Cursor Up
+                moveCursor(_cursor.pos.up(nthArgNonZero(args, 0, 1)));
+                break;
+            case 'B': // CUD - Cursor Down
+                moveCursor(_cursor.pos.down(nthArgNonZero(args, 0, 1)));
+                break;
+            case 'C': // CUF - Cursor Forward
+                moveCursor(_cursor.pos.right(nthArgNonZero(args, 0, 1)));
+                break;
+            case 'D': // CUB - Cursor Backward
+                moveCursor(_cursor.pos.left(nthArgNonZero(args, 0, 1)));
+                break;
+            case 'E': // CNL - Cursor Next Line
+                moveCursor(Pos(_cursor.pos.row + nthArgNonZero(args, 0, 1), 0));
+                break;
+            case 'F': // CPL - Cursor Preceding Line
+                moveCursor(Pos(_cursor.pos.row - nthArgNonZero(args, 0, 1), 0));
+                break;
+            case 'G': // CHA - Cursor Horizontal Absolute
+                moveCursor(_cursor.pos.atCol(nthArgNonZero(args, 0, 1) - 1));
+                break;
+            case 'f':       // HVP - Horizontal and Vertical Position
+            case 'H':       // CUP - Cursor Position
+                moveCursorOriginMode(Pos(nthArg(args, 0, 1) - 1, nthArg(args, 1, 1) - 1));
+                break;
+            case 'I':       // CHT - Cursor Forward Tabulation *
+                tabCursor(TabDir::FORWARD, nthArgNonZero(args, 0, 1));
+                break;
+            case 'J': // ED - Erase Data
+                // Clear screen.
                 switch (nthArg(args, 0)) {
-                    case 5: {
-                        // QDS - Query Device Status
-                        // RDO - Report Device OK: <ESC>[0n
-                        std::ostringstream ost;
-                        ost << ESC << "[0n";
-                        const auto & str = ost.str();
-                        write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
-                        break;
-                    }
-                    case 6: {
-                        // QCP - Query Cursor Position
-                        // RCP - Report Cursor Position
-                        std::ostringstream ost;
-                        ost << ESC << '['
-                            << _cursor.pos.row + 1 << ';'
-                            << _cursor.pos.col + 1 << 'R';
-                        const auto & str = ost.str();
-                        write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
-                        break;
-                    }
-                    case 7: {
-                        // Ps = 7   Request Display Name
-                        std::string display;
-                        _observer.terminalGetDisplay(display);
-                        std::ostringstream ost;
-                        ost << display << LF;
-                        const auto & str = ost.str();
-                        write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
-                        break;
-                    }
-                    case 8: {
-                        // Ps = 8   Request Version Number (place in window title)
-                        _observer.terminalSetWindowTitle("Terminol " VERSION);
-                        break;
-                    }
-                    case 15: {
-                        // TPS - Test Printer Status
-                        std::ostringstream ost;
-                        ost << ESC << "[?13n";
-                        const auto & str = ost.str();
-                        write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
-                        break;
-                    }
-                    case 25: {
-                        NYI("UDK status");
-                        break;
-                    }
-                    case 26: {
-                        NYI("Keyboard status");
-                        break;
-                    }
                     default:
-                        NYI("");
+                    case 0: // ED0 - Below
+                        _buffer->clearLineRight(_cursor.pos);
+                        _buffer->clearBelow(_cursor.pos.row + 1);
+                        break;
+                    case 1: // ED1 - Above
+                        _buffer->clearAbove(_cursor.pos.row);
+                        _buffer->clearLineLeft(_cursor.pos.right());
+                        break;
+                    case 2: // ED2 - All
+                        _buffer->clear();
+                        moveCursor(Pos());      // XXX moveCursorOriginMode???
                         break;
                 }
+                break;
+            case 'K':   // EL - Erase line
+                switch (nthArg(args, 0)) {
+                    default:
+                    case 0: // EL0 - Right (inclusive of cursor position)
+                        _buffer->clearLineRight(_cursor.pos);
+                        break;
+                    case 1: // EL1 - Left (inclusive of cursor position)
+                        _buffer->clearLineLeft(_cursor.pos.right());
+                        break;
+                    case 2: // EL2 - All
+                        _buffer->clearLine(_cursor.pos.row);
+                        break;
+                }
+                break;
+            case 'L': // IL - Insert Lines
+                if (_cursor.pos.row >= _buffer->getMarginBegin() &&
+                    _cursor.pos.row <  _buffer->getMarginEnd())
+                {
+                    auto count = nthArgNonZero(args, 0, 1);
+                    count = std::min(count, _buffer->getMarginEnd() - _cursor.pos.row);
+                    _buffer->insertLines(_cursor.pos.row, count);
+                }
+                break;
+            case 'M': // DL - Delete Lines
+                if (_cursor.pos.row >= _buffer->getMarginBegin() &&
+                    _cursor.pos.row <  _buffer->getMarginEnd())
+                {
+                    auto count = nthArgNonZero(args, 0, 1);
+                    count = std::min(count, _buffer->getMarginEnd() - _cursor.pos.row);
+                    _buffer->eraseLines(_cursor.pos.row, count);
+                }
+                break;
+            case 'P': { // DCH - Delete Character
+                // FIXME what about wrap-next?
+                auto count = nthArgNonZero(args, 0, 1);
+                count = std::min(count, _buffer->getCols() - _cursor.pos.col);
+                _buffer->eraseCells(_cursor.pos, count);
+                break;
             }
-            break;
-        case 'p':
-            if (priv == '!') {
-                // DECSTR - Soft Terminal Reset
-                NYI("DECSTR");
+            case 'S': // SU - Scroll Up
+                _buffer->scrollUpMargins(std::min<uint16_t>(nthArgNonZero(args, 0, 1),
+                                                            _buffer->getMarginSize()));
+                break;
+            case 'T': // SD - Scroll Down
+                _buffer->scrollDownMargins(std::min<uint16_t>(nthArgNonZero(args, 0, 1),
+                                                              _buffer->getMarginSize()));
+                break;
+            case 'X': { // ECH - Erase Char
+                auto count = nthArgNonZero(args, 0, 1);
+                count = std::min(count, _buffer->getCols() - _cursor.pos.col);
+                _buffer->setCells(_cursor.pos, count, Cell::ascii(SPACE, _cursor.style));
+                break;
             }
-            else {
-                // XXX vttest gives soft-reset without priv == '!'
-                goto default_;
+            case 'Z': // CBT - Cursor Backward Tabulation
+                tabCursor(TabDir::BACKWARD, nthArgNonZero(args, 0, 1));
+                break;
+            case '`': // HPA
+                moveCursor(_cursor.pos.atCol(nthArgNonZero(args, 0, 1) - 1));
+                break;
+            case 'a': // HPR - Horizontal Position Relative
+                moveCursor(_cursor.pos.right(nthArgNonZero(args, 0, 1)));
+                break;
+            case 'b': { // REP
+                auto count = nthArgNonZero(args, 0, 1);
+                if (_lastSeq.lead() != NUL) {
+                    for (auto i = 0; i != count; ++i) {
+                        machineNormal(_lastSeq, utf8::leadLength(_lastSeq.lead()));
+                    }
+                    _lastSeq.clear();
+                }
+                break;
             }
-            break;
-        case 'q': // DECSCA - Select Character Protection Attribute
-            // OR IS THIS DECLL0/DECLL1/etc
-            NYI("DECSCA");
-            break;
-        case 'r': // DECSTBM - Set Top and Bottom Margins (scrolling)
-            if (priv) {
-                goto default_;
-            }
-            else {
+            case 'c': // Primary DA
+                write(reinterpret_cast<const uint8_t *>("\x1B[?6c"), 5);
+                break;
+            case 'd': // VPA - Vertical Position Absolute
+                moveCursorOriginMode(_cursor.pos.atRow(nthArg(args, 0, 1) - 1));
+                break;
+            case 'e': // VPR - Vertical Position Relative
+                moveCursor(_cursor.pos.down(nthArgNonZero(args, 0, 1)));
+                break;
+            case 'g': // TBC
+                switch (nthArg(args, 0, 0)) {
+                    case 0:
+                        _tabs[_cursor.pos.col] = false;
+                        break;
+                    case 3:
+                        std::fill(_tabs.begin(), _tabs.end(), false);
+                        break;
+                    default:
+                        goto default_;
+                }
+                break;
+            case 'W': // Tabulator functions
+                switch (nthArg(args, 0, 0)) {
+                    case 0:
+                        _tabs[_cursor.pos.col] = true;  // HTS
+                        break;
+                    case 2:
+                        _tabs[_cursor.pos.col] = false; // TBC
+                        break;
+                    case 5:
+                        std::fill(_tabs.begin(), _tabs.end(), false);   // TBC
+                        break;
+                    default:
+                        goto default_;
+                }
+                break;
+            case 'h': // SM
+                //PRINT("CSI: Set terminal mode: " << strArgs(args));
+                processModes(priv, true, args);
+                break;
+            case 'l': // RM
+                //PRINT("CSI: Reset terminal mode: " << strArgs(args));
+                processModes(priv, false, args);
+                break;
+            case 'm': // SGR - Select Graphic Rendition
                 if (args.empty()) {
-                    _buffer->resetMargins();
-                    moveCursorOriginMode(Pos());
+                    std::vector<int32_t> args2;
+                    args2.push_back(0);
+                    processAttributes(args2);
                 }
                 else {
-                    // http://www.vt100.net/docs/vt510-rm/DECSTBM
-                    auto top    = nthArgNonZero(args, 0, 1) - 1;
-                    auto bottom = nthArgNonZero(args, 1, _cursor.pos.row + 1) - 1;
-
-                    top    = clamp<int32_t>(top,    0, _buffer->getRows() - 1);
-                    bottom = clamp<int32_t>(bottom, 0, _buffer->getRows() - 1);
-
-                    if (bottom > top) {
-                        _buffer->setMargins(top, bottom + 1);
+                    processAttributes(args);
+                }
+                break;
+            case 'n': // DSR - Device Status Report
+                if (args.empty()) {
+                    // QDC - Query Device Code
+                    // RDC - Report Device Code: <ESC>[{code}0c
+                    NYI("What code should I send?");
+                }
+                else {
+                    switch (nthArg(args, 0)) {
+                        case 5: {
+                            // QDS - Query Device Status
+                            // RDO - Report Device OK: <ESC>[0n
+                            std::ostringstream ost;
+                            ost << ESC << "[0n";
+                            const auto & str = ost.str();
+                            write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+                            break;
+                        }
+                        case 6: {
+                            // QCP - Query Cursor Position
+                            // RCP - Report Cursor Position
+                            std::ostringstream ost;
+                            ost << ESC << '['
+                                << _cursor.pos.row + 1 << ';'
+                                << _cursor.pos.col + 1 << 'R';
+                            const auto & str = ost.str();
+                            write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+                            break;
+                        }
+                        case 7: {
+                            // Ps = 7   Request Display Name
+                            std::string display;
+                            _observer.terminalGetDisplay(display);
+                            std::ostringstream ost;
+                            ost << display << LF;
+                            const auto & str = ost.str();
+                            write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+                            break;
+                        }
+                        case 8: {
+                            // Ps = 8   Request Version Number (place in window title)
+                            _observer.terminalSetWindowTitle("Terminol " VERSION);
+                            break;
+                        }
+                        case 15: {
+                            // TPS - Test Printer Status
+                            std::ostringstream ost;
+                            ost << ESC << "[?13n";
+                            const auto & str = ost.str();
+                            write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+                            break;
+                        }
+                        case 25: {
+                            NYI("UDK status");
+                            break;
+                        }
+                        case 26: {
+                            NYI("Keyboard status");
+                            break;
+                        }
+                        default:
+                            NYI("");
+                            break;
+                    }
+                }
+                break;
+            case 'p':
+                if (priv == '!') {
+                    // DECSTR - Soft Terminal Reset
+                    NYI("DECSTR");
+                }
+                else {
+                    // XXX vttest gives soft-reset without priv == '!'
+                    goto default_;
+                }
+                break;
+            case 'q': // DECSCA - Select Character Protection Attribute
+                // OR IS THIS DECLL0/DECLL1/etc
+                NYI("DECSCA");
+                break;
+            case 'r': // DECSTBM - Set Top and Bottom Margins (scrolling)
+                if (priv) {
+                    goto default_;
+                }
+                else {
+                    if (args.empty()) {
+                        _buffer->resetMargins();
+                        moveCursorOriginMode(Pos());
                     }
                     else {
-                        _buffer->resetMargins();
-                    }
+                        // http://www.vt100.net/docs/vt510-rm/DECSTBM
+                        auto top    = nthArgNonZero(args, 0, 1) - 1;
+                        auto bottom = nthArgNonZero(args, 1, _cursor.pos.row + 1) - 1;
 
-                    moveCursorOriginMode(Pos());
+                        top    = clamp<int32_t>(top,    0, _buffer->getRows() - 1);
+                        bottom = clamp<int32_t>(bottom, 0, _buffer->getRows() - 1);
+
+                        if (bottom > top) {
+                            _buffer->setMargins(top, bottom + 1);
+                        }
+                        else {
+                            _buffer->resetMargins();
+                        }
+
+                        moveCursorOriginMode(Pos());
+                    }
                 }
-            }
-            break;
-        case 's': // save cursor
-            _savedCursor.pos = _cursor.pos;
-            break;
-        case 't': // window ops?
-            // FIXME see 'Window Operations' in man 7 urxvt.
-            NYI("Window ops");
-            break;
-        case 'u': // restore cursor
-            moveCursor(_savedCursor.pos);
-            break;
-        case 'y': // DECTST
-            NYI("DECTST");
-            break;
+                break;
+            case 's': // save cursor
+                _savedCursor.pos = _cursor.pos;
+                break;
+            case 't': // window ops?
+                // FIXME see 'Window Operations' in man 7 urxvt.
+                NYI("Window ops");
+                break;
+            case 'u': // restore cursor
+                moveCursor(_savedCursor.pos);
+                break;
+            case 'y': // DECTST
+                NYI("DECTST");
+                break;
 default_:
-        default:
-            PRINT("NYI:CSI: ESC  ??? " /*<< Str(seq)*/);
-            break;
+            default:
+                PRINT("NYI:CSI: ESC  ??? " /*<< Str(seq)*/);
+                break;
+        }
+    }
+    else {
     }
 }
 
