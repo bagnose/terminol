@@ -99,7 +99,7 @@ bool lookupModifier(const std::string & name, Modifier & modifier) {
 xkb_keysym_t lookupKeySym(const std::string & name) throw (ParseError) {
     auto keySym = xkb_keysym_from_name(name.c_str(), static_cast<xkb_keysym_flags>(0));
     if (keySym == XKB_KEY_NoSymbol) {
-        throw ParseError("Bad keysym: " + name);
+        throw ParseError("Bad keysym: '" + name + "'");
     }
     else {
         return keySym;
@@ -216,7 +216,7 @@ void handleSet(const std::string & key,
         config.serverFork = unstringify<bool>(value);
     }
     else {
-        ERROR("Unknown setting '" << key << "'");
+        throw ParseError("No such setting: '" + key + "'");
     }
 }
 
@@ -273,7 +273,7 @@ Action lookupAction(const std::string & str) throw (ParseError) {
         return Action::DEBUG_3;
     }
     else {
-        throw ParseError("Bad action: " + str);
+        throw ParseError("Bad action: '" + str + "'");
     }
 }
 
@@ -295,7 +295,7 @@ void handleBindSym(const std::string & sym,
                 modifiers.set(modifier);
             }
             else {
-                throw ParseError("Bad modifier: " + m);
+                throw ParseError("Bad modifier: '" + m + "'");
             }
         }
 
@@ -304,7 +304,7 @@ void handleBindSym(const std::string & sym,
         KeyCombo keyCombo(keySym, modifiers);
         Action   action2 = lookupAction(action);
 
-        PRINT("Bound: " << modifiers << "-" << stringifyKeySym(keySym) << " to " << action);
+        //PRINT("Bound: " << modifiers << "-" << stringifyKeySym(keySym) << " to " << action);
 
         config.bindings.insert(std::make_pair(keyCombo, action2));
     }
@@ -319,8 +319,7 @@ void interpretTokens(const std::vector<std::string> & tokens,
             handleSet(tokens[1], tokens[2], config);
         }
         else {
-            // ERROR
-            ERROR("Wrong number of tokens: " << tokens.size());
+            throw ParseError("Syntax: 'set NAME VALUE'");
         }
     }
     else if (tokens[0] == "bindsym") {
@@ -328,17 +327,15 @@ void interpretTokens(const std::vector<std::string> & tokens,
             handleBindSym(tokens[1], tokens[2], config);
         }
         else {
-            // ERROR
-            ERROR("Wrong number of tokens: " << tokens.size());
+            throw ParseError("Syntax: 'bindsym KEY ACTION'");
         }
     }
     else {
-        // ERROR
-        ERROR("Unrecognised starting token: " << tokens[0]);
+        throw ParseError("Unrecognised token: '" + tokens[0] + "'");
     }
 }
 
-void readLines(std::istream & ist, Config & config) {
+void readLines(std::istream & ist, Config & config) throw (ParseError) {
     size_t num = 0;
     std::string line;
     while (getline(ist, line).good()) {
@@ -351,8 +348,27 @@ void readLines(std::istream & ist, Config & config) {
             }
         }
         catch (const ParseError & ex) {
-            ERROR("Line: " << num << ": " << ex.message);
+            std::ostringstream ost;
+            ost << num << ": ";
+            throw ParseError(ost.str() + ex.message);
         }
+    }
+}
+
+bool tryConfig(const std::string & path, Config & config) {
+    std::ifstream ifs;
+
+    if (open(ifs, path)) {
+        try {
+            readLines(ifs, config);
+        }
+        catch (const ParseError & ex) {
+            std::cerr << path << ":" << ex.message;
+        }
+        return true;
+    }
+    else {
+        return false;
     }
 }
 
@@ -361,13 +377,10 @@ void readLines(std::istream & ist, Config & config) {
 void parseConfig(Config & config) {
     const std::string conf = "/terminol/config";
 
-    std::ifstream ifs;
-
     const char * xdg_config_home = ::getenv("XDG_CONFIG_HOME");
 
     if (xdg_config_home) {
-        if (open(ifs, xdg_config_home + conf)) {
-            readLines(ifs, config);
+        if (tryConfig(xdg_config_home + conf, config)) {
             return;
         }
     }
@@ -383,8 +396,7 @@ void parseConfig(Config & config) {
 
             if (j == std::string::npos) { j = str.size(); }
 
-            if (open(ifs, str.substr(i, j - i) + conf)) {
-                readLines(ifs, config);
+            if (tryConfig(str.substr(i, j - i) + conf, config)) {
                 return;
             }
 
@@ -396,12 +408,10 @@ void parseConfig(Config & config) {
     const char * home = ::getenv("HOME");
 
     if (home) {
-        if (open(ifs, home + std::string("/.config") + conf)) {
-            readLines(ifs, config);
+        if (tryConfig(home + std::string("/.config") + conf, config)) {
             return;
         }
     }
 
-    // TODO warn user that they don't have a configuration file.
-    WARNING("No configuration file found");
+    std::cerr << "No configuration file found." << std::endl;
 }
