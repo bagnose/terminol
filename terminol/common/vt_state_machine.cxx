@@ -535,25 +535,31 @@ void VtStateMachine::processControl(uint8_t c) {
 }
 
 void VtStateMachine::processEsc(const std::vector<uint8_t> & seq) {
-    switch (seq.size()) {
-        case 1:
-            if (_config.traceTty) {
-                std::cerr
-                    << SGR::FG_MAGENTA << "ESC" << Char(seq[0])
-                    << SGR::RESET_ALL;
-            }
-            _observer.machineEscape(seq[0]);
-            break;
-        case 2:
-            if (_config.traceTty) {
-                std::cerr
-                    << SGR::FG_BLUE << "ESC" << Char(seq[0]) << Char(seq[1])
-                    << SGR::RESET_ALL;
-            }
-            _observer.machineSpecial(seq[0], seq[1]);
-            break;
-        default:
-            FATAL("Unreachable");
+    ASSERT(!seq.empty(), "");
+
+    if (seq.size() == 1) {
+        auto code = seq.back();
+
+        if (_config.traceTty) {
+            std::cerr
+                << SGR::FG_MAGENTA << "ESC" << Char(code)
+                << SGR::RESET_ALL;
+        }
+
+        _observer.machineEscape(code);
+    }
+    else {
+        auto inters = seq;
+        auto code   = inters.back();
+        inters.pop_back();
+
+        if (_config.traceTty) {
+            std::cerr << SGR::FG_BLUE << "ESC";
+            for (auto i : inters) { std::cerr << i; }
+            std::cerr << Char(code) << SGR::RESET_ALL;
+        }
+
+        _observer.machineSpecial(inters, code);
     }
 }
 

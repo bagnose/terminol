@@ -1523,107 +1523,117 @@ void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
     }
 }
 
-void Terminal::machineSpecial(uint8_t inter, uint8_t code) throw () {
-    switch (inter) {
-        case '#':
-            switch (code) {
-                case '3':   // DECDHL - Double height/width (top half of char)
-                    NYI("Double height (top)");
-                    break;
-                case '4':   // DECDHL - Double height/width (bottom half of char)
-                    NYI("Double height (bottom)");
-                    break;
-                case '5':   // DECSWL - Single height/width
-                    break;
-                case '6':   // DECDWL - Double width
-                    NYI("Double width");
-                    break;
-                case '8': { // DECALN - Alignment
-                    // Fill terminal with 'E'
-                    Cell cell = Cell::ascii('E', _cursor.style);
-                    for (uint16_t r = 0; r != _buffer->getRows(); ++r) {
-                        for (uint16_t c = 0; c != _buffer->getCols(); ++c) {
-                            _buffer->setCell(Pos(r, c), cell, false);
+void Terminal::machineSpecial(const std::vector<uint8_t> & inters,
+                              uint8_t code) throw () {
+    ASSERT(!inters.empty(), "");
+
+    if (inters.size() == 1) {
+        auto i = inters.front();
+
+        switch (i) {
+            case '#':
+                switch (code) {
+                    case '3':   // DECDHL - Double height/width (top half of char)
+                        NYI("Double height (top)");
+                        break;
+                    case '4':   // DECDHL - Double height/width (bottom half of char)
+                        NYI("Double height (bottom)");
+                        break;
+                    case '5':   // DECSWL - Single height/width
+                        break;
+                    case '6':   // DECDWL - Double width
+                        NYI("Double width");
+                        break;
+                    case '8': { // DECALN - Alignment
+                        // Fill terminal with 'E'
+                        Cell cell = Cell::ascii('E', _cursor.style);
+                        for (uint16_t r = 0; r != _buffer->getRows(); ++r) {
+                            for (uint16_t c = 0; c != _buffer->getCols(); ++c) {
+                                _buffer->setCell(Pos(r, c), cell, false);
+                            }
                         }
+                        break;
                     }
-                    break;
+                    default:
+                        NYI("?");
+                        break;
                 }
-                default:
-                    NYI("?");
-                    break;
-            }
-            break;
-        case '(':
-            switch (code) {
-                case '0': // set specg0
-                    _cursor.g0 = CS_SPECIAL;
-                    break;
-                case '1': // set altg0
-                    NYI("Alternate Character rom");
-                    break;
-                case '2': // set alt specg0
-                    NYI("Alternate Special Character rom");
-                    break;
-                case 'A': // set ukg0
-                    _cursor.g0 = CS_UK;
-                    break;
-                case 'B': // set usg0
-                    _cursor.g0 = CS_US;
-                    break;
-                case '<': // Multinational character set
-                    NYI("Multinational character set");
-                    break;
-                case '5': // Finnish
-                    NYI("Finnish 1");
-                    break;
-                case 'C': // Finnish
-                    NYI("Finnish 2");
-                    break;
-                case 'K': // German
-                    NYI("German");
-                    break;
-                default:
-                    NYI("Unknown character set: " << code);
-                    break;
-            }
-            break;
-        case ')':
-            switch (code) {
-                case '0': // set specg1
-                    _cursor.g1 = CS_SPECIAL;
-                    break;
-                case '1': // set altg1
-                    NYI("Alternate Character rom");
-                    break;
-                case '2': // set alt specg1
-                    NYI("Alternate Special Character rom");
-                    break;
-                case 'A': // set ukg0
-                    _cursor.g1 = CS_UK;
-                    break;
-                case 'B': // set usg0
-                    _cursor.g1 = CS_US;
-                    break;
-                case '<': // Multinational character set
-                    NYI("Multinational character set");
-                    break;
-                case '5': // Finnish
-                    NYI("Finnish 1");
-                    break;
-                case 'C': // Finnish
-                    NYI("Finnish 2");
-                    break;
-                case 'K': // German
-                    NYI("German");
-                    break;
-                default:
-                    NYI("Unknown character set: " << code);
-                    break;
-            }
-            break;
-        default:
-            NYI("Special: " /*<< Str(seq)*/);
-            break;
+                break;
+            case '(':
+                switch (code) {
+                    case '0': // set specg0
+                        _cursor.g0 = CS_SPECIAL;
+                        break;
+                    case '1': // set altg0
+                        NYI("Alternate Character rom");
+                        break;
+                    case '2': // set alt specg0
+                        NYI("Alternate Special Character rom");
+                        break;
+                    case 'A': // set ukg0
+                        _cursor.g0 = CS_UK;
+                        break;
+                    case 'B': // set usg0
+                        _cursor.g0 = CS_US;
+                        break;
+                    case '<': // Multinational character set
+                        NYI("Multinational character set");
+                        break;
+                    case '5': // Finnish
+                        NYI("Finnish 1");
+                        break;
+                    case 'C': // Finnish
+                        NYI("Finnish 2");
+                        break;
+                    case 'K': // German
+                        NYI("German");
+                        break;
+                    default:
+                        NYI("Unknown character set: " << code);
+                        break;
+                }
+                break;
+            case ')':
+                switch (code) {
+                    case '0': // set specg1
+                        _cursor.g1 = CS_SPECIAL;
+                        break;
+                    case '1': // set altg1
+                        NYI("Alternate Character rom");
+                        break;
+                    case '2': // set alt specg1
+                        NYI("Alternate Special Character rom");
+                        break;
+                    case 'A': // set ukg0
+                        _cursor.g1 = CS_UK;
+                        break;
+                    case 'B': // set usg0
+                        _cursor.g1 = CS_US;
+                        break;
+                    case '<': // Multinational character set
+                        NYI("Multinational character set");
+                        break;
+                    case '5': // Finnish
+                        NYI("Finnish 1");
+                        break;
+                    case 'C': // Finnish
+                        NYI("Finnish 2");
+                        break;
+                    case 'K': // German
+                        NYI("German");
+                        break;
+                    default:
+                        NYI("Unknown character set: " << code);
+                        break;
+                }
+                break;
+            default:
+                NYI("Special: " /*<< Str(seq)*/);
+                break;
+        }
+    }
+    else {
+        ERROR("Unhandled");
     }
 }
 

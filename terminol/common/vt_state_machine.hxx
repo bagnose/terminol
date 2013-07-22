@@ -27,7 +27,8 @@ public:
                                 uint8_t mode) throw () = 0;
         virtual void machineDcs(const std::vector<uint8_t> & seq) throw () = 0;
         virtual void machineOsc(const std::vector<std::string> & args) throw () = 0;
-        virtual void machineSpecial(uint8_t inter, uint8_t code) throw () = 0;
+        virtual void machineSpecial(const std::vector<uint8_t> & inters,
+                                    uint8_t code) throw () = 0;
 
     protected:
         I_Observer() {}

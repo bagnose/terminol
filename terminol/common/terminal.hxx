@@ -223,7 +223,8 @@ protected:
                         uint8_t code) throw ();
     void     machineDcs(const std::vector<uint8_t> & seq) throw ();
     void     machineOsc(const std::vector<std::string> & args) throw ();
-    void     machineSpecial(uint8_t inter, uint8_t code) throw ();
+    void     machineSpecial(const std::vector<uint8_t> & inter,
+                            uint8_t code) throw ();
 };
 
 std::ostream & operator << (std::ostream & ost, Terminal::Button button);
