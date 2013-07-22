@@ -101,6 +101,7 @@ Terminal::Terminal(I_Observer    & observer,
     //
     _pressed(false),
     _focused(true),
+    _lastSeq(),
     //
     _tty(tty),
     _dumpWrites(false),
@@ -1014,6 +1015,8 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length length) {
 }
 
 void Terminal::machineNormal(utf8::Seq seq, utf8::Length length) throw () {
+    _lastSeq = seq;
+
     if (length == utf8::Length::L1) {
         translate(seq.lead(), seq);
     }
@@ -1300,9 +1303,16 @@ void Terminal::machineCsi(uint8_t priv,
         case 'a': // HPR - Horizontal Position Relative
             moveCursor(_cursor.pos.right(nthArgNonZero(args, 0, 1)));
             break;
-        case 'b': // REP
-            NYI("REP");
+        case 'b': { // REP
+            auto count = nthArgNonZero(args, 0, 1);
+            if (_lastSeq.lead() != NUL) {
+                for (auto i = 0; i != count; ++i) {
+                    machineNormal(_lastSeq, utf8::leadLength(_lastSeq.lead()));
+                }
+                _lastSeq.clear();
+            }
             break;
+        }
         case 'c': // Primary DA
             write(reinterpret_cast<const uint8_t *>("\x1B[?6c"), 5);
             break;

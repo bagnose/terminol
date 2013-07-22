@@ -130,6 +130,8 @@ private:
     Pos                   _pointerPos;
     bool                  _focused;
 
+    utf8::Seq             _lastSeq;
+
     //
 
     I_Tty               & _tty;
