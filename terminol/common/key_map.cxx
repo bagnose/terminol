@@ -176,6 +176,89 @@ xkb_keysym_t nameToSym(const std::string & name) throw (ParseError) {
     }
 }
 
+std::string modifierToName(Modifier modifier) {
+    switch (modifier) {
+        case Modifier::SHIFT:
+            return "shift";
+        case Modifier::ALT:
+            return "alt";
+        case Modifier::CONTROL:
+            return "ctrl";
+        case Modifier::SUPER:
+            return "super";
+        case Modifier::NUM_LOCK:
+            return "num_lock";
+        case Modifier::SHIFT_LOCK:
+            return "shift_lock";
+        case Modifier::CAPS_LOCK:
+            return "caps_lock";
+        case Modifier::MODE_SWITCH:
+            return "mode_switch";
+    }
+
+    FATAL("Unreachable.");
+}
+
+Modifier nameToModifier(const std::string & name) throw (ParseError) {
+    if (name == "shift") {
+        return Modifier::SHIFT;
+    }
+    else if (name == "alt") {
+        return Modifier::ALT;
+    }
+    else if (name == "ctrl") {
+        return Modifier::CONTROL;
+    }
+    else if (name == "super") {
+        return Modifier::SUPER;
+    }
+    else if (name == "num_lock") {
+        return Modifier::NUM_LOCK;
+    }
+    else if (name == "shift_lock") {
+        return Modifier::SHIFT_LOCK;
+    }
+    else if (name == "caps_lock") {
+        return Modifier::CAPS_LOCK;
+    }
+    else if (name == "mode_switch") {
+        return Modifier::MODE_SWITCH;
+    }
+    else {
+        throw ParseError("Bad modifier: " + name);
+    }
+}
+
+#if 0
+std::string symModsToString(xkb_keysym_t keySym, ModifierSet modifiers) {
+}
+
+void stringToSymMods(const std::string & str, xkb_keysym_t & keySym, ModifierSet & modifiers) {
+}
+#endif
+
+bool isPotent(xkb_keysym_t keySym) {
+    normalise(keySym);
+
+    switch (keySym) {
+        case XKB_KEY_Shift_L:
+        case XKB_KEY_Shift_R:
+        case XKB_KEY_Control_L:
+        case XKB_KEY_Control_R:
+        case XKB_KEY_Alt_L:
+        case XKB_KEY_Alt_R:
+        case XKB_KEY_Meta_L:
+        case XKB_KEY_Meta_R:
+        case XKB_KEY_Super_L:
+        case XKB_KEY_Super_R:
+        case XKB_KEY_Hyper_L:
+        case XKB_KEY_Hyper_R:
+            return false;
+        default:
+            return true;
+    }
+}
+
 bool composeInput(xkb_keysym_t keySym, ModifierSet modifiers,
                   bool UNUSED(appKeypad),
                   bool appCursor,
@@ -331,28 +414,6 @@ bool composeInput(xkb_keysym_t keySym, ModifierSet modifiers,
     }
 
     return !input.empty();
-}
-
-bool isPotent(xkb_keysym_t keySym) {
-    normalise(keySym);
-
-    switch (keySym) {
-        case XKB_KEY_Shift_L:
-        case XKB_KEY_Shift_R:
-        case XKB_KEY_Control_L:
-        case XKB_KEY_Control_R:
-        case XKB_KEY_Alt_L:
-        case XKB_KEY_Alt_R:
-        case XKB_KEY_Meta_L:
-        case XKB_KEY_Meta_R:
-        case XKB_KEY_Super_L:
-        case XKB_KEY_Super_R:
-        case XKB_KEY_Hyper_L:
-        case XKB_KEY_Hyper_R:
-            return false;
-        default:
-            return true;
-    }
 }
 
 } // namespace xkb

@@ -20,46 +20,6 @@ std::string lowercase(const std::string & str) {
     return copy;
 }
 
-bool lookupModifier(const std::string & name, Modifier & modifier) {
-    auto lc = lowercase(name);
-
-    if (lc == "shift") {
-        modifier = Modifier::SHIFT;
-        return true;
-    }
-    else if (lc == "alt") {
-        modifier = Modifier::ALT;
-        return true;
-    }
-    else if (lc == "ctrl") {
-        modifier = Modifier::CONTROL;
-        return true;
-    }
-    else if (lc == "super") {
-        modifier = Modifier::SUPER;
-        return true;
-    }
-    else if (lc == "num_lock" || lc == "num-lock") {
-        modifier = Modifier::NUM_LOCK;
-        return true;
-    }
-    else if (lc == "shift_lock" || lc == "shift-lock") {
-        modifier = Modifier::SHIFT_LOCK;
-        return true;
-    }
-    else if (lc == "caps_lock" || lc == "caps-lock") {
-        modifier = Modifier::CAPS_LOCK;
-        return true;
-    }
-    else if (lc == "mode_switch" || lc == "mode-switch") {
-        modifier = Modifier::MODE_SWITCH;
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-
 void handleSet(const std::string & key,
                const std::string & value,
                Config & config) throw (ParseError) {
@@ -237,14 +197,8 @@ void handleBindSym(const std::string & sym,
         ModifierSet modifiers;
 
         for (const auto & m : tokens) {
-            Modifier modifier;
-            if (lookupModifier(m, modifier)) {
-                //PRINT("Got modifier: " << modifier);
-                modifiers.set(modifier);
-            }
-            else {
-                throw ParseError("Bad modifier: '" + m + "'");
-            }
+            auto modifier = xkb::nameToModifier(m);
+            modifiers.set(modifier);
         }
 
         auto keySym = xkb::nameToSym(key);
