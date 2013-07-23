@@ -159,6 +159,11 @@ again:
         }
     }
 
+    void getStats(uint32_t & uniqueLines, uint32_t & totalLines) const {
+        uniqueLines = _lines.size();
+        totalLines  = _totalRefCount;
+    }
+
     double getReduction() const {
         if (_lines.empty()) {
             return 1.0;

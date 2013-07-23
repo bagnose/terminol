@@ -301,7 +301,7 @@ public:
         }
     }
 
-    size_t   getHistory() const { return _history.size(); }
+    size_t   getHistory() const { return _history.size(); }         // FIXME uint32_t ?
     uint16_t getRows()    const { return _active.size(); }
     uint16_t getCols()    const { return _cols; }
     size_t   getBar()     const { return _history.size() - _scrollOffset; }

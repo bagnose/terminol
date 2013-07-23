@@ -28,7 +28,7 @@ public:
     virtual const Line & lookup(Tag tag) const = 0;
     virtual void remove(Tag tag) = 0;
     virtual void lookupRemove(Tag tag, Line & line) = 0;
-    virtual double getReduction() const = 0;
+    virtual void getStats(uint32_t & uniqueLines, uint32_t & totalLines) const = 0;
 
 protected:
     I_Deduper() {}

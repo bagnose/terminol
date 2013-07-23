@@ -568,17 +568,27 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                     fixDamage(Trigger::SCROLL);
                 }
                 return true;
-            case Action::DEBUG_1: {
+            case Action::DEBUG_STATS: {
+                uint32_t uniqueLines;
+                uint32_t globalLines;
+                _deduper.getStats(uniqueLines, globalLines);
+                uint32_t localLines = _priBuffer.getHistory();
+                double   dedupe =
+                    uniqueLines == 0 ? 0.0 :
+                    static_cast<double>(globalLines) / uniqueLines;
+
                 std::ostringstream ost;
-                ost << "Dedupe: " << _deduper.getReduction()
-                    << ", History: " << _priBuffer.getHistory();
+                ost << "dedupe=" << dedupe
+                    << "  total-lines=" << globalLines
+                    << "  unique-lines=" << uniqueLines
+                    << "  local-history=" << localLines;
                 _observer.terminalSetWindowTitle(ost.str());
                 return true;
             }
-            case Action::DEBUG_2:
+            case Action::DEBUG_BUFFER:
                 _buffer->dumpBuffer(std::cerr);
                 return true;
-            case Action::DEBUG_3:
+            case Action::DEBUG_SELECTION:
                 _buffer->dumpSelection(std::cerr);
                 return true;
         }

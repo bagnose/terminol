@@ -53,9 +53,9 @@ enum class Action {
     SCROLL_DOWN_ONE_PAGE,
     SCROLL_TOP,
     SCROLL_BOTTOM,
-    DEBUG_1,
-    DEBUG_2,
-    DEBUG_3
+    DEBUG_STATS,
+    DEBUG_BUFFER,
+    DEBUG_SELECTION
 };
 
 //std::ostream & operator << (std::ostream & ost, Action action);

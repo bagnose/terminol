@@ -263,14 +263,14 @@ Action lookupAction(const std::string & str) throw (ParseError) {
     else if (str == "scroll-bottom") {
         return Action::SCROLL_BOTTOM;
     }
-    else if (str == "debug-1") {
-        return Action::DEBUG_1;
+    else if (str == "debug-stats") {
+        return Action::DEBUG_STATS;
     }
-    else if (str == "debug-2") {
-        return Action::DEBUG_2;
+    else if (str == "debug-buffer") {
+        return Action::DEBUG_BUFFER;
     }
-    else if (str == "debug-3") {
-        return Action::DEBUG_3;
+    else if (str == "debug-selection") {
+        return Action::DEBUG_SELECTION;
     }
     else {
         throw ParseError("Bad action: '" + str + "'");
