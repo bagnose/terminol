@@ -6,6 +6,7 @@
 #include "terminol/support/debug.hxx"
 
 #include <string>
+#include <vector>
 #include <sstream>
 
 struct ParseError {
@@ -19,6 +20,10 @@ template <typename T> T clamp(T t, T min, T max) {
     else if (t > max) { return max; }
     else              { return t;   }
 }
+
+bool split(const std::string        & line,
+           std::vector<std::string> & tokens,
+           const std::string        & delim = "\t ") throw (ParseError);
 
 template <typename T> std::string stringify(const T & t) {
     std::ostringstream ost;
