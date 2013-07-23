@@ -87,7 +87,6 @@ public:
            Basics             & basics,
            const ColorSet     & colorSet,
            FontManager        & fontManager,
-           const KeyMap       & keyMap,
            const Tty::Command & command = Tty::Command()) throw (Error);
 
     virtual ~Window();

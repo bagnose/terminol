@@ -1,12 +1,11 @@
 // vi:noai:sw=4
 
 #include "terminol/common/parser.hxx"
+#include "terminol/common/key_map.hxx"
 #include "terminol/support/conv.hxx"
 #include "terminol/support/debug.hxx"
 
 #include <fstream>
-
-#include <xkbcommon/xkbcommon.h>
 
 bool split(const std::string        & line,
            std::vector<std::string> & tokens,
@@ -95,25 +94,6 @@ bool lookupModifier(const std::string & name, Modifier & modifier) {
         return false;
     }
 }
-
-xkb_keysym_t lookupKeySym(const std::string & name) throw (ParseError) {
-    auto keySym = xkb_keysym_from_name(name.c_str(), static_cast<xkb_keysym_flags>(0));
-    if (keySym == XKB_KEY_NoSymbol) {
-        throw ParseError("Bad keysym: '" + name + "'");
-    }
-    else {
-        return keySym;
-    }
-}
-
-std::string stringifyKeySym(xkb_keysym_t keySym) {
-    char buf[128];
-    auto size = xkb_keysym_get_name(keySym, buf, sizeof buf);
-    ENFORCE(size != -1, "Bad keysym");
-    return std::string(buf, buf + size);
-}
-
-//bool lookupButton(const std::string & name, 
 
 void handleSet(const std::string & key,
                const std::string & value,
@@ -302,12 +282,12 @@ void handleBindSym(const std::string & sym,
             }
         }
 
-        auto keySym = lookupKeySym(key);
+        auto keySym = xkb::nameToSym(key);
 
         KeyCombo keyCombo(keySym, modifiers);
         Action   action2 = lookupAction(action);
 
-        //PRINT("Bound: " << modifiers << "-" << stringifyKeySym(keySym) << " to " << action);
+        PRINT("Bound: " << modifiers << "-" << xkb::symToName(keySym) << " to " << action);
 
         config.bindings.insert(std::make_pair(keyCombo, action2));
     }

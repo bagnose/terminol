@@ -1,6 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/common/terminal.hxx"
+#include "terminol/common/key_map.hxx"
 #include "terminol/support/time.hxx"
 #include "terminol/support/conv.hxx"
 #include "terminol/support/escape.hxx"
@@ -77,14 +78,12 @@ Terminal::Terminal(I_Observer    & observer,
                    I_Deduper     & deduper,
                    uint16_t        rows,
                    uint16_t        cols,
-                   const KeyMap  & keyMap,
                    I_Tty         & tty) :
     _observer(observer),
     _dispatch(false),
     //
     _config(config),
     _deduper(deduper),
-    _keyMap(keyMap),
     //
     _priBuffer(_config, deduper,
                rows, cols,
@@ -184,34 +183,34 @@ void Terminal::redraw(Pos begin, Pos end, bool scrollbar) {
 }
 
 bool Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
-    if (!handleKeyBinding(keySym, modifiers) && _keyMap.isPotent(keySym)) {
+    if (!handleKeyBinding(keySym, modifiers) && xkb::isPotent(keySym)) {
         if (_config.scrollOnTtyKeyPress && _buffer->scrollBottomHistory()) {
             fixDamage(Trigger::SCROLL);
         }
 
-        std::vector<uint8_t> str;
-        if (_keyMap.convert(keySym, modifiers,
-                            _modes.get(Mode::APPKEYPAD),
-                            _modes.get(Mode::APPCURSOR),
-                            _modes.get(Mode::CR_ON_LF),
-                            _modes.get(Mode::DELETE_SENDS_DEL),
-                            _modes.get(Mode::ALT_SENDS_ESC),
-                            str)) {
+        std::vector<uint8_t> input;
+        if (xkb::composeInput(keySym, modifiers,
+                              _modes.get(Mode::APPKEYPAD),
+                              _modes.get(Mode::APPCURSOR),
+                              _modes.get(Mode::CR_ON_LF),
+                              _modes.get(Mode::DELETE_SENDS_DEL),
+                              _modes.get(Mode::ALT_SENDS_ESC),
+                              input)) {
 
-            if (str.size() == 1 && _modes.get(Mode::META_8BIT) &&
+            if (input.size() == 1 && _modes.get(Mode::META_8BIT) &&
                 modifiers.get(Modifier::ALT))
             {
                 PRINT("8-bit conversion");
-                utf8::CodePoint cp = str[0] | (1 << 7);
+                utf8::CodePoint cp = input[0] | (1 << 7);
                 uint8_t seq[utf8::Length::LMAX];
                 utf8::Length l = utf8::encode(cp, seq);
-                str.resize(l);
-                std::copy(seq, seq + l, str.begin());
+                input.resize(l);
+                std::copy(seq, seq + l, input.begin());
             }
 
 
-            write(&str.front(), str.size());
-            if (_modes.get(Mode::ECHO)) { echo(&str.front(), str.size()); }
+            write(&input.front(), input.size());
+            if (_modes.get(Mode::ECHO)) { echo(&input.front(), input.size()); }
         }
 
         return true;

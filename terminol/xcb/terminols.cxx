@@ -131,7 +131,6 @@ class EventLoop :
     Basics               _basics;
     ColorSet             _colorSet;
     FontManager          _fontManager;
-    KeyMap               _keyMap;
     Windows              _windows;
     std::set<Window *>   _deferrals;
 
@@ -151,7 +150,6 @@ public:
         _basics(),
         _colorSet(config, _basics),
         _fontManager(config, _basics),
-        _keyMap(),
         _finished(false)
     {
         if (config.serverFork) {
@@ -419,7 +417,7 @@ protected:
     void create() throw () {
         try {
             auto window = new Window(*this, _config, _deduper,
-                                     _basics, _colorSet, _fontManager, _keyMap);
+                                     _basics, _colorSet, _fontManager);
             auto id     = window->getWindowId();
             _windows.insert(std::make_pair(id, window));
         }

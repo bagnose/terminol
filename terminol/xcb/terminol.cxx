@@ -28,7 +28,6 @@ class EventLoop :
     Basics                _basics;
     ColorSet              _colorSet;
     FontManager           _fontManager;
-    KeyMap                _keyMap;
     Window                _window;
     std::set<Window *>    _deferrals;
 
@@ -45,14 +44,12 @@ public:
         _basics(),
         _colorSet(config, _basics),
         _fontManager(config, _basics),
-        _keyMap(),
         _window(*this,
                 config,
                 _deduper,
                 _basics,
                 _colorSet,
                 _fontManager,
-                _keyMap,
                 command)
     {
         loop();

@@ -8,7 +8,6 @@
 #include "terminol/common/config.hxx"
 #include "terminol/common/bit_sets.hxx"
 #include "terminol/common/buffer.hxx"
-#include "terminol/common/key_map.hxx"
 #include "terminol/support/pattern.hxx"
 
 #include <xkbcommon/xkbcommon.h>
@@ -115,7 +114,6 @@ private:
 
     const Config        & _config;
     const I_Deduper     & _deduper;
-    const KeyMap        & _keyMap;
 
     Buffer                _priBuffer;
     Buffer                _altBuffer;
@@ -148,7 +146,6 @@ public:
              I_Deduper     & deduper,
              uint16_t        rows,
              uint16_t        cols,
-             const KeyMap  & keyMap,
              I_Tty         & tty);
     virtual ~Terminal();
 

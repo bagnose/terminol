@@ -39,7 +39,6 @@ Window::Window(I_Observer         & observer,
                Basics             & basics,
                const ColorSet     & colorSet,
                FontManager        & fontManager,
-               const KeyMap       & keyMap,
                const Tty::Command & command) throw (Error) :
     _observer(observer),
     _config(config),
@@ -175,7 +174,7 @@ Window::Window(I_Observer         & observer,
     //
 
     _tty = new Tty(_config, rows, cols, stringify(_window), command);
-    _terminal = new Terminal(*this, _config, deduper, rows, cols, keyMap, *_tty);
+    _terminal = new Terminal(*this, _config, deduper, rows, cols, *_tty);
     _open = true;
 
     //

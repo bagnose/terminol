@@ -15,7 +15,18 @@
 
 // Copyright © 2008 Kristian Høgsberg
 
-const KeyMap::Map KeyMap::MAP_NORMAL[] = {
+namespace xkb {
+
+namespace {
+
+struct Map {
+    xkb_keysym_t  sym;
+    int           num;
+    uint8_t       escape;
+    uint8_t       code;
+};
+
+const Map MAP_NORMAL[] = {
     { XKB_KEY_Left,  1, '[', 'D' },
     { XKB_KEY_Right, 1, '[', 'C' },
     { XKB_KEY_Up,    1, '[', 'A' },
@@ -25,7 +36,7 @@ const KeyMap::Map KeyMap::MAP_NORMAL[] = {
     { 0, 0, 0, 0 }
 };
 
-const KeyMap::Map KeyMap::MAP_APPLICATION[] = {
+const Map MAP_APPLICATION[] = {
     { XKB_KEY_Left,         1, 'O', 'D' },
     { XKB_KEY_Right,        1, 'O', 'C' },
     { XKB_KEY_Up,           1, 'O', 'A' },
@@ -41,186 +52,7 @@ const KeyMap::Map KeyMap::MAP_APPLICATION[] = {
     { 0, 0, 0, 0 }
 };
 
-bool KeyMap::convert(xkb_keysym_t keySym, ModifierSet modifiers,
-                     bool UNUSED(appKeypad),
-                     bool appCursor,
-                     bool crOnLf,
-                     bool deleteSendsDel,
-                     bool altSendsEsc,
-                     std::vector<uint8_t> & str) const {
-    normalise(keySym);
-
-    switch (keySym) {
-        case XKB_KEY_BackSpace:
-            if (modifiers.get(Modifier::ALT)) { str.push_back(ESC); }
-            str.push_back(DEL);
-            break;
-
-        case XKB_KEY_Tab:
-        case XKB_KEY_Linefeed:
-        case XKB_KEY_Clear:
-        case XKB_KEY_Pause:
-        case XKB_KEY_Scroll_Lock:
-        case XKB_KEY_Sys_Req:
-        case XKB_KEY_Escape:
-            str.push_back(keySym & 0x7F);
-            break;
-
-        case XKB_KEY_Return:
-            str.push_back(CR);
-            if (crOnLf) { str.push_back(LF); }
-            break;
-
-        case XKB_KEY_Shift_L:
-        case XKB_KEY_Shift_R:
-        case XKB_KEY_Control_L:
-        case XKB_KEY_Control_R:
-        case XKB_KEY_Alt_L:
-        case XKB_KEY_Alt_R:
-        case XKB_KEY_Meta_L:
-        case XKB_KEY_Meta_R:
-        case XKB_KEY_Super_L:
-        case XKB_KEY_Super_R:
-        case XKB_KEY_Hyper_L:
-        case XKB_KEY_Hyper_R:
-            break;
-
-        case XKB_KEY_Insert:
-            functionKeyResponse('[', 2, modifiers, '~', str);
-            break;
-
-        case XKB_KEY_Delete:
-            if (deleteSendsDel) { str.push_back(EOT); }
-            else { functionKeyResponse('[', 3, modifiers, '~', str); }
-            break;
-
-        case XKB_KEY_Page_Up:
-            functionKeyResponse('[', 5, modifiers, '~', str);
-            break;
-
-        case XKB_KEY_Page_Down:
-            functionKeyResponse('[', 6, modifiers, '~', str);
-            break;
-
-        case XKB_KEY_F1:
-            functionKeyResponse('O', 1, modifiers, 'P', str);
-            break;
-
-        case XKB_KEY_F2:
-            functionKeyResponse('O', 1, modifiers, 'Q', str);
-            break;
-
-        case XKB_KEY_F3:
-            functionKeyResponse('O', 1, modifiers, 'R', str);
-            break;
-
-        case XKB_KEY_F4:
-            functionKeyResponse('O', 1, modifiers, 'S', str);
-            break;
-
-        case XKB_KEY_F5:
-            functionKeyResponse('[', 15, modifiers, '~', str);
-            break;
-
-        case XKB_KEY_F6:
-            functionKeyResponse('[', 17, modifiers, '~', str);
-            break;
-
-        case XKB_KEY_F7:
-            functionKeyResponse('[', 18, modifiers, '~', str);
-            break;
-
-        case XKB_KEY_F8:
-            functionKeyResponse('[', 19, modifiers, '~', str);
-            break;
-
-        case XKB_KEY_F9:
-            functionKeyResponse('[', 20, modifiers, '~', str);
-            break;
-
-        case XKB_KEY_F10:
-            functionKeyResponse('[', 21, modifiers, '~', str);
-            break;
-
-        case XKB_KEY_F12:
-            functionKeyResponse('[', 24, modifiers, '~', str);
-            break;
-
-        default:
-            bool convertUtf8 = true;
-
-            // Handle special keys with alternate mappings.
-            if (applyKeyMap(appCursor ? MAP_APPLICATION : MAP_NORMAL,
-                            keySym, modifiers, str))
-            {
-                break;
-            }
-
-            if (modifiers.get(Modifier::CONTROL)) {
-                if (keySym >= '3' && keySym <= '7') {
-                    keySym = (keySym & 0x1f) + 8;
-                }
-
-                if (!((keySym >= '!' && keySym <= '/') ||
-                      (keySym >= '8' && keySym <= '?') ||
-                      (keySym >= '0' && keySym <= '2'))) { keySym = keySym & 0x1f; }
-                else if (keySym == '2')                  { keySym = 0x00;          }
-                else if (keySym == '/')                  { keySym = 0x1F;          }
-                else if (keySym == '8' || keySym == '?') { keySym = 0x7F;          }
-            }
-
-            if (modifiers.get(Modifier::ALT)) {
-                if (altSendsEsc) { str.push_back(ESC); }
-                else { keySym = keySym | 0x80; convertUtf8 = false; }
-            }
-
-            if ((keySym < 0x80 ) || (!convertUtf8 && keySym < 0x100)) {
-                str.push_back(keySym);
-            }
-            else {
-                char buffer[16];
-                int ret = xkb_keysym_to_utf8(keySym, buffer, sizeof(buffer));
-
-                if (ret == -1) {
-                    ERROR("Buffer to small to encode UTF-8 character.");
-                }
-                else if (ret == 0) {
-                    ERROR("No conversion for key press");
-                }
-                else {
-                    std::copy(buffer, buffer + ret, std::back_inserter(str));
-                }
-            }
-
-            break;
-    }
-
-    return !str.empty();
-}
-
-bool KeyMap::isPotent(xkb_keysym_t keySym) const {
-    normalise(keySym);
-
-    switch (keySym) {
-        case XKB_KEY_Shift_L:
-        case XKB_KEY_Shift_R:
-        case XKB_KEY_Control_L:
-        case XKB_KEY_Control_R:
-        case XKB_KEY_Alt_L:
-        case XKB_KEY_Alt_R:
-        case XKB_KEY_Meta_L:
-        case XKB_KEY_Meta_R:
-        case XKB_KEY_Super_L:
-        case XKB_KEY_Super_R:
-        case XKB_KEY_Hyper_L:
-        case XKB_KEY_Hyper_R:
-            return false;
-        default:
-            return true;
-    }
-}
-
-void KeyMap::normalise(xkb_keysym_t & keySym) {
+void normalise(xkb_keysym_t & keySym) {
     switch (keySym) {
         case XKB_KEY_KP_Space:
             keySym = XKB_KEY_space;
@@ -284,8 +116,11 @@ void KeyMap::normalise(xkb_keysym_t & keySym) {
     }
 }
 
-void KeyMap::functionKeyResponse(char escape, int num, ModifierSet modifiers, char code,
-                                 std::vector<uint8_t> & str) const {
+void functionKeyResponse(char escape,
+                         int num,
+                         ModifierSet modifiers,
+                         char code,
+                         std::vector<uint8_t> & str) {
     std::ostringstream ost;
 
     int modNum = 0;
@@ -308,8 +143,10 @@ void KeyMap::functionKeyResponse(char escape, int num, ModifierSet modifiers, ch
     std::copy(s.begin(), s.end(), std::back_inserter(str));
 }
 
-bool KeyMap::applyKeyMap(const Map * mode, xkb_keysym_t sym, ModifierSet modifiers,
-                         std::vector<uint8_t> & str) const {
+bool applyKeyMap(const Map * mode,
+                 xkb_keysym_t sym,
+                 ModifierSet modifiers,
+                 std::vector<uint8_t> & str) {
     for (const Map * map = mode; map->sym; ++map) {
         if (sym == map->sym) {
             functionKeyResponse(map->escape, map->num, modifiers, map->code, str);
@@ -319,3 +156,203 @@ bool KeyMap::applyKeyMap(const Map * mode, xkb_keysym_t sym, ModifierSet modifie
 
     return false;
 }
+
+} // namespace {anonymous}
+
+std::string symToName(xkb_keysym_t keySym) {
+    char buf[128];
+    auto size = xkb_keysym_get_name(keySym, buf, sizeof buf);
+    ENFORCE(size != -1, "Bad keysym");
+    return std::string(buf, buf + size);
+}
+
+xkb_keysym_t nameToSym(const std::string & name) throw (ParseError) {
+    auto keySym = xkb_keysym_from_name(name.c_str(), static_cast<xkb_keysym_flags>(0));
+    if (keySym == XKB_KEY_NoSymbol) {
+        throw ParseError("Bad keysym: '" + name + "'");
+    }
+    else {
+        return keySym;
+    }
+}
+
+bool composeInput(xkb_keysym_t keySym, ModifierSet modifiers,
+                  bool UNUSED(appKeypad),
+                  bool appCursor,
+                  bool crOnLf,
+                  bool deleteSendsDel,
+                  bool altSendsEsc,
+                  std::vector<uint8_t> & input) {
+    normalise(keySym);
+
+    switch (keySym) {
+        case XKB_KEY_BackSpace:
+            if (modifiers.get(Modifier::ALT)) { input.push_back(ESC); }
+            input.push_back(DEL);
+            break;
+
+        case XKB_KEY_Tab:
+        case XKB_KEY_Linefeed:
+        case XKB_KEY_Clear:
+        case XKB_KEY_Pause:
+        case XKB_KEY_Scroll_Lock:
+        case XKB_KEY_Sys_Req:
+        case XKB_KEY_Escape:
+            input.push_back(keySym & 0x7F);
+            break;
+
+        case XKB_KEY_Return:
+            input.push_back(CR);
+            if (crOnLf) { input.push_back(LF); }
+            break;
+
+        case XKB_KEY_Shift_L:
+        case XKB_KEY_Shift_R:
+        case XKB_KEY_Control_L:
+        case XKB_KEY_Control_R:
+        case XKB_KEY_Alt_L:
+        case XKB_KEY_Alt_R:
+        case XKB_KEY_Meta_L:
+        case XKB_KEY_Meta_R:
+        case XKB_KEY_Super_L:
+        case XKB_KEY_Super_R:
+        case XKB_KEY_Hyper_L:
+        case XKB_KEY_Hyper_R:
+            break;
+
+        case XKB_KEY_Insert:
+            functionKeyResponse('[', 2, modifiers, '~', input);
+            break;
+
+        case XKB_KEY_Delete:
+            if (deleteSendsDel) { input.push_back(EOT); }
+            else { functionKeyResponse('[', 3, modifiers, '~', input); }
+            break;
+
+        case XKB_KEY_Page_Up:
+            functionKeyResponse('[', 5, modifiers, '~', input);
+            break;
+
+        case XKB_KEY_Page_Down:
+            functionKeyResponse('[', 6, modifiers, '~', input);
+            break;
+
+        case XKB_KEY_F1:
+            functionKeyResponse('O', 1, modifiers, 'P', input);
+            break;
+
+        case XKB_KEY_F2:
+            functionKeyResponse('O', 1, modifiers, 'Q', input);
+            break;
+
+        case XKB_KEY_F3:
+            functionKeyResponse('O', 1, modifiers, 'R', input);
+            break;
+
+        case XKB_KEY_F4:
+            functionKeyResponse('O', 1, modifiers, 'S', input);
+            break;
+
+        case XKB_KEY_F5:
+            functionKeyResponse('[', 15, modifiers, '~', input);
+            break;
+
+        case XKB_KEY_F6:
+            functionKeyResponse('[', 17, modifiers, '~', input);
+            break;
+
+        case XKB_KEY_F7:
+            functionKeyResponse('[', 18, modifiers, '~', input);
+            break;
+
+        case XKB_KEY_F8:
+            functionKeyResponse('[', 19, modifiers, '~', input);
+            break;
+
+        case XKB_KEY_F9:
+            functionKeyResponse('[', 20, modifiers, '~', input);
+            break;
+
+        case XKB_KEY_F10:
+            functionKeyResponse('[', 21, modifiers, '~', input);
+            break;
+
+        case XKB_KEY_F12:
+            functionKeyResponse('[', 24, modifiers, '~', input);
+            break;
+
+        default:
+            bool convertUtf8 = true;
+
+            // Handle special keys with alternate mappings.
+            if (applyKeyMap(appCursor ? MAP_APPLICATION : MAP_NORMAL,
+                            keySym, modifiers, input))
+            {
+                break;
+            }
+
+            if (modifiers.get(Modifier::CONTROL)) {
+                if (keySym >= '3' && keySym <= '7') {
+                    keySym = (keySym & 0x1f) + 8;
+                }
+
+                if (!((keySym >= '!' && keySym <= '/') ||
+                      (keySym >= '8' && keySym <= '?') ||
+                      (keySym >= '0' && keySym <= '2'))) { keySym = keySym & 0x1f; }
+                else if (keySym == '2')                  { keySym = 0x00;          }
+                else if (keySym == '/')                  { keySym = 0x1F;          }
+                else if (keySym == '8' || keySym == '?') { keySym = 0x7F;          }
+            }
+
+            if (modifiers.get(Modifier::ALT)) {
+                if (altSendsEsc) { input.push_back(ESC); }
+                else { keySym = keySym | 0x80; convertUtf8 = false; }
+            }
+
+            if ((keySym < 0x80 ) || (!convertUtf8 && keySym < 0x100)) {
+                input.push_back(keySym);
+            }
+            else {
+                char buffer[16];
+                int ret = xkb_keysym_to_utf8(keySym, buffer, sizeof(buffer));
+
+                if (ret == -1) {
+                    ERROR("Buffer to small to encode UTF-8 character.");
+                }
+                else if (ret == 0) {
+                    ERROR("No conversion for key press");
+                }
+                else {
+                    std::copy(buffer, buffer + ret, std::back_inserter(input));
+                }
+            }
+
+            break;
+    }
+
+    return !input.empty();
+}
+
+bool isPotent(xkb_keysym_t keySym) {
+    normalise(keySym);
+
+    switch (keySym) {
+        case XKB_KEY_Shift_L:
+        case XKB_KEY_Shift_R:
+        case XKB_KEY_Control_L:
+        case XKB_KEY_Control_R:
+        case XKB_KEY_Alt_L:
+        case XKB_KEY_Alt_R:
+        case XKB_KEY_Meta_L:
+        case XKB_KEY_Meta_R:
+        case XKB_KEY_Super_L:
+        case XKB_KEY_Super_R:
+        case XKB_KEY_Hyper_L:
+        case XKB_KEY_Hyper_R:
+            return false;
+        default:
+            return true;
+    }
+}
+
+} // namespace xkb
