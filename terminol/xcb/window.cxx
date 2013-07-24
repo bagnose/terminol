@@ -1572,8 +1572,8 @@ void Window::terminalFixDamageEnd(bool internal,
     }
 }
 
-void Window::terminalChildExited(int exitStatus) throw () {
-    PRINT("Child exited: " << exitStatus);
+void Window::terminalChildExited(int UNUSED(exitStatus)) throw () {
+    //PRINT("Child exited: " << exitStatus);
     _open = false;
 }
 
