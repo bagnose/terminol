@@ -263,6 +263,9 @@ Action lookupAction(const std::string & str) throw (ParseError) {
     else if (str == "scroll-bottom") {
         return Action::SCROLL_BOTTOM;
     }
+    else if (str == "debug-modes") {
+        return Action::DEBUG_MODES;
+    }
     else if (str == "debug-stats") {
         return Action::DEBUG_STATS;
     }

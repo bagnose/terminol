@@ -568,6 +568,9 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                     fixDamage(Trigger::SCROLL);
                 }
                 return true;
+            case Action::DEBUG_MODES: {
+                std::cerr << _modes << std::endl;
+            }
             case Action::DEBUG_STATS: {
                 uint32_t uniqueLines;
                 uint32_t globalLines;
