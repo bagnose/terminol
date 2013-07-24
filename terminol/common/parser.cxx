@@ -305,4 +305,7 @@ void parseConfig(Config & config) {
             return;
         }
     }
+
+    // TODO warn user that they don't have a configuration file.
+    WARNING("No configuration file found");
 }
