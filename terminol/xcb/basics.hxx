@@ -24,6 +24,9 @@ class Basics : protected Uncopyable {
 
     xcb_ewmh_connection_t   _ewmhConnection;
 
+    xcb_cursor_t            _normalCursor;
+    xcb_cursor_t            _invisibleCursor;
+
     xcb_atom_t              _atomPrimary;
     xcb_atom_t              _atomClipboard;
     xcb_atom_t              _atomUtf8String;
@@ -59,6 +62,9 @@ public:
 
     xcb_ewmh_connection_t * ewmhConnection()       { return &_ewmhConnection; }
 
+    xcb_cursor_t            normalCursor()         { return _normalCursor;    }
+    xcb_cursor_t            invisibleCursor()      { return _invisibleCursor; }
+
     xcb_atom_t              atomPrimary()          { return _atomPrimary; }
     xcb_atom_t              atomClipboard()        { return _atomClipboard; }
     xcb_atom_t              atomUtf8String()       { return _atomUtf8String; }
@@ -74,8 +80,10 @@ public:
     ModifierSet             convertState(uint8_t state) const;
 
 protected:
-    xcb_atom_t lookupAtom(const std::string & name) throw (Error);
-    void       determineMasks();
+    xcb_atom_t   lookupAtom(const std::string & name) throw (Error);
+    xcb_cursor_t loadNormalCursor() throw (Error);
+    xcb_cursor_t loadInvisibleCursor() throw (Error);
+    void         determineMasks();
 };
 
 #endif // XCB__BASICS__HXX

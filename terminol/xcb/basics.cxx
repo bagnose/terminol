@@ -7,9 +7,32 @@
 
 #include <sstream>
 #include <cstdlib>
+#include <limits>
 
 #include <unistd.h>
 #include <limits.h>
+
+// TODO consolidate this function
+#define xcb_request_failed(connection, cookie, err_msg) _xcb_request_failed(connection, cookie, err_msg, __LINE__)
+namespace {
+
+bool _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
+                         const char * err_msg, int line) {
+    auto error = xcb_request_check(connection, cookie);
+    if (error) {
+        std::cerr
+            << __FILE__ << ':' << line << ' ' << err_msg
+            << " (X Error Code: " << static_cast<int>(error->error_code) << ')'
+            << std::endl;
+        std::free(error);
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+} // namespace {anonymous}
 
 Basics::Basics() throw (Error) {
     char h[HOST_NAME_MAX + 1];
@@ -56,6 +79,12 @@ Basics::Basics() throw (Error) {
     }
     auto keySymbolsGuard = scopeGuard([&] { xcb_key_symbols_free(_keySymbols); });
 
+    _normalCursor = loadNormalCursor();
+    auto normalCursorGuard = scopeGuard([&] { xcb_free_cursor(_connection, _normalCursor); });
+
+    _invisibleCursor = loadInvisibleCursor();
+    auto invisibleCursorGuard = scopeGuard([&] { xcb_free_cursor(_connection, _invisibleCursor); });
+
     if (xcb_ewmh_init_atoms_replies(&_ewmhConnection,
                                     xcb_ewmh_init_atoms(_connection, &_ewmhConnection),
                                     nullptr) == 0) {
@@ -75,12 +104,16 @@ Basics::Basics() throw (Error) {
     determineMasks();
 
     ewmhConnectionGuard.dismiss();
+    invisibleCursorGuard.dismiss();
+    normalCursorGuard.dismiss();
     keySymbolsGuard.dismiss();
     connectionGuard.dismiss();
 }
 
 Basics::~Basics() {
     xcb_ewmh_connection_wipe(&_ewmhConnection);
+    xcb_free_cursor(_connection, _invisibleCursor);
+    xcb_free_cursor(_connection, _normalCursor);
     xcb_key_symbols_free(_keySymbols);
     xcb_disconnect(_connection);
 }
@@ -193,6 +226,64 @@ xcb_atom_t Basics::lookupAtom(const std::string & name) throw (Error) {
     else {
         throw Error("Failed to get atom: " + name);
     }
+}
+
+xcb_cursor_t Basics::loadNormalCursor() throw (Error) {
+    auto cursorId = 152;    // XC_xterm
+
+    const std::string fontName = "cursor";
+
+    // Load the font:
+
+    auto font   = xcb_generate_id(_connection);
+    auto cookie = xcb_open_font_checked(_connection,
+                                        font,
+                                        fontName.size(),
+                                        fontName.data());
+    if (xcb_request_failed(_connection, cookie, "can't open font")) {
+        throw Error("Failed to open font: " + fontName + ".");
+    }
+    auto guard  = scopeGuard([&] { xcb_close_font(_connection, font); });
+
+    // Create the cursor:
+    auto cursor = xcb_generate_id(_connection);
+    auto max    = std::numeric_limits<uint16_t>::max();
+    xcb_create_glyph_cursor_checked(_connection,
+                                    cursor,
+                                    font,
+                                    font,
+                                    cursorId,
+                                    cursorId + 1,
+                                    0, 0, 0, max / 2, max / 2, max / 2);
+    if (xcb_request_failed(_connection, cookie, "couldn't create cursor")) {
+        throw Error("Failed to create cursor.");
+    }
+
+    return cursor;
+}
+
+xcb_cursor_t Basics::loadInvisibleCursor() throw (Error) {
+    auto pixmap = xcb_generate_id(_connection);
+    auto cookie = xcb_create_pixmap_checked(_connection,
+                                            1,
+                                            pixmap,
+                                            _screen->root,
+                                            1, 1);
+    if (xcb_request_failed(_connection, cookie, "couldn't create pixmap")) {
+        throw Error("Failed to create pixmap.");
+    }
+
+    auto cursor = xcb_generate_id(_connection);
+    cookie = xcb_create_cursor_checked(_connection,
+                                       cursor,
+                                       pixmap,
+                                       pixmap,
+                                       0, 0, 0,
+                                       0, 0, 0,
+                                       1, 1);
+    xcb_request_failed(_connection, cookie, "couldn't create cursor");
+    // FIXME error
+    return cursor;
 }
 
 void Basics::determineMasks() {

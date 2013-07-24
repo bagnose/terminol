@@ -12,6 +12,7 @@
 
 #include <unistd.h>
 
+// TODO consolidate this function
 #define xcb_request_failed(connection, cookie, err_msg) _xcb_request_failed(connection, cookie, err_msg, __LINE__)
 namespace {
 
@@ -68,6 +69,7 @@ Window::Window(I_Observer         & observer,
     _pressCount(0),
     _lastPressTime(0),
     _button(XCB_BUTTON_INDEX_ANY),
+    _cursorVisible(false),
     _deferralsAllowed(true),
     _deferred(false),
     _transientTitle(false),
@@ -112,7 +114,7 @@ Window::Window(I_Observer         & observer,
         XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE |
         XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
         XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW |
-        XCB_EVENT_MASK_POINTER_MOTION_HINT | XCB_EVENT_MASK_BUTTON_MOTION |
+        XCB_EVENT_MASK_POINTER_MOTION_HINT | XCB_EVENT_MASK_POINTER_MOTION |
         XCB_EVENT_MASK_EXPOSURE |
         XCB_EVENT_MASK_STRUCTURE_NOTIFY |
         XCB_EVENT_MASK_FOCUS_CHANGE |
@@ -134,7 +136,6 @@ Window::Window(I_Observer         & observer,
                                        XCB_CW_WIN_GRAVITY |
                                        XCB_CW_BACKING_STORE |
                                        XCB_CW_SAVE_UNDER |
-                                       //XCB_CW_CURSOR |
                                        XCB_CW_EVENT_MASK,
                                        winValues);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to create window")) {
@@ -193,6 +194,8 @@ Window::Window(I_Observer         & observer,
     gcGuard.dismiss();
     windowGuard.dismiss();
     fontGuard.dismiss();
+
+    cursorVisibility(true);
 }
 
 Window::~Window() {
@@ -247,6 +250,8 @@ void Window::flush() {
 // Events:
 
 void Window::keyPress(xcb_key_press_event_t * event) {
+    cursorVisibility(false);
+
     if (!_open) { return; }
 
     xcb_keysym_t keySym;
@@ -272,6 +277,9 @@ void Window::keyRelease(xcb_key_release_event_t * UNUSED(event)) {
 
 void Window::buttonPress(xcb_button_press_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
+
+    cursorVisibility(true);
+
     //PRINT("Button-press: " << event->event_x << " " << event->event_y);
     if (!_open) { return; }
     if (event->detail < XCB_BUTTON_INDEX_1 ||
@@ -328,6 +336,9 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
 
 void Window::buttonRelease(xcb_button_release_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
+
+    cursorVisibility(true);
+
     //PRINT("Button-release: " << event->event_x << " " << event->event_y);
     if (!_open) { return; }
     if (event->detail < XCB_BUTTON_INDEX_1 ||
@@ -343,9 +354,11 @@ void Window::buttonRelease(xcb_button_release_event_t * event) {
 
 void Window::motionNotify(xcb_motion_notify_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
+
+    cursorVisibility(true);
+
     //PRINT("Motion-notify: " << event->event_x << " " << event->event_y);
     if (!_open) { return; }
-    if (!_pressed) { return; }
 
     int16_t x, y;
     uint16_t mask;
@@ -1047,6 +1060,20 @@ void Window::handleDelete() {
     }
     else {
         xcb_destroy_window(_basics.connection(), _window);
+    }
+}
+
+void Window::cursorVisibility(bool visible) {
+    if (_cursorVisible != visible) {
+        auto mask   = XCB_CW_CURSOR;
+        auto values = visible ? _basics.normalCursor() : _basics.invisibleCursor();
+        auto cookie = xcb_change_window_attributes_checked(_basics.connection(),
+                                                           _window,
+                                                           mask,
+                                                           &values);
+        xcb_request_failed(_basics.connection(), cookie, "couldn't change window attributes");
+
+        _cursorVisible = visible;
     }
 }
 

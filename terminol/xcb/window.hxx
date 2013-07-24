@@ -69,6 +69,8 @@ private:
     xcb_timestamp_t   _lastPressTime;
     xcb_button_t      _button;
 
+    bool              _cursorVisible;
+
     bool              _deferralsAllowed;
     bool              _deferred;
 
@@ -151,6 +153,8 @@ protected:
     void sizeToRowsCols(uint16_t & rows, uint16_t & cols) const;
 
     void handleDelete();
+
+    void cursorVisibility(bool visible);
 
     // Terminal::I_Observer implementation:
 
