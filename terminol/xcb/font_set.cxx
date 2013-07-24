@@ -72,8 +72,28 @@ PangoFontDescription * FontSet::load(const std::string & family,
                                      bool                master,
                                      bool                bold,
                                      bool                italic) throw (Error) {
-    auto desc = pango_font_description_from_string(family.c_str());
-    if (!desc) { throw Error("Failed to load font: " + family); }
+#if 0
+    {
+        PangoFontMap * fontmap = pango_cairo_font_map_get_default();
+
+        PangoFontFamily ** families;
+        int n_families;
+        pango_font_map_list_families(fontmap, &families, &n_families);
+
+        //printf("There are %d families\n", n_families);
+        for (int i = 0; i < n_families; i++) {
+            PangoFontFamily * family2 = families[i];
+            if (pango_font_family_is_monospace(family2)) {
+                const char * family_name = pango_font_family_get_name(family2);
+                printf ("Family %d: %s\n", i, family_name);
+            }
+        }
+        g_free(families);
+    }
+#endif
+
+    auto desc = pango_font_description_new();
+    pango_font_description_set_family(desc, family.c_str());
     auto descGuard = scopeGuard([&] { pango_font_description_free(desc); });
     //pango_font_description_set_size(desc, size * PANGO_SCALE);
     pango_font_description_set_absolute_size(desc, size * PANGO_SCALE);
@@ -83,6 +103,12 @@ PangoFontDescription * FontSet::load(const std::string & family,
     pango_font_description_set_style(desc,
                                      italic ? PANGO_STYLE_OBLIQUE :
                                      PANGO_STYLE_NORMAL);
+
+    /*
+    auto str = pango_font_description_to_string(desc);
+    PRINT("Got: " << str);
+    std::free(str);
+    */
 
     uint16_t width, height;
     measure(desc, width, height);
