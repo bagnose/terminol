@@ -14,44 +14,44 @@ bool open(std::ifstream & ifs, const std::string & path) {
     return ifs.good();
 }
 
-#if 0
 std::string lowercase(const std::string & str) {
     auto copy = str;
     for (auto & c : copy) { c = tolower(c); }
     return copy;
 }
-#endif
 
 bool lookupModifier(const std::string & name, Modifier & modifier) {
-    if (name == "shift") {
+    auto lc = lowercase(name);
+
+    if (lc == "shift") {
         modifier = Modifier::SHIFT;
         return true;
     }
-    else if (name == "alt") {
+    else if (lc == "alt") {
         modifier = Modifier::ALT;
         return true;
     }
-    else if (name == "ctrl") {
+    else if (lc == "ctrl") {
         modifier = Modifier::CONTROL;
         return true;
     }
-    else if (name == "super") {
+    else if (lc == "super") {
         modifier = Modifier::SUPER;
         return true;
     }
-    else if (name == "num_lock" || name == "num-lock") {
+    else if (lc == "num_lock" || lc == "num-lock") {
         modifier = Modifier::NUM_LOCK;
         return true;
     }
-    else if (name == "shift_lock" || name == "shift-lock") {
+    else if (lc == "shift_lock" || lc == "shift-lock") {
         modifier = Modifier::SHIFT_LOCK;
         return true;
     }
-    else if (name == "caps_lock" || name == "caps-lock") {
+    else if (lc == "caps_lock" || lc == "caps-lock") {
         modifier = Modifier::CAPS_LOCK;
         return true;
     }
-    else if (name == "mode_switch" || name == "mode-switch") {
+    else if (lc == "mode_switch" || lc == "mode-switch") {
         modifier = Modifier::MODE_SWITCH;
         return true;
     }
