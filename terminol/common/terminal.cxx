@@ -1993,7 +1993,7 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     break;
                 case 1034: // ssm/rrm, meta mode on/off
                     _modes.setTo(Mode::META_8BIT, set);
-                    PRINT("Setting 8-bit to: " << set);
+                    //PRINT("Setting 8-bit to: " << set);
                     break;
                 case 1037: // deleteSendsDel
                     _modes.setTo(Mode::DELETE_SENDS_DEL, set);
