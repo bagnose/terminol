@@ -166,7 +166,7 @@ public:
     bool     keyPress(xkb_keysym_t keySym, ModifierSet modifiers);
     void     buttonPress(Button button, int count, ModifierSet modifiers,
                          bool within, Pos pos);
-    void     buttonMotion(ModifierSet modifiers, bool within, Pos pos);
+    void     pointerMotion(ModifierSet modifiers, bool within, Pos pos);
     void     buttonRelease(bool broken, ModifierSet modifiers);
     void     scrollWheel(ScrollDir dir, ModifierSet modifiers, bool within, Pos pos);
 

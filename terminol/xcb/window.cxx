@@ -375,7 +375,7 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
         auto modifiers = _basics.convertState(mask);
 
         _pointerPos = pos;
-        _terminal->buttonMotion(modifiers, within, pos);
+        _terminal->pointerMotion(modifiers, within, pos);
     }
 
 }

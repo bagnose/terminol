@@ -292,7 +292,7 @@ void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
     _pointerPos = pos;
 }
 
-void Terminal::buttonMotion(ModifierSet modifiers, bool within, Pos pos) {
+void Terminal::pointerMotion(ModifierSet modifiers, bool within, Pos pos) {
     //PRINT("motion: within=" << within << ", " << pos);
 
     //ASSERT(_pressed, "");
@@ -329,9 +329,11 @@ void Terminal::buttonMotion(ModifierSet modifiers, bool within, Pos pos) {
         }
     }
     else if (!_modes.get(Mode::MOUSE_BUTTON)) {
-        if (_button == Button::LEFT) {
-            _buffer->delimitSelection(pos);
-            fixDamage(Trigger::SCROLL);     // FIXME Trigger
+        if (_pressed) {
+            if (_button == Button::LEFT) {
+                _buffer->delimitSelection(pos);
+                fixDamage(Trigger::SCROLL);     // FIXME Trigger
+            }
         }
     }
 
