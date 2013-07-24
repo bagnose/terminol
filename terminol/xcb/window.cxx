@@ -1272,13 +1272,17 @@ void Window::terminalDrawCursor(Pos             pos,
         int x, y;
         pos2XY(pos, x, y);
 
-        if (!focused) {
+        if (focused) {
+            cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
+        }
+        else {
             cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
-            cairo_rectangle(_cr, x, y, _fontSet->getWidth(), _fontSet->getHeight());
-            cairo_fill(_cr);
         }
 
-        auto alpha = wrapNext ? 0.4 : 1.0;
+        cairo_rectangle(_cr, x, y, _fontSet->getWidth(), _fontSet->getHeight());
+        cairo_fill(_cr);
+
+        auto alpha = wrapNext ? 0.4 : 0.8;
         cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
 
         if (focused) {
