@@ -89,7 +89,7 @@ protected:
                             bool create) throw (NotFoundError, Error);
     xcb_cursor_t loadNormalCursor() throw (Error);
     xcb_cursor_t loadInvisibleCursor() throw (Error);
-    void         determineMasks();
+    void         determineMasks() throw (Error);
 };
 
 #endif // XCB__BASICS__HXX

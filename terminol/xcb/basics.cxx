@@ -299,37 +299,30 @@ xcb_cursor_t Basics::loadInvisibleCursor() throw (Error) {
                                        0, 0, 0,
                                        0, 0, 0,
                                        1, 1);
-    xcb_request_failed(_connection, cookie, "couldn't create cursor");
-    // FIXME error
+    if (xcb_request_failed(_connection, cookie, "couldn't create cursor")) {
+        throw Error("Failed to create cursor.");
+    }
+
     return cursor;
 }
 
-void Basics::determineMasks() {
+void Basics::determineMasks() throw (Error) {
     // Note, xcb_key_symbols_get_keycode() may return nullptr.
-    xcb_keycode_t * shiftCodes =
-        xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Shift_L);
-    xcb_keycode_t * altCodes =
-        xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Alt_L);
-    xcb_keycode_t * controlCodes =
-        xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Control_L);
-    xcb_keycode_t * superCodes =
-        xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Super_L);
-    xcb_keycode_t * numLockCodes =
-        xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Num_Lock);
-    xcb_keycode_t * shiftLockCodes =
-        xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Shift_Lock);
-    xcb_keycode_t * capsLockCodes =
-        xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Caps_Lock);
-    xcb_keycode_t * modeSwitchCodes =
-        xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Mode_switch);
+    auto shiftCodes      = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Shift_L);
+    auto altCodes        = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Alt_L);
+    auto controlCodes    = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Control_L);
+    auto superCodes      = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Super_L);
+    auto numLockCodes    = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Num_Lock);
+    auto shiftLockCodes  = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Shift_Lock);
+    auto capsLockCodes   = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Caps_Lock);
+    auto modeSwitchCodes = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Mode_switch);
 
-    xcb_get_modifier_mapping_cookie_t cookie =
-        xcb_get_modifier_mapping_unchecked(_connection);
-    xcb_get_modifier_mapping_reply_t * modmapReply =
-        xcb_get_modifier_mapping_reply(_connection, cookie, nullptr);
-    ASSERT(modmapReply, "");
-    xcb_keycode_t * modmap = xcb_get_modifier_mapping_keycodes(modmapReply);
-    ASSERT(modmap, "");
+    auto cookie      = xcb_get_modifier_mapping(_connection);
+    auto modmapReply = xcb_get_modifier_mapping_reply(_connection, cookie, nullptr);
+    if (!modmapReply) {
+        throw Error("Couldn't determine masks.");
+    }
+    auto modmap      = xcb_get_modifier_mapping_keycodes(modmapReply);
 
     // Clear the masks.
     _maskShift = _maskAlt = _maskControl = _maskSuper =
@@ -337,12 +330,12 @@ void Basics::determineMasks() {
 
     for (int i = 0; i != 8; ++i) {
         for (int j = 0; j != modmapReply->keycodes_per_modifier; ++j) {
-            xcb_keycode_t kc = modmap[i * modmapReply->keycodes_per_modifier + j];
+            auto kcode = modmap[i * modmapReply->keycodes_per_modifier + j];
 
 #define LOOK_FOR(mask, codes) \
             if (mask == 0 && codes) { \
-                for (xcb_keycode_t * ktest = codes; *ktest; ++ktest) { \
-                    if (*ktest == kc) { \
+                for (auto ktest = codes; *ktest; ++ktest) { \
+                    if (*ktest == kcode) { \
                         mask = (1 << i); \
                         break; \
                     } \
