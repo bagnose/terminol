@@ -1712,7 +1712,6 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
 
     // FIXME check man 7 urxvt:
 
-    // FIXME is it right to loop?
     for (size_t i = 0; i != args.size(); ++i) {
         auto v = args[i];
 
