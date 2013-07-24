@@ -100,7 +100,7 @@ Terminal::Terminal(I_Observer    & observer,
     _priSaveCursor(),
     _altSaveCursor(),
     //
-    _pressed(false),
+    _press(Press::NONE),
     _focused(true),
     _lastSeq(),
     //
@@ -233,7 +233,7 @@ void Terminal::sendMouseButton(int num, ModifierSet modifiers, Pos pos) {
     if (modifiers.get(Modifier::CONTROL)) { num += 16; }
 
     std::ostringstream ost;
-    if (_modes.get(Mode::MOUSE_SGR)) {
+    if (_modes.get(Mode::MOUSE_FORMAT_SGR)) {
         ost << ESC << "[<"
             << num << ';' << pos.col + 1 << ';' << pos.row + 1
             << 'M';
@@ -262,12 +262,19 @@ void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
           ", state=" << modifiers << ", " << pos);
           */
 
-    ASSERT(!_pressed, "");
+    ASSERT(_press == Press::NONE, "");
 
-    if (_modes.get(Mode::MOUSE_BUTTON)) {
+    if (_modes.get(Mode::MOUSE_PRESS_RELEASE)) {
         sendMouseButton(static_cast<int>(button), modifiers, pos);
+        if (_modes.get(Mode::MOUSE_SELECT)) {
+            goto select;
+        }
+        else {
+            _press = Press::REPORT;
+        }
     }
     else {
+select:
         if (button == Button::LEFT) {
             if (count == 1) {
                 _buffer->markSelection(pos);
@@ -285,19 +292,21 @@ void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
             _buffer->adjustSelection(pos);
             fixDamage(Trigger::SCROLL);     // FIXME Trigger
         }
+        _press = Press::SELECT;
     }
 
-    _pressed    = true;
     _button     = button;
     _pointerPos = pos;
+
+    ASSERT(_press != Press::NONE, "");
 }
 
 void Terminal::pointerMotion(ModifierSet modifiers, bool within, Pos pos) {
     //PRINT("motion: within=" << within << ", " << pos);
 
-    //ASSERT(_pressed, "");
-
-    if (_modes.get(Mode::MOUSE_MOTION)) {
+    if ((_press == Press::REPORT && _modes.get(Mode::MOUSE_DRAG)) ||
+        (_press == Press::NONE   && _modes.get(Mode::MOUSE_MOTION)))
+    {
         if (within) {
             int num = static_cast<int>(_button) + 32;
 
@@ -306,7 +315,7 @@ void Terminal::pointerMotion(ModifierSet modifiers, bool within, Pos pos) {
             if (modifiers.get(Modifier::CONTROL)) { num +=  4; }
 
             std::ostringstream ost;
-            if (_modes.get(Mode::MOUSE_SGR)) {
+            if (_modes.get(Mode::MOUSE_FORMAT_SGR)) {
                 ost << ESC << "[<"
                     << num << ';' << pos.col + 1 << ';' << pos.row + 1
                     << 'M';
@@ -328,12 +337,10 @@ void Terminal::pointerMotion(ModifierSet modifiers, bool within, Pos pos) {
             }
         }
     }
-    else if (!_modes.get(Mode::MOUSE_BUTTON)) {
-        if (_pressed) {
-            if (_button == Button::LEFT) {
-                _buffer->delimitSelection(pos);
-                fixDamage(Trigger::SCROLL);     // FIXME Trigger
-            }
+    else if (_press == Press::SELECT) {
+        if (_button == Button::LEFT) {
+            _buffer->delimitSelection(pos);
+            fixDamage(Trigger::SCROLL);     // FIXME Trigger
         }
     }
 
@@ -343,52 +350,60 @@ void Terminal::pointerMotion(ModifierSet modifiers, bool within, Pos pos) {
 void Terminal::buttonRelease(bool UNUSED(broken), ModifierSet modifiers) {
     //PRINT("release, broken=" << broken);
 
-    ASSERT(_pressed, "");
+    ASSERT(_press != Press::NONE, "");
 
-    if (_modes.get(Mode::MOUSE_BUTTON)) {
-        // XXX within??
-
-        auto num = _modes.get(Mode::MOUSE_SGR) ? static_cast<int>(_button) + 32 : 3;
-        auto pos = _pointerPos;
-
-        if (modifiers.get(Modifier::SHIFT))   { num +=  4; }
-        if (modifiers.get(Modifier::ALT))     { num +=  8; }
-        if (modifiers.get(Modifier::CONTROL)) { num += 16; }
-
-        std::ostringstream ost;
-        if (_modes.get(Mode::MOUSE_SGR)) {
-            ost << ESC << "[<"
-                << num << ';' << pos.col + 1 << ';' << pos.row + 1
-                << 'm';
-        }
-        else if (pos.row < 223 && pos.col < 223) {
-            ost << ESC << "[M"
-                << static_cast<char>(32 + num)
-                << static_cast<char>(32 + pos.col + 1)
-                << static_cast<char>(32 + pos.row + 1);
-        }
-        else {
-            // Couldn't deliver it
-        }
-
-        const auto & str = ost.str();
-
-        if (!str.empty()) {
-            write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
-        }
-    }
-    else {
+    if (_press == Press::SELECT) {
         std::string text;
         if (_buffer->getSelectedText(text)) {
             _observer.terminalCopy(text, false);
         }
+
+        if (_modes.get(Mode::MOUSE_SELECT) && _modes.get(Mode::MOUSE_PRESS_RELEASE)) {
+            goto report;
+        }
+    }
+    else if (_press == Press::REPORT) {
+        if (_modes.get(Mode::MOUSE_PRESS_RELEASE)) {
+report:
+            auto num = _modes.get(Mode::MOUSE_FORMAT_SGR) ? static_cast<int>(_button) + 32 : 3;
+            auto pos = _pointerPos;
+
+            if (modifiers.get(Modifier::SHIFT))   { num +=  4; }
+            if (modifiers.get(Modifier::ALT))     { num +=  8; }
+            if (modifiers.get(Modifier::CONTROL)) { num += 16; }
+
+            std::ostringstream ost;
+            if (_modes.get(Mode::MOUSE_FORMAT_SGR)) {
+                ost << ESC << "[<"
+                    << num << ';' << pos.col + 1 << ';' << pos.row + 1
+                    << 'm';
+            }
+            else if (pos.row < 223 && pos.col < 223) {
+                ost << ESC << "[M"
+                    << static_cast<char>(32 + num)
+                    << static_cast<char>(32 + pos.col + 1)
+                    << static_cast<char>(32 + pos.row + 1);
+            }
+            else {
+                // Couldn't deliver it
+            }
+
+            const auto & str = ost.str();
+
+            if (!str.empty()) {
+                write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+            }
+        }
+    }
+    else {
+        FATAL("Bad");
     }
 
-    _pressed = false;
+    _press = Press::NONE;
 }
 
 void Terminal::scrollWheel(ScrollDir dir, ModifierSet modifiers, bool UNUSED(within), Pos pos) {
-    if (_modes.get(Mode::MOUSE_BUTTON)) {
+    if (_modes.get(Mode::MOUSE_PRESS_RELEASE)) {
         sendMouseButton(dir == ScrollDir::UP ? 3 : 4, modifiers, pos);
     }
     else {
@@ -1998,8 +2013,8 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                 case 8: // DECARM - Auto Repeat Mode
                     _modes.setTo(Mode::AUTO_REPEAT, set);
                     break;
-                case 9: // DECINLM - Interlacing Mode
-                    NYI("DECINLM");
+                case 9: // Mouse X10
+                    NYI("X10 mouse");
                     break;
                 case 12: // CVVIS/att610 - Cursor Very Visible.
                     //NYI("CVVIS/att610: " << set);
@@ -2021,31 +2036,67 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     _buffer = set ? &_altBuffer : &_priBuffer;
                     _buffer->damageAll();
                     break;
-                case 1000: // 1000,1002: enable xterm mouse report
-                    _modes.setTo(Mode::MOUSE_BUTTON, set);
-                    _modes.setTo(Mode::MOUSE_MOTION, false);
+                case 1000: // Mouse X11 (button press and release)
+                    _modes.setTo(Mode::MOUSE_PRESS_RELEASE, set);
+                    if (set) {
+                        _modes.setTo(Mode::MOUSE_DRAG,   false);
+                        _modes.setTo(Mode::MOUSE_MOTION, false);
+                        _modes.setTo(Mode::MOUSE_SELECT, false);
+                    }
                     break;
-                case 1002:
-                    _modes.setTo(Mode::MOUSE_MOTION, set);
-                    _modes.setTo(Mode::MOUSE_BUTTON, false);
+                case 1001: // Mouse Highlight (button press and release, but allow select to occur)
+                    _modes.setTo(Mode::MOUSE_PRESS_RELEASE, set);
+                    _modes.setTo(Mode::MOUSE_SELECT,        set);
+                    if (set) {
+                        _modes.setTo(Mode::MOUSE_DRAG,   false);
+                        _modes.setTo(Mode::MOUSE_MOTION, false);
+                    }
                     break;
-                case 1003:
-                    _modes.setTo(Mode::MOUSE_MOTION, set);
-                    _modes.setTo(Mode::MOUSE_BUTTON, set);
+                case 1002: // Mouse Button (Button press, drag, release)
+                    _modes.setTo(Mode::MOUSE_PRESS_RELEASE, set);
+                    _modes.setTo(Mode::MOUSE_DRAG,          set);
+                    if (set) {
+                        _modes.setTo(Mode::MOUSE_MOTION, false);
+                        _modes.setTo(Mode::MOUSE_SELECT, false);
+                    }
+                    break;
+                case 1003: // Mouse Any (Button press, drag, release, motion)
+                    _modes.setTo(Mode::MOUSE_PRESS_RELEASE, set);
+                    _modes.setTo(Mode::MOUSE_DRAG,          set);
+                    _modes.setTo(Mode::MOUSE_MOTION,        set);
+                    if (set) {
+                        _modes.setTo(Mode::MOUSE_SELECT, false);
+                    }
                     break;
                 case 1004:
-                    // tmux REPORT FOCUS
                     _modes.setTo(Mode::FOCUS, set);
                     break;
-                case 1005:
-                    // ??? tmux MOUSE FORMAT = XTERM EXT
+                case 1005: // Mouse Format UTF-8
+#if 0
+                    _modes.setTo(Mode::MOUSE_FORMAT_UTF8, set);
+                    if (set) {
+                        _modes.unset(Mode::MOUSE_FORMAT_SGR);
+                        _modes.unset(Mode::MOUSE_FORMAT_URXVT);
+                    }
+#endif
                     break;
-                case 1006:
-                    // MOUSE FORMAT = STR
-                    _modes.setTo(Mode::MOUSE_SGR, set);
+                case 1006: // Mouse Format SGR
+                    _modes.setTo(Mode::MOUSE_FORMAT_SGR, set);
+#if 0
+                    if (set) {
+                        _modes.unset(Mode::MOUSE_FORMAT_UTF8);
+                        _modes.unset(Mode::MOUSE_FORMAT_URXVT);
+                    }
+#endif
                     break;
-                case 1015:
-                    // MOUSE FORMAT = URXVT
+                case 1015: // Mouse Format URXVT
+#if 0
+                    _modes.setTo(Mode::MOUSE_FORMAT_URXVT, set);
+                    if (set) {
+                        _modes.unset(Mode::MOUSE_FORMAT_UTF8);
+                        _modes.unset(Mode::MOUSE_FORMAT_SGR);
+                    }
+#endif
                     break;
                 case 1034: // ssm/rrm, meta mode on/off
                     _modes.setTo(Mode::META_8BIT, set);

@@ -77,12 +77,16 @@ std::ostream & operator << (std::ostream & ost, Mode mode) {
             return ost << "APPCURSOR";
         case Mode::REVERSE:
             return ost << "REVERSE";
-        case Mode::MOUSE_BUTTON:
-            return ost << "MOUSE_BUTTON";
+        case Mode::MOUSE_PRESS_RELEASE:
+            return ost << "MOUSE_PRESS_RELEASE";
+        case Mode::MOUSE_DRAG:
+            return ost << "MOUSE_DRAG";
         case Mode::MOUSE_MOTION:
             return ost << "MOUSE_MOTION";
-        case Mode::MOUSE_SGR:
-            return ost << "MOUSE_SGR";
+        case Mode::MOUSE_SELECT:
+            return ost << "MOUSE_SELECT";
+        case Mode::MOUSE_FORMAT_SGR:
+            return ost << "MOUSE_FORMAT_SGR";
         case Mode::BRACKETED_PASTE:
             return ost << "BRACKETED_PASTE";
         case Mode::META_8BIT:

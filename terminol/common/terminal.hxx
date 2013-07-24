@@ -126,7 +126,9 @@ private:
     Cursor                _priSaveCursor;
     Cursor                _altSaveCursor;
 
-    bool                  _pressed;
+    enum class Press { NONE, SELECT, REPORT };
+
+    Press                 _press;
     Button                _button;
     Pos                   _pointerPos;
     bool                  _focused;
