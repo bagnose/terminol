@@ -189,7 +189,7 @@ $$($(2)_PASS): $$($(2)_EXE)
 ifeq ($(VERBOSE),false)
 	@echo ' [RUN] $$(<F)'
 endif
-	$(V)$$($(2)_EXE) > $$($(2)_OUT) 2>&1 && touch $$@ || (rm -f $$@ && echo "Test failed '$$($(2)_NAME)'." && cat $$($(2)_OUT))
+	$(V)$$($(2)_EXE) > $$($(2)_OUT) 2>&1 && touch $$@ || (rm -f $$@ && echo "Test failed '$$($(2)_NAME)'." && cat $$($(2)_OUT)) > /dev/stderr
 
 all: $$($(2)_PASS)
 else
