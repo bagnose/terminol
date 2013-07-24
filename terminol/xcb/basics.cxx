@@ -93,13 +93,23 @@ Basics::Basics() throw (Error) {
     auto ewmhConnectionGuard =
         scopeGuard([&] { xcb_ewmh_connection_wipe(&_ewmhConnection); } );
 
-    _atomPrimary        = XCB_ATOM_PRIMARY;
-    _atomClipboard      = lookupAtom("CLIPBOARD");
-    _atomUtf8String     = lookupAtom("UTF8_STRING");    // XXX fall back on XB_ATOM_STRING
-    if (_atomUtf8String == XCB_ATOM_NONE) { _atomUtf8String = XCB_ATOM_STRING; }
-    _atomTargets        = lookupAtom("TARGETS");
-    _atomWmProtocols    = lookupAtom("WM_PROTOCOLS");
-    _atomWmDeleteWindow = lookupAtom("WM_DELETE_WINDOW");
+    try {
+        _atomPrimary        = XCB_ATOM_PRIMARY;
+        _atomClipboard      = lookupAtom("CLIPBOARD", false);
+        try {
+            _atomUtf8String = lookupAtom("UTF8_STRING", false);
+        }
+        catch (const NotFoundError & ex) {
+            WARNING("No atom UTF8_STRING, falling back on STRING.");
+            _atomUtf8String = XCB_ATOM_STRING;
+        }
+        _atomTargets        = lookupAtom("TARGETS", false);
+        _atomWmProtocols    = lookupAtom("WM_PROTOCOLS", false);
+        _atomWmDeleteWindow = lookupAtom("WM_DELETE_WINDOW", false);
+    }
+    catch (const NotFoundError & ex) {
+        throw Error(ex.message);
+    }
 
     determineMasks();
 
@@ -214,14 +224,22 @@ ModifierSet Basics::convertState(uint8_t state) const {
     return modifiers;
 }
 
-xcb_atom_t Basics::lookupAtom(const std::string & name) throw (Error) {
-    auto cookie = xcb_intern_atom(_connection, 0, name.length(), name.data());
+xcb_atom_t Basics::lookupAtom(const std::string & name,
+                              bool create) throw (NotFoundError, Error) {
+    auto cookie = xcb_intern_atom(_connection, create ? 0 : 1, name.length(), name.data());
     auto reply  = xcb_intern_atom_reply(_connection, cookie, nullptr);
 
     if (reply) {
-        xcb_atom_t atom = reply->atom;
+        auto atom = reply->atom;
         std::free(reply);
-        return atom;
+
+        if (atom == XCB_ATOM_NONE) {
+            ASSERT(!create, "");
+            throw NotFoundError("Atom not found: " + name);
+        }
+        else {
+            return atom;
+        }
     }
     else {
         throw Error("Failed to get atom: " + name);

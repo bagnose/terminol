@@ -12,6 +12,11 @@
 #include <xcb/xcb_ewmh.h>
 #include <xcb/xcb_keysyms.h>
 
+struct NotFoundError {      // FIXME Move to common location.
+    explicit NotFoundError(const std::string & message_) : message(message_) {}
+    std::string message;
+};
+
 class Basics : protected Uncopyable {
     std::string             _hostname;
 
@@ -80,7 +85,8 @@ public:
     ModifierSet             convertState(uint8_t state) const;
 
 protected:
-    xcb_atom_t   lookupAtom(const std::string & name) throw (Error);
+    xcb_atom_t   lookupAtom(const std::string & name,
+                            bool create) throw (NotFoundError, Error);
     xcb_cursor_t loadNormalCursor() throw (Error);
     xcb_cursor_t loadInvisibleCursor() throw (Error);
     void         determineMasks();
