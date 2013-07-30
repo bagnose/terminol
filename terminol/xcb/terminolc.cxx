@@ -64,7 +64,10 @@ int main(int argc, char * argv[]) {
     const auto & socketPath = config.socketPath;
     auto fd = ::open(socketPath.c_str(), O_WRONLY | O_NONBLOCK);
 
-    ENFORCE_SYS(fd != -1, "Failed to open: " << socketPath);
+    if (fd == -1) {
+        std::cerr << "Failed to open: " << socketPath << std::endl;
+        return 1;
+    }
 
     char c = 0;
     auto rval = TEMP_FAILURE_RETRY(::write(fd, &c, 1));
