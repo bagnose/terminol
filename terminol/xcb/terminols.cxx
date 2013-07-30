@@ -10,6 +10,7 @@
 #include "terminol/common/key_map.hxx"
 #include "terminol/support/debug.hxx"
 #include "terminol/support/pattern.hxx"
+#include "terminol/support/cmdline.hxx"
 
 #include <set>
 
@@ -443,80 +444,41 @@ protected:
 
 namespace {
 
-bool argMatch(const std::string & arg, const std::string & opt, std::string & val) {
-    std::string optComposed = "--" + opt + "=";
-    if (arg.substr(0, optComposed.size()) ==  optComposed) {
-        val = arg.substr(optComposed.size());
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-
-void showHelp(const std::string & progName, std::ostream & ost) {
-    ost << "terminols " << VERSION << std::endl
-        << "Usage: " << progName << " [OPTION]..." << std::endl
+std::string makeHelp(const std::string & progName) {
+    std::ostringstream ost;
+    ost << "terminol " << VERSION << std::endl
+        << "Usage: " << progName << " [OPTION]... [--execute COMMAND]" << std::endl
         << std::endl
         << "Options:" << std::endl
         << "  --help" << std::endl
+        << "  --version" << std::endl
         << "  --font-name=NAME" << std::endl
         << "  --font-size=SIZE" << std::endl
         << "  --term=NAME" << std::endl
-        << "  --trace" << std::endl
-        << "  --sync" << std::endl
+        << "  --trace|--no-trace" << std::endl
+        << "  --sync|--no-sync" << std::endl
         << "  --socket=SOCKET" << std::endl
-        << "  --fork=(true|false)" << std::endl
+        << "  --fork|--no-fork" << std::endl
         ;
+    return ost.str();
 }
-
 } // namespace {anonymous}
 
 int main(int argc, char * argv[]) {
     Config config;
     parseConfig(config);
 
-    // Command line
+    CmdLine cmdLine(makeHelp(argv[0]), VERSION, "--execute");
+    cmdLine.add(new StringHandler(config.fontName),   '\0', "font-name");
+    cmdLine.add(new IntHandler(config.fontSize),      '\0', "font-size");
+    cmdLine.add(new BoolHandler(config.traceTty),     '\0', "trace");
+    cmdLine.add(new BoolHandler(config.syncTty),      '\0', "sync");
+    cmdLine.add(new StringHandler(config.termName),   '\0', "term-name");
+    cmdLine.add(new StringHandler(config.socketPath), '\0', "socket");
+    cmdLine.add(new BoolHandler(config.serverFork),   '\0', "fork");
 
     try {
-        for (int i = 1; i != argc; ++i) {
-            std::string arg = argv[i];
-            std::string val;
-
-            if (arg == "--help") {
-                showHelp(argv[0], std::cout);
-                return 0;
-            }
-            else if (argMatch(arg, "font-name", val)) {
-                config.fontName = val;
-            }
-            else if (argMatch(arg, "font-size", val)) {
-                config.fontSize = unstringify<int>(val);
-            }
-            else if (arg == "--trace") {
-                config.traceTty = true;
-            }
-            else if (arg == "--sync") {
-                config.syncTty = true;
-            }
-            else if (argMatch(arg, "term", val)) {
-                config.termName = val;
-            }
-            else if (argMatch(arg, "socket", val)) {
-                config.socketPath = val;
-            }
-            else {
-                std::cerr << "Unrecognised argument '" << arg << "'" << std::endl;
-                showHelp(argv[0], std::cerr);
-                return 2;
-            }
-        }
-    }
-    catch (const ParseError & ex) {
-        FATAL(ex.message);
-    }
-
-    try {
+        auto command = cmdLine.parse(argc, const_cast<const char **>(argv));
         EventLoop eventLoop(config);
     }
     catch (const EventLoop::Error & ex) {
@@ -529,6 +491,9 @@ int main(int argc, char * argv[]) {
         FATAL(ex.message);
     }
     catch (const Server::Error & ex) {
+        FATAL(ex.message);
+    }
+    catch (const CmdLine::Error & ex) {
         FATAL(ex.message);
     }
 

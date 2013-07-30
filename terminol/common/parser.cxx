@@ -206,7 +206,7 @@ void handleBindSym(const std::string & sym,
         KeyCombo keyCombo(keySym, modifiers);
         Action   action2 = lookupAction(action);
 
-        PRINT("Bound: " << modifiers << "-" << xkb::symToName(keySym) << " to " << action);
+        //PRINT("Bound: " << modifiers << "-" << xkb::symToName(keySym) << " to " << action);
 
         config.bindings.insert(std::make_pair(keyCombo, action2));
     }

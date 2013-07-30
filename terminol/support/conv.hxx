@@ -39,6 +39,10 @@ template <typename T> T unstringify(const std::string & str) throw (ParseError) 
     else { throw ParseError("Failed to unstringify: " + str); }
 }
 
+template <> inline std::string unstringify<>(const std::string & str) throw (ParseError) {
+    return str;
+}
+
 template <> inline bool unstringify<>(const std::string & str) throw (ParseError) {
     if (str == "0" || str == "false" || str == "False") {
         return false;

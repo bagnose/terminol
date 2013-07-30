@@ -10,6 +10,7 @@
 #include "terminol/common/key_map.hxx"
 #include "terminol/support/debug.hxx"
 #include "terminol/support/pattern.hxx"
+#include "terminol/support/cmdline.hxx"
 
 #include <set>
 
@@ -246,29 +247,22 @@ protected:
 
 namespace {
 
-bool argMatch(const std::string & arg, const std::string & opt, std::string & val) {
-    std::string optComposed = "--" + opt + "=";
-    if (arg.substr(0, optComposed.size()) ==  optComposed) {
-        val = arg.substr(optComposed.size());
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-
-void showHelp(const std::string & progName, std::ostream & ost) {
+std::string makeHelp(const std::string & progName) {
+    std::ostringstream ost;
     ost << "terminol " << VERSION << std::endl
         << "Usage: " << progName << " [OPTION]... [--execute COMMAND]" << std::endl
         << std::endl
         << "Options:" << std::endl
         << "  --help" << std::endl
+        << "  --version" << std::endl
         << "  --font-name=NAME" << std::endl
         << "  --font-size=SIZE" << std::endl
+        << "  --color-scheme=NAME" << std::endl
         << "  --term=NAME" << std::endl
         << "  --trace" << std::endl
         << "  --sync" << std::endl
         ;
+    return ost.str();
 }
 
 } // namespace {anonymous}
@@ -277,55 +271,16 @@ int main(int argc, char * argv[]) {
     Config config;
     parseConfig(config);
 
-    // Command line
-
-    Tty::Command command;
-    bool         accumulateCommand = false;
-
-    try {
-        for (int i = 1; i != argc; ++i) {
-            std::string arg = argv[i];
-            std::string val;
-
-            if (accumulateCommand) {
-                command.push_back(arg);
-            }
-            else if (arg == "--help") {
-                showHelp(argv[0], std::cout);
-                return 0;
-            }
-            else if (argMatch(arg, "font-name", val)) {
-                config.fontName = val;
-            }
-            else if (argMatch(arg, "font-size", val)) {
-                config.fontSize = unstringify<int>(val);
-            }
-            else if (arg == "--trace") {
-                config.traceTty = true;
-            }
-            else if (arg == "--sync") {
-                config.syncTty = true;
-            }
-            else if (argMatch(arg, "term", val)) {
-                config.termName = val;
-            }
-            else if (arg == "--execute") {
-                accumulateCommand = true;
-            }
-            else {
-                std::cerr
-                    << "Error: Unrecognised argument '" << arg << "'" << std::endl
-                    << std::endl;
-                showHelp(argv[0], std::cerr);
-                return 2;
-            }
-        }
-    }
-    catch (const ParseError & ex) {
-        FATAL(ex.message);
-    }
+    CmdLine cmdLine(makeHelp(argv[0]), VERSION, "--execute");
+    cmdLine.add(new StringHandler(config.fontName), '\0', "font-name");
+    cmdLine.add(new IntHandler(config.fontSize),    '\0', "font-size");
+    cmdLine.add(new BoolHandler(config.traceTty),   '\0', "trace");
+    cmdLine.add(new BoolHandler(config.syncTty),    '\0', "sync");
+    cmdLine.add(new StringHandler(config.termName), '\0', "term-name");
+    cmdLine.add(newMiscHandler([&](const std::string & name) { config.setColorScheme(name); }), '\0', "color-scheme");
 
     try {
+        auto command = cmdLine.parse(argc, const_cast<const char **>(argv));
         EventLoop eventLoop(config, command);
     }
     catch (const EventLoop::Error & ex) {
@@ -338,6 +293,9 @@ int main(int argc, char * argv[]) {
         FATAL(ex.message);
     }
     catch (const Basics::Error & ex) {
+        FATAL(ex.message);
+    }
+    catch (const CmdLine::Error & ex) {
         FATAL(ex.message);
     }
 

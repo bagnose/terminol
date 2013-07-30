@@ -210,6 +210,8 @@ $(eval $(call LIB,terminol/support,conv.cxx debug.cxx escape.cxx pattern.cxx tim
 
 $(eval $(call EXE,TEST,terminol/support/test-support,test_support.cxx,,terminol/support,))
 
+$(eval $(call EXE,TEST,terminol/support/test-cmdline,test_cmdline.cxx,,terminol/support,))
+
 #
 # COMMON
 #
