@@ -99,7 +99,7 @@ endif
 
 obj/%.o: src/%.cxx
 ifeq ($(VERBOSE),false)
-	@echo ' [CXX] $(@F)'
+	@echo ' [CXX] $@'
 endif
 	$(V)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(WFLAGS) -c $< -o $@ -MMD -MF $(patsubst %.o,%.dep,$@) $($(<)_CXXFLAGS)
 
@@ -130,7 +130,7 @@ $$($(1)_OBJ): | obj/$(1)
 
 $$($(1)_LIB): $$($(1)_OBJ)
 ifeq ($(VERBOSE),false)
-	@echo ' [LIB] $$(@F)'
+	@echo ' [LIB] $$@'
 endif
 	$(V)$(AR) $(ARFLAGS) $$@ $$($(1)_OBJ)
 endef
@@ -177,7 +177,7 @@ $$($(2)_OBJ): | obj/$$($(2)_SDIR)
 
 $$($(2)_EXE): $$($(2)_OBJ) $$($(2)_LIB) | $$($(2)_TDIR)
 ifeq ($(VERBOSE),false)
-	@echo ' [EXE] $$(@F)'
+	@echo ' [EXE] $$@'
 endif
 	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(2)_OBJ) $$($(2)_LIB) $(6)
 
@@ -187,7 +187,7 @@ $(2)_PASS := $$($(2)_EXE).pass
 
 $$($(2)_PASS): $$($(2)_EXE)
 ifeq ($(VERBOSE),false)
-	@echo ' [RUN] $$(<F)'
+	@echo ' [TST] $$($(2)_OUT)'
 endif
 	$(V)$$($(2)_EXE) > $$($(2)_OUT) 2>&1 && touch $$@ || (rm -f $$@ && echo "Test failed '$$($(2)_NAME)'." && cat $$($(2)_OUT)) > /dev/stderr
 
