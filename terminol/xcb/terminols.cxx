@@ -242,24 +242,14 @@ protected:
         }
     }
 
-    void xevent(bool waitForConfigure = false) throw (Error) {
+    void xevent() throw (Error) {
         for (;;) {
-            xcb_generic_event_t * event;
+            auto event = ::xcb_poll_for_event(_basics.connection());
+            if (!event) { break; }
 
-            if (waitForConfigure) {
-                event = ::xcb_wait_for_event(_basics.connection());
-                if (XCB_EVENT_RESPONSE_TYPE(event) == XCB_CONFIGURE_NOTIFY) {
-                    waitForConfigure = false;
-                }
-            }
-            else {
-                event = ::xcb_poll_for_event(_basics.connection());
-                if (!event) { break; }
-            }
-
-            ASSERT(event, "Null event");
-            auto guard         = scopeGuard([event] { std::free(event); });
+            auto guard        = scopeGuard([event] { std::free(event); });
             auto responseType = XCB_EVENT_RESPONSE_TYPE(event);
+
             if (responseType == 0) {
                 ERROR("Zero response type");
             }
@@ -405,7 +395,23 @@ protected:
 
     void sync() throw () {
         xcb_aux_sync(_basics.connection());
-        xevent(true);
+
+        for (;;) {
+            auto event        = ::xcb_wait_for_event(_basics.connection());
+            auto guard        = scopeGuard([event] { std::free(event); });
+            auto responseType = XCB_EVENT_RESPONSE_TYPE(event);
+
+            if (responseType == 0) {
+                ERROR("Zero response type");
+                break;      // Because it could be the configure...?
+            }
+            else {
+                dispatch(responseType, event);
+                if (responseType == XCB_CONFIGURE_NOTIFY) {
+                    break;
+                }
+            }
+        }
     }
 
     void defer(Window * window) throw () {
