@@ -869,6 +869,8 @@ public:
                     }
                     else {
                         // Complete consumption - erase line.
+                        // XXX can get into a situation where '_active[r].getWrap() == 0'
+                        // which triggers an assertion in unwrapTo.
                         _active[r].unwrapTo(_active[r - 1], _active[r].getWrap());
                         availability = cols - _active[r - 1].getWrap();
                         _active.erase(_active.begin() + r);
