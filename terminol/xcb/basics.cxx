@@ -95,7 +95,7 @@ Basics::Basics() throw (Error) {
 
     try {
         _atomPrimary        = XCB_ATOM_PRIMARY;
-        _atomClipboard      = lookupAtom("CLIPBOARD", false);
+        _atomClipboard      = lookupAtom("CLIPBOARD", true);
         try {
             _atomUtf8String = lookupAtom("UTF8_STRING", false);
         }
@@ -103,7 +103,7 @@ Basics::Basics() throw (Error) {
             WARNING("No atom UTF8_STRING, falling back on STRING.");
             _atomUtf8String = XCB_ATOM_STRING;
         }
-        _atomTargets        = lookupAtom("TARGETS", false);
+        _atomTargets        = lookupAtom("TARGETS", true);
         _atomWmProtocols    = lookupAtom("WM_PROTOCOLS", false);
         _atomWmDeleteWindow = lookupAtom("WM_DELETE_WINDOW", false);
     }
