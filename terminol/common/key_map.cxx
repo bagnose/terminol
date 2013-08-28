@@ -229,14 +229,6 @@ Modifier nameToModifier(const std::string & name) throw (ParseError) {
     }
 }
 
-#if 0
-std::string symModsToString(xkb_keysym_t keySym, ModifierSet modifiers) {
-}
-
-void stringToSymMods(const std::string & str, xkb_keysym_t & keySym, ModifierSet & modifiers) {
-}
-#endif
-
 bool isPotent(xkb_keysym_t keySym) {
     normalise(keySym);
 

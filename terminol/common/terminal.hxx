@@ -8,6 +8,7 @@
 #include "terminol/common/config.hxx"
 #include "terminol/common/bit_sets.hxx"
 #include "terminol/common/buffer.hxx"
+#include "terminol/common/deduper_interface.hxx"
 #include "terminol/support/pattern.hxx"
 
 #include <xkbcommon/xkbcommon.h>
@@ -16,15 +17,9 @@ class Terminal :
     protected VtStateMachine::I_Observer,
     protected Uncopyable
 {
-    struct CharSub {
-        uint8_t   match;        // FIXME check for the 94/96 chars possible
-        utf8::Seq replace;
-    };
-
-    static const uint16_t TAB_SIZE;
-    static const CharSub  CS_US[];
-    static const CharSub  CS_UK[];
-    static const CharSub  CS_SPECIAL[];
+    static const CharSub CS_US;
+    static const CharSub CS_UK;
+    static const CharSub CS_SPECIAL;
 
 public:
     class I_Observer {
@@ -38,7 +33,7 @@ public:
         virtual void terminalSetWindowTitle(const std::string & str) throw () = 0;
         virtual void terminalSetIconName(const std::string & str) throw () = 0;
         virtual void terminalBeep() throw () = 0;
-        virtual void terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () = 0;
+        virtual void terminalResizeBuffer(int16_t rows, int16_t cols) throw () = 0;
         virtual bool terminalFixDamageBegin() throw () = 0;
         virtual void terminalDrawBg(Pos    pos,
                                     UColor color,
@@ -57,9 +52,9 @@ public:
                                         size_t          size,
                                         bool            wrapNext,
                                         bool            focused) throw () = 0;
-        virtual void terminalDrawScrollbar(size_t   totalRows,
-                                           size_t   historyOffset,
-                                           uint16_t visibleRows) throw () = 0;
+        virtual void terminalDrawScrollbar(size_t  totalRows,
+                                           size_t  historyOffset,
+                                           int16_t visibleRows) throw () = 0;
         virtual void terminalFixDamageEnd(const Region & damage,
                                           bool           scrollbar) throw () = 0;
         virtual void terminalChildExited(int exitStatus) throw () = 0;
@@ -76,39 +71,6 @@ public:
     enum class ScrollDir { UP, DOWN };
 
 private:
-    struct Cursor {
-        enum class CharSet { G0, G1 };
-
-        Cursor() :
-            g0(CS_US),
-            g1(CS_US),
-            cs(CharSet::G0),
-            //
-            pos(),
-            wrapNext(false),
-            originMode(false),
-            //
-            style() {}
-
-        void reset() { *this = Cursor(); }
-
-        const CharSub *  getCurrentCS() const { return cs == CharSet::G0 ? g0 : g1; }
-
-        const CharSub *  g0;
-        const CharSub *  g1;
-        CharSet          cs;
-        //
-        Pos              pos;
-        bool             wrapNext;          // FIXME belongs in buffer
-        bool             originMode;        // FIXME belongs in buffer
-        //
-        Style            style;
-    };
-
-    //
-    //
-    //
-
     I_Observer          & _observer;
     bool                  _dispatch;
 
@@ -120,11 +82,6 @@ private:
     Buffer              * _buffer;
 
     ModeSet               _modes;
-    std::vector<bool>     _tabs;
-
-    Cursor                _cursor;
-    Cursor                _priSaveCursor;
-    Cursor                _altSaveCursor;
 
     enum class Press { NONE, SELECT, REPORT };
 
@@ -146,29 +103,29 @@ private:
     VtStateMachine        _vtMachine;
 
 public:
-    Terminal(I_Observer    & observer,
-             const Config  & config,
-             I_Deduper     & deduper,
-             uint16_t        rows,
-             uint16_t        cols,
-             I_Tty         & tty);
+    Terminal(I_Observer   & observer,
+             const Config & config,
+             I_Deduper    & deduper,
+             int16_t        rows,
+             int16_t        cols,
+             I_Tty        & tty);
     virtual ~Terminal();
 
     // Geometry:
 
-    uint16_t getRows() const { return _buffer->getRows(); }
-    uint16_t getCols() const { return _buffer->getCols(); }
+    int16_t getRows() const { return _buffer->getRows(); }
+    int16_t getCols() const { return _buffer->getCols(); }
 
     // Events:
 
-    void     resize(uint16_t rows, uint16_t cols);
+    void     resize(int16_t rows, int16_t cols);
 
-    void     redraw(Pos begin, Pos end, bool scrollbar);
+    void     redraw();
 
     bool     keyPress(xkb_keysym_t keySym, ModifierSet modifiers);
     void     buttonPress(Button button, int count, ModifierSet modifiers,
-                         bool within, Pos pos);
-    void     pointerMotion(ModifierSet modifiers, bool within, Pos pos);
+                         bool within, HPos hpos);
+    void     pointerMotion(ModifierSet modifiers, bool within, HPos hpos);
     void     buttonRelease(bool broken, ModifierSet modifiers);
     void     scrollWheel(ScrollDir dir, ModifierSet modifiers, bool within, Pos pos);
 
@@ -185,26 +142,15 @@ public:
     void     flush();
 
 protected:
-    enum class TabDir { FORWARD, BACKWARD };
-    enum class Trigger { TTY, SCROLL, FOCUS };
+    enum class Trigger { TTY, SCROLL, FOCUS, CLIENT };
 
     bool     handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers);
 
-    void     moveCursorOriginMode(Pos pos);
-    void     moveCursor(Pos pos);
-    void     tabCursor(TabDir dir, uint16_t count);
-    void     damageCursor();
-    void     saveCursor(bool posOnly);
-    void     restoreCursor(bool posOnly);
+    void     moveCursor(Pos pos, bool considerOriginMode = false);
 
     void     fixDamage(Trigger trigger);
 
-    bool     translate(uint8_t ascii, utf8::Seq & seq) const;
-
-    void     draw(Trigger trigger, Region & damage);
-    void     drawRowBg(uint16_t row, uint16_t colBegin, uint16_t colEnd);
-    void     drawRowFg(uint16_t row, uint16_t colBegin, uint16_t colEnd);
-    void     drawCursor();
+    void     draw(Trigger trigger, Region & damage, bool & scrollbar);
 
     void     write(const uint8_t * data, size_t size);
     void     echo(const uint8_t * data, size_t size);

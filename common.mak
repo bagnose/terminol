@@ -228,6 +228,8 @@ $(eval $(call EXE,PRIV,terminol/common/styles,styles.cxx,,terminol/common termin
 
 $(eval $(call EXE,PRIV,terminol/common/droppings,droppings.cxx,,terminol/common terminol/support,))
 
+$(eval $(call EXE,PRIV,terminol/common/positioner,positioner.cxx,,terminol/common terminol/support,))
+
 #
 # XCB
 #

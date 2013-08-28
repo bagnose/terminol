@@ -54,7 +54,8 @@ public:
 
     Server(I_Creator & creator, const Config & config) :
         _creator(creator),
-        _config(config)
+        _config(config),
+        _fd(-1)
     {
         const std::string & socketPath = _config.socketPath;
         if (::mkfifo(socketPath.c_str(), 0600) == -1) {
@@ -71,14 +72,12 @@ public:
     }
 
     ~Server() {
-        ENFORCE_SYS(::close(_fd) != -1, "");
+        close();
 
-        /*
         const std::string & socketPath = _config.socketPath;
-        if (::unlink(socketPath.c_str() == -1)) {
-            ERROR("Failed to remove socket: " << socketPath);
+        if (::unlink(socketPath.c_str()) == -1) {
+            ERROR("Failed to unlink fifo: " << socketPath);
         }
-        */
     }
 
     int getFd() { return _fd; }
@@ -92,7 +91,12 @@ public:
 
         if (rval == 0) {
             close();
-            open();
+            try {
+                open();
+            }
+            catch (const Error & ex) {
+                FATAL("Lost fifo");
+            }
         }
         else {
             _creator.create();
@@ -112,6 +116,7 @@ protected:
 
     void close() {
         ENFORCE_SYS(::close(_fd) != -1, "::close() failed");
+        _fd = -1;
     }
 };
 
@@ -154,7 +159,7 @@ public:
         _finished(false)
     {
         if (config.serverFork) {
-            if (::daemon(1, 0) != -1) {
+            if (::daemon(1, 1) == -1) {
                 throw Error("Failed to daemonise");
             }
         }
@@ -468,7 +473,7 @@ int main(int argc, char * argv[]) {
     Config config;
     parseConfig(config);
 
-    CmdLine cmdLine(makeHelp(argv[0]), VERSION, "--execute");
+    CmdLine cmdLine(makeHelp(argv[0]), VERSION);
     cmdLine.add(new StringHandler(config.fontName),   '\0', "font-name");
     cmdLine.add(new IntHandler(config.fontSize),      '\0', "font-size");
     cmdLine.add(new BoolHandler(config.traceTty),     '\0', "trace");
@@ -478,7 +483,7 @@ int main(int argc, char * argv[]) {
     cmdLine.add(new BoolHandler(config.serverFork),   '\0', "fork");
 
     try {
-        auto command = cmdLine.parse(argc, const_cast<const char **>(argv));
+        cmdLine.parse(argc, const_cast<const char **>(argv));
         EventLoop eventLoop(config);
     }
     catch (const EventLoop::Error & ex) {

@@ -3,6 +3,8 @@
 #ifndef XCB__WINDOW__HXX
 #define XCB__WINDOW__HXX
 
+#define NEW_TERMINAL 1
+
 #include "terminol/xcb/basics.hxx"
 #include "terminol/xcb/color_set.hxx"
 #include "terminol/xcb/font_manager.hxx"
@@ -43,12 +45,12 @@ private:
     xcb_window_t      _window;
     bool              _destroyed;
     xcb_gcontext_t    _gc;
-    uint16_t          _width;
-    uint16_t          _height;
+    uint32_t          _width;
+    uint32_t          _height;
     Tty             * _tty;
     Terminal        * _terminal;
     bool              _open;
-    Pos               _pointerPos;
+    HPos              _pointerPos;
     bool              _mapped;          // Is the window mapped?
 
     bool              _pixmapCurrent;   // Is the pixmap up-to-date?
@@ -137,20 +139,22 @@ protected:
     void icccmConfigure();
 
     void pos2XY(Pos pos, int & x, int & y) const;
-    bool xy2Pos(int x, int y, Pos & pos) const;
+    bool xy2Pos(int x, int y, HPos & pos) const;
 
     void updateTitle();
     void updateIcon();
 
     void setTitle(const std::string & title);
 
-    void draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
+    void draw();
     void drawBorder();
 
-    void handleResize();
-    void resizeToAccommodate(uint16_t rows, uint16_t cols);
+    void copy(int x, int y, int w, int h);
 
-    void sizeToRowsCols(uint16_t & rows, uint16_t & cols) const;
+    void handleResize();
+    void resizeToAccommodate(int16_t rows, int16_t cols);
+
+    void sizeToRowsCols(int16_t & rows, int16_t & cols) const;
 
     void handleDelete();
 
@@ -167,7 +171,7 @@ protected:
     void terminalSetWindowTitle(const std::string & str) throw ();
     void terminalSetIconName(const std::string & str) throw ();
     void terminalBeep() throw ();
-    void terminalResizeBuffer(uint16_t rows, uint16_t cols) throw ();
+    void terminalResizeBuffer(int16_t rows, int16_t cols) throw ();
     bool terminalFixDamageBegin() throw ();
     void terminalDrawBg(Pos    pos,
                         UColor color,
@@ -186,9 +190,9 @@ protected:
                             size_t          size,
                             bool            wrapNext,
                             bool            focused) throw ();
-    void terminalDrawScrollbar(size_t   totalRows,
-                               size_t   historyOffset,
-                               uint16_t visibleRows) throw ();
+    void terminalDrawScrollbar(size_t  totalRows,
+                               size_t  historyOffset,
+                               int16_t visibleRows) throw ();
     void terminalFixDamageEnd(const Region & damage,
                               bool           scrollbar) throw ();
     void terminalChildExited(int exitStatus) throw ();

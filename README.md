@@ -63,26 +63,52 @@ You may wish to create a config file like the following:
     #   zenburn
     #   solarized-dark
     #   solarized-light
-
-    set fontName MesloLGM
-    set fontSize 11
     
-    # termName
-    # scrollWithHistory, scrollOnTtyOutput, scrollOnTtyKeyPress
-    # scrollOnResize, scrollOnPaste
+    set font-name "Meslo LG M"
+    set font-size 11
+    
+    # term-name
+    # scroll-with-history, scroll-on-tty-output, scroll-on-tty-key-press
+    # scroll-on-resize, scroll-on-paste
     # title, icon, chdir
-    # scrollBackHistory, unlimitedScrollBack
-    # syncTty, traceTty
+    # scroll-back-history, unlimited-scroll-back
+    # sync-tty, trace-tty
     
-    # set scrollBackHistory   1024
-    # set resizeStrategy      preserve
-    set unlimitedScrollBack true
-    set resizeStrategy      reflow
-    set reflowHistory       1024
+    set unlimited-scroll-back true
     
-    # set borderThickness 4
-    # set borderColor #ffff00
+    # set border-thickness 4
+    # set border-color #ffff00
     
     # Use these for compatibility with 'vttest':
-    # set resizeStrategy      clip
-    # set traditionalWrapping true
+    # set resize-strategy      clip
+    # set traditional-wrapping true
+    
+    bindsym ctrl+0                  local-font-reset
+    bindsym ctrl+minus              local-font-smaller
+    bindsym ctrl+equal              local-font-bigger
+    
+    bindsym ctrl+shift+parenright   global-font-reset
+    bindsym ctrl+shift+underscore   global-font-smaller
+    bindsym ctrl+shift+plus         global-font-bigger
+    
+    bindsym ctrl+shift+c            copy-to-clipboard
+    bindsym ctrl+shift+v            paste-from-clipboard
+    
+    bindsym shift+Up                scroll-up-one-line
+    bindsym shift+Down              scroll-down-one-line
+    bindsym shift+Page_Up           scroll-up-one-page
+    bindsym shift+Page_Down         scroll-down-one-page
+    bindsym shift+Home              scroll-top
+    bindsym shift+End               scroll-bottom
+    
+    bindsym F4                      clear-history
+    
+    bindsym F5                      debug-global-tags
+    bindsym F6                      debug-local-tags
+    bindsym F7                      debug-history
+    bindsym F8                      debug-active
+    
+    bindsym F9                      debug-modes
+    bindsym F10                     debug-selection
+    bindsym F11                     debug-stats
+    bindsym F12                     debug-stats2

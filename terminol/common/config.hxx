@@ -20,7 +20,6 @@ struct Config {
 
     // flow control?
 
-    Resize      resizeStrategy;
     std::string fontName;
     int         fontSize;
     std::string termName;
@@ -34,7 +33,6 @@ struct Config {
     std::string chdir;
     size_t      scrollBackHistory;
     bool        unlimitedScrollBack;
-    size_t      reflowHistory;
     int         framesPerSecond;
     bool        traditionalWrapping;
     // Debugging support:

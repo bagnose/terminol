@@ -13,9 +13,6 @@
 
 class VtStateMachine {
 public:
-    static void initialise();
-    static void finalise();
-
     class I_Observer {
     public:
         virtual void machineNormal(utf8::Seq seq, utf8::Length length) throw () = 0;
@@ -59,8 +56,7 @@ private:
     std::vector<uint8_t>   _escSeq;
 
 public:
-    VtStateMachine(I_Observer   & observer,
-                   const Config & config);
+    VtStateMachine(I_Observer & observer, const Config & config);
 
     void consume(utf8::Seq seq, utf8::Length length);
 

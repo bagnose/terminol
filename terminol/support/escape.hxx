@@ -70,4 +70,11 @@ enum class SGR {
 
 std::ostream & operator << (std::ostream & ost, SGR sgr);
 
+struct MoveCursor {
+    int16_t row, col;
+    MoveCursor(int16_t row_, int16_t col_) : row(row_), col(col_) {}
+};
+
+std::ostream & operator << (std::ostream & ost, MoveCursor moveCursor);
+
 #endif // SUPPORT__ESCAPE__HXX

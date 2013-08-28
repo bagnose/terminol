@@ -105,7 +105,9 @@ void Tty::openPty(uint16_t            rows,
         // Set non-blocking.
         int flags;
         ENFORCE_SYS((flags = ::fcntl(master, F_GETFL)) != -1, "");
+#if 1
         flags |= O_NONBLOCK;
+#endif
         ENFORCE_SYS(::fcntl(master, F_SETFL, flags) != -1, "");
 
         // Stash the master descriptor.
@@ -133,7 +135,7 @@ void Tty::execShell(const std::string & windowId,
     ::unsetenv("LINES");
     ::unsetenv("TERMCAP");
 
-    const struct passwd * passwd = ::getpwuid(::getuid());
+    auto passwd = static_cast<const struct passwd *>(::getpwuid(::getuid()));
     if (passwd) {
         ::setenv("LOGNAME", passwd->pw_name,  1);
         ::setenv("USER",    passwd->pw_name,  1);
@@ -154,10 +156,10 @@ void Tty::execShell(const std::string & windowId,
     std::vector<const char *> args;
 
     if (command.empty()) {
-        auto shell = static_cast<const char *>(std::getenv("SHELL"));
+        auto shell = static_cast<const char *>(::getenv("SHELL"));
         if (!shell) {
-            shell = "/bin/sh";
             WARNING("Could not determine shell, falling back to: " << shell);
+            shell = "/bin/sh";
         }
         args.push_back(shell);
         args.push_back("-i");
@@ -239,8 +241,14 @@ bool Tty::hasSubprocess() {
     if (!ifs.good()) { return false; }
     std::string line;
     if (!getline(ifs, line).good()) { return false; }
-    auto pid = unstringify<pid_t>(nthToken(line, 8));
-    return pid != _pid;
+    try {
+        auto pid = unstringify<pid_t>(nthToken(line, 8));
+        return pid != _pid;
+    }
+    catch (const ParseError & ex) {
+        ERROR(ex.message);
+        return false;
+    }
 }
 
 bool Tty::pollReap(int msec, int & exitCode) {

@@ -12,8 +12,8 @@ FontSet::FontSet(const Config & config,
     _config(config),
     _basics(basics)
 {
-    const auto & name = _config.fontName;
-    auto size = _config.fontSize + delta;
+    auto & name = _config.fontName;
+    auto   size = _config.fontSize + delta;
 
     if (size <= 0) { throw Error("Too small"); }
 

@@ -72,3 +72,10 @@ std::ostream & operator << (std::ostream & ost, SGR sgr) {
     ost << 'm';
     return ost;
 }
+
+std::ostream & operator << (std::ostream & ost, MoveCursor moveCursor) {
+    ost << '\033' << '['
+        << moveCursor.row << ';'
+        << moveCursor.col << 'H';
+    return ost;
+}

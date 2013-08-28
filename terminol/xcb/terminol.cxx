@@ -25,12 +25,12 @@ class EventLoop :
     protected Window::I_Observer,
     protected Uncopyable
 {
-    Deduper               _deduper;
-    Basics                _basics;
-    ColorSet              _colorSet;
-    FontManager           _fontManager;
-    Window                _window;
-    std::set<Window *>    _deferrals;
+    Deduper            _deduper;
+    Basics             _basics;
+    ColorSet           _colorSet;
+    FontManager        _fontManager;
+    Window             _window;
+    std::set<Window *> _deferrals;
 
 public:
     struct Error {

@@ -53,6 +53,8 @@ std::ostream & operator << (std::ostream & ost, Modifier modifier) {
 
 std::ostream & operator << (std::ostream & ost, Mode mode) {
     switch (mode) {
+        case Mode::ORIGIN:
+            return ost << "ORIGIN";
         case Mode::AUTO_WRAP:
             return ost << "AUTO_WRAP";
         case Mode::AUTO_REPEAT:
@@ -119,29 +121,13 @@ std::ostream & operator << (std::ostream & ost, Attr attr) {
     FATAL("Invalid attr: " << static_cast<int>(attr));
 }
 
-std::ostream & operator << (std::ostream & ost, Resize resize) {
-    switch (resize) {
-        case Resize::CLIP:
-            return ost << "CLIP";
-        case Resize::PRESERVE:
-            return ost << "PRESERVE";
-        case Resize::REFLOW:
-            return ost << "REFLOW";
+std::ostream & operator << (std::ostream & ost, Hand hand) {
+    switch (hand) {
+        case Hand::LEFT:
+            return ost << "LEFT";
+        case Hand::RIGHT:
+            return ost << "RIGHT";
     }
 
-    FATAL("Invalid resize: " << static_cast<int>(resize));
-}
-
-std::istream & operator >> (std::istream & ist, Resize & resize) {
-    std::string str;
-    ist >> str;
-
-    if (ist.good()) {
-        if      (str == "clip")     { resize = Resize::CLIP; }
-        else if (str == "preserve") { resize = Resize::PRESERVE; }
-        else if (str == "reflow")   { resize = Resize::REFLOW; }
-        else                        { ist.setstate(std::ios_base::failbit); }
-    }
-
-    return ist;
+    FATAL("Invalid hand: " << static_cast<int>(hand));
 }

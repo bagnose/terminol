@@ -55,7 +55,7 @@ Window::Window(I_Observer         & observer,
     _tty(nullptr),
     _terminal(nullptr),
     _open(false),
-    _pointerPos(Pos::invalid()),
+    _pointerPos(HPos::invalid()),
     _mapped(false),
     _pixmapCurrent(false),
     _pixmap(0),
@@ -69,7 +69,7 @@ Window::Window(I_Observer         & observer,
     _pressCount(0),
     _lastPressTime(0),
     _button(XCB_BUTTON_INDEX_ANY),
-    _cursorVisible(false),
+    _cursorVisible(true),
     _deferralsAllowed(true),
     _deferred(false),
     _transientTitle(false),
@@ -108,8 +108,6 @@ Window::Window(I_Observer         & observer,
         XCB_BACKING_STORE_NOT_USEFUL,   // XCB_BACKING_STORE_WHEN_MAPPED, XCB_BACKING_STORE_ALWAYS
         // XCB_CW_SAVE_UNDER
         0,                              // 1 -> useful
-        // XCB_CW_CURSOR
-        //                                 TODO
         // XCB_CW_EVENT_MASK
         XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE |
         XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
@@ -117,8 +115,9 @@ Window::Window(I_Observer         & observer,
         XCB_EVENT_MASK_POINTER_MOTION_HINT | XCB_EVENT_MASK_POINTER_MOTION |
         XCB_EVENT_MASK_EXPOSURE |
         XCB_EVENT_MASK_STRUCTURE_NOTIFY |
-        XCB_EVENT_MASK_FOCUS_CHANGE |
-        0
+        XCB_EVENT_MASK_FOCUS_CHANGE,
+        // XCB_CW_CURSOR
+        _basics.normalCursor()
     };
 
     _window = xcb_generate_id(_basics.connection());
@@ -136,7 +135,8 @@ Window::Window(I_Observer         & observer,
                                        XCB_CW_WIN_GRAVITY |
                                        XCB_CW_BACKING_STORE |
                                        XCB_CW_SAVE_UNDER |
-                                       XCB_CW_EVENT_MASK,
+                                       XCB_CW_EVENT_MASK |
+                                       XCB_CW_CURSOR,
                                        winValues);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to create window")) {
         throw Error("Failed to create window.");
@@ -194,8 +194,6 @@ Window::Window(I_Observer         & observer,
     gcGuard.dismiss();
     windowGuard.dismiss();
     fontGuard.dismiss();
-
-    cursorVisibility(true);
 }
 
 Window::~Window() {
@@ -287,15 +285,15 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
 
     auto modifiers = _basics.convertState(event->state);
 
-    Pos  pos;
-    auto within = xy2Pos(event->event_x, event->event_y, pos);
+    HPos hpos;
+    auto within = xy2Pos(event->event_x, event->event_y, hpos);
 
     switch (event->detail) {
         case XCB_BUTTON_INDEX_4:
-            _terminal->scrollWheel(Terminal::ScrollDir::UP, modifiers, within, pos);
+            _terminal->scrollWheel(Terminal::ScrollDir::UP, modifiers, within, hpos.pos);
             return;
         case XCB_BUTTON_INDEX_5:
-            _terminal->scrollWheel(Terminal::ScrollDir::DOWN, modifiers, within, pos);
+            _terminal->scrollWheel(Terminal::ScrollDir::DOWN, modifiers, within, hpos.pos);
             return;
     }
 
@@ -321,15 +319,15 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
     switch (event->detail) {
         case XCB_BUTTON_INDEX_1:
             _terminal->buttonPress(Terminal::Button::LEFT, _pressCount,
-                                   modifiers, within, pos);
+                                   modifiers, within, hpos);
             return;
         case XCB_BUTTON_INDEX_2:
             _terminal->buttonPress(Terminal::Button::MIDDLE, _pressCount,
-                                   modifiers, within, pos);
+                                   modifiers, within, hpos);
             return;
         case XCB_BUTTON_INDEX_3:
             _terminal->buttonPress(Terminal::Button::RIGHT, _pressCount,
-                                   modifiers, within, pos);
+                                   modifiers, within, hpos);
             return;
     }
 }
@@ -381,14 +379,14 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
         mask = event->state;
     }
 
-    Pos  pos;
-    auto within = xy2Pos(x, y, pos);
+    HPos hpos;
+    auto within = xy2Pos(x, y, hpos);
 
-    if (_pointerPos != pos) {
+    if (_pointerPos != hpos) {
         auto modifiers = _basics.convertState(mask);
 
-        _pointerPos = pos;
-        _terminal->pointerMotion(modifiers, within, pos);
+        _pointerPos = hpos;
+        _terminal->pointerMotion(modifiers, within, hpos);
     }
 
 }
@@ -456,26 +454,14 @@ void Window::expose(xcb_expose_event_t * event) {
     ASSERT(_mapped, "");
 
     if (_mapped) {
-        if (_pixmapCurrent) {
-            // Once we've had our first expose the pixmap is always valid.
-            ASSERT(_pixmap, "");
-            auto cookie = xcb_copy_area_checked(_basics.connection(),
-                                                _pixmap,
-                                                _window,
-                                                _gc,
-                                                event->x, event->y,
-                                                event->x, event->y,
-                                                event->width, event->height);
-            xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
-            xcb_flush(_basics.connection());
-        }
-        else {
+        // Once we've had our first expose the pixmap is always valid.   XXX what about on resize?
+        if (!_pixmapCurrent) {
             ASSERT(_surface, "");
             // Make the entire pixmap valid.
-            draw(0, 0, _width, _height);
+            draw();
             _pixmapCurrent = true;
         }
-
+        copy(event->x, event->y, event->width, event->height);
     }
 }
 
@@ -671,7 +657,9 @@ void Window::icccmConfigure() {
     // class
     //
 
-    std::string wm_class = "terminol";
+    std::string wm_class =
+        std::string("terminol") + '\0' +
+        std::string("Terminol") + '\0';
     xcb_icccm_set_wm_class(_basics.connection(), _window,
                            wm_class.size(), wm_class.data());
 
@@ -732,8 +720,8 @@ void Window::icccmConfigure() {
 }
 
 void Window::pos2XY(Pos pos, int & x, int & y) const {
-    ASSERT(pos.row <= _terminal->getRows(), "");
-    ASSERT(pos.col <= _terminal->getCols(), "");
+    ASSERT(pos.row <= _terminal->getRows(), "pos.row=" << pos.row << ", getRows()=" << _terminal->getRows());
+    ASSERT(pos.col <= _terminal->getCols(), "pos.col=" << pos.col << ", getCols()=" << _terminal->getCols());
 
     const auto BORDER_THICKNESS = _config.borderThickness;
 
@@ -741,7 +729,7 @@ void Window::pos2XY(Pos pos, int & x, int & y) const {
     y = BORDER_THICKNESS + pos.row * _fontSet->getHeight();
 }
 
-bool Window::xy2Pos(int x, int y, Pos & pos) const {
+bool Window::xy2Pos(int x, int y, HPos & hpos) const {
     auto within = true;
 
     const int BORDER_THICKNESS = _config.borderThickness;
@@ -749,34 +737,39 @@ bool Window::xy2Pos(int x, int y, Pos & pos) const {
     // x / cols:
 
     if (x < BORDER_THICKNESS) {
-        pos.col = 0;
+        hpos.pos.col = 0;
+        hpos.hand = Hand::LEFT;
         within = false;
     }
     else if (x < BORDER_THICKNESS + _fontSet->getWidth() * _terminal->getCols()) {
-        pos.col = (x - BORDER_THICKNESS) / _fontSet->getWidth();
-        ASSERT(pos.col < _terminal->getCols(),
-               "col is: " << pos.col << ", getCols() is: " <<
+        auto xx = x - BORDER_THICKNESS;
+        hpos.pos.col = xx / _fontSet->getWidth();
+        hpos.hand = (xx / (_fontSet->getWidth() / 2)) % 2 ? Hand::RIGHT : Hand::LEFT;
+        ASSERT(hpos.pos.col < _terminal->getCols(),
+               "col is: " << hpos.pos.col << ", getCols() is: " <<
                _terminal->getCols());
     }
     else {
-        pos.col = _terminal->getCols();
+        hpos.pos.col = _terminal->getCols();
+        hpos.hand = Hand::LEFT;
         within = false;
     }
 
     // y / rows:
 
     if (y < BORDER_THICKNESS) {
-        pos.row = 0;
+        hpos.pos.row = 0;
         within = false;
     }
     else if (y < BORDER_THICKNESS + _fontSet->getHeight() * _terminal->getRows()) {
-        pos.row = (y - BORDER_THICKNESS) / _fontSet->getHeight();
-        ASSERT(pos.row < _terminal->getRows(),
-               "row is: " << pos.row << ", getRows() is: " <<
+        auto yy = y - BORDER_THICKNESS;
+        hpos.pos.row = yy / _fontSet->getHeight();
+        ASSERT(hpos.pos.row < _terminal->getRows(),
+               "row is: " << hpos.pos.row << ", getRows() is: " <<
                _terminal->getRows());
     }
     else {
-        pos.row = _terminal->getRows() - 1;
+        hpos.pos.row = _terminal->getRows() - 1;
         within = false;
     }
 
@@ -788,7 +781,7 @@ void Window::updateTitle() {
 
     std::ostringstream ost;
 
-#if DEBUG
+#if 0
     ost << VERSION " ";
 #endif
 
@@ -803,7 +796,7 @@ void Window::updateIcon() {
 
     std::ostringstream ost;
 
-#if DEBUG
+#if 0
     ost << VERSION " ";
 #endif
 
@@ -846,29 +839,19 @@ void Window::setTitle(const std::string & title) {
     xcb_flush(_basics.connection());
 }
 
-void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
-    ASSERT(_mapped, "");
+void Window::draw() {
+    ASSERT(_mapped, "");        // XXX is this valid?
     ASSERT(_pixmap, "");
     ASSERT(_surface, "");
     _cr = cairo_create(_surface);
     cairo_set_line_width(_cr, 1.0);
 
     cairo_save(_cr); {
-        cairo_rectangle(_cr, x, y, w, h);       // implicit cast to double
-        cairo_clip(_cr);
-
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
 
         drawBorder();
-
-        Pos posBegin;
-        xy2Pos(x, y, posBegin);
-        Pos posEnd;
-        xy2Pos(x + w, y + h, posEnd);
-        if (posEnd.col != _terminal->getCols()) { ++posEnd.col; }
-        if (posEnd.row != _terminal->getRows()) { ++posEnd.row; }
-        _terminal->redraw(posBegin, posEnd, true /* ??? */);
+        _terminal->redraw();
 
         ASSERT(cairo_status(_cr) == 0,
                "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
@@ -879,17 +862,6 @@ void Window::draw(uint16_t x, uint16_t y, uint16_t w, uint16_t h) {
 
     cairo_surface_flush(_surface);      // Useful?
     ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
-
-    auto cookie = xcb_copy_area_checked(_basics.connection(),
-                                        _pixmap,
-                                        _window,
-                                        _gc,
-                                        x, y, // src
-                                        x, y, // dst
-                                        w, h);
-    xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
-
-    xcb_flush(_basics.connection());
 }
 
 void Window::drawBorder() {
@@ -940,6 +912,23 @@ void Window::drawBorder() {
     } cairo_restore(_cr);
 }
 
+void Window::copy(int x, int y, int w, int h) {
+    ASSERT(_mapped, "");
+    ASSERT(_pixmap, "");
+    ASSERT(_pixmapCurrent, "");
+    // Copy the buffer region
+    auto cookie = xcb_copy_area_checked(_basics.connection(),
+                                        _pixmap,
+                                        _window,
+                                        _gc,
+                                        x, y,   // src
+                                        x, y,   // dst
+                                        w, h);
+    xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
+    //xcb_flush(_basics.connection());
+    xcb_aux_sync(_basics.connection());
+}
+
 void Window::handleResize() {
     if (_mapped) {
         ASSERT(_pixmap, "");
@@ -980,7 +969,7 @@ void Window::handleResize() {
         ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
     }
 
-    uint16_t rows, cols;
+    int16_t rows, cols;
     sizeToRowsCols(rows, cols);
 
     if (_open) {
@@ -996,14 +985,16 @@ void Window::handleResize() {
     if (_mapped) {
         ASSERT(_pixmap, "");
         ASSERT(_surface, "");
-        draw(0, 0, _width, _height);
+        draw();
+        _pixmapCurrent = true;
+        copy(0, 0, _width, _height);
     }
     else {
         _pixmapCurrent = false;
     }
 }
 
-void Window::resizeToAccommodate(uint16_t rows, uint16_t cols) {
+void Window::resizeToAccommodate(int16_t rows, int16_t cols) {
     const auto BORDER_THICKNESS = _config.borderThickness;
     const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
@@ -1027,15 +1018,18 @@ void Window::resizeToAccommodate(uint16_t rows, uint16_t cols) {
     }
 }
 
-void Window::sizeToRowsCols(uint16_t & rows, uint16_t & cols) const {
+void Window::sizeToRowsCols(int16_t & rows, int16_t & cols) const {
     const auto BORDER_THICKNESS = _config.borderThickness;
     const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
-    if (_width  > 2 * BORDER_THICKNESS + _fontSet->getWidth() + SCROLLBAR_WIDTH &&
-        _height > 2 * BORDER_THICKNESS + _fontSet->getHeight())
+    const auto BASE_WIDTH  = 2 * BORDER_THICKNESS + SCROLLBAR_WIDTH;
+    const auto BASE_HEIGHT = 2 * BORDER_THICKNESS;
+
+    if (_width  > static_cast<uint32_t>(BASE_WIDTH  + _fontSet->getWidth()) &&
+        _height > static_cast<uint32_t>(BASE_HEIGHT + _fontSet->getHeight()))
     {
-        uint16_t w = _width  - (2 * BORDER_THICKNESS + SCROLLBAR_WIDTH);
-        uint16_t h = _height - (2 * BORDER_THICKNESS);
+        int16_t w = _width  - BASE_WIDTH;
+        int16_t h = _height - BASE_HEIGHT;
 
         rows = h / _fontSet->getHeight();
         cols = w / _fontSet->getWidth();
@@ -1150,7 +1144,7 @@ void Window::terminalBeep() throw () {
     xcb_icccm_set_wm_hints(_basics.connection(), _window, &wmHints);
 }
 
-void Window::terminalResizeBuffer(uint16_t rows, uint16_t cols) throw () {
+void Window::terminalResizeBuffer(int16_t rows, int16_t cols) throw () {
     resizeToAccommodate(rows, cols);
 
     const auto BORDER_THICKNESS = _config.borderThickness;
@@ -1317,9 +1311,9 @@ void Window::terminalDrawCursor(Pos             pos,
     } cairo_restore(_cr);
 }
 
-void Window::terminalDrawScrollbar(size_t   totalRows,
-                                   size_t   historyOffset,
-                                   uint16_t visibleRows) throw () {
+void Window::terminalDrawScrollbar(size_t  totalRows,
+                                   size_t  historyOffset,
+                                   int16_t visibleRows) throw () {
     ASSERT(_cr, "");
 
     const int SCROLLBAR_WIDTH  = _config.scrollbarWidth;
@@ -1343,8 +1337,9 @@ void Window::terminalDrawScrollbar(size_t   totalRows,
 
     // Draw the bar.
 
-    auto yBar = static_cast<double>(historyOffset) / static_cast<double>(totalRows) * h;
-    auto hBar = static_cast<double>(visibleRows)   / static_cast<double>(totalRows) * h;
+    auto min  = 2.0;
+    auto yBar = static_cast<double>(historyOffset) / static_cast<double>(totalRows) * (h - min);
+    auto hBar = static_cast<double>(visibleRows)   / static_cast<double>(totalRows) * (h - min);
 
     const auto & fg = _colorSet.getScrollBarFgColor();
     cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
@@ -1353,7 +1348,7 @@ void Window::terminalDrawScrollbar(size_t   totalRows,
                     x + 1.0,
                     yBar,
                     w - 2.0,
-                    hBar);
+                    hBar + min);
     cairo_fill(_cr);
 }
 
@@ -1378,17 +1373,7 @@ void Window::terminalFixDamageEnd(const Region & damage,
         y1 = _height;
     }
 
-    // Copy the buffer region
-    auto cookie = xcb_copy_area_checked(_basics.connection(),
-                                        _pixmap,
-                                        _window,
-                                        _gc,
-                                        x0, y0,   // src
-                                        x0, y0,   // dst
-                                        x1 - x0, y1 - y0);
-    xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
-    //xcb_flush(_basics.connection());
-    xcb_aux_sync(_basics.connection());
+    copy(x0, y0, x1 - x0, y1 - y0);
 }
 
 void Window::terminalChildExited(int UNUSED(exitStatus)) throw () {
@@ -1407,9 +1392,18 @@ void Window::useFontSet(FontSet * fontSet, int delta) throw () {
     _transientTitle = true;
     setTitle(ost.str());
 
+    xcb_size_hints_t sizeHints;
+    sizeHints.flags = 0;
+    xcb_icccm_size_hints_set_resize_inc(&sizeHints,
+                                        _fontSet->getWidth(),
+                                        _fontSet->getHeight());
+    xcb_icccm_set_wm_normal_hints(_basics.connection(),
+                                  _window,
+                                  &sizeHints);
+
     resizeToAccommodate(_terminal->getRows(), _terminal->getCols());
 
-    uint16_t rows, cols;
+    int16_t rows, cols;
     sizeToRowsCols(rows, cols);
 
     if (rows != _terminal->getRows() || cols != _terminal->getCols()) {
@@ -1421,6 +1415,6 @@ void Window::useFontSet(FontSet * fontSet, int delta) throw () {
     }
 
     if (_mapped) {
-        draw(0, 0, _width, _height);
+        draw();
     }
 }

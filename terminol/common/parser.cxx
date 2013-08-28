@@ -23,31 +23,28 @@ std::string lowercase(const std::string & str) {
 void handleSet(const std::string & key,
                const std::string & value,
                Config & config) throw (ParseError) {
-    if (key == "resizeStrategy") {
-        config.resizeStrategy = unstringify<Resize>(value);
-    }
-    else if (key == "fontName") {
+    if (key == "font-name") {
         config.fontName = value;
     }
-    else if (key == "fontSize") {
+    else if (key == "font-size") {
         config.fontSize = unstringify<int>(value);
     }
-    else if (key == "termName") {
+    else if (key == "term-name") {
         config.termName = value;
     }
-    else if (key == "scrollWithHistory") {
+    else if (key == "scroll-with-history") {
         config.scrollWithHistory = unstringify<bool>(value);
     }
-    else if (key == "scrollOnTtyOutput") {
+    else if (key == "scroll-on-tty-output") {
         config.scrollOnTtyOutput = unstringify<bool>(value);
     }
-    else if (key == "scrollOnTtyKeyPress") {
+    else if (key == "scroll-on-tty-key-press") {
         config.scrollOnTtyKeyPress = unstringify<bool>(value);
     }
-    else if (key == "scrollOnResize") {
+    else if (key == "scroll-on-resize") {
         config.scrollOnResize = unstringify<bool>(value);
     }
-    else if (key == "scrollOnPaste") {
+    else if (key == "scroll-on-paste") {
         config.scrollOnPaste = unstringify<bool>(value);
     }
     else if (key == "title") {
@@ -59,65 +56,73 @@ void handleSet(const std::string & key,
     else if (key == "chdir") {
         config.icon = value;
     }
-    else if (key == "scrollBackHistory") {
+    else if (key == "scroll-back-history") {
         config.scrollBackHistory = unstringify<size_t>(value);
     }
-    else if (key == "unlimitedScrollBack") {
+    else if (key == "unlimited-scroll-back") {
         config.unlimitedScrollBack = unstringify<bool>(value);
     }
-    else if (key == "reflowHistory") {
-        config.reflowHistory = unstringify<size_t>(value);
-    }
-    else if (key == "framesPerSecond") {
+    else if (key == "frames-per-second") {
         config.framesPerSecond = unstringify<int>(value);
     }
-    else if (key == "traditionalWrapping") {
+    else if (key == "traditional-wrapping") {
         config.traditionalWrapping = unstringify<bool>(value);
     }
-    else if (key == "traceTty") {
+    else if (key == "trace-tty") {
         config.traceTty = unstringify<bool>(value);
     }
-    else if (key == "syncTty") {
+    else if (key == "sync-tty") {
         config.syncTty = unstringify<bool>(value);
     }
-    // initialX/Y/Rows/Columns
-    else if (key == "normalFgColor") {
+    else if (key == "initial-x") {
+        config.initialX = unstringify<uint16_t>(value);
+    }
+    else if (key == "initial-y") {
+        config.initialY = unstringify<uint16_t>(value);
+    }
+    else if (key == "initial-rows") {
+        config.initialRows = unstringify<uint16_t>(value);
+    }
+    else if (key == "initial-cols") {
+        config.initialCols = unstringify<uint16_t>(value);
+    }
+    else if (key == "normal-fg-color") {
         config.normalFgColor = Color::fromString(value);
     }
-    else if (key == "normalBgColor") {
+    else if (key == "normal-bg-color") {
         config.normalBgColor = Color::fromString(value);
     }
     // systemColors[16]
-    else if (key == "cursorFillColor") {
+    else if (key == "cursor-fill-color") {
         config.customCursorFillColor = true;
         config.cursorFillColor = Color::fromString(value);
     }
-    else if (key == "cursorTextColor") {
+    else if (key == "cursor-text-color") {
         config.customCursorTextColor = true;
         config.cursorTextColor = Color::fromString(value);
     }
-    else if (key == "scrollbarFgColor") {
+    else if (key == "scrollbar-fg-color") {
         config.scrollbarFgColor = Color::fromString(value);
     }
-    else if (key == "scrollbarBgColor") {
+    else if (key == "scrollbar-bg-color") {
         config.scrollbarBgColor = Color::fromString(value);
     }
-    else if (key == "scrollbarWidth") {
+    else if (key == "scrollbar-width") {
         config.scrollbarWidth = unstringify<int>(value);
     }
-    else if (key == "borderColor") {
+    else if (key == "border-color") {
         config.borderColor = Color::fromString(value);
     }
-    else if (key == "borderThickness") {
+    else if (key == "border-thickness") {
         config.borderThickness = unstringify<int>(value);
     }
-    else if (key == "doubleClickTimeout") {
+    else if (key == "double-click-timeout") {
         config.doubleClickTimeout = unstringify<uint32_t>(value);
     }
-    else if (key == "colorScheme") {
+    else if (key == "color-scheme") {
         config.setColorScheme(value);
     }
-    else if (key == "serverFork") {
+    else if (key == "server-fork") {
         config.serverFork = unstringify<bool>(value);
     }
     else {
@@ -126,7 +131,10 @@ void handleSet(const std::string & key,
 }
 
 Action lookupAction(const std::string & str) throw (ParseError) {
-    if (str == "local-font-reset") {
+    if (str == "clear-history") {
+        return Action::CLEAR_HISTORY;
+    }
+    else if (str == "local-font-reset") {
         return Action::LOCAL_FONT_RESET;
     }
     else if (str == "local-font-smaller") {
@@ -174,8 +182,20 @@ Action lookupAction(const std::string & str) throw (ParseError) {
     else if (str == "debug-stats") {
         return Action::DEBUG_STATS;
     }
-    else if (str == "debug-buffer") {
-        return Action::DEBUG_BUFFER;
+    else if (str == "debug-stats2") {
+        return Action::DEBUG_STATS2;
+    }
+    else if (str == "debug-global-tags") {
+        return Action::DEBUG_GLOBAL_TAGS;
+    }
+    else if (str == "debug-local-tags") {
+        return Action::DEBUG_LOCAL_TAGS;
+    }
+    else if (str == "debug-history") {
+        return Action::DEBUG_HISTORY;
+    }
+    else if (str == "debug-active") {
+        return Action::DEBUG_ACTIVE;
     }
     else if (str == "debug-selection") {
         return Action::DEBUG_SELECTION;
@@ -265,7 +285,7 @@ bool tryConfig(const std::string & path, Config & config) {
             readLines(ifs, config);
         }
         catch (const ParseError & ex) {
-            std::cerr << path << ":" << ex.message;
+            std::cerr << path << ":" << ex.message << std::endl;
         }
         return true;
     }
@@ -279,7 +299,7 @@ bool tryConfig(const std::string & path, Config & config) {
 void parseConfig(Config & config) {
     const std::string conf = "/terminol/config";
 
-    const char * xdg_config_home = ::getenv("XDG_CONFIG_HOME");
+    auto xdg_config_home = static_cast<const char *>(::getenv("XDG_CONFIG_HOME"));
 
     if (xdg_config_home) {
         if (tryConfig(xdg_config_home + conf, config)) {
@@ -287,11 +307,11 @@ void parseConfig(Config & config) {
         }
     }
 
-    const char * xdg_config_dirs = ::getenv("XDG_CONFIG_DIRS");
+    auto xdg_config_dirs = static_cast<const char *>(::getenv("XDG_CONFIG_DIRS"));
 
     if (xdg_config_dirs) {
         std::string str = xdg_config_dirs;
-        size_t i = 0;
+        size_t      i   = 0;
 
         for (;;) {
             size_t j = str.find(':', i);
@@ -307,7 +327,7 @@ void parseConfig(Config & config) {
         }
     }
 
-    const char * home = ::getenv("HOME");
+    auto home = static_cast<const char *>(::getenv("HOME"));
 
     if (home) {
         if (tryConfig(home + std::string("/.config") + conf, config)) {

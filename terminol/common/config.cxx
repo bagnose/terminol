@@ -162,7 +162,6 @@ const Color COLOURS_SOLARIZED_LIGHT[16] = {
 //
 
 Config::Config() :
-    resizeStrategy(Resize::PRESERVE),
     fontName("Monospace"),
     fontSize(12),
     termName("xterm-256color"),
@@ -174,9 +173,8 @@ Config::Config() :
     title("terminol"),
     icon("terminol"),
     chdir(),
-    scrollBackHistory(4096),
-    unlimitedScrollBack(true),
-    reflowHistory(1024),
+    scrollBackHistory(1 * 1024 * 1024),
+    unlimitedScrollBack(false),
     framesPerSecond(50),
     traditionalWrapping(false),
     //
@@ -193,7 +191,7 @@ Config::Config() :
     customCursorFillColor(false),
     customCursorTextColor(false),
     //
-    scrollbarWidth(8),
+    scrollbarWidth(6),
     //
     borderThickness(1),
     doubleClickTimeout(400),

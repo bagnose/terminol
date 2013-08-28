@@ -11,6 +11,8 @@
 #include <algorithm>
 
 struct Color {
+    uint8_t r, g, b;
+
     Color() : r(0), g(0), b(0) {}
     Color(uint8_t r_, uint8_t g_, uint8_t b_) : r(r_), g(g_), b(b_) {}
 
@@ -27,8 +29,6 @@ struct Color {
                      hexToByte(str[3], str[4]),
                      hexToByte(str[5], str[6]));
     }
-
-    uint8_t r, g, b;
 };
 
 inline bool operator == (Color lhs, Color rhs) {
@@ -44,15 +44,10 @@ inline bool operator != (Color lhs, Color rhs) {
 //
 
 struct UColor {
-    // TODO NORMAL_FG, CURSOR_FG
     enum class Type : uint8_t { STOCK, INDEXED, DIRECT };
     enum class Name : uint8_t {
         TEXT_FG, TEXT_BG, SELECT_FG, SELECT_BG, CURSOR_FILL, CURSOR_TEXT
     };
-
-    static UColor stock(Name name) { return UColor(name); }
-    static UColor indexed(uint8_t index) { return UColor(index); }
-    static UColor direct(uint8_t r, uint8_t g, uint8_t b) { return UColor(r, g, b); }
 
     Type type;
 
@@ -61,6 +56,10 @@ struct UColor {
         uint8_t index;
         Color   values;
     };
+
+    static UColor stock(Name name) { return UColor(name); }
+    static UColor indexed(uint8_t index) { return UColor(index); }
+    static UColor direct(uint8_t r, uint8_t g, uint8_t b) { return UColor(r, g, b); }
 
 private:
     explicit UColor(Name name_) : type(Type::STOCK), name(name_) {}
@@ -156,33 +155,11 @@ inline bool operator != (const Cell & lhs, const Cell & rhs) { return !(lhs == r
 //
 
 struct Pos {
+    int16_t row;
+    int16_t col;
+
     Pos() : row(0), col(0) {}
-    Pos(uint16_t row_, uint16_t col_) : row(row_), col(col_) {}
-
-    uint16_t row;
-    uint16_t col;
-
-    static Pos invalid() {
-        return Pos(std::numeric_limits<uint16_t>::max(),
-                   std::numeric_limits<uint16_t>::max());
-    }
-
-    Pos atRow(uint16_t row_) { return Pos(row_, col); }
-    Pos atCol(uint16_t col_) { return Pos(row, col_); }
-
-    Pos left(uint16_t n = 1) const {
-        if (n < col) { return Pos(row, col - n); }
-        else         { return Pos(row, 0); }
-    }
-
-    Pos right(uint16_t n = 1) const { return Pos(row, col + n); }
-
-    Pos up(uint16_t n = 1) const {
-        if (n < row) { return Pos(row - n, col); }
-        else         { return Pos(0, col); }
-    }
-
-    Pos down(uint16_t n = 1) const { return Pos(row + n, col); }
+    Pos(int16_t row_, int16_t col_) : row(row_), col(col_) {}
 };
 
 inline bool operator == (Pos lhs, Pos rhs) {
@@ -199,12 +176,38 @@ inline std::ostream & operator << (std::ostream & ost, Pos pos) {
 //
 //
 
-struct Region {
-    Region() : begin(), end() {}
-    Region(Pos begin_, Pos end_) : begin(begin_), end(end_) {}
+struct HPos {
+    Pos  pos;
+    Hand hand;
 
+    HPos() : pos(), hand(Hand::LEFT) {}
+    HPos(int16_t row, int16_t col, Hand hand_) : pos(row, col), hand(hand_) {}
+
+    static HPos invalid() {
+        return HPos(-1, -1, Hand::LEFT);
+    }
+};
+
+inline bool operator == (HPos lhs, HPos rhs) {
+    return lhs.pos == rhs.pos && lhs.hand == rhs.hand;
+}
+
+inline bool operator != (HPos lhs, HPos rhs) { return !(lhs == rhs); }
+
+inline std::ostream & operator << (std::ostream & ost, HPos hpos) {
+    return ost << hpos.pos.row << 'x' << hpos.pos.col << '-' << hpos.hand;
+}
+
+//
+//
+//
+
+struct Region {
     Pos begin;
     Pos end;
+
+    Region() : begin(), end() {}
+    Region(Pos begin_, Pos end_) : begin(begin_), end(end_) {}
 
     void clear() { *this = Region(); }
 
@@ -212,7 +215,7 @@ struct Region {
         accommodateRow(pos.row, pos.col, pos.col + 1);
     }
 
-    void accommodateRow(uint16_t row, uint16_t colBegin, uint16_t colEnd) {
+    void accommodateRow(int16_t row, int16_t colBegin, int16_t colEnd) {
         if (begin.col == end.col) {
             begin.col = colBegin;
             end.col   = colEnd;
@@ -222,8 +225,8 @@ struct Region {
             end.col   = std::max(end.col,   colEnd);
         }
 
-        uint16_t rowBegin = row;
-        uint16_t rowEnd   = row + 1;
+        int16_t rowBegin = row;
+        int16_t rowEnd   = row + 1;
 
         if (begin.row == end.row) {
             begin.row = rowBegin;
@@ -235,5 +238,9 @@ struct Region {
         }
     }
 };
+
+inline std::ostream & operator << (std::ostream & ost, const Region & region) {
+    return ost << "begin: " << region.begin << ", end: " << region.end;
+}
 
 #endif // COMMON__DATA_TYPES__HXX

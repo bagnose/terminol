@@ -14,11 +14,11 @@ struct ParseError {
     std::string message;
 };
 
-template <typename T> T clamp(T t, T min, T max) {
+template <typename T> T clamp(T val, T min, T max) {
     ASSERT(min <= max, "");
-    if      (t < min) { return min; }
-    else if (t > max) { return max; }
-    else              { return t;   }
+    if      (val < min) { return min; }
+    else if (val > max) { return max; }
+    else                { return val; }
 }
 
 bool split(const std::string        & line,
@@ -36,7 +36,7 @@ template <typename T> T unstringify(const std::string & str) throw (ParseError) 
     T t;
     ist >> t;
     if (ist.good()) { return t; }
-    else { throw ParseError("Failed to unstringify: " + str); }
+    else { throw ParseError("Failed to unstringify: '" + str + "'"); }
 }
 
 template <> inline std::string unstringify<>(const std::string & str) throw (ParseError) {
@@ -129,6 +129,29 @@ template <typename T> std::string toBinaryString(T t) {
 
 inline bool XOR(bool a, bool b) {
     return a != b;
+}
+
+inline std::string humanSize(size_t bytes) {
+    const char * UNITS[] = {
+        "B",
+        "KB",
+        "MB",
+        "GB",
+        "PB",
+        "XB"
+    };
+
+    auto offset = 0;
+    auto value  = bytes;
+
+    while (value >= 1024) {
+        value /= 1024;
+        ++offset;
+    }
+
+    std::ostringstream ost;
+    ost << value << UNITS[offset];
+    return ost.str();
 }
 
 #endif // SUPPORT__CONV__HXX

@@ -35,149 +35,151 @@ template <class A> typename A::Type hash(const void * buffer,
 
 class Deduper : public I_Deduper {
     struct Payload {
-        Payload(bool cont_, uint16_t wrap_, std::vector<Cell> & cells_) :
-            line(cont_, wrap_, cells_),
-            refCount(1) {}
+        std::vector<Cell> cells;
+        uint32_t          refs;
 
-        Line     line;
-        uint32_t refCount;
+        Payload(std::vector<Cell> & cells_) : cells(std::move(cells_)), refs(1) {}
     };
 
     std::unordered_map<Tag, Payload> _lines;
-    size_t                           _totalRefCount;
+    size_t                           _totalRefs;
 
 public:
-    Deduper() : _lines(), _totalRefCount(0) {}
+    Deduper() : _lines(), _totalRefs(0) {}
     virtual ~Deduper() {}
 
-    Tag store(bool cont, uint16_t wrap, std::vector<Cell> & cells) {
+    Tag store(std::vector<Cell> & cells) {
         auto tag = makeTag(cells);
+        ASSERT(tag != invalidTag(), "");
 
 again:
         auto iter = _lines.find(tag);
 
         if (iter == _lines.end()) {
-            _lines.insert(std::make_pair(tag, Payload(cont, wrap, cells)));
+            _lines.insert(std::make_pair(tag, Payload(cells)));
         }
         else {
             auto & payload = iter->second;
-            const auto & line = payload.line;
 
-            if (cont  != line.cont ||
-                wrap  != line.wrap ||
-                cells != line.cells) {
+            if (cells != payload.cells) {
 #if 0
-#if DEBUG
-                std::cerr << "Collision between:" << std::endl;
+                std::cerr << "Hash collision:" << std::endl;
 
-                {
-                    ASSERT(wrap <= cells.size(), wrap << " < " << cells.size());
-                    std::cerr << cont << " " << std::setw(3) << wrap << " \'";
-                    std::cerr << "   '";
-                    uint16_t col = 0;
-                    std::cerr << SGR::UNDERLINE;
-                    for (; col != wrap; ++col) { std::cerr << cells[col].seq; }
-                    std::cerr << SGR::RESET_UNDERLINE;
-                    for (; col != cells.size(); ++col) { std::cerr << cells[col].seq; }
-                    std::cerr << "\'" << std::endl;
+                std::cerr << "  \'";
+                for (auto & c : cells) {
+                    std::cerr << c.seq;
                 }
+                std::cerr << "\'" << std::endl;
 
-                std::cerr << "And:" << std::endl;
-
-                {
-                    ASSERT(line.wrap <= line.cells.size(), line.wrap << " < " << line.cells.size());
-                    std::cerr << line.cont << " " << std::setw(3) << line.wrap << " \'";
-                    std::cerr << "   '";
-                    uint16_t col = 0;
-                    std::cerr << SGR::UNDERLINE;
-                    for (; col != line.wrap; ++col) { std::cerr << line.cells[col].seq; }
-                    std::cerr << SGR::RESET_UNDERLINE;
-                    for (; col != line.cells.size(); ++col) { std::cerr << line.cells[col].seq; }
+                std::cerr << "  \'";
+                for (auto & c : payload.cells) {
+                    std::cerr << c.seq;
                 }
                 std::cerr << "\'" << std::endl;
 #endif
-#endif
 
-                ENFORCE(static_cast<Tag>(_lines.size()) != 0, "No dedupe room left");
+                ENFORCE(static_cast<Tag>(_lines.size()) != invalidTag(), "No dedupe room left.");
 
                 ++tag;
+                if (tag == invalidTag()) { ++tag; }
                 goto again;
             }
 
-            ++payload.refCount;
+            ++payload.refs;
         }
 
-        ++_totalRefCount;
-
-#if 0
-        if (_totalRefCount != 0) {
-            std::cerr << "+++ " << 100.0 * double(_lines.size()) / double(_totalRefCount) << " %" << std::endl;
-        }
-#endif
+        ++_totalRefs;
 
         return tag;
     }
 
-    const Line & lookup(Tag tag) const {
+    const std::vector<Cell> & lookup(Tag tag) const {
         auto iter = _lines.find(tag);
         ASSERT(iter != _lines.end(), "");
-        return iter->second.line;
+        return iter->second.cells;
     }
 
     void remove(Tag tag) {
+        ASSERT(tag != invalidTag(), "");
         auto iter = _lines.find(tag);
         ASSERT(iter != _lines.end(), "");
         auto & payload = iter->second;
 
-        if (--payload.refCount == 0) {
+        if (--payload.refs == 0) {
             _lines.erase(iter);
         }
 
-        --_totalRefCount;
-
-#if 0
-        if (_totalRefCount != 0) {
-            std::cerr << "--- " << 100.0 * double(_lines.size()) / double(_totalRefCount) << " %" << std:endl;
-        }
-#endif
+        --_totalRefs;
     }
 
-    void lookupRemove(Tag tag, Line & line) {
+    void lookupRemove(Tag tag, std::vector<Cell> & cells) {
+        ASSERT(tag != invalidTag(), "");
         auto iter = _lines.find(tag);
         ASSERT(iter != _lines.end(), "");
         auto & payload = iter->second;
 
-        if (--payload.refCount == 0) {
-            line.cont  = payload.line.cont;
-            line.wrap  = payload.line.wrap;
-            line.cells = std::move(payload.line.cells);
-            ASSERT(payload.line.cells.empty(), "");
+        if (--payload.refs == 0) {
+            cells = std::move(payload.cells);
+            ASSERT(payload.cells.empty(), "");
             _lines.erase(iter);
         }
         else {
-            line = payload.line;
+            cells = payload.cells;
         }
+
+        --_totalRefs;
     }
 
     void getStats(uint32_t & uniqueLines, uint32_t & totalLines) const {
         uniqueLines = _lines.size();
-        totalLines  = _totalRefCount;
+        totalLines  = _totalRefs;
     }
 
-    double getReduction() const {
-        if (_lines.empty()) {
-            return 1.0;
+    void getStats2(size_t & bytes1, size_t & bytes2) const {
+        bytes1 = 0;
+        bytes2 = 0;
+
+        for (auto & l : _lines) {
+            auto & payload = l.second;
+
+            size_t size = payload.cells.size() * sizeof(Cell);
+
+            bytes1 += size;
+            bytes2 += payload.refs * size;
         }
-        else {
-            return
-                static_cast<double>(_totalRefCount) /
-                static_cast<double>(_lines.size());
+    }
+
+    void dump(std::ostream & ost) const {
+        ost << "BEGIN GLOBAL TAGS" << std::endl;
+
+        size_t i = 0;
+
+        for (auto & l : _lines) {
+            auto   tag     = l.first;
+            auto & payload = l.second;
+
+            ost << std::setw(6) << i << " "
+                << std::setw(sizeof(Tag) * 2) << std::setfill('0')
+                << std::hex << std::uppercase << tag << ": "
+                << std::setw(4) << std::setfill(' ') << std::dec << payload.refs << " \'";
+
+            for (auto & c : payload.cells) {
+                ost << c.seq;
+            }
+
+            ost << "\'" << std::endl;
+
+            ++i;
         }
+
+        ost << "END GLOBAL TAGS" << std::endl << std::endl;
     }
 
 private:
-    Tag makeTag(const std::vector<Cell> & cells) const {
-        return hash<SDBM<Tag>>(&cells.front(), sizeof(Cell) * cells.size());
+    static Tag makeTag(const std::vector<Cell> & cells) {
+        auto tag = hash<SDBM<Tag>>(&cells.front(), sizeof(Cell) * cells.size());
+        if (tag == invalidTag()) { ++tag; }
+        return tag;
     }
 };
 
