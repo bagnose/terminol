@@ -18,6 +18,7 @@ std::string makeHelp(const std::string & progName) {
         << "Options:" << std::endl
         << "  --help" << std::endl
         << "  --socket=SOCKET" << std::endl
+        << "  --shutdown" << std::endl
         ;
     return ost.str();
 }
@@ -28,8 +29,11 @@ int main(int argc, char * argv[]) {
     Config config;
     parseConfig(config);
 
+    bool shutdown = false;
+
     CmdLine cmdLine(makeHelp(argv[0]), VERSION);
     cmdLine.add(new StringHandler(config.socketPath), '\0', "socket");
+    cmdLine.add(new BoolHandler(shutdown), '\0', "shutdown");
 
     // Command line
 
@@ -48,7 +52,7 @@ int main(int argc, char * argv[]) {
         return 1;
     }
 
-    char c = 0;
+    char c = shutdown ? 0xFF : 0;
     auto rval = TEMP_FAILURE_RETRY(::write(fd, &c, 1));
 
     if (rval == -1) {

@@ -84,8 +84,8 @@ public:
 
     void read() {
         uint8_t buffer[1024];
-        auto    rval = TEMP_FAILURE_RETRY(
-                ::read(_fd, static_cast<void *>(buffer), sizeof buffer));
+        auto    rval = TEMP_FAILURE_RETRY(::read(_fd, static_cast<void *>(buffer),
+                                                 sizeof buffer));
 
         ENFORCE_SYS(rval != -1, "::read() failed");
 
@@ -99,7 +99,13 @@ public:
             }
         }
         else {
-            _creator.create();
+            ASSERT(rval > 0, "");
+            if (buffer[0] == 0xFF) {
+                _creator.shutdown();
+            }
+            else {
+                _creator.create();
+            }
         }
     }
 
