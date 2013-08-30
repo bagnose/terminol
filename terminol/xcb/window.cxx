@@ -1386,12 +1386,6 @@ void Window::terminalChildExited(int UNUSED(exitStatus)) throw () {
 void Window::useFontSet(FontSet * fontSet, int delta) throw () {
     _fontSet = fontSet;
 
-    std::ostringstream ost;
-    ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
-    ost << "font: " << explicitSign(delta);
-    _transientTitle = true;
-    setTitle(ost.str());
-
     xcb_size_hints_t sizeHints;
     sizeHints.flags = 0;
     xcb_icccm_size_hints_set_resize_inc(&sizeHints,
@@ -1418,4 +1412,10 @@ void Window::useFontSet(FontSet * fontSet, int delta) throw () {
         draw();
         copy(0, 0, _width, _height);
     }
+
+    std::ostringstream ost;
+    ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
+    ost << "font: " << explicitSign(delta);
+    _transientTitle = true;
+    setTitle(ost.str());
 }
