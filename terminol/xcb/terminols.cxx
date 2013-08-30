@@ -174,6 +174,10 @@ public:
     }
 
     virtual ~EventLoop() {
+        for (auto p : _windows) {
+            auto window = p.second;
+            delete window;
+        }
     }
 
 protected:
