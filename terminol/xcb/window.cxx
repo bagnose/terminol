@@ -1416,5 +1416,6 @@ void Window::useFontSet(FontSet * fontSet, int delta) throw () {
 
     if (_mapped) {
         draw();
+        copy(0, 0, _width, _height);
     }
 }
