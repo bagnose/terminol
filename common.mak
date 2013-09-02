@@ -230,6 +230,8 @@ $(eval $(call EXE,PRIV,terminol/common/droppings,droppings.cxx,,terminol/common 
 
 $(eval $(call EXE,PRIV,terminol/common/positioner,positioner.cxx,,terminol/common terminol/support,))
 
+$(eval $(call EXE,PRIV,terminol/common/spinner,spinner.cxx,,terminol/common terminol/support,))
+
 #
 # XCB
 #

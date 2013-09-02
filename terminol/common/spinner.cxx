@@ -1,0 +1,22 @@
+// vi:noai:sw=4
+
+#include "terminol/support/debug.hxx"
+#include "terminol/common/ascii.hxx"
+
+#include <unistd.h>
+
+int main() {
+    std::cout << ESC << '[' << "?25l";      // hide cursor
+
+    const char values[] = { '|', '/', '-', '\\' };
+
+    for (int i = 0; ; ++i) {
+        auto c = values[i % 4];
+        std::cout << '\r' << c << std::flush;
+        usleep(50000);
+    }
+
+    std::cout << ESC << '[' << "?25h";      // show cursor
+
+    return 0;
+}
