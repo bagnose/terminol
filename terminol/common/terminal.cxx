@@ -631,7 +631,7 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
     }
     else {
         if (trigger != Trigger::TTY) {
-            _buffer->damageAll(true);
+            _buffer->damageViewport(false);
         }
         _buffer->accumulateDamage(damage.begin.row, damage.end.row,
                                   damage.begin.col, damage.end.col);
@@ -1610,7 +1610,7 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                 case 5: // DECSCNM - Screen Mode - Reverse / Normal
                     if (_modes.get(Mode::REVERSE) != set) {
                         _modes.setTo(Mode::REVERSE, set);
-                        _buffer->damageAll(false);
+                        _buffer->damageViewport(false);
                     }
                     break;
                 case 6: // DECOM - Origin Mode - Relative / Absolute

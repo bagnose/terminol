@@ -12,8 +12,6 @@
 #include <vector>
 #include <iomanip>
 
-// TODO fix damaging
-
 class CharSub {
     const utf8::Seq * _seqs;
     size_t            _offset;
@@ -248,7 +246,7 @@ public:
     }
 
     void clearSelection() {
-        damageAll(false);        // FIXME just damage selection
+        damageViewport(false);        // FIXME just damage selection
         _selectDelim = _selectMark;     // XXX need to be careful about this not pointing to valid data
     }
 
@@ -320,9 +318,12 @@ public:
 
             _tags.clear();
             _history.clear();
-            _scrollOffset = 0;
+            _pending.clear();
 
-            damageAll(true);
+            if (_scrollOffset != 0) {
+                _scrollOffset = 0;
+                damageViewport(true);
+            }
         }
     }
 
@@ -337,7 +338,7 @@ public:
         }
 
         if (_scrollOffset != oldScrollOffset) {
-            damageAll(true);
+            damageViewport(true);
             return true;
         }
         else {
@@ -356,7 +357,7 @@ public:
         }
 
         if (_scrollOffset != oldScrollOffset) {
-            damageAll(true);
+            damageViewport(true);
             return true;
         }
         else {
@@ -367,7 +368,7 @@ public:
     bool scrollTopHistory() {
         if (_scrollOffset != getHistory()) {
             _scrollOffset = getHistory();
-            damageAll(true);
+            damageViewport(true);
             return true;
         }
         else {
@@ -378,7 +379,7 @@ public:
     bool scrollBottomHistory() {
         if (_scrollOffset != 0) {
             _scrollOffset = 0;
-            damageAll(true);
+            damageViewport(true);
             return true;
         }
         else {
@@ -397,13 +398,13 @@ public:
             _barDamage = true;
         }
         else {
-            damageAll(true);
+            damageViewport(true);
         }
     }
 
     void resetDamage() {
-        for (auto & l : _damage) {
-            l.reset();
+        for (auto & d : _damage) {
+            d.reset();
         }
         _barDamage = false;
     }
@@ -574,7 +575,7 @@ public:
         _cursor.pos.col = std::min<int16_t>(_cursor.pos.col, cols - 1);
 
         _damage.resize(rows);
-        damageAll(false);
+        damageViewport(false);
     }
 
     void resizeReflow(int16_t rows, int16_t cols) {
@@ -681,7 +682,7 @@ public:
         _cursor.pos.col = std::min<int16_t>(_cursor.pos.col, cols - 1);
 
         _damage.resize(rows);
-        damageAll(true);
+        damageViewport(true);
     }
 
     void tabCursor(TabDir dir, uint16_t count) {
@@ -843,7 +844,7 @@ public:
 
     void clear() {
         for (auto & l : _active) { l.clear(); }
-        damageAll(false);
+        damageActive();
     }
 
     void clearAbove() {
@@ -851,7 +852,6 @@ public:
         for (auto i = _active.begin(); i != _active.begin() + _cursor.pos.row; ++i) {
             i->clear();
         }
-        // TODO damage
         clearSelection();
     }
 
@@ -887,7 +887,7 @@ public:
         insertLinesAt(_marginBegin, n);
     }
 
-    void damageAll(bool scrollbar) {
+    void damageViewport(bool scrollbar) {
         for (auto & d : _damage) {
             d.damageSet(0, getCols());
         }
@@ -897,13 +897,17 @@ public:
         }
     }
 
+    void damageActive() {
+        damageRows(0, getRows());
+    }
+
     void testPattern() {
         for (auto & r : _active) {
             for (auto & c : r.cells) {
                 c = Cell::ascii('E', _cursor.style);
             }
         }
-        damageAll(false);
+        damageActive();
     }
 
     void accumulateDamage(int16_t & rowBegin, int16_t & rowEnd,
@@ -1351,15 +1355,22 @@ protected:
     }
 
     void damageCell() {
-        // FIXME _damage is viewport relative, not buffer relative
-        if (static_cast<uint32_t>(_cursor.pos.row) >= _scrollOffset) {
-            _damage[_cursor.pos.row].damageAdd(_cursor.pos.col, _cursor.pos.col + 1);
+        auto damageRow = _scrollOffset + static_cast<uint32_t>(_cursor.pos.row);
+
+        if (damageRow < static_cast<uint32_t>(getRows())) {
+            _damage[damageRow].damageAdd(_cursor.pos.col, _cursor.pos.col + 1);
         }
     }
 
     void damageColumns(int16_t begin, int16_t end) {
-        if (static_cast<uint32_t>(_cursor.pos.row) >= _scrollOffset) {
-            _damage[_cursor.pos.row].damageAdd(begin, end);
+        ASSERT(begin <= end, "");
+        ASSERT(begin >= 0, "");
+        ASSERT(end   <= getCols(), "");
+
+        auto damageRow = _scrollOffset + static_cast<uint32_t>(_cursor.pos.row);
+
+        if (damageRow < static_cast<uint32_t>(getRows())) {
+            _damage[damageRow].damageAdd(begin, end);
         }
     }
 
@@ -1368,7 +1379,9 @@ protected:
         ASSERT(end <= _marginEnd, "");
 
         for (auto i = begin; i != end; ++i) {
-            if (static_cast<uint32_t>(i) >= _scrollOffset) {
+            auto damageRow = _scrollOffset + static_cast<uint32_t>(i);
+
+            if (damageRow < static_cast<uint32_t>(getRows())) {
                 _damage[i].damageSet(0, getCols());
             }
         }
@@ -1397,7 +1410,7 @@ protected:
 
             _active.push_back(ALine(getCols()));
 
-            damageAll(true);
+            damageViewport(true);
         }
 
         --_selectMark.apos.row;
