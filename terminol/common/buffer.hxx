@@ -230,23 +230,20 @@ public:
     void     adjustSelection(HPos UNUSED(pos)) {}
 
     void markSelection(HPos hpos) {
+        damageSelection();
         _selectMark = _selectDelim = HAPos(hpos, _scrollOffset);
+        damageSelection();
         //PRINT(hapos.apos.row << "x" << hapos.apos.col);
     }
 
     void delimitSelection(HPos hpos) {
+        damageSelection();
         _selectDelim = HAPos(hpos, _scrollOffset);
-
-        /*
-        APos begin, end;
-        if (normaliseSelection(begin, end)) {
-            PRINT(begin.row << "x" << begin.col << " <--> " << end.row << "x" << end.col);
-        }
-        */
+        damageSelection();
     }
 
     void clearSelection() {
-        damageViewport(false);        // FIXME just damage selection
+        damageSelection();
         _selectDelim = _selectMark;     // XXX need to be careful about this not pointing to valid data
     }
 
@@ -320,7 +317,10 @@ public:
             _history.clear();
             _pending.clear();
 
-            if (_scrollOffset != 0) {
+            if (_scrollOffset == 0) {
+                _barDamage = true;
+            }
+            else {
                 _scrollOffset = 0;
                 damageViewport(true);
             }
@@ -1385,6 +1385,10 @@ protected:
                 _damage[i].damageSet(0, getCols());
             }
         }
+    }
+
+    void damageSelection() {
+        damageViewport(false);        // FIXME just damage selection
     }
 
     void addLine() {

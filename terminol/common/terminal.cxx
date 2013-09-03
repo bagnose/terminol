@@ -130,7 +130,7 @@ void Terminal::redraw() {
 bool Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
     if (!handleKeyBinding(keySym, modifiers) && xkb::isPotent(keySym)) {
         if (_config.scrollOnTtyKeyPress && _buffer->scrollBottomHistory()) {
-            fixDamage(Trigger::SCROLL);
+            fixDamage(Trigger::OTHER);
         }
 
         std::vector<uint8_t> input;
@@ -222,14 +222,14 @@ select:
                 _buffer->expandSelection(hpos);
             }
 
-            fixDamage(Trigger::SCROLL);     // FIXME Trigger
+            fixDamage(Trigger::OTHER);
         }
         else if (button == Button::MIDDLE) {
             _observer.terminalPaste(false);
         }
         else if (button == Button::RIGHT) {
             _buffer->adjustSelection(hpos);
-            fixDamage(Trigger::SCROLL);     // FIXME Trigger
+            fixDamage(Trigger::OTHER);
         }
         _press = Press::SELECT;
     }
@@ -281,7 +281,7 @@ void Terminal::pointerMotion(ModifierSet modifiers, bool within, HPos hpos) {
     else if (_press == Press::SELECT) {
         if (_button == Button::LEFT) {
             _buffer->delimitSelection(hpos);
-            fixDamage(Trigger::SCROLL);     // FIXME Trigger
+            fixDamage(Trigger::OTHER);
         }
     }
 
@@ -356,12 +356,12 @@ void Terminal::scrollWheel(ScrollDir dir, ModifierSet modifiers, bool UNUSED(wit
         switch (dir) {
             case ScrollDir::UP:
                 if (_buffer->scrollUpHistory(rows)) {
-                    fixDamage(Trigger::SCROLL);
+                    fixDamage(Trigger::OTHER);
                 }
                 break;
             case ScrollDir::DOWN:
                 if (_buffer->scrollDownHistory(rows)) {
-                    fixDamage(Trigger::SCROLL);
+                    fixDamage(Trigger::OTHER);
                 }
                 break;
         }
@@ -370,7 +370,7 @@ void Terminal::scrollWheel(ScrollDir dir, ModifierSet modifiers, bool UNUSED(wit
 
 void Terminal::paste(const uint8_t * data, size_t size) {
     if (_config.scrollOnPaste && _buffer->scrollBottomHistory()) {
-        fixDamage(Trigger::SCROLL);
+        fixDamage(Trigger::OTHER);
     }
 
     if (_modes.get(Mode::BRACKETED_PASTE)) {
@@ -386,7 +386,7 @@ void Terminal::paste(const uint8_t * data, size_t size) {
 
 void Terminal::clearSelection() {
     _buffer->clearSelection();
-    fixDamage(Trigger::SCROLL);     // FIXME Trigger
+    fixDamage(Trigger::OTHER);
 }
 
 void Terminal::focusChange(bool focused) {
@@ -472,7 +472,7 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
         switch (action) {
             case Action::CLEAR_HISTORY:
                 _priBuffer.clearHistory();
-                fixDamage(Trigger::SCROLL);     // FIXME Trigger
+                fixDamage(Trigger::OTHER);
                 return true;
             case Action::LOCAL_FONT_RESET:
                 _observer.terminalResizeLocalFont(0);
@@ -504,32 +504,32 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                 return true;
             case Action::SCROLL_UP_ONE_LINE:
                 if (_buffer->scrollUpHistory(1)) {
-                    fixDamage(Trigger::SCROLL);
+                    fixDamage(Trigger::OTHER);
                 }
                 return true;
             case Action::SCROLL_DOWN_ONE_LINE:
                 if (_buffer->scrollDownHistory(1)) {
-                    fixDamage(Trigger::SCROLL);
+                    fixDamage(Trigger::OTHER);
                 }
                 return true;
             case Action::SCROLL_UP_ONE_PAGE:
                 if (_buffer->scrollUpHistory(_buffer->getRows())) {
-                    fixDamage(Trigger::SCROLL);
+                    fixDamage(Trigger::OTHER);
                 }
                 return true;
             case Action::SCROLL_DOWN_ONE_PAGE:
                 if (_buffer->scrollDownHistory(_buffer->getRows())) {
-                    fixDamage(Trigger::SCROLL);
+                    fixDamage(Trigger::OTHER);
                 }
                 return true;
             case Action::SCROLL_TOP:
                 if (_buffer->scrollTopHistory()) {
-                    fixDamage(Trigger::SCROLL);
+                    fixDamage(Trigger::OTHER);
                 }
                 return true;
             case Action::SCROLL_BOTTOM:
                 if (_buffer->scrollBottomHistory()) {
-                    fixDamage(Trigger::SCROLL);
+                    fixDamage(Trigger::OTHER);
                 }
                 return true;
             case Action::DEBUG_MODES: {
@@ -587,12 +587,10 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
 }
 
 void Terminal::fixDamage(Trigger trigger) {
-    if (trigger == Trigger::TTY &&
-        _config.scrollOnTtyOutput &&
-        _buffer->scrollBottomHistory())
+    if (trigger == Trigger::TTY &&          // We're overusing this Damage now.
+        _config.scrollOnTtyOutput)
     {
-        // Promote the damage from TTY to SCROLL.
-        trigger = Trigger::SCROLL;
+        _buffer->scrollBottomHistory();
     }
 
     if (_observer.terminalFixDamageBegin()) {
@@ -630,8 +628,8 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
         scrollbar = false;
     }
     else {
-        if (trigger != Trigger::TTY) {
-            _buffer->damageViewport(false);
+        if (trigger == Trigger::CLIENT) {
+            _buffer->damageViewport(true);
         }
         _buffer->accumulateDamage(damage.begin.row, damage.end.row,
                                   damage.begin.col, damage.end.col);
@@ -670,10 +668,7 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
                                    );
         }
 
-        scrollbar =
-            trigger == Trigger::SCROLL ||
-            trigger == Trigger::CLIENT ||
-            (trigger == Trigger::TTY && _buffer->getBarDamage());
+        scrollbar = _buffer->getBarDamage();
 
         if (scrollbar) {
             _observer.terminalDrawScrollbar(_buffer->getTotal(),

@@ -142,7 +142,7 @@ public:
     void     flush();
 
 protected:
-    enum class Trigger { TTY, SCROLL, FOCUS, CLIENT };
+    enum class Trigger { TTY, FOCUS, CLIENT, OTHER };
 
     bool     handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers);
 
