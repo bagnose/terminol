@@ -539,6 +539,16 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                 return true;
             }
             case Action::DEBUG_STATS: {
+                size_t bytes1, bytes2;
+                _deduper.getStats2(bytes1, bytes2);
+
+                std::ostringstream ost;
+                ost << "line-data=" << humanSize(bytes1) << " "
+                    << "(non-dedupe=" << humanSize(bytes2) << ")";
+                _observer.terminalSetWindowTitle(ost.str());
+                return true;
+            }
+            case Action::DEBUG_STATS2: {
                 uint32_t localLines = _priBuffer.getHistory();
                 uint32_t uniqueLines;
                 uint32_t globalLines;
@@ -549,19 +559,9 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
 
                 std::ostringstream ost;
                 ost << "local=" << localLines
-                    << " dedupe=" << dedupe
-                    << " total=" << globalLines
-                    << " unique=" << uniqueLines;
-                _observer.terminalSetWindowTitle(ost.str());
-                return true;
-            }
-            case Action::DEBUG_STATS2: {
-                size_t bytes1, bytes2;
-                _deduper.getStats2(bytes1, bytes2);
-
-                std::ostringstream ost;
-                ost << "line-data=" << humanSize(bytes1) << " "
-                    << "non-dedupe-line-data=" << humanSize(bytes2);
+                    << " global=" << globalLines
+                    << " unique=" << uniqueLines
+                    << " (dedupe-factor=" << dedupe << ")";
                 _observer.terminalSetWindowTitle(ost.str());
                 return true;
             }
