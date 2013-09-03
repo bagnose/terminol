@@ -52,19 +52,19 @@ public:
         std::string message;
     };
 
-    Server(I_Creator & creator, const Config & config) :
+    Server(I_Creator & creator, const Config & config) throw (Error) :
         _creator(creator),
         _config(config),
         _fd(-1)
     {
-        const std::string & socketPath = _config.socketPath;
+        auto & socketPath = _config.socketPath;
         if (::mkfifo(socketPath.c_str(), 0600) == -1) {
             switch (errno) {
                 case EEXIST:
                     // No problem
                     break;
                 default:
-                    ERROR("Failed to create fifo: " << socketPath);
+                    throw Error("Failed to create fifo: " + socketPath);
             }
         }
 
@@ -90,13 +90,7 @@ public:
         ENFORCE_SYS(rval != -1, "::read() failed");
 
         if (rval == 0) {
-            close();
-            try {
-                open();
-            }
-            catch (const Error & ex) {
-                FATAL("Lost fifo");
-            }
+            reopen();
         }
         else {
             ASSERT(rval > 0, "");
@@ -110,17 +104,36 @@ public:
     }
 
 protected:
-    void open() throw (Error) {
-        const std::string & socketPath = _config.socketPath;
+    void reopen() {
+        // Store the current descriptor.
+        auto fd = _fd;
 
+        close();
+
+        try {
+            open();
+        }
+        catch (const Error & ex) {
+            FATAL("Lost fifo");
+        }
+
+        ENFORCE(_fd == fd, "Descriptor changed!");
+    }
+
+    void open() throw (Error) {
+        ASSERT(_fd == -1, "");
+        auto & socketPath = _config.socketPath;
+
+        // Open non-blocking so we don't have to wait for the other
+        // end to open.
         _fd = ::open(socketPath.c_str(), O_RDONLY | O_NONBLOCK);
         if (_fd == -1) {
-            ERROR("Failed to open fifo: " << socketPath);
-            throw Error("Failed to open fifo");
+            throw Error("Failed to open fifo: " + socketPath);
         }
     }
 
     void close() {
+        ASSERT(_fd != -1, "");
         ENFORCE_SYS(::close(_fd) != -1, "::close() failed");
         _fd = -1;
     }
