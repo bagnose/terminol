@@ -3,18 +3,20 @@
 #ifndef COMMON__TERMINAL__HXX
 #define COMMON__TERMINAL__HXX
 
-#include "terminol/common/tty_interface.hxx"
+#include "terminol/common/tty.hxx"
 #include "terminol/common/vt_state_machine.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/bit_sets.hxx"
 #include "terminol/common/buffer.hxx"
 #include "terminol/common/deduper_interface.hxx"
+#include "terminol/support/selector.hxx"
 #include "terminol/support/pattern.hxx"
 
 #include <xkbcommon/xkbcommon.h>
 
 class Terminal :
     protected VtStateMachine::I_Observer,
+    protected Tty::I_Observer,
     protected Uncopyable
 {
     static const CharSub CS_US;
@@ -94,21 +96,19 @@ private:
 
     //
 
-    I_Tty               & _tty;
-
-    bool                  _dumpWrites;
-    std::vector<uint8_t>  _writeBuffer;      // Spillover if the TTY would block.
-
     utf8::Machine         _utf8Machine;
     VtStateMachine        _vtMachine;
+    Tty                   _tty;
 
 public:
-    Terminal(I_Observer   & observer,
-             const Config & config,
-             I_Deduper    & deduper,
-             int16_t        rows,
-             int16_t        cols,
-             I_Tty        & tty);
+    Terminal(I_Observer         & observer,
+             const Config       & config,
+             I_Selector         & selector,
+             I_Deduper          & deduper,
+             int16_t              rows,
+             int16_t              cols,
+             const std::string  & windowId,
+             const Tty::Command & command) throw (Tty::Error);
     virtual ~Terminal();
 
     // Geometry:
@@ -135,18 +135,13 @@ public:
 
     void     focusChange(bool focused);
 
-    // I/O:
-
-    void     read();
-    bool     needsFlush() const;
-    void     flush();
+    bool     hasSubprocess() const;
+    int      close();
 
 protected:
     enum class Trigger { TTY, FOCUS, CLIENT, OTHER };
 
     bool     handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers);
-
-    void     moveCursor(Pos pos, bool considerOriginMode = false);
 
     void     fixDamage(Trigger trigger);
 
@@ -178,6 +173,12 @@ protected:
     void     machineOsc(const std::vector<std::string> & args) throw ();
     void     machineSpecial(const std::vector<uint8_t> & inter,
                             uint8_t code) throw ();
+
+    // Tty::I_Observer imlementation:
+
+    void     ttyData(const uint8_t * data, size_t size) throw ();
+    void     ttySync() throw ();
+    void     ttyExited(int exitCode) throw ();
 };
 
 std::ostream & operator << (std::ostream & ost, Terminal::Button button);

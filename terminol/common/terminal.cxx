@@ -2,7 +2,6 @@
 
 #include "terminol/common/terminal.hxx"
 #include "terminol/common/key_map.hxx"
-#include "terminol/support/time.hxx"
 #include "terminol/support/conv.hxx"
 #include "terminol/support/escape.hxx"
 
@@ -69,12 +68,14 @@ const CharSub Terminal::CS_US;
 const CharSub Terminal::CS_UK(UK_SEQS, 35, 1);
 const CharSub Terminal::CS_SPECIAL(SPECIAL_SEQS, 96, 31, true);
 
-Terminal::Terminal(I_Observer   & observer,
-                   const Config & config,
-                   I_Deduper    & deduper,
-                   int16_t        rows,
-                   int16_t        cols,
-                   I_Tty        & tty) :
+Terminal::Terminal(I_Observer         & observer,
+                   const Config       & config,
+                   I_Selector         & selector,
+                   I_Deduper          & deduper,
+                   int16_t              rows,
+                   int16_t              cols,
+                   const std::string  & windowId,
+                   const Tty::Command & command) throw (Tty::Error) :
     _observer(observer),
     _dispatch(false),
     //
@@ -93,14 +94,14 @@ Terminal::Terminal(I_Observer   & observer,
     _modes(),
     //
     _press(Press::NONE),
+    _button(Button::LEFT),
+    _pointerPos(),
     _focused(true),
     _lastSeq(),
     //
-    _tty(tty),
-    _dumpWrites(false),
-    _writeBuffer(),
     _utf8Machine(),
-    _vtMachine(*this, _config)
+    _vtMachine(*this, _config),
+    _tty(*this, selector, config, rows, cols, windowId, command)
 {
     _modes.set(Mode::AUTO_WRAP);
     _modes.set(Mode::SHOW_CURSOR);
@@ -113,21 +114,31 @@ Terminal::~Terminal() {
 }
 
 void Terminal::resize(int16_t rows, int16_t cols) {
+    ASSERT(!_dispatch, "");
     // Special exception, resizes can occur during dispatch.
 
     ASSERT(rows > 0 && cols > 0, "");
 
     _priBuffer.resizeReflow(rows, cols);
     _altBuffer.resizeClip(rows, cols);
+    _tty.resize(rows, cols);
 }
 
 void Terminal::redraw() {
+    ASSERT(!_dispatch, "");
+    _dispatch = true;
+
     Region damage;
     bool   scrollbar;
     draw(Trigger::CLIENT, damage, scrollbar);
+
+    _dispatch = false;
 }
 
 bool Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
+    ASSERT(!_dispatch, "");
+    _dispatch = true;
+
     if (!handleKeyBinding(keySym, modifiers) && xkb::isPotent(keySym)) {
         if (_config.scrollOnTtyKeyPress && _buffer->scrollBottomHistory()) {
             fixDamage(Trigger::OTHER);
@@ -157,45 +168,20 @@ bool Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
             if (_modes.get(Mode::ECHO)) { echo(&input.front(), input.size()); }
         }
 
+        _dispatch = false;
         return true;
     }
     else {
+        _dispatch = false;
         return false;
-    }
-}
-
-void Terminal::sendMouseButton(int num, ModifierSet modifiers, Pos pos) {
-    if (num >= 3) { num += 64 - 3; }
-
-    if (modifiers.get(Modifier::SHIFT))   { num +=  4; }
-    if (modifiers.get(Modifier::ALT))     { num +=  8; }
-    if (modifiers.get(Modifier::CONTROL)) { num += 16; }
-
-    std::ostringstream ost;
-    if (_modes.get(Mode::MOUSE_FORMAT_SGR)) {
-        ost << ESC << "[<"
-            << num << ';' << pos.col + 1 << ';' << pos.row + 1
-            << 'M';
-    }
-    else if (pos.row < 223 && pos.col < 223) {
-        ost << ESC << "[M"
-            << static_cast<char>(32 + num)
-            << static_cast<char>(32 + pos.col + 1)
-            << static_cast<char>(32 + pos.row + 1);
-    }
-    else {
-        // Couldn't deliver it
-    }
-
-    const auto & str = ost.str();
-
-    if (!str.empty()) {
-        write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
     }
 }
 
 void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
                            bool UNUSED(within), HPos hpos) {
+    ASSERT(!_dispatch, "");
+    _dispatch = true;
+
     /*
     PRINT("press: " << button << ", count=" << count <<
           ", state=" << modifiers << ", " << pos);
@@ -238,9 +224,14 @@ select:
     _pointerPos = hpos.pos;
 
     ASSERT(_press != Press::NONE, "");
+
+    _dispatch = false;
 }
 
 void Terminal::pointerMotion(ModifierSet modifiers, bool within, HPos hpos) {
+    ASSERT(!_dispatch, "");
+    _dispatch = true;
+
     //PRINT("motion: within=" << within << ", " << pos);
 
     if ((_press == Press::REPORT && _modes.get(Mode::MOUSE_DRAG)) ||
@@ -286,9 +277,14 @@ void Terminal::pointerMotion(ModifierSet modifiers, bool within, HPos hpos) {
     }
 
     _pointerPos = hpos.pos;
+
+    _dispatch = false;
 }
 
 void Terminal::buttonRelease(bool UNUSED(broken), ModifierSet modifiers) {
+    ASSERT(!_dispatch, "");
+    _dispatch = true;
+
     //PRINT("release, broken=" << broken);
 
     ASSERT(_press != Press::NONE, "");
@@ -341,9 +337,14 @@ report:
     }
 
     _press = Press::NONE;
+
+    _dispatch = false;
 }
 
 void Terminal::scrollWheel(ScrollDir dir, ModifierSet modifiers, bool UNUSED(within), Pos pos) {
+    ASSERT(!_dispatch, "");
+    _dispatch = true;
+
     if (_modes.get(Mode::MOUSE_PRESS_RELEASE)) {
         sendMouseButton(dir == ScrollDir::UP ? 3 : 4, modifiers, pos);
     }
@@ -366,9 +367,14 @@ void Terminal::scrollWheel(ScrollDir dir, ModifierSet modifiers, bool UNUSED(wit
                 break;
         }
     }
+
+    _dispatch = false;
 }
 
 void Terminal::paste(const uint8_t * data, size_t size) {
+    ASSERT(!_dispatch, "");
+    _dispatch = true;
+
     if (_config.scrollOnPaste && _buffer->scrollBottomHistory()) {
         fixDamage(Trigger::OTHER);
     }
@@ -382,14 +388,24 @@ void Terminal::paste(const uint8_t * data, size_t size) {
     if (_modes.get(Mode::BRACKETED_PASTE)) {
         write(reinterpret_cast<const uint8_t *>("\x1B[201~"), 6);
     }
+
+    _dispatch = false;
 }
 
 void Terminal::clearSelection() {
+    ASSERT(!_dispatch, "");
+    _dispatch = true;
+
     _buffer->clearSelection();
     fixDamage(Trigger::OTHER);
+
+    _dispatch = false;
 }
 
 void Terminal::focusChange(bool focused) {
+    ASSERT(!_dispatch, "");
+    _dispatch = true;
+
     if (_focused != focused) {
         _focused = focused;
 
@@ -406,61 +422,16 @@ void Terminal::focusChange(bool focused) {
             fixDamage(Trigger::FOCUS);
         }
     }
-}
-
-void Terminal::read() {
-    ASSERT(!_dispatch, "");
-
-    _dispatch = true;
-
-    try {
-        Timer   timer(1000 / _config.framesPerSecond);
-        uint8_t buf[BUFSIZ];          // 8192 last time I looked.
-        auto    size = sizeof buf;
-        if (_config.syncTty) { size = std::min(size, static_cast<size_t>(16)); }
-#if 1
-        do {
-            auto rval = _tty.read(buf, size);
-            if (rval == 0) { break; }
-            processRead(buf, rval);
-        } while (!timer.expired());
-#else
-        auto rval = _tty.read(buf, size);
-        processRead(buf, rval);
-#endif
-    }
-    catch (const I_Tty::Exited & ex) {
-        _observer.terminalChildExited(ex.exitCode);
-    }
-
-    if (!_config.syncTty) {
-        fixDamage(Trigger::TTY);
-    }
 
     _dispatch = false;
 }
 
-bool Terminal::needsFlush() const {
-    ASSERT(!_dispatch, "");
-    return !_writeBuffer.empty();
+bool Terminal::hasSubprocess() const {
+    return _tty.hasSubprocess();
 }
 
-void Terminal::flush() {
-    ASSERT(!_dispatch, "");
-    ASSERT(needsFlush(), "No writes queued.");
-    ASSERT(!_dumpWrites, "Dump writes is set.");
-
-    try {
-        do {
-            auto rval = _tty.write(&_writeBuffer.front(), _writeBuffer.size());
-            if (rval == 0) { break; }
-            _writeBuffer.erase(_writeBuffer.begin(), _writeBuffer.begin() + rval);
-        } while (!_writeBuffer.empty());
-    }
-    catch (const I_Tty::Error & ex) {
-        _dumpWrites = true;
-        _writeBuffer.clear();
-    }
+int Terminal::close() {
+    return _tty.close();
 }
 
 bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
@@ -681,37 +652,7 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
 }
 
 void Terminal::write(const uint8_t * data, size_t size) {
-    if (_dumpWrites) { return; }
-
-    if (_writeBuffer.empty()) {
-        // Try to write it now, queue what we can't write.
-        try {
-            while (size != 0) {
-                auto rval = _tty.write(data, size);
-                if (rval == 0) { PRINT("Write would block!"); break; }
-                data += rval; size -= rval;
-            }
-
-            // Copy remainder (if any) to queue
-            if (size != 0) {
-                auto oldSize = _writeBuffer.size();
-                _writeBuffer.resize(oldSize + size);
-                std::copy(data, data + size, &_writeBuffer[oldSize]);
-            }
-        }
-        catch (const I_Tty::Error &) {
-            ERROR("I/O error, dumping writes.");
-            _dumpWrites = true;
-            _writeBuffer.clear();
-        }
-    }
-    else {
-        // Just copy it to the queue.
-        // We are assuming the write() would still block. Wait for a flush().
-        auto oldSize = _writeBuffer.size();
-        _writeBuffer.resize(oldSize + size);
-        std::copy(data, data + size, &_writeBuffer[oldSize]);
-    }
+    _tty.write(data, size);
 }
 
 void Terminal::echo(const uint8_t * data, size_t size) {
@@ -748,6 +689,36 @@ void Terminal::echo(const uint8_t * data, size_t size) {
     _dispatch = false;
 }
 
+void Terminal::sendMouseButton(int num, ModifierSet modifiers, Pos pos) {
+    if (num >= 3) { num += 64 - 3; }
+
+    if (modifiers.get(Modifier::SHIFT))   { num +=  4; }
+    if (modifiers.get(Modifier::ALT))     { num +=  8; }
+    if (modifiers.get(Modifier::CONTROL)) { num += 16; }
+
+    std::ostringstream ost;
+    if (_modes.get(Mode::MOUSE_FORMAT_SGR)) {
+        ost << ESC << "[<"
+            << num << ';' << pos.col + 1 << ';' << pos.row + 1
+            << 'M';
+    }
+    else if (pos.row < 223 && pos.col < 223) {
+        ost << ESC << "[M"
+            << static_cast<char>(32 + num)
+            << static_cast<char>(32 + pos.col + 1)
+            << static_cast<char>(32 + pos.row + 1);
+    }
+    else {
+        // Couldn't deliver it
+    }
+
+    const auto & str = ost.str();
+
+    if (!str.empty()) {
+        write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
+    }
+}
+
 void Terminal::resetAll() {
     _buffer->reset();
 
@@ -782,6 +753,453 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length length) {
         fixDamage(Trigger::TTY);
     }
 }
+
+void Terminal::processAttributes(const std::vector<int32_t> & args) {
+    ASSERT(!args.empty(), "");
+
+    // FIXME check man 7 urxvt:
+
+    for (size_t i = 0; i != args.size(); ++i) {
+        auto v = args[i];
+
+        switch (v) {
+            case 0: // Reset/Normal
+                _buffer->resetStyle();
+                break;
+            case 1: // Bold or increased intensity
+                _buffer->setAttr(Attr::BOLD);
+                break;
+            case 2: // Faint (low/decreased intensity)
+                _buffer->setAttr(Attr::FAINT);
+                break;
+            case 3: // Italic: on
+                _buffer->setAttr(Attr::ITALIC);
+                break;
+            case 4: // Underline: Single
+                _buffer->setAttr(Attr::UNDERLINE);
+                break;
+            case 5: // Blink: slow
+            case 6: // Blink: rapid
+                _buffer->setAttr(Attr::BLINK);
+                break;
+            case 7: // Inverse (negative)
+                _buffer->setAttr(Attr::INVERSE);
+                break;
+            case 8: // Conceal (not widely supported)
+                _buffer->setAttr(Attr::CONCEAL);
+                break;
+            case 10: // Primary (default) font
+                NYI("Primary (default) font");
+                break;
+            case 11: // 1st alternative font
+            case 12:
+            case 13:
+            case 14:
+            case 15:
+            case 16:
+            case 17:
+            case 18:
+            case 19: // 9th alternative font
+                NYI(nthStr(v - 10) << " alternative font");
+                break;
+            case 22: // Normal color or intensity (neither bold nor faint)
+                _buffer->unsetAttr(Attr::BOLD);
+                _buffer->unsetAttr(Attr::FAINT);
+                break;
+            case 23: // Not italic
+                _buffer->unsetAttr(Attr::ITALIC);
+                break;
+            case 24: // Underline: None (not singly or doubly underlined)
+                _buffer->unsetAttr(Attr::UNDERLINE);
+                break;
+            case 25: // Blink: off
+                _buffer->unsetAttr(Attr::BLINK);
+                break;
+            case 27: // Clear inverse
+                _buffer->unsetAttr(Attr::INVERSE);
+                break;
+            case 28: // Reveal (conceal off)
+                _buffer->unsetAttr(Attr::CONCEAL);
+                break;
+                // 30..37 (set foreground colour - handled separately)
+            case 38:
+                // https://github.com/robertknight/konsole/blob/master/user-doc/README.moreColors
+                if (i + 1 < args.size()) {
+                    i += 1;
+                    switch (args[i]) {
+                        case 0:
+                            NYI("User defined foreground");
+                            break;
+                        case 1:
+                            NYI("Transparent foreground");
+                            break;
+                        case 2:
+                            if (i + 3 < args.size()) {
+                                // 24-bit foreground support
+                                // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB foreground color
+                                _buffer->setFg(UColor::direct(args[i + 1], args[i + 2], args[i + 3]));
+                                i += 3;
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        case 3:
+                            if (i + 3 < args.size()) {
+                                NYI("24-bit CMY foreground");
+                                i += 3;
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        case 4:
+                            if (i + 4 < args.size()) {
+                                NYI("24-bit CMYK foreground");
+                                i += 4;
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        case 5:
+                            if (i + 1 < args.size()) {
+                                i += 1;
+                                auto v2 = args[i];
+                                if (v2 >= 0 && v2 < 256) {
+                                    _buffer->setFg(UColor::indexed(v2));
+                                }
+                                else {
+                                    ERROR("Colour out of range: " << v2);
+                                }
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        default:
+                            NYI("Unknown?");
+                    }
+                }
+                break;
+            case 39:
+                _buffer->setFg(UColor::stock(UColor::Name::TEXT_FG));
+                break;
+                // 40..47 (set background colour - handled separately)
+            case 48:
+                // https://github.com/robertknight/konsole/blob/master/user-doc/README.moreColors
+                if (i + 1 < args.size()) {
+                    i += 1;
+                    switch (args[i]) {
+                        case 0:
+                            NYI("User defined background");
+                            break;
+                        case 1:
+                            NYI("Transparent background");
+                            break;
+                        case 2:
+                            if (i + 3 < args.size()) {
+                                // 24-bit background support
+                                // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB background color
+                                _buffer->setBg(UColor::direct(args[i + 1], args[i + 2], args[i + 3]));
+                                i += 3;
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        case 3:
+                            if (i + 3 < args.size()) {
+                                NYI("24-bit CMY background");
+                                i += 3;
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        case 4:
+                            if (i + 4 < args.size()) {
+                                NYI("24-bit CMYK background");
+                                i += 4;
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        case 5:
+                            if (i + 1 < args.size()) {
+                                i += 1;
+                                auto v2 = args[i];
+                                if (v2 >= 0 && v2 < 256) {
+                                    _buffer->setBg(UColor::indexed(v2));
+                                }
+                                else {
+                                    ERROR("Colour out of range: " << v2);
+                                }
+                            }
+                            else {
+                                ERROR("Insufficient args");
+                                i = args.size() - 1;
+                            }
+                            break;
+                        default:
+                            NYI("Unknown?");
+                    }
+                }
+                break;
+            case 49:
+                _buffer->setBg(UColor::stock(UColor::Name::TEXT_BG));
+                break;
+
+            default:
+                // 56..59 Reserved
+                // 60..64 (ideogram stuff - hardly ever supported)
+                // 90..97 Set foreground colour high intensity - handled separately
+                // 100..107 Set background colour high intensity - handled separately
+
+                if (v >= 30 && v < 38) {
+                    // normal fg
+                    _buffer->setFg(UColor::indexed(v - 30));
+                }
+                else if (v >= 40 && v < 48) {
+                    // normal bg
+                    _buffer->setBg(UColor::indexed(v - 40));
+                }
+                else if (v >= 90 && v < 98) {
+                    // bright fg
+                    _buffer->setFg(UColor::indexed(v - 90 + 8));
+                }
+                else if (v >= 100 && v < 108) {
+                    // bright bg
+                    _buffer->setBg(UColor::indexed(v - 100 + 8));
+                }
+                else if (v >= 256 && v < 512) {
+                    _buffer->setFg(UColor::indexed(v - 256));
+                }
+                else if (v >= 512 && v < 768) {
+                    _buffer->setBg(UColor::indexed(v - 512));
+                }
+                else {
+                    ERROR("Unhandled attribute: " << v);
+                }
+                break;
+        }
+    }
+}
+
+void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> & args) {
+    //PRINT("processModes: priv=" << priv << ", set=" << set << ", args=" << args.front() /*XXX*/);
+
+    for (auto a : args) {
+        if (priv == '?') {
+            switch (a) {
+                case 1: // DECCKM - Cursor Keys Mode - Application / Cursor
+                    _modes.setTo(Mode::APPCURSOR, set);
+                    break;
+                case 2: // DECANM - ANSI/VT52 Mode
+                    NYI("DECANM: " << set);
+                    /*
+                    _cursor.g0 = CS_US;
+                    _cursor.g1 = CS_US;
+                    _cursor.cs = Cursor::CharSet::G0;
+                    */
+                    break;
+                case 3: // DECCOLM - Column Mode
+                    // How much should we reset
+                    _buffer->reset();
+                    if (set) {
+                        // resize 132 columns
+                        _observer.terminalResizeBuffer(getRows(), 132);
+                    }
+                    else {
+                        // resize 80 columns
+                        _observer.terminalResizeBuffer(getRows(), 80);
+                    }
+                    break;
+                case 4: // DECSCLM - Scroll Mode - Smooth / Jump (IGNORED)
+                    NYI("DECSCLM: " << set);
+                    break;
+                case 5: // DECSCNM - Screen Mode - Reverse / Normal
+                    if (_modes.get(Mode::REVERSE) != set) {
+                        _modes.setTo(Mode::REVERSE, set);
+                        _buffer->damageViewport(false);
+                    }
+                    break;
+                case 6: // DECOM - Origin Mode - Relative / Absolute
+                    _modes.setTo(Mode::ORIGIN, set);
+                    _buffer->moveCursor(Pos(), _modes.get(Mode::ORIGIN));
+                    break;
+                case 7: // DECAWM - Auto Wrap Mode
+                    _modes.setTo(Mode::AUTO_WRAP, set);
+                    break;
+                case 8: // DECARM - Auto Repeat Mode
+                    _modes.setTo(Mode::AUTO_REPEAT, set);
+                    break;
+                case 9: // Mouse X10
+                    NYI("X10 mouse");
+                    break;
+                case 12: // CVVIS/att610 - Cursor Very Visible.
+                    //NYI("CVVIS/att610: " << set);
+                    break;
+                case 18: // DECPFF - Printer feed (IGNORED)
+                case 19: // DECPEX - Printer extent (IGNORED)
+                    NYI("DECPFF/DECPEX: " << set);
+                    break;
+                case 25: // DECTCEM - Text Cursor Enable Mode
+                    _modes.setTo(Mode::SHOW_CURSOR, set);
+                    break;
+                case 40:
+                    // Allow column
+                    break;
+                case 42: // DECNRCM - National characters (IGNORED)
+                    NYI("Ignored: "  << a << ", " << set);
+                    break;
+                case 47: {
+                    Buffer * newBuffer = set ? &_altBuffer : &_priBuffer;
+                    if (_buffer != newBuffer) {
+                        newBuffer->migrateFrom(*_buffer, false);
+                        _buffer = newBuffer;
+                    }
+                } break;
+                case 1000: // Mouse X11 (button press and release)
+                    _modes.setTo(Mode::MOUSE_PRESS_RELEASE, set);
+                    if (set) {
+                        _modes.setTo(Mode::MOUSE_DRAG,   false);
+                        _modes.setTo(Mode::MOUSE_MOTION, false);
+                        _modes.setTo(Mode::MOUSE_SELECT, false);
+                    }
+                    break;
+                case 1001: // Mouse Highlight (button press and release, but allow select to occur)
+                    _modes.setTo(Mode::MOUSE_PRESS_RELEASE, set);
+                    _modes.setTo(Mode::MOUSE_SELECT,        set);
+                    if (set) {
+                        _modes.setTo(Mode::MOUSE_DRAG,   false);
+                        _modes.setTo(Mode::MOUSE_MOTION, false);
+                    }
+                    break;
+                case 1002: // Mouse Button (Button press, drag, release)
+                    _modes.setTo(Mode::MOUSE_PRESS_RELEASE, set);
+                    _modes.setTo(Mode::MOUSE_DRAG,          set);
+                    if (set) {
+                        _modes.setTo(Mode::MOUSE_MOTION, false);
+                        _modes.setTo(Mode::MOUSE_SELECT, false);
+                    }
+                    break;
+                case 1003: // Mouse Any (Button press, drag, release, motion)
+                    _modes.setTo(Mode::MOUSE_PRESS_RELEASE, set);
+                    _modes.setTo(Mode::MOUSE_DRAG,          set);
+                    _modes.setTo(Mode::MOUSE_MOTION,        set);
+                    if (set) {
+                        _modes.setTo(Mode::MOUSE_SELECT, false);
+                    }
+                    break;
+                case 1004:
+                    _modes.setTo(Mode::FOCUS, set);
+                    break;
+                case 1005: // Mouse Format UTF-8
+#if 0
+                    _modes.setTo(Mode::MOUSE_FORMAT_UTF8, set);
+                    if (set) {
+                        _modes.unset(Mode::MOUSE_FORMAT_SGR);
+                        _modes.unset(Mode::MOUSE_FORMAT_URXVT);
+                    }
+#endif
+                    break;
+                case 1006: // Mouse Format SGR
+                    _modes.setTo(Mode::MOUSE_FORMAT_SGR, set);
+#if 0
+                    if (set) {
+                        _modes.unset(Mode::MOUSE_FORMAT_UTF8);
+                        _modes.unset(Mode::MOUSE_FORMAT_URXVT);
+                    }
+#endif
+                    break;
+                case 1015: // Mouse Format URXVT
+#if 0
+                    _modes.setTo(Mode::MOUSE_FORMAT_URXVT, set);
+                    if (set) {
+                        _modes.unset(Mode::MOUSE_FORMAT_UTF8);
+                        _modes.unset(Mode::MOUSE_FORMAT_SGR);
+                    }
+#endif
+                    break;
+                case 1034: // ssm/rrm, meta mode on/off
+                    _modes.setTo(Mode::META_8BIT, set);
+                    //PRINT("Setting 8-bit to: " << set);
+                    break;
+                case 1037: // deleteSendsDel
+                    _modes.setTo(Mode::DELETE_SENDS_DEL, set);
+                    break;
+                case 1039: // altSendsEscape
+                    _modes.setTo(Mode::ALT_SENDS_ESC, set);
+                    break;
+                case 1047: {
+                    Buffer * newBuffer = set ? &_altBuffer : &_priBuffer;
+                    if (_buffer != newBuffer) {
+                        newBuffer->migrateFrom(*_buffer, set);
+                        _buffer = newBuffer;
+                    }
+                } break;
+                case 1048:
+                    if (set) {
+                        _buffer->saveCursor();
+                    }
+                    else {
+                        _buffer->restoreCursor();
+                    }
+                    break;
+                case 1049: { // rmcup/smcup, alternative screen
+                    Buffer * newBuffer = set ? &_altBuffer : &_priBuffer;
+                    if (_buffer != newBuffer) {
+                        if (set) { _buffer->saveCursor(); }
+                        newBuffer->migrateFrom(*_buffer, set);
+                        _buffer = newBuffer;
+                        if (!set) { _buffer->restoreCursor(); }
+                    }
+                } break;
+                case 2004:
+                    _modes.setTo(Mode::BRACKETED_PASTE, set);
+                    break;
+                default:
+                    ERROR("erresc: unknown private set/reset mode : " << a);
+                    break;
+            }
+        }
+        else if (priv == NUL) {
+            switch (a) {
+                case 0:  // Error (IGNORED)
+                    break;
+                case 2:  // KAM - keyboard action
+                    _modes.setTo(Mode::KBDLOCK, set);
+                    break;
+                case 4:  // IRM - Insertion-replacement
+                    _modes.setTo(Mode::INSERT, set);
+                    break;
+                case 12: // SRM - Send/Receive
+                    _modes.setTo(Mode::ECHO, !set);
+                    break;
+                case 20: // LNM - Linefeed/new line
+                    _modes.setTo(Mode::CR_ON_LF, set);
+                    break;
+                default:
+                    ERROR("erresc: unknown set/reset mode: " <<  a);
+                    break;
+            }
+        }
+        else {
+            ERROR("?!");
+        }
+    }
+}
+
+// VtStateMachine::I_Observer implementation:
 
 void Terminal::machineNormal(utf8::Seq seq, utf8::Length UNUSED(length)) throw () {
     _lastSeq = seq;
@@ -1330,449 +1748,27 @@ void Terminal::machineSpecial(const std::vector<uint8_t> & inters,
     }
 }
 
-void Terminal::processAttributes(const std::vector<int32_t> & args) {
-    ASSERT(!args.empty(), "");
+// Tty::I_Observer imlementation:
 
-    // FIXME check man 7 urxvt:
-
-    for (size_t i = 0; i != args.size(); ++i) {
-        auto v = args[i];
-
-        switch (v) {
-            case 0: // Reset/Normal
-                _buffer->resetStyle();
-                break;
-            case 1: // Bold or increased intensity
-                _buffer->setAttr(Attr::BOLD);
-                break;
-            case 2: // Faint (low/decreased intensity)
-                _buffer->setAttr(Attr::FAINT);
-                break;
-            case 3: // Italic: on
-                _buffer->setAttr(Attr::ITALIC);
-                break;
-            case 4: // Underline: Single
-                _buffer->setAttr(Attr::UNDERLINE);
-                break;
-            case 5: // Blink: slow
-            case 6: // Blink: rapid
-                _buffer->setAttr(Attr::BLINK);
-                break;
-            case 7: // Inverse (negative)
-                _buffer->setAttr(Attr::INVERSE);
-                break;
-            case 8: // Conceal (not widely supported)
-                _buffer->setAttr(Attr::CONCEAL);
-                break;
-            case 10: // Primary (default) font
-                NYI("Primary (default) font");
-                break;
-            case 11: // 1st alternative font
-            case 12:
-            case 13:
-            case 14:
-            case 15:
-            case 16:
-            case 17:
-            case 18:
-            case 19: // 9th alternative font
-                NYI(nthStr(v - 10) << " alternative font");
-                break;
-            case 22: // Normal color or intensity (neither bold nor faint)
-                _buffer->unsetAttr(Attr::BOLD);
-                _buffer->unsetAttr(Attr::FAINT);
-                break;
-            case 23: // Not italic
-                _buffer->unsetAttr(Attr::ITALIC);
-                break;
-            case 24: // Underline: None (not singly or doubly underlined)
-                _buffer->unsetAttr(Attr::UNDERLINE);
-                break;
-            case 25: // Blink: off
-                _buffer->unsetAttr(Attr::BLINK);
-                break;
-            case 27: // Clear inverse
-                _buffer->unsetAttr(Attr::INVERSE);
-                break;
-            case 28: // Reveal (conceal off)
-                _buffer->unsetAttr(Attr::CONCEAL);
-                break;
-                // 30..37 (set foreground colour - handled separately)
-            case 38:
-                // https://github.com/robertknight/konsole/blob/master/user-doc/README.moreColors
-                if (i + 1 < args.size()) {
-                    i += 1;
-                    switch (args[i]) {
-                        case 0:
-                            NYI("User defined foreground");
-                            break;
-                        case 1:
-                            NYI("Transparent foreground");
-                            break;
-                        case 2:
-                            if (i + 3 < args.size()) {
-                                // 24-bit foreground support
-                                // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB foreground color
-                                _buffer->setFg(UColor::direct(args[i + 1], args[i + 2], args[i + 3]));
-                                i += 3;
-                            }
-                            else {
-                                ERROR("Insufficient args");
-                                i = args.size() - 1;
-                            }
-                            break;
-                        case 3:
-                            if (i + 3 < args.size()) {
-                                NYI("24-bit CMY foreground");
-                                i += 3;
-                            }
-                            else {
-                                ERROR("Insufficient args");
-                                i = args.size() - 1;
-                            }
-                            break;
-                        case 4:
-                            if (i + 4 < args.size()) {
-                                NYI("24-bit CMYK foreground");
-                                i += 4;
-                            }
-                            else {
-                                ERROR("Insufficient args");
-                                i = args.size() - 1;
-                            }
-                            break;
-                        case 5:
-                            if (i + 1 < args.size()) {
-                                i += 1;
-                                auto v2 = args[i];
-                                if (v2 >= 0 && v2 < 256) {
-                                    _buffer->setFg(UColor::indexed(v2));
-                                }
-                                else {
-                                    ERROR("Colour out of range: " << v2);
-                                }
-                            }
-                            else {
-                                ERROR("Insufficient args");
-                                i = args.size() - 1;
-                            }
-                            break;
-                        default:
-                            NYI("Unknown?");
-                    }
-                }
-                break;
-            case 39:
-                _buffer->setFg(UColor::stock(UColor::Name::TEXT_FG));
-                break;
-                // 40..47 (set background colour - handled separately)
-            case 48:
-                // https://github.com/robertknight/konsole/blob/master/user-doc/README.moreColors
-                if (i + 1 < args.size()) {
-                    i += 1;
-                    switch (args[i]) {
-                        case 0:
-                            NYI("User defined background");
-                            break;
-                        case 1:
-                            NYI("Transparent background");
-                            break;
-                        case 2:
-                            if (i + 3 < args.size()) {
-                                // 24-bit background support
-                                // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB background color
-                                _buffer->setBg(UColor::direct(args[i + 1], args[i + 2], args[i + 3]));
-                                i += 3;
-                            }
-                            else {
-                                ERROR("Insufficient args");
-                                i = args.size() - 1;
-                            }
-                            break;
-                        case 3:
-                            if (i + 3 < args.size()) {
-                                NYI("24-bit CMY background");
-                                i += 3;
-                            }
-                            else {
-                                ERROR("Insufficient args");
-                                i = args.size() - 1;
-                            }
-                            break;
-                        case 4:
-                            if (i + 4 < args.size()) {
-                                NYI("24-bit CMYK background");
-                                i += 4;
-                            }
-                            else {
-                                ERROR("Insufficient args");
-                                i = args.size() - 1;
-                            }
-                            break;
-                        case 5:
-                            if (i + 1 < args.size()) {
-                                i += 1;
-                                auto v2 = args[i];
-                                if (v2 >= 0 && v2 < 256) {
-                                    _buffer->setBg(UColor::indexed(v2));
-                                }
-                                else {
-                                    ERROR("Colour out of range: " << v2);
-                                }
-                            }
-                            else {
-                                ERROR("Insufficient args");
-                                i = args.size() - 1;
-                            }
-                            break;
-                        default:
-                            NYI("Unknown?");
-                    }
-                }
-                break;
-            case 49:
-                _buffer->setBg(UColor::stock(UColor::Name::TEXT_BG));
-                break;
-
-            default:
-                // 56..59 Reserved
-                // 60..64 (ideogram stuff - hardly ever supported)
-                // 90..97 Set foreground colour high intensity - handled separately
-                // 100..107 Set background colour high intensity - handled separately
-
-                if (v >= 30 && v < 38) {
-                    // normal fg
-                    _buffer->setFg(UColor::indexed(v - 30));
-                }
-                else if (v >= 40 && v < 48) {
-                    // normal bg
-                    _buffer->setBg(UColor::indexed(v - 40));
-                }
-                else if (v >= 90 && v < 98) {
-                    // bright fg
-                    _buffer->setFg(UColor::indexed(v - 90 + 8));
-                }
-                else if (v >= 100 && v < 108) {
-                    // bright bg
-                    _buffer->setBg(UColor::indexed(v - 100 + 8));
-                }
-                else if (v >= 256 && v < 512) {
-                    _buffer->setFg(UColor::indexed(v - 256));
-                }
-                else if (v >= 512 && v < 768) {
-                    _buffer->setBg(UColor::indexed(v - 512));
-                }
-                else {
-                    ERROR("Unhandled attribute: " << v);
-                }
-                break;
-        }
-    }
+void Terminal::ttyData(const uint8_t * data, size_t size) throw () {
+    ASSERT(!_dispatch, "");
+    _dispatch = true;
+    processRead(data, size);
+    _dispatch = false;
 }
 
-void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> & args) {
-    //PRINT("processModes: priv=" << priv << ", set=" << set << ", args=" << args.front() /*XXX*/);
+void Terminal::ttySync() throw () {
+    ASSERT(!_dispatch, "");
+    _dispatch = true;
+    fixDamage(Trigger::TTY);
+    _dispatch = false;
+}
 
-    for (auto a : args) {
-        if (priv == '?') {
-            switch (a) {
-                case 1: // DECCKM - Cursor Keys Mode - Application / Cursor
-                    _modes.setTo(Mode::APPCURSOR, set);
-                    break;
-                case 2: // DECANM - ANSI/VT52 Mode
-                    NYI("DECANM: " << set);
-                    /*
-                    _cursor.g0 = CS_US;
-                    _cursor.g1 = CS_US;
-                    _cursor.cs = Cursor::CharSet::G0;
-                    */
-                    break;
-                case 3: // DECCOLM - Column Mode
-                    // How much should we reset
-                    _buffer->reset();
-                    if (set) {
-                        // resize 132 columns
-                        _observer.terminalResizeBuffer(getRows(), 132);
-                    }
-                    else {
-                        // resize 80 columns
-                        _observer.terminalResizeBuffer(getRows(), 80);
-                    }
-                    break;
-                case 4: // DECSCLM - Scroll Mode - Smooth / Jump (IGNORED)
-                    NYI("DECSCLM: " << set);
-                    break;
-                case 5: // DECSCNM - Screen Mode - Reverse / Normal
-                    if (_modes.get(Mode::REVERSE) != set) {
-                        _modes.setTo(Mode::REVERSE, set);
-                        _buffer->damageViewport(false);
-                    }
-                    break;
-                case 6: // DECOM - Origin Mode - Relative / Absolute
-                    _modes.setTo(Mode::ORIGIN, set);
-                    _buffer->moveCursor(Pos(), _modes.get(Mode::ORIGIN));
-                    break;
-                case 7: // DECAWM - Auto Wrap Mode
-                    _modes.setTo(Mode::AUTO_WRAP, set);
-                    break;
-                case 8: // DECARM - Auto Repeat Mode
-                    _modes.setTo(Mode::AUTO_REPEAT, set);
-                    break;
-                case 9: // Mouse X10
-                    NYI("X10 mouse");
-                    break;
-                case 12: // CVVIS/att610 - Cursor Very Visible.
-                    //NYI("CVVIS/att610: " << set);
-                    break;
-                case 18: // DECPFF - Printer feed (IGNORED)
-                case 19: // DECPEX - Printer extent (IGNORED)
-                    NYI("DECPFF/DECPEX: " << set);
-                    break;
-                case 25: // DECTCEM - Text Cursor Enable Mode
-                    _modes.setTo(Mode::SHOW_CURSOR, set);
-                    break;
-                case 40:
-                    // Allow column
-                    break;
-                case 42: // DECNRCM - National characters (IGNORED)
-                    NYI("Ignored: "  << a << ", " << set);
-                    break;
-                case 47: {
-                    Buffer * newBuffer = set ? &_altBuffer : &_priBuffer;
-                    if (_buffer != newBuffer) {
-                        newBuffer->migrateFrom(*_buffer, false);
-                        _buffer = newBuffer;
-                    }
-                } break;
-                case 1000: // Mouse X11 (button press and release)
-                    _modes.setTo(Mode::MOUSE_PRESS_RELEASE, set);
-                    if (set) {
-                        _modes.setTo(Mode::MOUSE_DRAG,   false);
-                        _modes.setTo(Mode::MOUSE_MOTION, false);
-                        _modes.setTo(Mode::MOUSE_SELECT, false);
-                    }
-                    break;
-                case 1001: // Mouse Highlight (button press and release, but allow select to occur)
-                    _modes.setTo(Mode::MOUSE_PRESS_RELEASE, set);
-                    _modes.setTo(Mode::MOUSE_SELECT,        set);
-                    if (set) {
-                        _modes.setTo(Mode::MOUSE_DRAG,   false);
-                        _modes.setTo(Mode::MOUSE_MOTION, false);
-                    }
-                    break;
-                case 1002: // Mouse Button (Button press, drag, release)
-                    _modes.setTo(Mode::MOUSE_PRESS_RELEASE, set);
-                    _modes.setTo(Mode::MOUSE_DRAG,          set);
-                    if (set) {
-                        _modes.setTo(Mode::MOUSE_MOTION, false);
-                        _modes.setTo(Mode::MOUSE_SELECT, false);
-                    }
-                    break;
-                case 1003: // Mouse Any (Button press, drag, release, motion)
-                    _modes.setTo(Mode::MOUSE_PRESS_RELEASE, set);
-                    _modes.setTo(Mode::MOUSE_DRAG,          set);
-                    _modes.setTo(Mode::MOUSE_MOTION,        set);
-                    if (set) {
-                        _modes.setTo(Mode::MOUSE_SELECT, false);
-                    }
-                    break;
-                case 1004:
-                    _modes.setTo(Mode::FOCUS, set);
-                    break;
-                case 1005: // Mouse Format UTF-8
-#if 0
-                    _modes.setTo(Mode::MOUSE_FORMAT_UTF8, set);
-                    if (set) {
-                        _modes.unset(Mode::MOUSE_FORMAT_SGR);
-                        _modes.unset(Mode::MOUSE_FORMAT_URXVT);
-                    }
-#endif
-                    break;
-                case 1006: // Mouse Format SGR
-                    _modes.setTo(Mode::MOUSE_FORMAT_SGR, set);
-#if 0
-                    if (set) {
-                        _modes.unset(Mode::MOUSE_FORMAT_UTF8);
-                        _modes.unset(Mode::MOUSE_FORMAT_URXVT);
-                    }
-#endif
-                    break;
-                case 1015: // Mouse Format URXVT
-#if 0
-                    _modes.setTo(Mode::MOUSE_FORMAT_URXVT, set);
-                    if (set) {
-                        _modes.unset(Mode::MOUSE_FORMAT_UTF8);
-                        _modes.unset(Mode::MOUSE_FORMAT_SGR);
-                    }
-#endif
-                    break;
-                case 1034: // ssm/rrm, meta mode on/off
-                    _modes.setTo(Mode::META_8BIT, set);
-                    //PRINT("Setting 8-bit to: " << set);
-                    break;
-                case 1037: // deleteSendsDel
-                    _modes.setTo(Mode::DELETE_SENDS_DEL, set);
-                    break;
-                case 1039: // altSendsEscape
-                    _modes.setTo(Mode::ALT_SENDS_ESC, set);
-                    break;
-                case 1047: {
-                    Buffer * newBuffer = set ? &_altBuffer : &_priBuffer;
-                    if (_buffer != newBuffer) {
-                        newBuffer->migrateFrom(*_buffer, set);
-                        _buffer = newBuffer;
-                    }
-                } break;
-                case 1048:
-                    if (set) {
-                        _buffer->saveCursor();
-                    }
-                    else {
-                        _buffer->restoreCursor();
-                    }
-                    break;
-                case 1049: { // rmcup/smcup, alternative screen
-                    Buffer * newBuffer = set ? &_altBuffer : &_priBuffer;
-                    if (_buffer != newBuffer) {
-                        if (set) { _buffer->saveCursor(); }
-                        newBuffer->migrateFrom(*_buffer, set);
-                        _buffer = newBuffer;
-                        if (!set) { _buffer->restoreCursor(); }
-                    }
-                } break;
-                case 2004:
-                    _modes.setTo(Mode::BRACKETED_PASTE, set);
-                    break;
-                default:
-                    ERROR("erresc: unknown private set/reset mode : " << a);
-                    break;
-            }
-        }
-        else if (priv == NUL) {
-            switch (a) {
-                case 0:  // Error (IGNORED)
-                    break;
-                case 2:  // KAM - keyboard action
-                    _modes.setTo(Mode::KBDLOCK, set);
-                    break;
-                case 4:  // IRM - Insertion-replacement
-                    _modes.setTo(Mode::INSERT, set);
-                    break;
-                case 12: // SRM - Send/Receive
-                    _modes.setTo(Mode::ECHO, !set);
-                    break;
-                case 20: // LNM - Linefeed/new line
-                    _modes.setTo(Mode::CR_ON_LF, set);
-                    break;
-                default:
-                    ERROR("erresc: unknown set/reset mode: " <<  a);
-                    break;
-            }
-        }
-        else {
-            ERROR("?!");
-        }
-    }
+void Terminal::ttyExited(int exitCode) throw () {
+    ASSERT(!_dispatch, "");
+    _dispatch = true;
+    _observer.terminalChildExited(exitCode);
+    _dispatch = false;
 }
 
 std::ostream & operator << (std::ostream & ost, Terminal::Button button) {

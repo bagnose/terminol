@@ -61,6 +61,7 @@ public:
 
     const std::string     & display()        const { return _display;         }
     xcb_connection_t      * connection()           { return _connection;      }
+    int                     fd()                   { return xcb_get_file_descriptor(_connection); }
     int                     screenNum()            { return _screenNum;       }
     xcb_screen_t          * screen()               { return _screen;          }
     xcb_visualtype_t      * visual()               { return _visual;          }

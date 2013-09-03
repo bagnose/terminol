@@ -1,6 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/common/tty.hxx"
+#include "terminol/support/time.hxx"
 
 #include <unistd.h>
 #include <pty.h>
@@ -10,14 +11,45 @@
 #include <sys/types.h>
 #include <sys/fcntl.h>
 
-Tty::Tty(const Config      & config,
+#include <fstream>
+
+namespace {
+
+// TODO consolidate this function
+std::string nthToken(const std::string & str, size_t n) throw (ParseError) {
+    size_t i = 0;
+    size_t j = 0;
+
+    do {
+        if (j == std::string::npos) { throw ParseError(""); }
+        i = str.find_first_not_of(" \t", j);
+        if (i == std::string::npos) { throw ParseError(""); }
+        j = str.find_first_of(" \t", i);
+        --n;
+    } while (n != 0);
+
+    if (j == std::string::npos) { j = str.size(); }
+    if (i == j) { throw ParseError(""); }
+
+    return str.substr(i, j - i);
+}
+
+} // namespace {anonymous}
+
+Tty::Tty(I_Observer        & observer,
+         I_Selector        & selector,
+         const Config      & config,
          uint16_t            rows,
          uint16_t            cols,
          const std::string & windowId,
-         const Command     & command) :
+         const Command     & command) throw (Error) :
+    _observer(observer),
+    _selector(selector),
     _config(config),
     _pid(0),
-    _fd(-1)
+    _fd(-1),
+    _dumpWrites(false),
+    _writeBuffer()
 {
     openPty(rows, cols, windowId, command);
 }
@@ -34,68 +66,128 @@ void Tty::resize(uint16_t rows, uint16_t cols) {
     ENFORCE_SYS(::ioctl(_fd, TIOCSWINSZ, &winsize) != -1, "");
 }
 
-size_t Tty::read(uint8_t * buffer, size_t length) throw (Exited) {
-    ASSERT(_fd != -1, "");
-    ASSERT(length != 0, "");
-
-    auto rval = TEMP_FAILURE_RETRY(::read(_fd, static_cast<void *>(buffer), length));
-
-    if (rval == -1) {
-        switch (errno) {
-            case EAGAIN:
-                return 0;
-            case EIO:
-                throw Exited(close());
-            default:
-                FATAL("Unexpected error: " << errno << " " << ::strerror(errno));
-        }
+void Tty::write(const uint8_t * data, size_t size) {
+    if (_dumpWrites) {
+        return;
     }
-    else if (rval == 0) {
-        FATAL("Zero length read.");
+
+    ASSERT(_fd != -1, "");
+    ASSERT(size != 0, "");
+
+    if (_writeBuffer.empty()) {
+        // Try to write it now, buffer what we can't write.
+        while (size != 0) {
+            auto rval =
+                TEMP_FAILURE_RETRY(::write(_fd, static_cast<const void *>(data), size));
+
+            if (rval == -1) {
+                switch (errno) {
+                    case EAGAIN:
+                        _writeBuffer.resize(size);
+                        std::copy(data, data + size, &_writeBuffer.front());
+                        _selector.addWriteable(_fd, this);
+                        goto done;
+                    case EIO:
+                        _dumpWrites = true;
+                        goto done;
+                    default:
+                        FATAL("Unexpected error: " << errno << " " << ::strerror(errno));
+                }
+            }
+            else if (rval == 0) {
+                FATAL("Zero length write.");
+            }
+            else {
+                data += rval;
+                size -= rval;
+            }
+        }
+
+done:                   // FIXME write a utility function for read()/write()
+        ;
     }
     else {
-        return rval;
+        // Just copy it to the queue.
+        // We are assuming the write() would still block.
+        auto oldSize = _writeBuffer.size();
+        _writeBuffer.resize(oldSize + size);
+        std::copy(data, data + size, &_writeBuffer[oldSize]);
     }
 }
 
-size_t Tty::write(const uint8_t * buffer, size_t length) throw (Error) {
+bool Tty::hasSubprocess() const {
+    std::ostringstream ost;
+    ost << "/proc/" << _pid << "/stat";
+    std::ifstream ifs(ost.str().c_str());
+    if (!ifs.good()) { return false; }
+    std::string line;
+    if (!getline(ifs, line).good()) { return false; }
+    try {
+        auto pid = unstringify<pid_t>(nthToken(line, 8));
+        return pid != _pid;
+    }
+    catch (const ParseError & ex) {
+        ERROR(ex.message);
+        return false;
+    }
+}
+
+int Tty::close() {
     ASSERT(_fd != -1, "");
-    ASSERT(length != 0, "");
 
-    auto rval =
-        TEMP_FAILURE_RETRY(::write(_fd, static_cast<const void *>(buffer), length));
+    _selector.removeReadable(_fd);
 
-    if (rval == -1) {
-        switch (errno) {
-            case EAGAIN:
-                return 0;
-            case EIO:       // default: ??
-                throw Error();
-            default:
-                FATAL("Unexpected error: " << errno << " " << ::strerror(errno));
-        }
-    }
-    else if (rval == 0) {
-        FATAL("Zero length write.");
-    }
-    else {
-        return rval;
-    }
+    ENFORCE_SYS(::close(_fd) != -1, "::close() failed");
+    _fd = -1;
+
+    int exitCode;
+
+    // Maybe the child has already died.
+    if (pollReap(0, exitCode)) { return exitCode; }
+
+    ::kill(_pid, SIGCONT);
+    ::kill(_pid, SIGPIPE);
+
+    // Give the child a chance to exit nicely.
+    if (pollReap(100, exitCode)) { return exitCode; }
+    PRINT("Sending SIGINT.");
+    ::kill(_pid, SIGINT);
+    if (pollReap(100, exitCode)) { return exitCode; }
+    PRINT("Sending SIGTERM.");
+    ::kill(_pid, SIGTERM);
+    if (pollReap(100, exitCode)) { return exitCode; }
+    PRINT("Sending SIGQUIT.");
+    ::kill(_pid, SIGQUIT);
+    if (pollReap(100, exitCode)) { return exitCode; }
+    PRINT("Sending SIGKILL.");
+
+    // Too slow - knock it on the head.
+    ::kill(_pid, SIGKILL);
+    return waitReap();
 }
 
 void Tty::openPty(uint16_t            rows,
                   uint16_t            cols,
                   const std::string & windowId,
-                  const Command     & command) {
+                  const Command     & command) throw (Error) {
     ASSERT(_fd == -1, "");
 
     int master, slave;
     struct winsize winsize = { rows, cols, 0, 0 };
 
-    ENFORCE_SYS(::openpty(&master, &slave, nullptr, nullptr, &winsize) != -1, "");
+    if (::openpty(&master, &slave, nullptr, nullptr, &winsize) == -1) {
+        throw Error("openpty() failed.");
+    }
+
+    auto guard = scopeGuard([&] { ::close(master); ::close(slave); });
 
     _pid = ::fork();
-    ENFORCE_SYS(_pid != -1, "::fork() failed.");
+
+    if (_pid == -1) {
+        throw Error("fork() failed.");
+    }
+
+    guard.dismiss();
 
     if (_pid != 0) {
         // Parent code-path.
@@ -105,13 +197,13 @@ void Tty::openPty(uint16_t            rows,
         // Set non-blocking.
         int flags;
         ENFORCE_SYS((flags = ::fcntl(master, F_GETFL)) != -1, "");
-#if 1
         flags |= O_NONBLOCK;
-#endif
         ENFORCE_SYS(::fcntl(master, F_SETFL, flags) != -1, "");
 
         // Stash the master descriptor.
         _fd  = master;
+
+        _selector.addReadable(_fd, this);
     }
     else {
         // Child code-path.
@@ -174,7 +266,7 @@ void Tty::execShell(const std::string & windowId,
         args.push_back("-i");
     }
     else {
-        for (const auto & a : command) {
+        for (auto & a : command) {
             args.push_back(a.c_str());
         }
     }
@@ -185,79 +277,6 @@ void Tty::execShell(const std::string & windowId,
 
     // If we are here then the exec call failed.
     std::exit(127); // Same as ::system() for failed commands.
-}
-
-int Tty::close() {
-    ASSERT(_fd != -1, "");
-
-    ENFORCE_SYS(::close(_fd) != -1, "::close() failed");
-    _fd = -1;
-
-    int exitCode;
-
-    // Maybe the child has already died.
-    if (pollReap(0, exitCode)) { return exitCode; }
-
-    ::kill(_pid, SIGCONT);
-    ::kill(_pid, SIGPIPE);
-
-    // Give the child a chance to exit nicely.
-    if (pollReap(100, exitCode)) { return exitCode; }
-    PRINT("Sending SIGINT.");
-    ::kill(_pid, SIGINT);
-    if (pollReap(100, exitCode)) { return exitCode; }
-    PRINT("Sending SIGTERM.");
-    ::kill(_pid, SIGTERM);
-    if (pollReap(100, exitCode)) { return exitCode; }
-    PRINT("Sending SIGQUIT.");
-    ::kill(_pid, SIGQUIT);
-    if (pollReap(100, exitCode)) { return exitCode; }
-    PRINT("Sending SIGKILL.");
-
-    // Too slow - knock it on the head.
-    ::kill(_pid, SIGKILL);
-    return waitReap();
-}
-
-#include <fstream>
-
-namespace {
-
-std::string nthToken(const std::string & str, size_t n) throw (ParseError) {
-    size_t i = 0;
-    size_t j = 0;
-
-    do {
-        if (j == std::string::npos) { throw ParseError(""); }
-        i = str.find_first_not_of(" \t", j);
-        if (i == std::string::npos) { throw ParseError(""); }
-        j = str.find_first_of(" \t", i);
-        --n;
-    } while (n != 0);
-
-    if (j == std::string::npos) { j = str.size(); }
-    if (i == j) { throw ParseError(""); }
-
-    return str.substr(i, j - i);
-}
-
-} // namespace {anonymous}
-
-bool Tty::hasSubprocess() {
-    std::ostringstream ost;
-    ost << "/proc/" << _pid << "/stat";
-    std::ifstream ifs(ost.str().c_str());
-    if (!ifs.good()) { return false; }
-    std::string line;
-    if (!getline(ifs, line).good()) { return false; }
-    try {
-        auto pid = unstringify<pid_t>(nthToken(line, 8));
-        return pid != _pid;
-    }
-    catch (const ParseError & ex) {
-        ERROR(ex.message);
-        return false;
-    }
 }
 
 bool Tty::pollReap(int msec, int & exitCode) {
@@ -293,4 +312,91 @@ int Tty::waitReap() {
     ENFORCE_SYS(::waitpid(_pid, &stat, 0) == _pid, "::waitpid() failed.");
     _pid = 0;
     return WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
+}
+
+// I_ReadHandler implementation:
+
+void Tty::handleRead(int fd) {
+    ASSERT(_fd == fd, "");
+
+    Timer   timer(1000 / _config.framesPerSecond);
+    uint8_t buf[BUFSIZ];          // 8192 last time I looked.
+    auto    size = _config.syncTty ? 1 : sizeof buf;
+
+    do {
+        auto rval = TEMP_FAILURE_RETRY(::read(_fd, static_cast<void *>(buf), size));
+
+        if (rval == -1) {
+            switch (errno) {
+                case EAGAIN:
+                    goto done;
+                case EIO:
+                    _observer.ttyExited(close());
+                    goto done;
+                default:
+                    FATAL("Unexpected error: " << errno << " " << ::strerror(errno));
+            }
+        }
+        else if (rval == 0) {
+            FATAL("Zero length read.");
+        }
+        else {
+            _observer.ttyData(buf, rval);
+            if (_config.syncTty) { _observer.ttySync(); }
+        }
+    } while (!timer.expired());
+
+done:
+    _observer.ttySync();
+}
+
+// I_WriteHandler implementation:
+
+void Tty::handleWrite(int fd) {
+    // We may have been selecting for read and write, but close  the read failed.
+    if (_fd == -1) {
+        return;
+    }
+
+    ASSERT(_fd == fd, "");
+    ASSERT(!_dumpWrites, "");
+    ASSERT(!_writeBuffer.empty(), "");
+
+    size_t offset = 0;
+
+    do {
+        auto rval =
+            TEMP_FAILURE_RETRY(::write(_fd, &_writeBuffer[offset], _writeBuffer.size() - offset));
+
+        if (rval == -1) {
+            switch (errno) {
+                case EAGAIN:
+                    goto done;
+                case EIO:
+                    _dumpWrites = true;
+                    _writeBuffer.clear();
+                    _selector.removeWriteable(_fd);
+                    goto done;
+                default:
+                    FATAL("Unexpected error: " << errno << " " << ::strerror(errno));
+            }
+        }
+        else if (rval == 0) {
+            FATAL("Zero length write.");
+        }
+        else {
+            offset += rval;
+        }
+    } while (offset != _writeBuffer.size());
+
+done:
+    if (!_dumpWrites) {
+        if (offset == _writeBuffer.size()) {
+            _selector.removeWriteable(_fd);
+            _writeBuffer.clear();
+        }
+        else {
+            _writeBuffer.erase(_writeBuffer.begin(), _writeBuffer.begin() + offset);
+        }
+    }
 }

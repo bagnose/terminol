@@ -8,6 +8,7 @@
 #include "terminol/common/config.hxx"
 #include "terminol/common/parser.hxx"
 #include "terminol/common/key_map.hxx"
+#include "terminol/support/selector.hxx"
 #include "terminol/support/debug.hxx"
 #include "terminol/support/pattern.hxx"
 #include "terminol/support/cmdline.hxx"
@@ -41,7 +42,8 @@ protected:
 // Unix domain sockets.
 //
 
-class Server {
+class Server : protected I_ReadHandler {
+    I_Selector   & _selector;
     I_Creator    & _creator;
     const Config & _config;
     int            _fd;
@@ -52,7 +54,8 @@ public:
         std::string message;
     };
 
-    Server(I_Creator & creator, const Config & config) throw (Error) :
+    Server(I_Selector & selector, I_Creator & creator, const Config & config) throw (Error) :
+        _selector(selector),
         _creator(creator),
         _config(config),
         _fd(-1)
@@ -71,18 +74,54 @@ public:
         open();
     }
 
-    ~Server() {
-        close();
+    virtual ~Server() {
+        if (_fd != -1) {
+            close();
+        }
 
-        const std::string & socketPath = _config.socketPath;
+        auto & socketPath = _config.socketPath;
         if (::unlink(socketPath.c_str()) == -1) {
             ERROR("Failed to unlink fifo: " << socketPath);
         }
     }
 
-    int getFd() { return _fd; }
+protected:
+    void reopen() {
+        close();
 
-    void read() {
+        try {
+            open();
+        }
+        catch (const Error & ex) {
+            ERROR("Lost fifo");
+        }
+    }
+
+    void open() throw (Error) {
+        ASSERT(_fd == -1, "");
+        auto & socketPath = _config.socketPath;
+
+        // Open non-blocking so we don't have to wait for the other
+        // end to open.
+        _fd = ::open(socketPath.c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+        if (_fd == -1) {
+            throw Error("Failed to open fifo: " + socketPath);
+        }
+        _selector.addReadable(_fd, this);
+    }
+
+    void close() {
+        ASSERT(_fd != -1, "");
+        _selector.removeReadable(_fd);
+        ENFORCE_SYS(::close(_fd) != -1, "::close() failed");
+        _fd = -1;
+    }
+
+    // I_ReadHandler overrides:
+
+    void handleRead(int fd) {
+        ASSERT(_fd == fd, "");
+
         uint8_t buffer[1024];
         auto    rval = TEMP_FAILURE_RETRY(::read(_fd, static_cast<void *>(buffer),
                                                  sizeof buffer));
@@ -102,41 +141,6 @@ public:
             }
         }
     }
-
-protected:
-    void reopen() {
-        // Store the current descriptor.
-        auto fd = _fd;
-
-        close();
-
-        try {
-            open();
-        }
-        catch (const Error & ex) {
-            FATAL("Lost fifo");
-        }
-
-        ENFORCE(_fd == fd, "Descriptor changed!");
-    }
-
-    void open() throw (Error) {
-        ASSERT(_fd == -1, "");
-        auto & socketPath = _config.socketPath;
-
-        // Open non-blocking so we don't have to wait for the other
-        // end to open.
-        _fd = ::open(socketPath.c_str(), O_RDONLY | O_NONBLOCK);
-        if (_fd == -1) {
-            throw Error("Failed to open fifo: " + socketPath);
-        }
-    }
-
-    void close() {
-        ASSERT(_fd != -1, "");
-        ENFORCE_SYS(::close(_fd) != -1, "::close() failed");
-        _fd = -1;
-    }
 };
 
 //
@@ -144,22 +148,22 @@ protected:
 //
 
 class EventLoop :
+    protected I_ReadHandler,
     protected Window::I_Observer,
     protected I_Creator,
     protected Uncopyable
 {
-    typedef std::map<xcb_window_t, Window *> Windows;
-
-    const Config       & _config;
-    Server               _server;         // FIXME what order? socket then X, or other way around?
-    Deduper              _deduper;
-    Basics               _basics;
-    ColorSet             _colorSet;
-    FontManager          _fontManager;
-    Windows              _windows;
-    std::set<Window *>   _deferrals;
-
-    bool                 _finished;
+    const Config                     & _config;
+    Selector                           _selector;
+    Server                             _server;         // FIXME what order? socket then X, or other way around?
+    Deduper                            _deduper;
+    Basics                             _basics;
+    ColorSet                           _colorSet;
+    FontManager                        _fontManager;
+    std::map<xcb_window_t, Window *>   _windows;
+    std::set<Window *>                 _deferrals;
+    std::vector<Window *>              _exits;
+    bool                               _finished;
 
 public:
     struct Error {
@@ -170,11 +174,15 @@ public:
     explicit EventLoop(const Config & config)
         throw (Server::Error, Basics::Error, FontSet::Error, Error) :
         _config(config),
-        _server(*this, config),
+        _selector(),
+        _server(_selector, *this, config),
         _deduper(),
         _basics(),
         _colorSet(config, _basics),
         _fontManager(config, _basics),
+        _windows(),
+        _deferrals(),
+        _exits(),
         _finished(false)
     {
         if (config.serverFork) {
@@ -183,7 +191,9 @@ public:
             }
         }
 
+        _selector.addReadable(_basics.fd(), this);
         loop();
+        _selector.removeReadable(_basics.fd());
     }
 
     virtual ~EventLoop() {
@@ -196,77 +206,24 @@ public:
 protected:
     void loop() throw (Error) {
         while (!_finished) {
-            auto fdMax = 0;
-            fd_set readFds, writeFds;
-            FD_ZERO(&readFds); FD_ZERO(&writeFds);
+            _selector.animate();
 
-            auto xFd = xcb_get_file_descriptor(_basics.connection());
-            auto sFd = _server.getFd();
+            // Poll for X11 events that may not have shown up on the descriptor.
+            xevent();
 
-            // Select for read on Server
-            FD_SET(sFd, &readFds);
-            fdMax = std::max(fdMax, sFd);
-
-            // Select for read on X11
-            FD_SET(xFd, &readFds);
-            fdMax = std::max(fdMax, xFd);
-
-            // Select for read (and possibly write) on TTYs
-            for (auto pair : _windows) {
-                auto window = pair.second;
-                auto wFd = window->getFd();
-
-                FD_SET(wFd, &readFds);
-                if (window->needsFlush()) { FD_SET(wFd, &writeFds); }
-                fdMax = std::max(fdMax, wFd);
-            }
-
-            ENFORCE_SYS(TEMP_FAILURE_RETRY(
-                ::select(fdMax + 1, &readFds, &writeFds, nullptr, nullptr)) != -1, "");
-
-            // Handle all.
-
-            for (auto pair : _windows) {
-                auto window = pair.second;
-                auto wFd    = window->getFd();
-
-                if (FD_ISSET(wFd, &writeFds)) { window->flush(); }
-                if (FD_ISSET(wFd, &readFds) && window->isOpen()) { window->read(); }
-            }
-
-            if (FD_ISSET(xFd, &readFds)) {
-                xevent();
-            }
-            else {
-                // XXX For some reason X events can be available even though
-                // xFd is not readable. This is effectively polling :(
-                xevent();
-            }
-
-            // Do the deferrals:
-
+            // Perform the deferrals.
             for (auto window : _deferrals) { window->deferral(); }
             _deferrals.clear();
 
-            // Service the server.
-
-            if (FD_ISSET(sFd, &readFds)) { _server.read(); }
-
-            // Purge the closed windows.
-
-            std::vector<xcb_window_t> closedIds;
-
-            for (auto pair : _windows) {
-                auto window = pair.second;
-                if (!window->isOpen()) { closedIds.push_back(window->getWindowId()); }
-            }
-
-            for (auto id : closedIds) {
-                auto iter = _windows.find(id);
-                ASSERT(iter != _windows.end(), "");
-                auto window = iter->second;
-                delete window;
-                _windows.erase(iter);
+            if (!_exits.empty()) {
+                // Purge the exited windows.
+                for (auto window : _exits) {
+                    auto iter = _windows.find(window->getWindowId());
+                    ASSERT(iter != _windows.end(), "");
+                    _windows.erase(iter);
+                    delete window;
+                }
+                _exits.clear();
             }
         }
     }
@@ -420,9 +377,16 @@ protected:
         }
     }
 
+    // I_ReadHandler overrides:
+
+    void handleRead(int fd) {
+        ASSERT(fd == _basics.fd(), "");
+        xevent();
+    }
+
     // Window::I_Observer implementation:
 
-    void sync() throw () {
+    void windowSync() throw () {
         xcb_aux_sync(_basics.connection());
 
         for (;;) {
@@ -443,17 +407,21 @@ protected:
         }
     }
 
-    void defer(Window * window) throw () {
+    void windowDefer(Window * window) throw () {
         _deferrals.insert(window);
+    }
+
+    void windowExited(Window * window, int UNUSED(exitCode)) throw () {
+        _exits.push_back(window);
     }
 
     // I_Creator implementation:
 
     void create() throw () {
         try {
-            auto window = new Window(*this, _config, _deduper,
+            auto window = new Window(*this, _config, _selector, _deduper,
                                      _basics, _colorSet, _fontManager);
-            auto id     = window->getWindowId();
+            auto id = window->getWindowId();
             _windows.insert(std::make_pair(id, window));
         }
         catch (const Window::Error & ex) {

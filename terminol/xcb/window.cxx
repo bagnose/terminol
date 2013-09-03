@@ -36,6 +36,7 @@ bool _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie
 
 Window::Window(I_Observer         & observer,
                const Config       & config,
+               I_Selector         & selector,
                I_Deduper          & deduper,
                Basics             & basics,
                const ColorSet     & colorSet,
@@ -52,7 +53,6 @@ Window::Window(I_Observer         & observer,
     _gc(0),
     _width(0),
     _height(0),
-    _tty(nullptr),
     _terminal(nullptr),
     _open(false),
     _pointerPos(HPos::invalid()),
@@ -174,8 +174,13 @@ Window::Window(I_Observer         & observer,
     // Create the TTY and terminal.
     //
 
-    _tty = new Tty(_config, rows, cols, stringify(_window), command);
-    _terminal = new Terminal(*this, _config, deduper, rows, cols, *_tty);
+    try {
+        _terminal = new Terminal(*this, _config, selector, deduper, rows, cols, stringify(_window), command);
+    }
+    catch (const Tty::Error & ex) {
+        throw Error("Failed to create tty: " + ex.message);
+    }
+
     _open = true;
 
     //
@@ -214,7 +219,6 @@ Window::~Window() {
 
     // Unwind constructor.
 
-    delete _tty;
     delete _terminal;
 
     xcb_free_gc(_basics.connection(), _gc);
@@ -228,21 +232,6 @@ Window::~Window() {
     xcb_flush(_basics.connection());
 
     _fontManager.removeClient(this);
-}
-
-void Window::read() {
-    ASSERT(_open, "");
-    _terminal->read();
-}
-
-bool Window::needsFlush() const {
-    ASSERT(_open, "");
-    return _terminal->needsFlush();
-}
-
-void Window::flush() {
-    ASSERT(_open, "");
-    _terminal->flush();
 }
 
 // Events:
@@ -484,7 +473,7 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
     if (_deferralsAllowed) {
         if (!_deferred) {
-            _observer.defer(this);
+            _observer.windowDefer(this);
             _deferred = true;
         }
     }
@@ -526,7 +515,7 @@ void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
     ASSERT(event->window == _window, "Which window?");
     //PRINT("Destroy notify");
 
-    _tty->close();
+    _terminal->close();
     _open      = false;
     _destroyed = true;      // XXX why not just zero _window
 }
@@ -972,10 +961,6 @@ void Window::handleResize() {
     int16_t rows, cols;
     sizeToRowsCols(rows, cols);
 
-    if (_open) {
-        _tty->resize(rows, cols);
-    }
-
     _terminal->resize(rows, cols);      // Ok to resize if not open?
 
     if (!_transientTitle) {
@@ -1012,7 +997,7 @@ void Window::resizeToAccommodate(int16_t rows, int16_t cols) {
                                "Failed to configure window")) {
             xcb_flush(_basics.connection());
             _deferralsAllowed = false;
-            _observer.sync();
+            _observer.windowSync();
             _deferralsAllowed = true;
         }
     }
@@ -1042,7 +1027,7 @@ void Window::sizeToRowsCols(int16_t & rows, int16_t & cols) const {
 }
 
 void Window::handleDelete() {
-    if (_tty->hasSubprocess()) {
+    if (_terminal->hasSubprocess()) {
         if (_hadDeleteRequest) {
             xcb_destroy_window(_basics.connection(), _window);
         }
@@ -1164,7 +1149,7 @@ void Window::terminalResizeBuffer(int16_t rows, int16_t cols) throw () {
                                "Failed to configure window")) {
             xcb_flush(_basics.connection());
             _deferralsAllowed = false;
-            _observer.sync();
+            _observer.windowSync();
             _deferralsAllowed = true;
         }
     }
@@ -1376,9 +1361,10 @@ void Window::terminalFixDamageEnd(const Region & damage,
     copy(x0, y0, x1 - x0, y1 - y0);
 }
 
-void Window::terminalChildExited(int UNUSED(exitStatus)) throw () {
+void Window::terminalChildExited(int exitStatus) throw () {
     //PRINT("Child exited: " << exitStatus);
     _open = false;
+    _observer.windowExited(this, exitStatus);       // FIXME code vs status
 }
 
 // FontManager::I_Client implementation:
@@ -1401,10 +1387,6 @@ void Window::useFontSet(FontSet * fontSet, int delta) throw () {
     sizeToRowsCols(rows, cols);
 
     if (rows != _terminal->getRows() || cols != _terminal->getCols()) {
-        if (_open) {
-            _tty->resize(rows, cols);
-        }
-
         _terminal->resize(rows, cols);      // Ok to resize if not open?
     }
 

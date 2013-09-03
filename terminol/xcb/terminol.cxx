@@ -8,6 +8,7 @@
 #include "terminol/common/config.hxx"
 #include "terminol/common/parser.hxx"
 #include "terminol/common/key_map.hxx"
+#include "terminol/support/selector.hxx"
 #include "terminol/support/debug.hxx"
 #include "terminol/support/pattern.hxx"
 #include "terminol/support/cmdline.hxx"
@@ -22,15 +23,18 @@
 #include <sys/select.h>
 
 class EventLoop :
+    protected I_ReadHandler,
     protected Window::I_Observer,
     protected Uncopyable
 {
+    Selector           _selector;
     Deduper            _deduper;
     Basics             _basics;
     ColorSet           _colorSet;
     FontManager        _fontManager;
     Window             _window;
-    std::set<Window *> _deferrals;
+    bool               _deferral;
+    bool               _windowOpen;
 
 public:
     struct Error {
@@ -41,64 +45,38 @@ public:
     EventLoop(const Config       & config,
               const Tty::Command & command)
         throw (Basics::Error, FontSet::Error, Window::Error, Error) :
+        _selector(),
         _deduper(),
         _basics(),
         _colorSet(config, _basics),
         _fontManager(config, _basics),
         _window(*this,
                 config,
+                _selector,
                 _deduper,
                 _basics,
                 _colorSet,
                 _fontManager,
-                command)
+                command),
+        _deferral(false),
+        _windowOpen(true)
     {
+        _selector.addReadable(_basics.fd(), this);
         loop();
+        _selector.removeReadable(_basics.fd());
     }
 
     virtual ~EventLoop() {}
 
 protected:
     void loop() throw (Error) {
-        while(_window.isOpen()) {
-            auto fdMax = 0;
-            fd_set readFds, writeFds;
-            FD_ZERO(&readFds); FD_ZERO(&writeFds);
+        while (_windowOpen) {
+            _selector.animate();
 
-            auto xFd = xcb_get_file_descriptor(_basics.connection());
-            auto wFd = _window.getFd();
+            // Poll for X11 events that may not have shown up on the descriptor.
+            xevent();
 
-            // Select for read on X11
-            FD_SET(xFd, &readFds);
-            fdMax = std::max(fdMax, xFd);
-
-            // Select for read (and possibly write) on TTY
-            FD_SET(wFd, &readFds);
-            if (_window.needsFlush()) { FD_SET(wFd, &writeFds); }
-            fdMax = std::max(fdMax, wFd);
-
-            ENFORCE_SYS(TEMP_FAILURE_RETRY(
-                ::select(fdMax + 1, &readFds, &writeFds, nullptr, nullptr)) != -1, "");
-
-            // Handle all.
-
-            if (FD_ISSET(wFd, &writeFds)) { _window.flush(); }
-
-            if (FD_ISSET(wFd, &readFds) && _window.isOpen()) { _window.read(); }
-
-            if (FD_ISSET(xFd, &readFds)) {
-                xevent();
-            }
-            else {
-                // XXX For some reason X events can be available even though
-                // xFd is not readable. This is effectively polling :(
-                xevent();
-            }
-
-            // Do the deferrals:
-
-            for (auto window : _deferrals) { window->deferral(); }
-            _deferrals.clear();
+            if (_deferral) { _window.deferral(); _deferral = false; }
         }
     }
 
@@ -213,9 +191,16 @@ protected:
 
 protected:
 
+    // I_ReadHandler overrides:
+
+    void handleRead(int fd) {
+        ASSERT(fd == _basics.fd(), "");
+        xevent();
+    }
+
     // Window::I_Observer implementation:
 
-    void sync() throw () {
+    void windowSync() throw () {
         xcb_aux_sync(_basics.connection());
 
         for (;;) {
@@ -236,8 +221,14 @@ protected:
         }
     }
 
-    void defer(Window * window) throw () {
-        _deferrals.insert(window);
+    void windowDefer(Window * window) throw () {
+        ASSERT(window == &_window, "");
+        _deferral = true;
+    }
+
+    void windowExited(Window * window, int UNUSED(exitCode)) throw () {
+        ASSERT(window == &_window, "");
+        _windowOpen = false;
     }
 };
 

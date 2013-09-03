@@ -28,7 +28,6 @@ public:
                                     uint8_t code) throw () = 0;
 
     protected:
-        I_Observer() {}
         ~I_Observer() {}
     };
 

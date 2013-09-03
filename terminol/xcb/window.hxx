@@ -3,15 +3,13 @@
 #ifndef XCB__WINDOW__HXX
 #define XCB__WINDOW__HXX
 
-#define NEW_TERMINAL 1
-
 #include "terminol/xcb/basics.hxx"
 #include "terminol/xcb/color_set.hxx"
 #include "terminol/xcb/font_manager.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/key_map.hxx"
-#include "terminol/common/tty.hxx"
 #include "terminol/common/terminal.hxx"
+#include "terminol/support/selector.hxx"
 #include "terminol/support/pattern.hxx"
 
 #include <xcb/xcb.h>
@@ -27,8 +25,9 @@ class Window :
 public:
     class I_Observer {
     public:
-        virtual void sync() throw () = 0;
-        virtual void defer(Window * window) throw () = 0;
+        virtual void windowSync() throw () = 0;
+        virtual void windowDefer(Window * window) throw () = 0;
+        virtual void windowExited(Window * window, int exitCode) throw () = 0;
 
     protected:
         I_Observer() {}
@@ -47,7 +46,6 @@ private:
     xcb_gcontext_t    _gc;
     uint32_t          _width;
     uint32_t          _height;
-    Tty             * _tty;
     Terminal        * _terminal;
     bool              _open;
     HPos              _pointerPos;
@@ -87,6 +85,7 @@ public:
 
     Window(I_Observer         & observer,
            const Config       & config,
+           I_Selector         & selector,
            I_Deduper          & deduper,
            Basics             & basics,
            const ColorSet     & colorSet,
@@ -96,17 +95,6 @@ public:
     virtual ~Window();
 
     xcb_window_t getWindowId() { return _window; }
-
-    // We handle these:
-
-    bool isOpen() const { return _open; }
-    int  getFd() { ASSERT(_open, ""); return _tty->getFd(); }
-
-    // The following calls are forwarded to the Terminal:
-
-    void read();
-    bool needsFlush() const;
-    void flush();
 
     // Events:
 
