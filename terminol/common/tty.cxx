@@ -48,8 +48,7 @@ Tty::Tty(I_Observer        & observer,
     _config(config),
     _pid(0),
     _fd(-1),
-    _dumpWrites(false),
-    _writeBuffer()
+    _dumpWrites(false)
 {
     openPty(rows, cols, windowId, command);
 }
@@ -74,55 +73,33 @@ void Tty::write(const uint8_t * data, size_t size) {
     ASSERT(_fd != -1, "");
     ASSERT(size != 0, "");
 
-    if (_writeBuffer.empty()) {
-        // Try to write it now, buffer what we can't write.
-        while (size != 0) {
-            auto rval =
-                TEMP_FAILURE_RETRY(::write(_fd, static_cast<const void *>(data), size));
+    while (size != 0) {
+        auto rval =
+            TEMP_FAILURE_RETRY(::write(_fd, static_cast<const void *>(data), size));
 
-            if (rval == -1) {
-                switch (errno) {
-                    case EAGAIN:
-                        _writeBuffer.resize(size);
-                        std::copy(data, data + size, &_writeBuffer.front());
-                        _selector.addWriteable(_fd, this);
-                        goto done;
-                    case EIO:
-                        _dumpWrites = true;
-                        goto done;
-                    default:
-                        FATAL("Unexpected error: " << errno << " " << ::strerror(errno));
-                }
-            }
-            else if (rval == 0) {
-                FATAL("Zero length write.");
-            }
-            else {
-                data += rval;
-                size -= rval;
+        if (rval == -1) {
+            switch (errno) {
+                case EAGAIN:
+                    WARNING("Dropping: " << size << " bytes");
+                    goto done;
+                case EIO:
+                    _dumpWrites = true;
+                    goto done;
+                default:
+                    FATAL("Unexpected error: " << errno << " " << ::strerror(errno));
             }
         }
+        else if (rval == 0) {
+            FATAL("Zero length write.");
+        }
+        else {
+            data += rval;
+            size -= rval;
+        }
+    }
 
 done:                   // FIXME write a utility function for read()/write()
-        ;
-    }
-    else {
-        // Just copy it to the queue.
-        // We are assuming the write() would still block.
-        auto oldSize = _writeBuffer.size();
-        _writeBuffer.resize(oldSize + size);
-        std::copy(data, data + size, &_writeBuffer[oldSize]);
-    }
-}
-
-void Tty::flood() {
-    if (_fd != -1 && _writeBuffer.empty() && !_dumpWrites) {
-        // 64KB seems to flood it and cause an EAGAIN.
-        _writeBuffer.resize(3 * 64 * 1024);
-        std::fill(_writeBuffer.begin(), _writeBuffer.end(), '\0');
-        _writeBuffer.push_back('!');
-        _selector.addWriteable(_fd, this);
-    }
+    ;
 }
 
 bool Tty::hasSubprocess() const {
@@ -358,55 +335,4 @@ void Tty::handleRead(int fd) {
 
 done:
     _observer.ttySync();
-}
-
-// I_WriteHandler implementation:
-
-void Tty::handleWrite(int fd) {
-    // We may have been selecting for read and write, but close  the read failed.
-    if (_fd == -1) {
-        return;
-    }
-
-    ASSERT(_fd == fd, "");
-    ASSERT(!_dumpWrites, "");
-    ASSERT(!_writeBuffer.empty(), "");
-
-    size_t offset = 0;
-
-    do {
-        auto rval =
-            TEMP_FAILURE_RETRY(::write(_fd, &_writeBuffer[offset], _writeBuffer.size() - offset));
-
-        if (rval == -1) {
-            switch (errno) {
-                case EAGAIN:
-                    goto done;
-                case EIO:
-                    _dumpWrites = true;
-                    _writeBuffer.clear();
-                    _selector.removeWriteable(_fd);
-                    goto done;
-                default:
-                    FATAL("Unexpected error: " << errno << " " << ::strerror(errno));
-            }
-        }
-        else if (rval == 0) {
-            FATAL("Zero length write.");
-        }
-        else {
-            offset += rval;
-        }
-    } while (offset != _writeBuffer.size());
-
-done:
-    if (!_dumpWrites) {
-        if (offset == _writeBuffer.size()) {
-            _selector.removeWriteable(_fd);
-            _writeBuffer.clear();
-        }
-        else {
-            _writeBuffer.erase(_writeBuffer.begin(), _writeBuffer.begin() + offset);
-        }
-    }
 }

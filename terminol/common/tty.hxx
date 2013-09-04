@@ -12,7 +12,6 @@
 
 class Tty :
     protected I_ReadHandler,
-    protected I_WriteHandler,
     protected Uncopyable
 {
 public:
@@ -33,7 +32,6 @@ private:
     pid_t                  _pid;
     int                    _fd;
     bool                   _dumpWrites;
-    std::vector<uint8_t>   _writeBuffer;      // Spillover if the TTY would block.
 
 public:
     struct Error {
@@ -55,7 +53,6 @@ public:
 
     void resize(uint16_t rows, uint16_t cols);
     void write(const uint8_t * buffer, size_t size);
-    void flood();
     bool hasSubprocess() const;
     int  close();               // returns exit code
 
@@ -73,10 +70,6 @@ protected:
     // I_ReadHandler implementation:
 
     void handleRead(int fd);
-
-    // I_WriteHandler implementation:
-
-    void handleWrite(int fd);
 };
 
 #endif // COMMON__TTY__H

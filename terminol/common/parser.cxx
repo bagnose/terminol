@@ -173,9 +173,6 @@ Action lookupAction(const std::string & str) throw (ParseError) {
     else if (str == "scroll-bottom") {
         return Action::SCROLL_BOTTOM;
     }
-    else if (str == "flood-tty") {
-        return Action::FLOOD_TTY;
-    }
     else if (str == "clear-history") {
         return Action::CLEAR_HISTORY;
     }

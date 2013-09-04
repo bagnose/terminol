@@ -499,9 +499,6 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                     fixDamage(Trigger::OTHER);
                 }
                 return true;
-            case Action::FLOOD_TTY:
-                _tty.flood();
-                return true;
             case Action::CLEAR_HISTORY:
                 _priBuffer.clearHistory();
                 fixDamage(Trigger::OTHER);
