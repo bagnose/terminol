@@ -469,6 +469,7 @@ std::string makeHelp(const std::string & progName) {
         << "  --version" << std::endl
         << "  --font-name=NAME" << std::endl
         << "  --font-size=SIZE" << std::endl
+        << "  --color-scheme=NAME" << std::endl
         << "  --term=NAME" << std::endl
         << "  --trace|--no-trace" << std::endl
         << "  --sync|--no-sync" << std::endl
@@ -491,6 +492,7 @@ int main(int argc, char * argv[]) {
     cmdLine.add(new StringHandler(config.termName),   '\0', "term-name");
     cmdLine.add(new StringHandler(config.socketPath), '\0', "socket");
     cmdLine.add(new BoolHandler(config.serverFork),   '\0', "fork");
+    cmdLine.add(new_MiscHandler([&](const std::string & name) { config.setColorScheme(name); }), '\0', "color-scheme");
 
     try {
         cmdLine.parse(argc, const_cast<const char **>(argv));

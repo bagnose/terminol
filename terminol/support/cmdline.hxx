@@ -262,6 +262,6 @@ public:
     }
 };
 
-template <class F> class MiscHandler<F> * newMiscHandler(const F & f) {
+template <class F> class MiscHandler<F> * new_MiscHandler(const F & f) {
     return new MiscHandler<F>(f);
 }

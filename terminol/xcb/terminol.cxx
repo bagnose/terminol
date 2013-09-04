@@ -277,7 +277,7 @@ int main(int argc, char * argv[]) {
     cmdLine.add(new BoolHandler(config.traceTty),   '\0', "trace");
     cmdLine.add(new BoolHandler(config.syncTty),    '\0', "sync");
     cmdLine.add(new StringHandler(config.termName), '\0', "term-name");
-    cmdLine.add(newMiscHandler([&](const std::string & name) { config.setColorScheme(name); }), '\0', "color-scheme");
+    cmdLine.add(new_MiscHandler([&](const std::string & name) { config.setColorScheme(name); }), '\0', "color-scheme");
 
     try {
         auto command = cmdLine.parse(argc, const_cast<const char **>(argv));
