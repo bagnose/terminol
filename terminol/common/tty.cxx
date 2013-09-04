@@ -119,9 +119,18 @@ void Tty::openPty(uint16_t            rows,
         // Create a new process group.
         ENFORCE_SYS(::setsid() != -1, "");
         // Hook stdin/out/err up to the PTY.
+#if 0
         ENFORCE_SYS(::dup2(slave, STDIN_FILENO)  != -1, "");
         ENFORCE_SYS(::dup2(slave, STDOUT_FILENO) != -1, "");
         ENFORCE_SYS(::dup2(slave, STDERR_FILENO) != -1, "");
+#else
+        ENFORCE_SYS(::close(STDIN_FILENO) != -1, "");
+        ENFORCE_SYS(::fcntl(slave, F_DUPFD, STDIN_FILENO) != -1, "");
+        ENFORCE_SYS(::close(STDOUT_FILENO) != -1, "");
+        ENFORCE_SYS(::fcntl(slave, F_DUPFD, STDOUT_FILENO) != -1, "");
+        ENFORCE_SYS(::close(STDERR_FILENO) != -1, "");
+        ENFORCE_SYS(::fcntl(slave, F_DUPFD, STDERR_FILENO) != -1, "");
+#endif
         ENFORCE_SYS(::ioctl(slave, TIOCSCTTY, nullptr) != -1, "");
         ENFORCE_SYS(::close(slave) != -1, "");
         ENFORCE_SYS(::close(master) != -1, "");
