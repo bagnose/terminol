@@ -115,6 +115,16 @@ done:                   // FIXME write a utility function for read()/write()
     }
 }
 
+void Tty::flood() {
+    if (_fd != -1 && _writeBuffer.empty() && !_dumpWrites) {
+        // 64KB seems to flood it and cause an EAGAIN.
+        _writeBuffer.resize(3 * 64 * 1024);
+        std::fill(_writeBuffer.begin(), _writeBuffer.end(), '\0');
+        _writeBuffer.push_back('!');
+        _selector.addWriteable(_fd, this);
+    }
+}
+
 bool Tty::hasSubprocess() const {
     std::ostringstream ost;
     ost << "/proc/" << _pid << "/stat";

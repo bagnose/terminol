@@ -39,7 +39,6 @@ std::ostream & operator << (std::ostream & ost, const KeyCombo & keyCombo);
 //
 
 enum class Action {
-    CLEAR_HISTORY,
     LOCAL_FONT_RESET,
     LOCAL_FONT_SMALLER,
     LOCAL_FONT_BIGGER,
@@ -54,14 +53,16 @@ enum class Action {
     SCROLL_DOWN_ONE_PAGE,
     SCROLL_TOP,
     SCROLL_BOTTOM,
-    DEBUG_MODES,
-    DEBUG_STATS,
-    DEBUG_STATS2,
+    FLOOD_TTY,
+    CLEAR_HISTORY,
     DEBUG_GLOBAL_TAGS,
     DEBUG_LOCAL_TAGS,
     DEBUG_HISTORY,
     DEBUG_ACTIVE,
-    DEBUG_SELECTION
+    DEBUG_MODES,
+    DEBUG_SELECTION,
+    DEBUG_STATS,
+    DEBUG_STATS2
 };
 
 //std::ostream & operator << (std::ostream & ost, Action action);

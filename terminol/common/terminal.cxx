@@ -441,10 +441,6 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
         auto action = iter->second;
 
         switch (action) {
-            case Action::CLEAR_HISTORY:
-                _priBuffer.clearHistory();
-                fixDamage(Trigger::OTHER);
-                return true;
             case Action::LOCAL_FONT_RESET:
                 _observer.terminalResizeLocalFont(0);
                 return true;
@@ -503,12 +499,34 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                     fixDamage(Trigger::OTHER);
                 }
                 return true;
+            case Action::FLOOD_TTY:
+                _tty.flood();
+                return true;
+            case Action::CLEAR_HISTORY:
+                _priBuffer.clearHistory();
+                fixDamage(Trigger::OTHER);
+                return true;
+            case Action::DEBUG_GLOBAL_TAGS:
+                _deduper.dump(std::cerr);
+                return true;
+            case Action::DEBUG_LOCAL_TAGS:
+                _buffer->dumpTags(std::cerr);
+                return true;
+            case Action::DEBUG_HISTORY:
+                _buffer->dumpHistory(std::cerr);
+                return true;
+            case Action::DEBUG_ACTIVE:
+                _buffer->dumpActive(std::cerr);
+                return true;
             case Action::DEBUG_MODES: {
                 std::ostringstream ost;
                 ost << _modes;
                 _observer.terminalSetWindowTitle(ost.str());
                 return true;
             }
+            case Action::DEBUG_SELECTION:
+                _buffer->dumpSelection(std::cerr);
+                return true;
             case Action::DEBUG_STATS: {
                 size_t bytes1, bytes2;
                 _deduper.getStats2(bytes1, bytes2);
@@ -536,21 +554,6 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                 _observer.terminalSetWindowTitle(ost.str());
                 return true;
             }
-            case Action::DEBUG_GLOBAL_TAGS:
-                _deduper.dump(std::cerr);
-                return true;
-            case Action::DEBUG_LOCAL_TAGS:
-                _buffer->dumpTags(std::cerr);
-                return true;
-            case Action::DEBUG_HISTORY:
-                _buffer->dumpHistory(std::cerr);
-                return true;
-            case Action::DEBUG_ACTIVE:
-                _buffer->dumpActive(std::cerr);
-                return true;
-            case Action::DEBUG_SELECTION:
-                _buffer->dumpSelection(std::cerr);
-                return true;
         }
     }
 

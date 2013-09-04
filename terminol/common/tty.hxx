@@ -55,6 +55,7 @@ public:
 
     void resize(uint16_t rows, uint16_t cols);
     void write(const uint8_t * buffer, size_t size);
+    void flood();
     bool hasSubprocess() const;
     int  close();               // returns exit code
 

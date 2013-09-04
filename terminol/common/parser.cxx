@@ -131,10 +131,7 @@ void handleSet(const std::string & key,
 }
 
 Action lookupAction(const std::string & str) throw (ParseError) {
-    if (str == "clear-history") {
-        return Action::CLEAR_HISTORY;
-    }
-    else if (str == "local-font-reset") {
+    if (str == "local-font-reset") {
         return Action::LOCAL_FONT_RESET;
     }
     else if (str == "local-font-smaller") {
@@ -176,14 +173,11 @@ Action lookupAction(const std::string & str) throw (ParseError) {
     else if (str == "scroll-bottom") {
         return Action::SCROLL_BOTTOM;
     }
-    else if (str == "debug-modes") {
-        return Action::DEBUG_MODES;
+    else if (str == "flood-tty") {
+        return Action::FLOOD_TTY;
     }
-    else if (str == "debug-stats") {
-        return Action::DEBUG_STATS;
-    }
-    else if (str == "debug-stats2") {
-        return Action::DEBUG_STATS2;
+    else if (str == "clear-history") {
+        return Action::CLEAR_HISTORY;
     }
     else if (str == "debug-global-tags") {
         return Action::DEBUG_GLOBAL_TAGS;
@@ -197,8 +191,17 @@ Action lookupAction(const std::string & str) throw (ParseError) {
     else if (str == "debug-active") {
         return Action::DEBUG_ACTIVE;
     }
+    else if (str == "debug-modes") {
+        return Action::DEBUG_MODES;
+    }
     else if (str == "debug-selection") {
         return Action::DEBUG_SELECTION;
+    }
+    else if (str == "debug-stats") {
+        return Action::DEBUG_STATS;
+    }
+    else if (str == "debug-stats2") {
+        return Action::DEBUG_STATS2;
     }
     else {
         throw ParseError("Bad action: '" + str + "'");
