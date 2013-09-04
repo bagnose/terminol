@@ -91,8 +91,8 @@ You may wish to create a config file like the following:
     bindsym ctrl+shift+underscore   global-font-smaller
     bindsym ctrl+shift+plus         global-font-bigger
     
-    bindsym ctrl+shift+c            copy-to-clipboard
-    bindsym ctrl+shift+v            paste-from-clipboard
+    bindsym ctrl+shift+C            copy-to-clipboard
+    bindsym ctrl+shift+V            paste-from-clipboard
     
     bindsym shift+Up                scroll-up-one-line
     bindsym shift+Down              scroll-down-one-line
@@ -101,14 +101,14 @@ You may wish to create a config file like the following:
     bindsym shift+Home              scroll-top
     bindsym shift+End               scroll-bottom
     
-    bindsym F4                      clear-history
+    bindsym shift+F4                clear-history
     
-    bindsym F5                      debug-global-tags
-    bindsym F6                      debug-local-tags
-    bindsym F7                      debug-history
-    bindsym F8                      debug-active
+    bindsym shift+F5                debug-global-tags
+    bindsym shift+F6                debug-local-tags
+    bindsym shift+F7                debug-history
+    bindsym shift+F8                debug-active
     
-    bindsym F9                      debug-modes
-    bindsym F10                     debug-selection
-    bindsym F11                     debug-stats
-    bindsym F12                     debug-stats2
+    bindsym shift+F9                debug-modes
+    bindsym shift+F10               debug-selection
+    bindsym shift+F11               debug-stats
+    bindsym shift+F12               debug-stats2
