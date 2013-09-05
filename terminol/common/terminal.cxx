@@ -200,7 +200,7 @@ select:
                 _buffer->markSelection(hpos);
             }
             else {
-                _buffer->expandSelection(hpos);
+                _buffer->expandSelection(hpos, count);
             }
 
             fixDamage(Trigger::OTHER);
@@ -209,7 +209,7 @@ select:
             _observer.terminalPaste(false);
         }
         else if (button == Button::RIGHT) {
-            _buffer->adjustSelection(hpos);
+            _buffer->delimitSelection(hpos, true);
             fixDamage(Trigger::OTHER);
         }
         _press = Press::SELECT;
@@ -265,8 +265,8 @@ void Terminal::pointerMotion(ModifierSet modifiers, bool within, HPos hpos) {
         }
     }
     else if (_press == Press::SELECT) {
-        if (_button == Button::LEFT) {
-            _buffer->delimitSelection(hpos);
+        if (_button == Button::LEFT || _button == Button::RIGHT) {
+            _buffer->delimitSelection(hpos, false);
             fixDamage(Trigger::OTHER);
         }
     }

@@ -70,6 +70,7 @@ class Buffer {
 
         HAPos() : apos(), hand(Hand::LEFT) {}
         HAPos(HPos hpos, uint32_t offset) : apos(hpos.pos, offset), hand(hpos.hand) {}
+        HAPos(int32_t row_, int16_t col_) : apos(row_, col_), hand(Hand::LEFT) {}
     };
 
     friend bool operator == (const HAPos & lhs, const HAPos & rhs) {
@@ -78,6 +79,13 @@ class Buffer {
 
     friend bool operator != (const HAPos & lhs, const HAPos & rhs) {
         return !(lhs == rhs);
+    }
+
+    friend bool operator <  (const HAPos & lhs, const HAPos & rhs) {
+        return
+            (lhs.apos.row <  rhs.apos.row) ||
+            (lhs.apos.row == rhs.apos.row && lhs.apos.col <  rhs.apos.col) ||
+            (lhs.apos.row == rhs.apos.row && lhs.apos.col == rhs.apos.col && lhs.hand < rhs.hand);
     }
 
     // Historical-Line
@@ -226,20 +234,45 @@ public:
     uint32_t getBar() const { return _history.size() - _scrollOffset; }
     uint32_t getScrollOffset() const { return _scrollOffset; }
     bool     getBarDamage() const { return _barDamage; }
-    void     expandSelection(HPos UNUSED(pos)) {}
-    void     adjustSelection(HPos UNUSED(pos)) {}
 
     void markSelection(HPos hpos) {
         damageSelection();
         _selectMark = _selectDelim = HAPos(hpos, _scrollOffset);
-        damageSelection();
-        //PRINT(hapos.apos.row << "x" << hapos.apos.col);
     }
 
-    void delimitSelection(HPos hpos) {
+    void delimitSelection(HPos hpos, bool fresh) {
         damageSelection();
-        _selectDelim = HAPos(hpos, _scrollOffset);
+
+        HAPos hapos(hpos, _scrollOffset);
+
+        if (fresh) {
+            if (_selectDelim < _selectMark) {
+                std::swap(_selectMark, _selectDelim);
+            }
+
+            auto deltaRow = _selectDelim.apos.row - _selectMark.apos.row;
+            auto deltaCol = _selectDelim.apos.col - _selectMark.apos.col;
+
+            auto row = _selectMark.apos.row + deltaRow / 2;
+            auto col = _selectMark.apos.col + deltaCol / 2;
+
+            if (deltaRow % 2) { col += getCols() / 2; }
+
+            if (col < 0)          { col += getCols(); --row; }
+            if (col >= getCols()) { col -= getCols(); ++row; }
+
+            HAPos centre(row, col);
+
+            if (hapos < centre) {
+                std::swap(_selectMark, _selectDelim);
+            }
+        }
+
+        _selectDelim = hapos;
         damageSelection();
+    }
+
+    void expandSelection(HPos UNUSED(pos), int UNUSED(level)) {
     }
 
     void clearSelection() {
@@ -1294,12 +1327,7 @@ protected:
             return false;
         }
 
-        if ((b.apos.row >  e.apos.row) ||
-            (b.apos.row == e.apos.row && b.apos.col >  e.apos.col) ||
-            (b.apos.row == e.apos.row && b.apos.col == e.apos.col && b.hand == Hand::RIGHT))
-        {
-            std::swap(b, e);
-        }
+        if (e < b) { std::swap(b, e); }
 
         if (b.hand == Hand::LEFT || b.apos.col >= _cols - 1) {
             begin = b.apos;
