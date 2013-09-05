@@ -9,6 +9,7 @@
 #include <algorithm>
 
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/select.h>
 #include <sys/epoll.h>
 
@@ -112,6 +113,10 @@ public:
     EPollSelector() {
         _fd = ::epoll_create1(0);
         ENFORCE_SYS(_fd != -1, "");
+        int flags;
+        ENFORCE_SYS((flags = ::fcntl(_fd, F_GETFD)) != -1, "");
+        flags |= FD_CLOEXEC;
+        ENFORCE_SYS(::fcntl(_fd, F_SETFD, flags) != -1, "");
     }
 
     virtual ~EPollSelector() {
