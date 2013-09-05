@@ -101,7 +101,6 @@ You may wish to create a config file like the following:
     bindsym shift+Home              scroll-top
     bindsym shift+End               scroll-bottom
     
-    bindsym shift+F3                flood-tty
     bindsym shift+F4                clear-history
     
     bindsym shift+F5                debug-global-tags
