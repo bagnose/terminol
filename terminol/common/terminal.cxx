@@ -114,8 +114,8 @@ Terminal::~Terminal() {
 }
 
 void Terminal::resize(int16_t rows, int16_t cols) {
-    ASSERT(!_dispatch, "");
-    // Special exception, resizes can occur during dispatch.
+    // Special exception, resizes can occur during dispatch to support
+    // font size changes.
 
     ASSERT(rows > 0 && cols > 0, "");
 
@@ -125,14 +125,9 @@ void Terminal::resize(int16_t rows, int16_t cols) {
 }
 
 void Terminal::redraw() {
-    ASSERT(!_dispatch, "");
-    _dispatch = true;
-
     Region damage;
     bool   scrollbar;
     draw(Trigger::CLIENT, damage, scrollbar);
-
-    _dispatch = false;
 }
 
 bool Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
