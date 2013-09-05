@@ -51,9 +51,9 @@ You may wish to create a config file like the following:
     #   ${XDG_CONFIG_DIRS...}/terminol/config
     #   ${HOME}/.config/terminol/config
     
-    set serverFork true
+    set server-fork true
     
-    set colorScheme solarized-dark
+    set color-scheme solarized-dark
     # other options:
     #   linux
     #   rxvt
@@ -65,7 +65,7 @@ You may wish to create a config file like the following:
     #   solarized-light
     
     set font-name "Meslo LG M"
-    set font-size 11
+    set font-size 14
     
     # term-name
     # scroll-with-history, scroll-on-tty-output, scroll-on-tty-key-press
