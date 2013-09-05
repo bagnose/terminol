@@ -23,7 +23,7 @@
 #include <sys/select.h>
 
 class EventLoop :
-    protected I_ReadHandler,
+    protected I_Selector::I_ReadHandler,
     protected Window::I_Observer,
     protected Uncopyable
 {
@@ -189,11 +189,9 @@ protected:
         }
     }
 
-protected:
+    // I_Selector::I_ReadHandler implementation:
 
-    // I_ReadHandler overrides:
-
-    void handleRead(int fd) {
+    void handleRead(int fd) throw () {
         ASSERT(fd == _basics.fd(), "");
         xevent();
     }

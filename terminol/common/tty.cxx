@@ -301,9 +301,9 @@ int Tty::waitReap() {
     return WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
 }
 
-// I_ReadHandler implementation:
+// I_Selector::I_ReadHandler implementation:
 
-void Tty::handleRead(int fd) {
+void Tty::handleRead(int fd) throw () {
     ASSERT(_fd == fd, "");
 
     Timer   timer(1000 / _config.framesPerSecond);

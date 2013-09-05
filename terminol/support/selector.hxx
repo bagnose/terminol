@@ -13,21 +13,17 @@
 #include <sys/select.h>
 #include <sys/epoll.h>
 
-class I_ReadHandler {
-public:
-    virtual void handleRead(int fd) = 0;
-
-protected:
-    I_ReadHandler() {}
-    ~I_ReadHandler() {}
-};
-
-//
-//
-//
-
 class I_Selector {
 public:
+    class I_ReadHandler {
+    public:
+        virtual void handleRead(int fd) throw () = 0;
+
+    protected:
+        I_ReadHandler() {}
+        ~I_ReadHandler() {}
+    };
+
     virtual void addReadable(int fd, I_ReadHandler * handler) = 0;
     virtual void removeReadable(int fd) = 0;
 
@@ -83,7 +79,7 @@ public:
         }
     }
 
-    // I_Selector overrides:
+    // I_Selector implementation:
 
     void addReadable(int fd, I_ReadHandler * handler) {
         //PRINT("Adding readable: " << fd);

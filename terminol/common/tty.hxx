@@ -11,7 +11,7 @@
 #include <string>
 
 class Tty :
-    protected I_ReadHandler,
+    protected I_Selector::I_ReadHandler,
     protected Uncopyable
 {
 public:
@@ -67,9 +67,9 @@ protected:
     bool pollReap(int msec, int & exitCode);
     int  waitReap();
 
-    // I_ReadHandler implementation:
+    // I_Selector::I_ReadHandler implementation:
 
-    void handleRead(int fd);
+    void handleRead(int fd) throw ();
 };
 
 #endif // COMMON__TTY__H

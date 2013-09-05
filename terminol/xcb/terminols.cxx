@@ -42,7 +42,7 @@ protected:
 // Unix domain sockets.
 //
 
-class Server : protected I_ReadHandler {
+class Server : protected I_Selector::I_ReadHandler {
     I_Selector   & _selector;
     I_Creator    & _creator;
     const Config & _config;
@@ -117,9 +117,9 @@ protected:
         _fd = -1;
     }
 
-    // I_ReadHandler overrides:
+    // I_Selector::I_ReadHandler implementation:
 
-    void handleRead(int fd) {
+    void handleRead(int fd) throw () {
         ASSERT(_fd == fd, "");
 
         uint8_t buffer[1024];
@@ -148,7 +148,7 @@ protected:
 //
 
 class EventLoop :
-    protected I_ReadHandler,
+    protected I_Selector::I_ReadHandler,
     protected Window::I_Observer,
     protected I_Creator,
     protected Uncopyable
@@ -377,9 +377,9 @@ protected:
         }
     }
 
-    // I_ReadHandler overrides:
+    // I_Selector::I_ReadHandler implementation:
 
-    void handleRead(int fd) {
+    void handleRead(int fd) throw () {
         ASSERT(fd == _basics.fd(), "");
         xevent();
     }
