@@ -78,10 +78,10 @@ public:
     xcb_atom_t              atomWmProtocols()      { return _atomWmProtocols; }
     xcb_atom_t              atomWmDeleteWindow()   { return _atomWmDeleteWindow; }
 
-    bool                    getKeySym(xcb_keycode_t  keyCode,
-                                      uint8_t        state,
-                                      xcb_keysym_t & keySym,
-                                      ModifierSet  & modifiers) const;
+    bool                    getKeySym(xcb_keycode_t   keyCode,
+                                      uint8_t         state,
+                                      xcb_keysym_t  & keySym,
+                                      ModifierSet   & modifiers) const;
 
     ModifierSet             convertState(uint8_t state) const;
 

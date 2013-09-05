@@ -102,8 +102,8 @@ public:
 //
 
 class EPollSelector : public I_Selector {
-    int                             _fd;
-    std::map<int, I_ReadHandler *>  _regs;
+    int                            _fd;
+    std::map<int, I_ReadHandler *> _regs;
 
 public:
     EPollSelector() {

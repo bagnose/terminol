@@ -48,7 +48,7 @@ enum class TabDir { FORWARD, BACKWARD };
 
 class Buffer {
     struct APos {
-        int32_t row;
+        int32_t row; // >= 0 --> _active, < 0 --> _history
         int16_t col;
 
         APos() : row(0), col(0) {}
@@ -285,12 +285,6 @@ public:
 
         if (normaliseSelection(begin, end)) {
             for (auto i = begin; i.row <= end.row; ++i.row, i.col = 0) {
-                /*
-                if (i.row != begin.row) {
-                    text.push_back('\n');
-                }
-                */
-
                 const std::vector<Cell> * cellsPtr;
                 uint32_t                  offset;
                 int16_t                   wrap;
@@ -465,20 +459,20 @@ public:
             insertCells(1);
         }
 
-        auto style = _cursor.style;
+        auto & line = _active[_cursor.pos.row];
+
         if (cs->isSpecial()) {
+            auto style = _cursor.style;
             style.attrs.unset(Attr::BOLD);
             style.attrs.unset(Attr::ITALIC);
-        }
-        auto & line = _active[_cursor.pos.row];
-        line.cells[_cursor.pos.col] = Cell::utf8(seq, style);
-        if (autoWrap) {
-            line.wrap = std::max<int16_t>(line.wrap, _cursor.pos.col + 1);
+            line.cells[_cursor.pos.col] = Cell::utf8(seq, style);
         }
         else {
-            line.wrap = 0;
-            line.cont = false;
+            auto & style = _cursor.style;
+            line.cells[_cursor.pos.col] = Cell::utf8(seq, style);
         }
+
+        line.wrap = std::max<int16_t>(line.wrap, _cursor.pos.col + 1);
 
         if (_cursor.pos.col == getCols() - 1) {
             _cursor.wrapNext = true;

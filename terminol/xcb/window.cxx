@@ -1083,7 +1083,7 @@ void Window::terminalCopy(const std::string & text, bool clipboard) throw () {
 void Window::terminalPaste(bool clipboard) throw () {
     //PRINT("Copy clipboard: " << clipboard);
 
-    xcb_atom_t atom = clipboard ? _basics.atomClipboard() : _basics.atomPrimary();
+    auto atom = clipboard ? _basics.atomClipboard() : _basics.atomPrimary();
 
     xcb_convert_selection(_basics.connection(),
                           _window,
@@ -1157,7 +1157,6 @@ void Window::terminalResizeBuffer(int16_t rows, int16_t cols) throw () {
 
 bool Window::terminalFixDamageBegin() throw () {
     if (!_deferred && _mapped) {
-        ASSERT(_mapped, "");
         ASSERT(_surface, "");
         _cr = cairo_create(_surface);
         cairo_set_line_width(_cr, 1.0);
