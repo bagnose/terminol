@@ -733,7 +733,8 @@ bool Window::xy2Pos(int x, int y, HPos & hpos) const {
     else if (x < BORDER_THICKNESS + _fontSet->getWidth() * _terminal->getCols()) {
         auto xx = x - BORDER_THICKNESS;
         hpos.pos.col = xx / _fontSet->getWidth();
-        hpos.hand = (xx / (_fontSet->getWidth() / 2)) % 2 ? Hand::RIGHT : Hand::LEFT;
+        auto remainder = xx - hpos.pos.col * _fontSet->getWidth();
+        hpos.hand = remainder < _fontSet->getWidth() / 2 ? Hand::LEFT : Hand::RIGHT;
         ASSERT(hpos.pos.col < _terminal->getCols(),
                "col is: " << hpos.pos.col << ", getCols() is: " <<
                _terminal->getCols());
