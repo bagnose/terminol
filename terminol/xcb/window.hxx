@@ -27,6 +27,7 @@ public:
     public:
         virtual void windowSync() throw () = 0;
         virtual void windowDefer(Window * window) throw () = 0;
+        virtual void windowSelected(Window * window) throw () = 0;
         virtual void windowExited(Window * window, int exitCode) throw () = 0;
 
     protected:
@@ -119,8 +120,9 @@ public:
     void selectionRequest(xcb_selection_request_event_t * event);
     void clientMessage(xcb_client_message_event_t * event);
 
-    // Deferral:
+    //
 
+    void clearSelection();
     void deferral();
 
 protected:

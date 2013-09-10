@@ -411,6 +411,15 @@ protected:
         _deferrals.insert(window);
     }
 
+    void windowSelected(Window * window) throw () {
+        for (auto & p : _windows) {
+            auto w = p.second;
+            if (w != window) {
+                w->clearSelection();
+            }
+        }
+    }
+
     void windowExited(Window * window, int UNUSED(exitCode)) throw () {
         _exits.push_back(window);
     }

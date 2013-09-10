@@ -224,6 +224,10 @@ protected:
         _deferral = true;
     }
 
+    void windowSelected(Window * UNUSED(window)) throw () {
+        // Nothing to do.
+    }
+
     void windowExited(Window * window, int UNUSED(exitCode)) throw () {
         ASSERT(window == &_window, "");
         _windowOpen = false;

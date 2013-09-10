@@ -621,6 +621,10 @@ void Window::clientMessage(xcb_client_message_event_t * event) {
     }
 }
 
+void Window::clearSelection() {
+    _terminal->clearSelection();
+}
+
 void Window::deferral() {
     ASSERT(_deferred, "");
     handleResize();
@@ -1064,6 +1068,8 @@ void Window::terminalGetDisplay(std::string & display) throw () {
 }
 
 void Window::terminalCopy(const std::string & text, Terminal::Selection selection) throw () {
+    _observer.windowSelected(this);
+
     //PRINT("Copy: '" << text << "', clipboard: " << clipboard);
 
     xcb_atom_t atom = XCB_ATOM_NONE;
