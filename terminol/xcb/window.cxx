@@ -1035,7 +1035,7 @@ void Window::handleDelete() {
         else {
             _hadDeleteRequest = true;
             _transientTitle   = true;
-            setTitle("Process is running, once more to verify...");
+            setTitle("Process is running, once more to confirm...");
         }
     }
     else {
