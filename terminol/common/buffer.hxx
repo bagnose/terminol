@@ -772,10 +772,6 @@ public:
 
             _cols = cols;
 
-            //dumpHistory(std::cerr);
-        }
-
-        if (getRows() < rows) {
             // Pull rows out of history first.
             while (getRows() < rows && !_history.empty()) {
                 unbump();
@@ -786,10 +782,25 @@ public:
                 _active.resize(rows, ALine(cols));
             }
         }
-        else if (getRows() > rows) {
-            // And push the rest into history.
-            while (getRows() > rows) {
-                bump();
+        else {
+            if (getRows() < rows) {
+                // Pull rows out of history first.
+                while (getRows() < rows && !_history.empty()) {
+                    ++_cursor.pos.row;
+                    unbump();
+                }
+
+                // Add blank lines to get the rest.
+                if (getRows() < rows) {
+                    _active.resize(rows, ALine(cols));
+                }
+            }
+            else if (getRows() > rows) {
+                // Push excess rows into history.
+                while (getRows() > rows) {
+                    if (_cursor.pos.row > 0) { --_cursor.pos.row; }
+                    bump();
+                }
             }
         }
 
