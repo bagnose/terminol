@@ -54,9 +54,44 @@ Tty::Tty(I_Observer        & observer,
 }
 
 Tty::~Tty() {
-    if (_fd != -1) {
-        close();
+    close();
+}
+
+void Tty::tryReap() {
+    if (_pid != 0) {
+        int exitCode;
+        if (pollReap(0, exitCode)) {
+            PRINT("tryReap() - succeeded, exit code: " << exitCode);
+            _observer.ttyExited(exitCode);
+        }
+        else {
+            PRINT("tryReap() - failed");
+        }
     }
+    else {
+        PRINT("tryReap() - no pid");
+    }
+}
+
+void Tty::killReap() {
+    int exitCode;
+
+    // Give the child a chance to exit nicely.
+    ::kill(_pid, SIGCONT);
+    ::kill(_pid, SIGPIPE);
+    if (pollReap(100, exitCode)) { goto done; }
+    ::kill(_pid, SIGINT);
+    if (pollReap(100, exitCode)) { goto done; }
+    ::kill(_pid, SIGTERM);
+    if (pollReap(100, exitCode)) { goto done; }
+    ::kill(_pid, SIGQUIT);
+    if (pollReap(100, exitCode)) { goto done; }
+    // Too slow - knock it on the head.
+    ::kill(_pid, SIGKILL);
+    exitCode = waitReap();
+
+done:
+    _observer.ttyExited(exitCode);
 }
 
 void Tty::resize(uint16_t rows, uint16_t cols) {
@@ -119,38 +154,13 @@ bool Tty::hasSubprocess() const {
     }
 }
 
-int Tty::close() {
+void Tty::close() {
     ASSERT(_fd != -1, "");
 
     _selector.removeReadable(_fd);
 
     ENFORCE_SYS(::close(_fd) != -1, "::close() failed");
     _fd = -1;
-
-    int exitCode;
-
-    // Maybe the child has already died.
-    if (pollReap(0, exitCode)) { return exitCode; }
-
-    ::kill(_pid, SIGCONT);
-    ::kill(_pid, SIGPIPE);
-
-    // Give the child a chance to exit nicely.
-    if (pollReap(100, exitCode)) { return exitCode; }
-    PRINT("Sending SIGINT.");
-    ::kill(_pid, SIGINT);
-    if (pollReap(100, exitCode)) { return exitCode; }
-    PRINT("Sending SIGTERM.");
-    ::kill(_pid, SIGTERM);
-    if (pollReap(100, exitCode)) { return exitCode; }
-    PRINT("Sending SIGQUIT.");
-    ::kill(_pid, SIGQUIT);
-    if (pollReap(100, exitCode)) { return exitCode; }
-    PRINT("Sending SIGKILL.");
-
-    // Too slow - knock it on the head.
-    ::kill(_pid, SIGKILL);
-    return waitReap();
 }
 
 void Tty::openPty(uint16_t            rows,
@@ -318,7 +328,6 @@ void Tty::handleRead(int fd) throw () {
                 case EAGAIN:
                     goto done;
                 case EIO:
-                    _observer.ttyExited(close());
                     goto done;
                 default:
                     FATAL("Unexpected error: " << errno << " " << ::strerror(errno));

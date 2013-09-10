@@ -133,12 +133,13 @@ public:
 
     void     paste(const uint8_t * data, size_t size);
 
+    void     tryReap();
+    void     killReap();
     void     clearSelection();
 
     void     focusChange(bool focused);
 
     bool     hasSubprocess() const;
-    int      close();
 
 protected:
     enum class Trigger { TTY, FOCUS, CLIENT, OTHER };

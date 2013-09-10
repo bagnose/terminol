@@ -51,12 +51,15 @@ public:
 
     virtual ~Tty();
 
+    void tryReap();
+    void killReap();
     void resize(uint16_t rows, uint16_t cols);
     void write(const uint8_t * buffer, size_t size);
     bool hasSubprocess() const;
-    int  close();               // returns exit code
 
 protected:
+    void close();
+
     void openPty(uint16_t            rows,
                  uint16_t            cols,
                  const std::string & windowId,

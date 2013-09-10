@@ -122,6 +122,7 @@ public:
 
     //
 
+    void tryReap();
     void clearSelection();
     void deferral();
 

@@ -9,6 +9,7 @@
 #include "terminol/common/parser.hxx"
 #include "terminol/common/key_map.hxx"
 #include "terminol/support/selector.hxx"
+#include "terminol/support/pipe.hxx"
 #include "terminol/support/debug.hxx"
 #include "terminol/support/pattern.hxx"
 #include "terminol/support/cmdline.hxx"
@@ -155,6 +156,7 @@ class EventLoop :
 {
     const Config                     & _config;
     Selector                           _selector;
+    Pipe                               _pipe;
     Server                             _server;         // FIXME what order? socket then X, or other way around?
     Deduper                            _deduper;
     Basics                             _basics;
@@ -164,6 +166,8 @@ class EventLoop :
     std::set<Window *>                 _deferrals;
     std::vector<Window *>              _exits;
     bool                               _finished;
+
+    static EventLoop                  * _singleton;
 
 public:
     struct Error {
@@ -175,6 +179,7 @@ public:
         throw (Server::Error, Basics::Error, FontSet::Error, Error) :
         _config(config),
         _selector(),
+        _pipe(),
         _server(_selector, *this, config),
         _deduper(),
         _basics(),
@@ -185,15 +190,16 @@ public:
         _exits(),
         _finished(false)
     {
+        ASSERT(!_singleton, "");
+        _singleton = this;
+
         if (config.serverFork) {
             if (::daemon(1, 1) == -1) {
                 throw Error("Failed to daemonise");
             }
         }
 
-        _selector.addReadable(_basics.fd(), this);
         loop();
-        _selector.removeReadable(_basics.fd());
     }
 
     virtual ~EventLoop() {
@@ -201,10 +207,30 @@ public:
             auto window = p.second;
             delete window;
         }
+
+        _singleton = nullptr;
     }
 
 protected:
+    static void staticSignalHandler(int sigNum) {
+        ASSERT(_singleton, "");
+        _singleton->signalHandler(sigNum);
+    }
+
+    void signalHandler(int sigNum) {
+        auto str = strsignal(sigNum);
+        PRINT("Caught: " << str);
+
+        // Don't worry about return value.
+        char c = 0;
+        TEMP_FAILURE_RETRY(::write(_pipe.writeFd(), &c, 1));
+    }
+
     void loop() throw (Error) {
+        auto oldHandler = signal(SIGCHLD, &staticSignalHandler);
+        _selector.addReadable(_basics.fd(), this);
+        _selector.addReadable(_pipe.readFd(), this);
+
         while (!_finished) {
             _selector.animate();
 
@@ -226,6 +252,10 @@ protected:
                 _exits.clear();
             }
         }
+
+        _selector.removeReadable(_pipe.readFd());
+        _selector.removeReadable(_basics.fd());
+        signal(SIGCHLD, oldHandler);
     }
 
     void xevent() throw (Error) {
@@ -246,6 +276,19 @@ protected:
 
         if (xcb_connection_has_error(_basics.connection())) {
             throw Error("Lost display connection.");
+        }
+    }
+
+    void death() {
+        char buf[BUFSIZ];
+        auto size = sizeof buf;
+
+        ENFORCE(TEMP_FAILURE_RETRY(::read(_pipe.readFd(),
+                                          static_cast<void *>(buf), size)) != -1, "");
+
+        for (auto & p : _windows) {
+            auto w = p.second;
+            w->tryReap();
         }
     }
 
@@ -380,8 +423,15 @@ protected:
     // I_Selector::I_ReadHandler implementation:
 
     void handleRead(int fd) throw () {
-        ASSERT(fd == _basics.fd(), "");
-        xevent();
+        if (fd == _basics.fd()) {
+            xevent();
+        }
+        else if (fd == _pipe.readFd()) {
+            death();
+        }
+        else {
+            FATAL("Bad fd.");
+        }
     }
 
     // Window::I_Observer implementation:
@@ -421,6 +471,7 @@ protected:
     }
 
     void windowExited(Window * window, int UNUSED(exitCode)) throw () {
+        ASSERT(std::find(_exits.begin(), _exits.end(), window) == _exits.end(), "");
         _exits.push_back(window);
     }
 
@@ -442,6 +493,8 @@ protected:
         _finished = true;
     }
 };
+
+EventLoop * EventLoop::_singleton = nullptr;
 
 //
 //

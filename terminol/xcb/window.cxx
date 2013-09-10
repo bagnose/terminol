@@ -515,7 +515,7 @@ void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
     ASSERT(event->window == _window, "Which window?");
     //PRINT("Destroy notify");
 
-    _terminal->close();
+    _terminal->killReap();
     _open      = false;
     _destroyed = true;      // XXX why not just zero _window
 }
@@ -619,6 +619,10 @@ void Window::clientMessage(xcb_client_message_event_t * event) {
             handleDelete();
         }
     }
+}
+
+void Window::tryReap() {
+    _terminal->tryReap();
 }
 
 void Window::clearSelection() {

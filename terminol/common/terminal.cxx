@@ -387,6 +387,14 @@ void Terminal::paste(const uint8_t * data, size_t size) {
     _dispatch = false;
 }
 
+void Terminal::tryReap() {
+    _tty.tryReap();
+}
+
+void Terminal::killReap() {
+    _tty.killReap();
+}
+
 void Terminal::clearSelection() {
     ASSERT(!_dispatch, "");
     _dispatch = true;
@@ -423,10 +431,6 @@ void Terminal::focusChange(bool focused) {
 
 bool Terminal::hasSubprocess() const {
     return _tty.hasSubprocess();
-}
-
-int Terminal::close() {
-    return _tty.close();
 }
 
 bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
