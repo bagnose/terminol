@@ -151,8 +151,8 @@ protected:
     // Terminal::I_Observer implementation:
 
     void terminalGetDisplay(std::string & display) throw ();
-    void terminalCopy(const std::string & text, bool clipboard) throw ();
-    void terminalPaste(bool clipboard) throw ();
+    void terminalCopy(const std::string & text, Terminal::Selection selection) throw ();
+    void terminalPaste(Terminal::Selection selection) throw ();
     void terminalResizeLocalFont(int delta) throw ();
     void terminalResizeGlobalFont(int delta) throw ();
     void terminalResetTitleAndIcon() throw ();

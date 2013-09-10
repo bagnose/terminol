@@ -1063,28 +1063,39 @@ void Window::terminalGetDisplay(std::string & display) throw () {
     display = _basics.display();
 }
 
-void Window::terminalCopy(const std::string & text, bool clipboard) throw () {
+void Window::terminalCopy(const std::string & text, Terminal::Selection selection) throw () {
     //PRINT("Copy: '" << text << "', clipboard: " << clipboard);
 
-    xcb_atom_t atom;
+    xcb_atom_t atom = XCB_ATOM_NONE;
 
-    if (clipboard) {
-        atom = _basics.atomClipboard();
-        _clipboardSelection = text;
-    }
-    else {
-        atom = _basics.atomPrimary();
-        _primarySelection = text;
+    switch (selection) {
+        case Terminal::Selection::CLIPBOARD:
+            atom = _basics.atomClipboard();
+            _clipboardSelection = text;
+            break;
+        case Terminal::Selection::PRIMARY:
+            atom = _basics.atomPrimary();
+            _primarySelection = text;
+            break;
     }
 
     xcb_set_selection_owner(_basics.connection(), _window, atom, XCB_CURRENT_TIME);
     xcb_flush(_basics.connection());
 }
 
-void Window::terminalPaste(bool clipboard) throw () {
+void Window::terminalPaste(Terminal::Selection selection) throw () {
     //PRINT("Copy clipboard: " << clipboard);
 
-    auto atom = clipboard ? _basics.atomClipboard() : _basics.atomPrimary();
+    xcb_atom_t atom = XCB_ATOM_NONE;
+
+    switch (selection) {
+        case Terminal::Selection::CLIPBOARD:
+            atom = _basics.atomClipboard();
+            break;
+        case Terminal::Selection::PRIMARY:
+            atom = _basics.atomPrimary();
+            break;
+    }
 
     xcb_convert_selection(_basics.connection(),
                           _window,

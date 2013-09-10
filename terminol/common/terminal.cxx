@@ -206,7 +206,7 @@ select:
             fixDamage(Trigger::OTHER);
         }
         else if (button == Button::MIDDLE) {
-            _observer.terminalPaste(false);
+            _observer.terminalPaste(Terminal::Selection::PRIMARY);
         }
         else if (button == Button::RIGHT) {
             _buffer->delimitSelection(hpos, true);
@@ -287,7 +287,7 @@ void Terminal::buttonRelease(bool UNUSED(broken), ModifierSet modifiers) {
     if (_press == Press::SELECT) {
         std::string text;
         if (_buffer->getSelectedText(text)) {
-            _observer.terminalCopy(text, false);
+            _observer.terminalCopy(text, Selection::PRIMARY);
         }
 
         if (_modes.get(Mode::MOUSE_SELECT) && _modes.get(Mode::MOUSE_PRESS_RELEASE)) {
@@ -457,12 +457,12 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
             case Action::COPY_TO_CLIPBOARD: {
                 std::string text;
                 if (_buffer->getSelectedText(text)) {
-                    _observer.terminalCopy(text, true);
+                    _observer.terminalCopy(text, Selection::CLIPBOARD);
                 }
                 return true;
             }
             case Action::PASTE_FROM_CLIPBOARD:
-                _observer.terminalPaste(true);
+                _observer.terminalPaste(Selection::CLIPBOARD);
                 return true;
             case Action::SCROLL_UP_ONE_LINE:
                 if (_buffer->scrollUpHistory(1)) {
