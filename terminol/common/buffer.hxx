@@ -70,7 +70,8 @@ class Buffer {
 
         HAPos() : apos(), hand(Hand::LEFT) {}
         HAPos(HPos hpos, uint32_t offset) : apos(hpos.pos, offset), hand(hpos.hand) {}
-        HAPos(int32_t row_, int16_t col_) : apos(row_, col_), hand(Hand::LEFT) {}
+        HAPos(int32_t row_, int16_t col_, Hand hand_ = Hand::LEFT) :
+            apos(row_, col_), hand(hand_) {}
     };
 
     friend bool operator == (const HAPos & lhs, const HAPos & rhs) {
@@ -272,7 +273,107 @@ public:
         damageSelection();
     }
 
-    void expandSelection(HPos UNUSED(pos), int UNUSED(level)) {
+    void expandSelection(HPos hpos, int level) {
+        level = level % 4;
+
+        damageSelection();
+
+        if (_selectDelim < _selectMark) {
+            std::swap(_selectMark, _selectDelim);
+        }
+
+        HAPos hapos(hpos, _scrollOffset);
+
+        if (hapos.apos.row < 0) {
+            // Historical
+
+            auto & hline = _history[_history.size() + hapos.apos.row];
+            auto   tag   = _tags[hline.index - _lostTags];
+            auto & cells = tag == I_Deduper::invalidTag() ? _pending : _deduper.lookup(tag);
+
+            auto   left  = static_cast<uint32_t>(hline.seqnum) * getCols() + hapos.apos.col;
+            auto   right = left;
+
+            if (level == 1) {
+                _selectMark = _selectDelim = hapos;
+            }
+            else if (level == 3 || cells[left].seq.lead() == ' ') {
+                _selectMark  = HAPos(hapos.apos.row - hline.seqnum, 0, Hand::LEFT);
+                _selectDelim = HAPos(hapos.apos.row + (cells.size() / getCols()) - hline.seqnum,
+                                     getCols() - 1, Hand::RIGHT);
+            }
+            else {
+                _selectMark       = hapos;
+                _selectMark.hand  = Hand::LEFT;
+
+                while (left != 0) {
+                    if (cells[left - 1].seq.lead() == ' ') { break; }
+
+                    --left;
+
+                    if (_selectMark.apos.col == 0) {
+                        --_selectMark.apos.row;
+                        _selectMark.apos.col = getCols() - 1;
+                    }
+                    else {
+                        --_selectMark.apos.col;
+                    }
+                }
+
+                _selectDelim      = hapos;
+                _selectDelim.hand = Hand::RIGHT;
+
+                while (right != cells.size() - 1) {
+                    if (cells[right + 1].seq.lead() == ' ') { break; }
+
+                    ++right;
+
+                    if (_selectDelim.apos.col == getCols() - 1) {
+                        _selectDelim.apos.col = 0;
+                        ++_selectDelim.apos.row;
+                    }
+                    else {
+                        ++_selectDelim.apos.col;
+                    }
+                }
+            }
+        }
+        else {
+            // Active
+
+            int16_t row  = hapos.apos.row;
+            int16_t col  = hapos.apos.col;
+
+            auto & aline = _active[row];
+            auto & cells = aline.cells;
+
+            if (level == 1) {
+                _selectMark = _selectDelim = hapos;
+            }
+            else if (level == 3 || cells[col].seq.lead() == ' ') {
+                _selectMark  = HAPos(hapos.apos.row, 0, Hand::LEFT);
+                _selectDelim = HAPos(hapos.apos.row, getCols() - 1, Hand::RIGHT);
+            }
+            else {
+                _selectMark      = hapos;
+                _selectMark.hand = Hand::LEFT;
+
+                while (_selectMark.apos.col != 0) {
+                    if (cells[_selectMark.apos.col - 1].seq.lead() == ' ') { break; }
+                    --_selectMark.apos.col;
+                }
+
+                _selectDelim      = hapos;
+                _selectDelim.hand = Hand::RIGHT;
+
+                while (_selectDelim.apos.col != static_cast<int16_t>(cells.size() - 1)) {
+                    if (cells[_selectDelim.apos.col + 1].seq.lead() == ' ') { break; }
+                    ++_selectDelim.apos.col;
+                }
+            }
+        }
+
+        damageSelection();
     }
 
     void clearSelection() {
