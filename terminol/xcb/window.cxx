@@ -49,7 +49,6 @@ Window::Window(I_Observer         & observer,
     _fontManager(fontManager),
     _fontSet(nullptr),
     _window(0),
-    _destroyed(false),
     _gc(0),
     _width(0),
     _height(0),
@@ -224,7 +223,7 @@ Window::~Window() {
     xcb_free_gc(_basics.connection(), _gc);
 
     // The window may have been destroyed exogenously.
-    if (!_destroyed) {
+    if (_window != 0) {
         auto cookie = xcb_destroy_window_checked(_basics.connection(), _window);
         xcb_request_failed(_basics.connection(), cookie, "Failed to destroy window");
     }
@@ -326,7 +325,6 @@ void Window::buttonRelease(xcb_button_release_event_t * event) {
 
     cursorVisibility(true);
 
-    //PRINT("Button-release: " << event->event_x << " " << event->event_y);
     if (!_open) { return; }
     if (event->detail < XCB_BUTTON_INDEX_1 ||
         event->detail > XCB_BUTTON_INDEX_5) { return; }
@@ -344,7 +342,6 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
 
     cursorVisibility(true);
 
-    //PRINT("Motion-notify: " << event->event_x << " " << event->event_y);
     if (!_open) { return; }
 
     int16_t x, y;
@@ -381,7 +378,6 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
 }
 
 void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
-    //PRINT("Map");
     ASSERT(!_mapped, "");
 
     _pixmap = xcb_generate_id(_basics.connection());
@@ -408,7 +404,6 @@ void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
 }
 
 void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
-    //PRINT("UnMap");
     ASSERT(_mapped, "");
 
     ASSERT(_surface, "");
@@ -426,19 +421,10 @@ void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     _mapped = false;
 }
 
-void Window::reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) {
-    //PRINT("Reparent");
-}
-
 void Window::expose(xcb_expose_event_t * event) {
     if (_deferred) { return; }
 
     ASSERT(event->window == _window, "Which window?");
-    /*
-    PRINT("Expose: " <<
-          event->x << " " << event->y << " " <<
-          event->width << " " << event->height);
-          */
 
     ASSERT(_mapped, "");
 
@@ -461,12 +447,6 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
     if (_width == event->width && _height == event->height) {
         return;
     }
-
-    /*
-    PRINT("Configure notify: " <<
-          event->x << " " << event->y << " " <<
-          event->width << " " << event->height);
-          */
 
     _width  = event->width;
     _height = event->height;
@@ -492,12 +472,10 @@ void Window::focusOut(xcb_focus_out_event_t * UNUSED(event)) {
 }
 
 void Window::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {
-    //PRINT("enter");
+    // XXX Drop this override?
 }
 
 void Window::leaveNotify(xcb_leave_notify_event_t * event) {
-    //PRINT("leave: " << int(event->mode));
-
     // XXX total guess that this is how we ensure we release
     // the button...
     if (event->mode == 2) {
@@ -509,6 +487,7 @@ void Window::leaveNotify(xcb_leave_notify_event_t * event) {
 }
 
 void Window::visibilityNotify(xcb_visibility_notify_event_t * UNUSED(event)) {
+    // XXX Drop this override?
 }
 
 void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
@@ -517,17 +496,14 @@ void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
 
     _terminal->killReap();
     _open      = false;
-    _destroyed = true;      // XXX why not just zero _window
+    _window    = 0;
 }
 
 void Window::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) {
-    //PRINT("Selection clear");
-
     _terminal->clearSelection();
 }
 
 void Window::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
-    //PRINT("Selection notify");
     if (_open) {
         uint32_t offset = 0;        // 32-bit quantities
 
@@ -838,7 +814,7 @@ void Window::setTitle(const std::string & title) {
 }
 
 void Window::draw() {
-    ASSERT(_mapped, "");        // XXX is this valid?
+    ASSERT(_mapped, "");
     ASSERT(_pixmap, "");
     ASSERT(_surface, "");
     _cr = cairo_create(_surface);
@@ -922,9 +898,9 @@ void Window::copy(int x, int y, int w, int h) {
                                         x, y,   // src
                                         x, y,   // dst
                                         w, h);
-    xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
-    //xcb_flush(_basics.connection());
-    xcb_aux_sync(_basics.connection());
+    xcb_request_check(_basics.connection(), cookie);
+    //xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
+    xcb_flush(_basics.connection());
 }
 
 void Window::handleResize() {
@@ -1074,8 +1050,6 @@ void Window::terminalGetDisplay(std::string & display) throw () {
 void Window::terminalCopy(const std::string & text, Terminal::Selection selection) throw () {
     _observer.windowSelected(this);
 
-    //PRINT("Copy: '" << text << "', clipboard: " << clipboard);
-
     xcb_atom_t atom = XCB_ATOM_NONE;
 
     switch (selection) {
@@ -1094,8 +1068,6 @@ void Window::terminalCopy(const std::string & text, Terminal::Selection selectio
 }
 
 void Window::terminalPaste(Terminal::Selection selection) throw () {
-    //PRINT("Copy clipboard: " << clipboard);
-
     xcb_atom_t atom = XCB_ATOM_NONE;
 
     switch (selection) {
@@ -1133,13 +1105,11 @@ void Window::terminalResetTitleAndIcon() throw () {
 }
 
 void Window::terminalSetWindowTitle(const std::string & str) throw () {
-    //PRINT("Set title: " << title);
     _title = str;
     updateTitle();
 }
 
 void Window::terminalSetIconName(const std::string & str) throw () {
-    //PRINT("Set title: " << title);
     _icon = str;
     updateIcon();
 }
@@ -1384,7 +1354,6 @@ void Window::terminalFixDamageEnd(const Region & damage,
 }
 
 void Window::terminalChildExited(int exitStatus) throw () {
-    //PRINT("Child exited: " << exitStatus);
     _open = false;
     _observer.windowExited(this, exitStatus);       // FIXME code vs status
 }

@@ -63,7 +63,7 @@ protected:
     void ground(utf8::Seq seq, utf8::Length length);
     void escapeIntermediate(utf8::Seq seq, utf8::Length length);
     void escape(utf8::Seq seq, utf8::Length length);
-    void sosPmApcString(utf8::Seq seq, utf8::Length lengt);
+    void sosPmApcString(utf8::Seq seq, utf8::Length length);
     void csiEntry(utf8::Seq seq, utf8::Length length);
     void csiParam(utf8::Seq seq, utf8::Length length);
     void csiIgnore(utf8::Seq seq, utf8::Length length);

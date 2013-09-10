@@ -82,10 +82,7 @@ protected:
         _singleton->signalHandler(sigNum);
     }
 
-    void signalHandler(int sigNum) {
-        auto str = strsignal(sigNum);
-        PRINT("Caught: " << str);
-
+    void signalHandler(int UNUSED(sigNum)) {
         // Don't worry about return value.
         char c = 0;
         TEMP_FAILURE_RETRY(::write(_pipe.writeFd(), &c, 1));
@@ -135,8 +132,8 @@ protected:
         char buf[BUFSIZ];
         auto size = sizeof buf;
 
-        ENFORCE(TEMP_FAILURE_RETRY(::read(_pipe.readFd(),
-                                          static_cast<void *>(buf), size)) != -1, "");
+        ENFORCE_SYS(TEMP_FAILURE_RETRY(::read(_pipe.readFd(),
+                                              static_cast<void *>(buf), size)) != -1, "");
 
         _window.tryReap();
     }
@@ -191,10 +188,6 @@ protected:
                 _window.unmapNotify(
                         reinterpret_cast<xcb_unmap_notify_event_t *>(event));
                 break;
-            case XCB_REPARENT_NOTIFY:
-                _window.reparentNotify(
-                        reinterpret_cast<xcb_reparent_notify_event_t *>(event));
-                break;
             case XCB_CONFIGURE_NOTIFY:
                 _window.configureNotify(
                         reinterpret_cast<xcb_configure_notify_event_t *>(event));
@@ -222,6 +215,9 @@ protected:
             case XCB_CLIENT_MESSAGE:
                 _window.clientMessage(
                         reinterpret_cast<xcb_client_message_event_t *>(event));
+                break;
+            case XCB_REPARENT_NOTIFY:
+                // ignored
                 break;
             default:
                 PRINT("Unrecognised event: " << static_cast<int>(responseType));
@@ -276,7 +272,6 @@ protected:
     }
 
     void windowExited(Window * window, int UNUSED(exitCode)) throw () {
-        PRINT("GETS HERE");
         ASSERT(window == &_window, "");
         _windowOpen = false;
     }

@@ -125,6 +125,7 @@ public:
 
         auto n = TEMP_FAILURE_RETRY(::epoll_wait(_fd, event_array, MAX_EVENTS, -1));
         ENFORCE_SYS(n != -1, "");
+        ENFORCE(n > 0, "");
 
         //PRINT("Got: " << n << " events");
 

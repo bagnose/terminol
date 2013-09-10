@@ -177,11 +177,6 @@ void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
     ASSERT(!_dispatch, "");
     _dispatch = true;
 
-    /*
-    PRINT("press: " << button << ", count=" << count <<
-          ", state=" << modifiers << ", " << pos);
-          */
-
     ASSERT(_press == Press::NONE, "");
 
     if (_modes.get(Mode::MOUSE_PRESS_RELEASE)) {
@@ -226,8 +221,6 @@ select:
 void Terminal::pointerMotion(ModifierSet modifiers, bool within, HPos hpos) {
     ASSERT(!_dispatch, "");
     _dispatch = true;
-
-    //PRINT("motion: within=" << within << ", " << pos);
 
     if ((_press == Press::REPORT && _modes.get(Mode::MOUSE_DRAG)) ||
         (_press == Press::NONE   && _modes.get(Mode::MOUSE_MOTION)))
@@ -279,8 +272,6 @@ void Terminal::pointerMotion(ModifierSet modifiers, bool within, HPos hpos) {
 void Terminal::buttonRelease(bool UNUSED(broken), ModifierSet modifiers) {
     ASSERT(!_dispatch, "");
     _dispatch = true;
-
-    //PRINT("release, broken=" << broken);
 
     ASSERT(_press != Press::NONE, "");
 
@@ -748,15 +739,14 @@ void Terminal::processRead(const uint8_t * data, size_t size) {
 void Terminal::processChar(utf8::Seq seq, utf8::Length length) {
     _vtMachine.consume(seq, length);
 
-    if (_config.syncTty) {        // FIXME too often, may not have been a buffer change.
+    if (_config.syncTty) {
+        // Note, this is conservative: no damage may require fixing.
         fixDamage(Trigger::TTY);
     }
 }
 
 void Terminal::processAttributes(const std::vector<int32_t> & args) {
     ASSERT(!args.empty(), "");
-
-    // FIXME check man 7 urxvt:
 
     for (size_t i = 0; i != args.size(); ++i) {
         auto v = args[i];

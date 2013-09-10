@@ -217,10 +217,7 @@ protected:
         _singleton->signalHandler(sigNum);
     }
 
-    void signalHandler(int sigNum) {
-        auto str = strsignal(sigNum);
-        PRINT("Caught: " << str);
-
+    void signalHandler(int UNUSED(sigNum)) {
         // Don't worry about return value.
         char c = 0;
         TEMP_FAILURE_RETRY(::write(_pipe.writeFd(), &c, 1));
@@ -283,8 +280,10 @@ protected:
         char buf[BUFSIZ];
         auto size = sizeof buf;
 
-        ENFORCE(TEMP_FAILURE_RETRY(::read(_pipe.readFd(),
-                                          static_cast<void *>(buf), size)) != -1, "");
+        // It doesn't matter if we read more than one 'death byte' off the pipe
+        // because we are going to try to reap *all* the children.
+        ENFORCE_SYS(TEMP_FAILURE_RETRY(::read(_pipe.readFd(),
+                                              static_cast<void *>(buf), size)) != -1, "");
 
         for (auto & p : _windows) {
             auto w = p.second;
@@ -366,12 +365,6 @@ protected:
                 if (i != _windows.end()) { i->second->unmapNotify(e); }
                 break;
             }
-            case XCB_REPARENT_NOTIFY: {
-                auto e = reinterpret_cast<xcb_reparent_notify_event_t *>(event);
-                auto i = _windows.find(e->event);
-                if (i != _windows.end()) { i->second->reparentNotify(e); }
-                break;
-            }
             case XCB_CONFIGURE_NOTIFY: {
                 auto e = reinterpret_cast<xcb_configure_notify_event_t *>(event);
                 auto i = _windows.find(e->event);
@@ -414,6 +407,9 @@ protected:
                 if (i != _windows.end()) { i->second->clientMessage(e); }
                 break;
             }
+            case XCB_REPARENT_NOTIFY:
+                // ignored
+                break;
             default:
                 PRINT("Unrecognised event: " << static_cast<int>(responseType));
                 break;

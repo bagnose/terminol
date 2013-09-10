@@ -58,18 +58,10 @@ Tty::~Tty() {
 }
 
 void Tty::tryReap() {
-    if (_pid != 0) {
-        int exitCode;
-        if (pollReap(0, exitCode)) {
-            PRINT("tryReap() - succeeded, exit code: " << exitCode);
-            _observer.ttyExited(exitCode);
-        }
-        else {
-            PRINT("tryReap() - failed");
-        }
-    }
-    else {
-        PRINT("tryReap() - no pid");
+    ASSERT(_pid != 0, "");
+    int exitCode;
+    if (pollReap(0, exitCode)) {
+        _observer.ttyExited(exitCode);
     }
 }
 
@@ -207,22 +199,21 @@ void Tty::openPty(uint16_t            rows,
 
         // Create a new process group.
         ENFORCE_SYS(::setsid() != -1, "");
+
         // Hook stdin/out/err up to the PTY.
-#if 0
-        ENFORCE_SYS(::dup2(slave, STDIN_FILENO)  != -1, "");
-        ENFORCE_SYS(::dup2(slave, STDOUT_FILENO) != -1, "");
-        ENFORCE_SYS(::dup2(slave, STDERR_FILENO) != -1, "");
-#else
         ENFORCE_SYS(::close(STDIN_FILENO) != -1, "");
         ENFORCE_SYS(::fcntl(slave, F_DUPFD, STDIN_FILENO) != -1, "");
         ENFORCE_SYS(::close(STDOUT_FILENO) != -1, "");
         ENFORCE_SYS(::fcntl(slave, F_DUPFD, STDOUT_FILENO) != -1, "");
         ENFORCE_SYS(::close(STDERR_FILENO) != -1, "");
         ENFORCE_SYS(::fcntl(slave, F_DUPFD, STDERR_FILENO) != -1, "");
-#endif
+
+        // Acquire controlling TTY.
         ENFORCE_SYS(::ioctl(slave, TIOCSCTTY, nullptr) != -1, "");
+
         ENFORCE_SYS(::close(slave) != -1, "");
         ENFORCE_SYS(::close(master) != -1, "");
+
         execShell(windowId, command);
     }
 }
@@ -285,7 +276,7 @@ bool Tty::pollReap(int msec, int & exitCode) {
         auto pid = TEMP_FAILURE_RETRY(::waitpid(_pid, &stat, WNOHANG));
         ENFORCE_SYS(pid != -1, "::waitpid() failed.");
         if (pid != 0) {
-            ENFORCE(pid == _pid, "pid mismatch.");
+            ASSERT(pid == _pid, "pid mismatch.");
             _pid = 0;
             exitCode = WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
             return true;
@@ -328,6 +319,7 @@ void Tty::handleRead(int fd) throw () {
                 case EAGAIN:
                     goto done;
                 case EIO:
+                    // Show must be over. Expect SIGCHLD next.
                     goto done;
                 default:
                     FATAL("Unexpected error: " << errno << " " << ::strerror(errno));

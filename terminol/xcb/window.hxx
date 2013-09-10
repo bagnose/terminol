@@ -43,7 +43,6 @@ private:
     FontManager     & _fontManager;
     FontSet         * _fontSet;
     xcb_window_t      _window;
-    bool              _destroyed;
     xcb_gcontext_t    _gc;
     uint32_t          _width;
     uint32_t          _height;
@@ -106,7 +105,6 @@ public:
     void motionNotify(xcb_motion_notify_event_t * event);
     void mapNotify(xcb_map_notify_event_t * event);
     void unmapNotify(xcb_unmap_notify_event_t * event);
-    void reparentNotify(xcb_reparent_notify_event_t * event);
     void expose(xcb_expose_event_t * event);
     void configureNotify(xcb_configure_notify_event_t * event);
     void focusIn(xcb_focus_in_event_t * event);

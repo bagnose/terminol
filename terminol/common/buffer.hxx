@@ -47,6 +47,7 @@ enum class TabDir { FORWARD, BACKWARD };
 //
 
 class Buffer {
+    // Absolute-Position
     struct APos {
         int32_t row; // >= 0 --> _active, < 0 --> _history
         int16_t col;
@@ -64,6 +65,7 @@ class Buffer {
         return !(lhs == rhs);
     }
 
+    // Handed-Absolute-Position, where handed means left or right side of cell.
     struct HAPos {
         APos apos;
         Hand hand;
@@ -129,6 +131,7 @@ class Buffer {
         }
     };
 
+    // Damage for a visible line.
     struct Damage {
         int16_t begin;
         int16_t end;
@@ -378,7 +381,7 @@ public:
 
     void clearSelection() {
         damageSelection();
-        _selectDelim = _selectMark;     // XXX need to be careful about this not pointing to valid data
+        _selectDelim = _selectMark;     // XXX need to be careful this always points to valid data.
     }
 
     bool getSelectedText(std::string & text) const {
@@ -1094,15 +1097,9 @@ public:
                 auto & hline = _history[_history.size() - _scrollOffset + r];
                 auto   tag   = _tags[hline.index - _lostTags];
 
-                if (tag == I_Deduper::invalidTag()) {
-                    cellsPtr = &_pending;
-                }
-                else {
-                    cellsPtr = &_deduper.lookup(tag);
-                }
-
-                offset = hline.seqnum * getCols();
-                wrap   = cellsPtr->size() - offset;
+                cellsPtr = tag == I_Deduper::invalidTag() ? &_pending : &_deduper.lookup(tag);
+                offset   = hline.seqnum * getCols();
+                wrap     = cellsPtr->size() - offset;
             }
             else {
                 auto & aline = _active[r - _scrollOffset];
@@ -1179,15 +1176,9 @@ public:
                 auto & hline = _history[_history.size() - _scrollOffset + r];
                 auto   tag   = _tags[hline.index - _lostTags];
 
-                if (tag == I_Deduper::invalidTag()) {
-                    cellsPtr = &_pending;
-                }
-                else {
-                    cellsPtr = &_deduper.lookup(tag);
-                }
-
-                offset = hline.seqnum * getCols();
-                wrap   = cellsPtr->size() - offset;
+                cellsPtr = tag == I_Deduper::invalidTag() ? &_pending : &_deduper.lookup(tag);
+                offset   = hline.seqnum * getCols();
+                wrap     = cellsPtr->size() - offset;
             }
             else {
                 auto & aline = _active[r - _scrollOffset];
@@ -1453,8 +1444,6 @@ protected:
             ++end.col;
         }
 
-        //PRINT("Normalised: " << begin.row << "x" << begin.col << "  " << end.row << "x" << end.col);
-
         return begin.row != end.row || begin.col != end.col;
     }
 
@@ -1557,8 +1546,6 @@ protected:
     }
 
     void bump() {
-        //std::cerr << "bump" << std::endl;
-
         auto & aline = _active.front();
 
         if (aline.cont && !_tags.empty()) {
@@ -1598,8 +1585,6 @@ protected:
     }
 
     void unbump() {
-        //std::cerr << "un-bump" << std::endl;
-
         ASSERT(!_tags.empty(), "");
         ASSERT(!_history.empty(), "");
 
@@ -1616,7 +1601,6 @@ protected:
         std::vector<Cell> cells(_pending.begin() + offset, _pending.end());
         _pending.erase(_pending.begin() + offset, _pending.end());
 
-        //PRINT(hline.seqnum);
         _active.push_front(ALine(cells, hline.seqnum != 0, hline.size, _cols));
 
         _history.pop_back();
