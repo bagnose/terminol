@@ -1398,7 +1398,6 @@ protected:
 
     void damageRows(int16_t begin, int16_t end) {
         ASSERT(begin <= end, "");
-        ASSERT(end <= _marginEnd, "");
 
         for (auto i = begin; i != end; ++i) {
             auto damageRow = _scrollOffset + static_cast<uint32_t>(i);
