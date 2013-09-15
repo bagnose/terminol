@@ -3,7 +3,7 @@
 # configure BUILDDIR MODE COMPILER
 
 if [ $# -ne 3 ]; then
-  cat << EOF > /dev/stderr
+    cat << EOF > /dev/stderr
 Usage: $0 BUILDIR MODE COMPILER
 
 e.g.: $0 build-dir debug gnu
@@ -11,7 +11,7 @@ e.g.: $0 build-dir debug gnu
 MODE=debug|release|coverage
 COMPILER=gnu|clang
 EOF
-  exit 1
+    exit 1
 fi
 
 BUILDDIR=$1
@@ -19,8 +19,8 @@ MODE=$2
 COMPILER=$3
 
 if [ -e ${BUILDDIR} ]; then
-  echo "Dir: ${BUILDDIR} already exist, bailing" > /dev/stderr
-  exit 1
+    echo "'${BUILDDIR}' already exists, bailing." > /dev/stderr
+    exit 1
 fi
 
 mkdir -p ${BUILDDIR}
@@ -33,4 +33,4 @@ COMPILER ?= ${COMPILER}
 include src/common.mak
 EOF
 
-echo "${BUILDDIR} is ready to roll."
+echo "'${BUILDDIR}' is ready to roll."
