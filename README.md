@@ -80,7 +80,6 @@ You may wish to create a config file like the following:
     # set border-color #ffff00
     
     # Use these for compatibility with 'vttest':
-    # set resize-strategy      clip
     # set traditional-wrapping true
     
     bindsym ctrl+0                  local-font-reset
