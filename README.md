@@ -94,10 +94,10 @@ You may wish to create a config file like the following:
     bindsym ctrl+shift+C            copy-to-clipboard
     bindsym ctrl+shift+V            paste-from-clipboard
     
-    bindsym shift+Up                scroll-up-one-line
-    bindsym shift+Down              scroll-down-one-line
-    bindsym shift+Page_Up           scroll-up-one-page
-    bindsym shift+Page_Down         scroll-down-one-page
+    bindsym shift+Up                scroll-up-line
+    bindsym shift+Down              scroll-down-line
+    bindsym shift+Page_Up           scroll-up-page
+    bindsym shift+Page_Down         scroll-down-page
     bindsym shift+Home              scroll-top
     bindsym shift+End               scroll-bottom
     

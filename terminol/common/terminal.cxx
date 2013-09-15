@@ -459,22 +459,22 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
             case Action::PASTE_FROM_CLIPBOARD:
                 _observer.terminalPaste(Selection::CLIPBOARD);
                 return true;
-            case Action::SCROLL_UP_ONE_LINE:
+            case Action::SCROLL_UP_LINE:
                 if (_buffer->scrollUpHistory(1)) {
                     fixDamage(Trigger::OTHER);
                 }
                 return true;
-            case Action::SCROLL_DOWN_ONE_LINE:
+            case Action::SCROLL_DOWN_LINE:
                 if (_buffer->scrollDownHistory(1)) {
                     fixDamage(Trigger::OTHER);
                 }
                 return true;
-            case Action::SCROLL_UP_ONE_PAGE:
+            case Action::SCROLL_UP_PAGE:
                 if (_buffer->scrollUpHistory(_buffer->getRows())) {
                     fixDamage(Trigger::OTHER);
                 }
                 return true;
-            case Action::SCROLL_DOWN_ONE_PAGE:
+            case Action::SCROLL_DOWN_PAGE:
                 if (_buffer->scrollDownHistory(_buffer->getRows())) {
                     fixDamage(Trigger::OTHER);
                 }

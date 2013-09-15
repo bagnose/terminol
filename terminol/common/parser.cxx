@@ -155,17 +155,17 @@ Action lookupAction(const std::string & str) throw (ParseError) {
     else if (str == "paste-from-clipboard") {
         return Action::PASTE_FROM_CLIPBOARD;
     }
-    else if (str == "scroll-up-one-line") {
-        return Action::SCROLL_UP_ONE_LINE;
+    else if (str == "scroll-up-line") {
+        return Action::SCROLL_UP_LINE;
     }
-    else if (str == "scroll-down-one-line") {
-        return Action::SCROLL_DOWN_ONE_LINE;
+    else if (str == "scroll-down-line") {
+        return Action::SCROLL_DOWN_LINE;
     }
-    else if (str == "scroll-up-one-page") {
-        return Action::SCROLL_UP_ONE_PAGE;
+    else if (str == "scroll-up-page") {
+        return Action::SCROLL_UP_PAGE;
     }
-    else if (str == "scroll-down-one-page") {
-        return Action::SCROLL_DOWN_ONE_PAGE;
+    else if (str == "scroll-down-page") {
+        return Action::SCROLL_DOWN_PAGE;
     }
     else if (str == "scroll-top") {
         return Action::SCROLL_TOP;
