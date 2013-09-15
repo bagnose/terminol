@@ -222,6 +222,8 @@ $(eval $(call EXE,TEST,terminol/common/test-utf8,test_utf8.cxx,,terminol/common 
 
 $(eval $(call EXE,PRIV,terminol/common/abuse,abuse.cxx,,terminol/common terminol/support,))
 
+$(eval $(call EXE,PRIV,terminol/common/wedge,wedge.cxx,,terminol/common terminol/support,))
+
 $(eval $(call EXE,PRIV,terminol/common/sequencer,sequencer.cxx,,terminol/common terminol/support,))
 
 $(eval $(call EXE,PRIV,terminol/common/styles,styles.cxx,,terminol/common terminol/support,))
