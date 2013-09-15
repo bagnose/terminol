@@ -1180,6 +1180,7 @@ void Window::terminalResizeBuffer(int16_t rows, int16_t cols) throw () {
 bool Window::terminalFixDamageBegin() throw () {
     if (!_deferred && _mapped) {
         ASSERT(_surface, "");
+        ASSERT(_pixmapCurrent, "");
         _cr = cairo_create(_surface);
         cairo_set_line_width(_cr, 1.0);
         return true;
@@ -1413,6 +1414,7 @@ void Window::useFontSet(FontSet * fontSet, int delta) throw () {
 
     if (_mapped) {
         draw();
+        _pixmapCurrent = true;
         copy(0, 0, _width, _height);
     }
 
