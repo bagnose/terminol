@@ -702,6 +702,8 @@ public:
     void restoreCursor() {
         damageCell();
         _cursor = _savedCursor;
+        ASSERT(_cursor.pos.row < getRows(), "");
+        ASSERT(_cursor.pos.col < getCols(), "");
         damageCell();
     }
 
@@ -831,8 +833,12 @@ public:
         _tabs.resize(cols);
         resetTabs();
 
-        _cursor.pos.row = std::min<int16_t>(_cursor.pos.row, rows - 1);
-        _cursor.pos.col = std::min<int16_t>(_cursor.pos.col, cols - 1);
+        _cursor.pos.row  = std::min<int16_t>(_cursor.pos.row, rows - 1);
+        _cursor.pos.col  = std::min<int16_t>(_cursor.pos.col, cols - 1);
+        _cursor.wrapNext = false;
+
+        _savedCursor.pos.row = std::min<int16_t>(_savedCursor.pos.row, rows - 1);
+        _savedCursor.pos.col = std::min<int16_t>(_savedCursor.pos.col, cols - 1);
 
         _damage.resize(rows);
         damageViewport(true);
