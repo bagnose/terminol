@@ -105,7 +105,7 @@ class Buffer {
     // Active-Line
     struct ALine {
         std::vector<Cell> cells;    // active lines have a greater/equal capacity to their wrap/size
-        bool              cont;     // is this line a continuation from the previous line?
+        bool              cont;     // does this line continue on the next line?
         int16_t           wrap;     // wrappable index, <= cells.size()
 
         explicit ALine(int16_t cols) :
@@ -572,6 +572,10 @@ public:
 
         if (autoWrap && _cursor.wrapNext) {
             _cursor.wrapNext = false;
+            _active[_cursor.pos.row].cont = true; // continues on next line
+            ASSERT(_cursor.pos.col == _cols - 1, "col=" << _cursor.pos.col << ", _cols-1=" << _cols - 1);
+            ASSERT(_active[_cursor.pos.row].wrap == _cols, "wrap=" << _active[_cursor.pos.row].wrap << ", _cols=" << _cols);
+            _active[_cursor.pos.row].wrap = _cols;
 
             if (_cursor.pos.row == _marginEnd - 1) {
                 addLine();
@@ -580,8 +584,6 @@ public:
             else {
                 moveCursor2(true, 1, false, 0);
             }
-
-            _active[_cursor.pos.row].cont = true; // continues from previous line
         }
         else if (insert) {
             insertCells(1);
@@ -642,6 +644,7 @@ public:
 
     void reverseIndex() {
         if (_cursor.pos.row == _marginBegin) {
+            _cursor.wrapNext = false;
             insertLinesAt(_marginBegin, 1);
         }
         else {
@@ -693,6 +696,7 @@ public:
 
     void saveCursor() {
         _savedCursor = _cursor;
+        _savedCursor.wrapNext = false;      // XXX ??
     }
 
     void restoreCursor() {
@@ -755,31 +759,14 @@ public:
                 bump();
             }
 
-            //dumpHistory(std::cerr);
-
-            // This block is copied from bump().
-            if (!_tags.empty() && _tags.back() == I_Deduper::invalidTag()) {
-                auto & hline = _history.back();
-                ASSERT(hline.index - _lostTags == _tags.size() - 1, "");
-                size_t finalSize = hline.seqnum * getCols() + hline.size;
-                ASSERT(finalSize <= _pending.size(), "");
-                _pending.erase(_pending.begin() + finalSize, _pending.end());
-                // Following 3 lines probably aren't required.
-#if 0
-                auto tag = _deduper.store(_pending);
-                ASSERT(tag != I_Deduper::invalidTag(), "");
-                _tags.back() = tag;
-#endif
-            }
+            ASSERT(!_tags.empty(), "");
+            ASSERT(_tags.back() != I_Deduper::invalidTag(), "");
 
             _history.clear();
 
             uint32_t index = 0;
 
             for (auto tag : _tags) {
-#if 0
-                ASSERT(tag != I_Deduper::invalidTag(), "");    // This is prevented above
-#endif
                 auto & cells = tag != I_Deduper::invalidTag() ? _deduper.lookup(tag) : _pending;
 
                 uint16_t seqnum = 0;
@@ -917,7 +904,9 @@ public:
     }
 
     void resetCursor() {
-        _cursor.pos = Pos();
+        _cursor.pos      = Pos();
+        _cursor.wrapNext = false;
+        // XXX should _cursor.charSet be reset?
         resetStyle();
     }
 
@@ -986,6 +975,7 @@ public:
 
         line.cont = false;
         line.wrap = 0;
+        _cursor.wrapNext = false;
         std::fill(line.cells.begin(), line.cells.end(), Cell::blank());
         damageColumns(0, getCols());
     }
@@ -995,6 +985,7 @@ public:
 
         line.cont = false;
         line.wrap = 0;
+        _cursor.wrapNext = false;
         std::fill(line.cells.begin(),
                   line.cells.begin() + _cursor.pos.col + 1,
                   Cell::blank());
@@ -1004,6 +995,8 @@ public:
     void clearLineRight() {
         auto & line = _active[_cursor.pos.row];
 
+        line.cont = false;
+        _cursor.wrapNext = false;
         line.wrap = std::min(line.wrap, _cursor.pos.col);
         std::fill(line.cells.begin() + _cursor.pos.col, line.cells.end(), Cell::blank());
         damageColumns(_cursor.pos.col, line.cells.size());
@@ -1012,6 +1005,7 @@ public:
     void clear() {
         for (auto & l : _active) { l.clear(); }
         damageActive();
+        _cursor.wrapNext = false;
     }
 
     void clearAbove() {
@@ -1032,6 +1026,7 @@ public:
 
     void insertLines(uint16_t n) {
         if (_cursor.pos.row >= _marginBegin && _cursor.pos.row < _marginEnd) {
+            _cursor.wrapNext = false;
             n = std::min<uint16_t>(n, _marginEnd - _cursor.pos.row);
             insertLinesAt(_cursor.pos.row, n);
         }
@@ -1039,17 +1034,20 @@ public:
 
     void eraseLines(uint16_t n) {
         if (_cursor.pos.row >= _marginBegin && _cursor.pos.row < _marginEnd) {
+            _cursor.wrapNext = false;
             n = std::min<uint16_t>(n, _marginEnd - _cursor.pos.row);
             eraseLinesAt(_cursor.pos.row, n);
         }
     }
 
     void scrollUpMargins(uint16_t n) {
+        _cursor.wrapNext = false;
         n = std::min<uint16_t>(n, _marginEnd - _marginBegin);
         eraseLinesAt(_marginBegin, n);
     }
 
     void scrollDownMargins(uint16_t n) {
+        _cursor.wrapNext = false;
         n = std::min<uint16_t>(n, _marginEnd - _marginBegin);
         insertLinesAt(_marginBegin, n);
     }
@@ -1383,7 +1381,7 @@ public:
 
         for (const auto & l : _active) {
             ost << std::setw(2) << i << " "
-                << (l.cont ? '+' : '-') << " "
+                << (l.cont ? '\\' : '$') << " "
                 << std::setw(3) << l.wrap << " \'";
 
             uint16_t col = 0;
@@ -1566,37 +1564,57 @@ protected:
     void bump() {
         auto & aline = _active.front();
 
-        if (aline.cont && !_tags.empty()) {
+        ASSERT(!aline.cont || aline.wrap == _cols,
+               "aline.cont=" << std::boolalpha << aline.cont <<
+               ", aline.wrap=" << aline.wrap <<
+               ", _cols=" << _cols);
+
+        if (_pending.empty()) {
+            // This line is not a continuation of a previous line.
+            ASSERT(_tags.empty() || _tags.back() != I_Deduper::invalidTag(), "");
+            ASSERT(_history.empty() || _history.back().index - _lostTags == _tags.size() - 1, "");
+
+            if (aline.cont) {
+                // This line is continued on the next line so it can't be stored
+                // for dedupe yet.
+                _pending = std::move(aline.cells);
+                _tags.push_back(I_Deduper::invalidTag());
+            }
+            else {
+                // This line is completely standalone. Immediately dedupe it.
+                ASSERT(static_cast<size_t>(aline.wrap) <= aline.cells.size(), "");
+                aline.cells.erase(aline.cells.begin() + aline.wrap, aline.cells.end());
+                auto tag = _deduper.store(aline.cells);
+                ASSERT(tag != I_Deduper::invalidTag(), "");
+                _tags.push_back(tag);
+            }
+
+            _history.push_back(HLine(_tags.size() + _lostTags - 1, 0, aline.wrap));
+        }
+        else {
+            // This line is a continuation of the previous line.
+            // Copy its contents into _pending.
+            ASSERT(!_tags.empty(), "");
             ASSERT(_tags.back() == I_Deduper::invalidTag(), "");
             ASSERT(!_history.empty(), "");
             ASSERT(_history.back().index - _lostTags == _tags.size() - 1, "");
             auto oldSize = _pending.size();
             ASSERT(oldSize % _cols == 0, "");
-            _pending.resize(oldSize + _cols, Cell::blank());
+            _pending.resize(oldSize + aline.wrap, Cell::blank());
             std::copy(aline.cells.begin(), aline.cells.begin() + aline.wrap, _pending.begin() + oldSize);
             _history.push_back(HLine(_tags.size() + _lostTags - 1, _history.back().seqnum + 1, aline.wrap));
-        }
-        else {
-            if (!_tags.empty() && _tags.back() == I_Deduper::invalidTag()) {
-                auto & hline = _history.back();
-                ASSERT(hline.index - _lostTags == _tags.size() - 1, "");
-                size_t finalSize = hline.seqnum * getCols() + hline.size;
-                ASSERT(finalSize <= _pending.size(), "");
-                _pending.erase(_pending.begin() + finalSize, _pending.end());
+
+            if (!aline.cont) {
+                // This line is not itself continued.
+                // Store _pending and the tag.
                 auto tag = _deduper.store(_pending);
                 ASSERT(tag != I_Deduper::invalidTag(), "");
+                ASSERT(_pending.empty(), "");       // store() clears it, right?
+                ASSERT(_tags.back() == I_Deduper::invalidTag(), "");
                 _tags.back() = tag;
             }
-
-            ASSERT(_tags.empty() || _tags.back() != I_Deduper::invalidTag(), "");
-            ASSERT(_history.empty() || _history.back().index - _lostTags == _tags.size() - 1, "");
-
-            _pending = std::move(aline.cells);
-            _tags.push_back(I_Deduper::invalidTag());
-            _history.push_back(HLine(_tags.size() + _lostTags - 1, 0, aline.wrap));
         }
 
-        ASSERT(!_tags.empty() && _tags.back() == I_Deduper::invalidTag(), "");
         ASSERT(!_history.empty() && _history.back().index - _lostTags == _tags.size() - 1, "");
 
         _active.pop_front();
@@ -1609,23 +1627,32 @@ protected:
         auto & hline = _history.back();
         ASSERT(hline.index - _lostTags == _tags.size() - 1, "");
 
-        if (_tags.back() != I_Deduper::invalidTag()) {
+        bool cont;
+
+        if (_pending.empty()) {
+            cont = false;
             auto tag = _tags.back();
+            ASSERT(tag != I_Deduper::invalidTag(), "");
             _deduper.lookupRemove(tag, _pending);
             _tags.back() = I_Deduper::invalidTag();
         }
+        else {
+            cont = true;
+            ASSERT(_tags.back() == I_Deduper::invalidTag(), "");
+        }
 
         size_t offset = hline.seqnum * _cols;
+        ASSERT(offset <= _pending.size(), "");
         std::vector<Cell> cells(_pending.begin() + offset, _pending.end());
         _pending.erase(_pending.begin() + offset, _pending.end());
 
-        _active.push_front(ALine(cells, hline.seqnum != 0, hline.size, _cols));
+        _active.push_front(ALine(cells, cont, hline.size, _cols));
 
         _history.pop_back();
 
         if (_history.empty() || _history.back().index - _lostTags != _tags.size() - 1) {
             _tags.pop_back();
-            _pending.clear();
+            ASSERT(_pending.empty(), "");
         }
     }
 
