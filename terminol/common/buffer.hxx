@@ -38,9 +38,7 @@ public:
 };
 
 // Character-Set
-enum class CharSet {
-    G0, G1
-};
+enum class CharSet { G0, G1 };
 
 // Tab-Direction
 enum class TabDir { FORWARD, BACKWARD };
@@ -100,9 +98,7 @@ class Buffer {
         uint16_t seqnum;            // continuation number, 0 -> first line
         uint16_t size;
 
-        HLine(uint32_t index_,
-              uint16_t seqnum_,
-              uint16_t size_) :
+        HLine(uint32_t index_, uint16_t seqnum_, uint16_t size_) :
             index(index_), seqnum(seqnum_), size(size_) {}
     };
 
@@ -122,7 +118,8 @@ class Buffer {
         }
 
         void clear() {
-            wrap = 0; cont = false;
+            cont = false;
+            wrap = 0;
             std::fill(cells.begin(), cells.end(), Cell::blank());
         }
 
@@ -309,8 +306,8 @@ public:
                                      getCols() - 1, Hand::RIGHT);
             }
             else {
-                _selectMark       = hapos;
-                _selectMark.hand  = Hand::LEFT;
+                _selectMark      = hapos;
+                _selectMark.hand = Hand::LEFT;
 
                 while (left != 0) {
                     if (cells[left - 1].seq.lead() == ' ') { break; }
