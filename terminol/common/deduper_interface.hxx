@@ -12,7 +12,7 @@ public:
     typedef uint32_t Tag;       // Note, can use smaller tag sizes to cause collisions, etc.
     static Tag invalidTag() { return static_cast<Tag>(-1); }
 
-    virtual Tag store(std::vector<Cell> & cells) = 0;
+    virtual Tag store(std::vector<Cell> & cells) = 0;           // Clears cells.
     virtual const std::vector<Cell> & lookup(Tag tag) const = 0;
     virtual void remove(Tag tag) = 0;
     virtual void lookupRemove(Tag tag, std::vector<Cell> & cells) = 0;

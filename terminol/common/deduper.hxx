@@ -85,10 +85,13 @@ again:
                 goto again;
             }
 
+            cells.clear();
             ++payload.refs;
         }
 
         ++_totalRefs;
+
+        ASSERT(cells.empty(), "");
 
         return tag;
     }
