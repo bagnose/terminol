@@ -760,7 +760,6 @@ public:
             }
 
             ASSERT(!_tags.empty(), "");
-            ASSERT(_tags.back() != I_Deduper::invalidTag(), "");
 
             _history.clear();
 
