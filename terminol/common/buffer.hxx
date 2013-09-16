@@ -12,6 +12,7 @@
 #include <vector>
 #include <iomanip>
 
+// Character-Substitution
 class CharSub {
     const utf8::Seq * _seqs;
     size_t            _offset;
@@ -36,10 +37,12 @@ public:
     }
 };
 
+// Character-Set
 enum class CharSet {
     G0, G1
 };
 
+// Tab-Direction
 enum class TabDir { FORWARD, BACKWARD };
 
 //
@@ -47,7 +50,7 @@ enum class TabDir { FORWARD, BACKWARD };
 //
 
 class Buffer {
-    // Absolute-Position
+    // Absolute-Position, able to refer to historical AND active lines.
     struct APos {
         int32_t row; // >= 0 --> _active, < 0 --> _history
         int16_t col;
@@ -93,8 +96,8 @@ class Buffer {
 
     // Historical-Line
     struct HLine {
-        uint32_t index;
-        uint16_t seqnum;
+        uint32_t index;             // index into _tags (adjusted by _lostTags)
+        uint16_t seqnum;            // continuation number, 0 -> first line
         uint16_t size;
 
         HLine(uint32_t index_,
@@ -105,9 +108,9 @@ class Buffer {
 
     // Active-Line
     struct ALine {
-        std::vector<Cell> cells;
-        bool              cont;     // Continuation from a 'wrap-next'?
-        int16_t           wrap;     // Wrappable index.
+        std::vector<Cell> cells;    // active lines have a greater/equal capacity to their wrap/size
+        bool              cont;     // is this line a continuation from the previous line?
+        int16_t           wrap;     // wrappable index, <= cells.size()
 
         explicit ALine(int16_t cols) :
             cells(cols, Cell::blank()), cont(false), wrap(0) {}
@@ -131,7 +134,7 @@ class Buffer {
         }
     };
 
-    // Damage for a visible line.
+    // Damage for a visible line (active or historical, but in the viewport)
     struct Damage {
         int16_t begin;
         int16_t end;
@@ -167,7 +170,7 @@ class Buffer {
     std::vector<Cell>            _pending;
     std::deque<HLine>            _history;
     std::deque<ALine>            _active;
-    std::vector<Damage>          _damage;           // *viewport* relative damage
+    std::vector<Damage>          _damage;           // viewport relative damage
     std::vector<bool>            _tabs;
     uint32_t                     _scrollOffset;     // 0 -> scroll bottom
     uint32_t                     _historyLimit;
