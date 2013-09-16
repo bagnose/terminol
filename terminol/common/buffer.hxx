@@ -766,6 +766,7 @@ public:
                     //PRINT("offset=" << offset << ", seqnum=" << seqnum << ", size=" << size);
                     _history.push_back(HLine(index + _lostTags, seqnum, size));
 
+                    ENFORCE(seqnum != static_cast<uint16_t>(-1), "Very long line: overflow");
                     ++seqnum;
                     offset += cols;
                 } while (offset < cells.size());
