@@ -1662,7 +1662,7 @@ void Terminal::machineSpecial(const std::vector<uint8_t> & inters,
             case '(':
                 switch (code) {
                     case '0': // set specg0
-                        _buffer->setCharSet(CharSet::G0, &CS_SPECIAL);
+                        _buffer->setCharSub(CharSet::G0, &CS_SPECIAL);
                         break;
                     case '1': // set altg0
                         NYI("Alternate Character rom");
@@ -1671,10 +1671,10 @@ void Terminal::machineSpecial(const std::vector<uint8_t> & inters,
                         NYI("Alternate Special Character rom");
                         break;
                     case 'A': // set ukg0
-                        _buffer->setCharSet(CharSet::G0, &CS_UK);
+                        _buffer->setCharSub(CharSet::G0, &CS_UK);
                         break;
                     case 'B': // set usg0
-                        _buffer->setCharSet(CharSet::G0, &CS_US);
+                        _buffer->setCharSub(CharSet::G0, &CS_US);
                         break;
                     case '<': // Multinational character set
                         NYI("Multinational character set");
@@ -1696,7 +1696,7 @@ void Terminal::machineSpecial(const std::vector<uint8_t> & inters,
             case ')':
                 switch (code) {
                     case '0': // set specg1
-                        _buffer->setCharSet(CharSet::G1, &CS_SPECIAL);
+                        _buffer->setCharSub(CharSet::G1, &CS_SPECIAL);
                         break;
                     case '1': // set altg1
                         NYI("Alternate Character rom");
@@ -1705,10 +1705,10 @@ void Terminal::machineSpecial(const std::vector<uint8_t> & inters,
                         NYI("Alternate Special Character rom");
                         break;
                     case 'A': // set ukg0
-                        _buffer->setCharSet(CharSet::G1, &CS_UK);
+                        _buffer->setCharSub(CharSet::G1, &CS_UK);
                         break;
                     case 'B': // set usg0
-                        _buffer->setCharSet(CharSet::G1, &CS_US);
+                        _buffer->setCharSub(CharSet::G1, &CS_US);
                         break;
                     case '<': // Multinational character set
                         NYI("Multinational character set");

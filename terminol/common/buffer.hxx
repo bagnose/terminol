@@ -184,12 +184,36 @@ class Buffer {
         Style           style;
         bool            wrapNext;
 
-        CharSet         cs;
+        CharSet         charSet;
         const CharSub * g0;
         const CharSub * g1;
 
+        const CharSub * getCharSub() const {
+            switch (charSet) {
+                case CharSet::G0:
+                    return g0;
+                case CharSet::G1:
+                    return g1;
+            }
+
+            FATAL("Unreachable");
+        }
+
+        void setCharSub(CharSet charSet_, const CharSub * charSub) {
+            switch (charSet_) {
+                case CharSet::G0:
+                    g0 = charSub;
+                    return;
+                case CharSet::G1:
+                    g1 = charSub;
+                    return;
+            }
+
+            FATAL("Unreachable");
+        }
+
         Cursor(const CharSub * g0_, const CharSub * g1_) :
-            pos(), style(), wrapNext(false), cs(CharSet::G0), g0(g0_), g1(g1_) {}
+            pos(), style(), wrapNext(false), charSet(CharSet::G0), g0(g0_), g1(g1_) {}
     };
 
     Cursor             _cursor;
@@ -543,7 +567,7 @@ public:
     void write(utf8::Seq seq, bool autoWrap, bool insert) {
         damageCell();
 
-        auto cs = _cursor.cs == CharSet::G0 ? _cursor.g0 : _cursor.g1;
+        auto cs = _cursor.getCharSub();
         cs->translate(seq);
 
         if (autoWrap && _cursor.wrapNext) {
@@ -1289,19 +1313,12 @@ public:
         }
     }
 
-    void useCharSet(CharSet cs) {
-        _cursor.cs = cs;
+    void useCharSet(CharSet charSet) {
+        _cursor.charSet = charSet;
     }
 
-    void setCharSet(CharSet cs, const CharSub * sub) {
-        switch (cs) {
-            case CharSet::G0:
-                _cursor.g0 = sub;
-                break;
-            case CharSet::G1:
-                _cursor.g1 = sub;
-                break;
-        }
+    void setCharSub(CharSet charSet, const CharSub * charSub) {
+        _cursor.setCharSub(charSet, charSub);
     }
 
     void dumpTags(std::ostream & ost) const {
