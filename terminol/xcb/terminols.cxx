@@ -155,6 +155,7 @@ class EventLoop :
     protected Uncopyable
 {
     const Config                     & _config;
+    Tty::Command                       _command;
     Selector                           _selector;
     Pipe                               _pipe;
     Server                             _server;         // FIXME what order? socket then X, or other way around?
@@ -175,9 +176,11 @@ public:
         std::string message;
     };
 
-    explicit EventLoop(const Config & config)
+    explicit EventLoop(const Config       & config,
+                       const Tty::Command & command)
         throw (Server::Error, Basics::Error, FontSet::Error, Error) :
         _config(config),
+        _command(command),
         _selector(),
         _pipe(),
         _server(_selector, *this, config),
@@ -476,7 +479,7 @@ protected:
     void create() throw () {
         try {
             auto window = new Window(*this, _config, _selector, _deduper,
-                                     _basics, _colorSet, _fontManager);
+                                     _basics, _colorSet, _fontManager, _command);
             auto id = window->getWindowId();
             _windows.insert(std::make_pair(id, window));
         }
@@ -523,7 +526,8 @@ int main(int argc, char * argv[]) {
     Config config;
     parseConfig(config);
 
-    CmdLine cmdLine(makeHelp(argv[0]), VERSION);
+    //CmdLine cmdLine(makeHelp(argv[0]), VERSION);
+    CmdLine cmdLine(makeHelp(argv[0]), VERSION, "--execute");
     cmdLine.add(new StringHandler(config.fontName),   '\0', "font-name");
     cmdLine.add(new IntHandler(config.fontSize),      '\0', "font-size");
     cmdLine.add(new BoolHandler(config.traceTty),     '\0', "trace");
@@ -534,8 +538,8 @@ int main(int argc, char * argv[]) {
     cmdLine.add(new_MiscHandler([&](const std::string & name) { config.setColorScheme(name); }), '\0', "color-scheme");
 
     try {
-        cmdLine.parse(argc, const_cast<const char **>(argv));
-        EventLoop eventLoop(config);
+        auto command = cmdLine.parse(argc, const_cast<const char **>(argv));
+        EventLoop eventLoop(config, command);
     }
     catch (const EventLoop::Error & ex) {
         FATAL(ex.message);
