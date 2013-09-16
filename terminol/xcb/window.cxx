@@ -49,6 +49,7 @@ Window::Window(I_Observer         & observer,
     _fontManager(fontManager),
     _fontSet(nullptr),
     _window(0),
+    _destroyed(false),
     _gc(0),
     _width(0),
     _height(0),
@@ -223,7 +224,7 @@ Window::~Window() {
     xcb_free_gc(_basics.connection(), _gc);
 
     // The window may have been destroyed exogenously.
-    if (_window != 0) {
+    if (!_destroyed) {
         auto cookie = xcb_destroy_window_checked(_basics.connection(), _window);
         xcb_request_failed(_basics.connection(), cookie, "Failed to destroy window");
     }
@@ -496,7 +497,7 @@ void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
 
     _terminal->killReap();
     _open      = false;
-    _window    = 0;
+    _destroyed = true;
 }
 
 void Window::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) {

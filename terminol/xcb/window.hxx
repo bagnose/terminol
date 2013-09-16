@@ -43,6 +43,7 @@ private:
     FontManager     & _fontManager;
     FontSet         * _fontSet;
     xcb_window_t      _window;
+    bool              _destroyed;
     xcb_gcontext_t    _gc;
     uint32_t          _width;
     uint32_t          _height;
