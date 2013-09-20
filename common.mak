@@ -224,6 +224,8 @@ $(eval $(call EXE,PRIV,terminol/common/abuse,abuse.cxx,,terminol/common terminol
 
 $(eval $(call EXE,PRIV,terminol/common/wedge,wedge.cxx,,terminol/common terminol/support,))
 
+$(eval $(call EXE,PRIV,terminol/common/counter,counter.cxx,,terminol/common terminol/support,))
+
 $(eval $(call EXE,PRIV,terminol/common/sequencer,sequencer.cxx,,terminol/common terminol/support,))
 
 $(eval $(call EXE,PRIV,terminol/common/styles,styles.cxx,,terminol/common terminol/support,))
