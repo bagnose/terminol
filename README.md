@@ -28,7 +28,7 @@ Noteworthy Features:
 
  - Scrollback history deduplication.
 
- - 24-bit colour support.
+ - 24-bit color support.
 
  - Client server model (run terminols and then terminolc to spawn windows).
 
@@ -51,7 +51,8 @@ You may wish to create a config file like the following:
     #   ${XDG_CONFIG_DIRS...}/terminol/config
     #   ${HOME}/.config/terminol/config
     
-    set server-fork true
+    #set server-fork                 true
+    #set socket-path                 /tmp/my-terminols.socket
     
     set color-scheme solarized-dark
     # other options:
@@ -64,23 +65,53 @@ You may wish to create a config file like the following:
     #   solarized-dark
     #   solarized-light
     
-    set font-name "Meslo LG M"
-    set font-size 14
+    set font-name                   "Meslo LG M"
+    set font-size                   14
     
-    # term-name
-    # scroll-with-history, scroll-on-tty-output, scroll-on-tty-key-press
-    # scroll-on-resize, scroll-on-paste
-    # title, icon, chdir
-    # scroll-back-history, unlimited-scroll-back
-    # sync-tty, trace-tty
+    #set term-name                   xterm-256color
+    #set scroll-with-history         false
+    #set scroll-on-tty-output        false
+    #set scroll-on-tty-key-press     true
+    #set scroll-on-resize            false
+    #set scroll-on-paste             false
+    #set title                       ""
+    #set icon                        ""
+    #set chdir                       ""
+    #set scroll-back-history         1048576
+    #set frames-per-second           50
+    #set sync-tty                    false
+    #set trace-tty                   false
+    #set initial-x                   -1
+    #set initial-y                   -1
+    #set initial-rows                24
+    #set initial-columns             80
     
     set unlimited-scroll-back true
     
-    # set border-thickness 4
-    # set border-color #ffff00
+    # By default the selection is drawn with swapped fg/bg.
+    # This can be overridden:
+    #set select-fg-color             #000000
+    #set select-bg-color             #55ccff
+    
+    # Similary, by default the cursor drawn with swapped fg/bg.
+    # This can be overridden:
+    #set cursor-text-color           #000000
+    #set cursor-fill-color           #55ccff
+    
+    # By default the scrollbar fg is:
+    #set scrollbar-fg-color          #7f7f7f
+    # And bg is taken from the theme's background.
+    #set scrollbar-bg-color          #030303
+    #set scrollbar-width             6
+    
+    # set border-thickness 1
+    # By default the border color is taken from the theme.
+    #set border-color #ffff00
+    
+    #set double-click-timeout        400
     
     # Use these for compatibility with 'vttest':
-    # set traditional-wrapping true
+    #set traditional-wrapping true
     
     bindsym ctrl+0                  local-font-reset
     bindsym ctrl+minus              local-font-smaller
