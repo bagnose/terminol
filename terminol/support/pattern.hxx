@@ -18,8 +18,7 @@ public:
 // http://channel9.msdn.com/Shows/Going+Deep/C-and-Beyond-2012-Andrei-Alexandrescu-Systematic-Error-Handling-in-C
 //
 
-template <class Fun>
-class ScopeGuard {
+template <class Fun> class ScopeGuard {
     Fun  _f;
     bool _active;
 
@@ -41,8 +40,7 @@ public:
     }
 };
 
-template <class Fun>
-ScopeGuard<Fun> scopeGuard(Fun f) {
+template <class Fun> ScopeGuard<Fun> scopeGuard(Fun f) {
     return ScopeGuard<Fun>(std::move(f));
 }
 

@@ -1156,8 +1156,7 @@ public:
         }
     }
 
-    template <class Func>
-    void dispatchBg(bool reverse, Func func) const {
+    template <class Func> void dispatchBg(bool reverse, Func func) const {
         APos selBegin, selEnd;
         bool selValid = normaliseSelection(selBegin, selEnd);
 
@@ -1233,8 +1232,7 @@ public:
         }
     }
 
-    template <class Func>
-    void dispatchFg(bool reverse, Func func) const {
+    template <class Func> void dispatchFg(bool reverse, Func func) const {
         APos selBegin, selEnd;
         bool selValid = normaliseSelection(selBegin, selEnd);
 
@@ -1325,8 +1323,7 @@ public:
         }
     }
 
-    template <class Func>
-    void dispatchCursor(bool reverse, Func func) const {
+    template <class Func> void dispatchCursor(bool reverse, Func func) const {
         APos selBegin, selEnd;
         bool selValid = normaliseSelection(selBegin, selEnd);
 
@@ -1408,11 +1405,11 @@ public:
                 << std::setw(2) << l.seqnum << " "
                 << std::setw(3) << l.size << " \'";
 
-            auto tag = _tags[l.index - _lostTags];
+            auto   tag   = _tags[l.index - _lostTags];
             auto & cells = tag != I_Deduper::invalidTag() ? _deduper.lookup(tag) : _pending;
 
             size_t offset = l.seqnum * getCols();
-            const Cell blank = Cell::blank();
+            auto   blank  = Cell::blank();
             for (uint16_t o = 0; o != l.size; ++o) {
                 auto c = offset + o;
                 const auto & cell = c < cells.size() ? cells[c] : blank;
