@@ -93,6 +93,14 @@ void handleSet(const std::string & key,
         config.normalBgColor = Color::fromString(value);
     }
     // systemColors[16]
+    else if (key == "select-bg-color") {
+        config.customSelectBgColor = true;
+        config.selectBgColor = Color::fromString(value);
+    }
+    else if (key == "select-fg-color") {
+        config.customSelectFgColor = true;
+        config.selectFgColor = Color::fromString(value);
+    }
     else if (key == "cursor-fill-color") {
         config.customCursorFillColor = true;
         config.cursorFillColor = Color::fromString(value);
