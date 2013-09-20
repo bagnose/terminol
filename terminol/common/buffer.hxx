@@ -114,6 +114,7 @@ class Buffer {
         ALine(std::vector<Cell> & cells_, bool cont_, int16_t wrap_, int16_t cols) :
             cells(std::move(cells_)), cont(cont_), wrap(wrap_)
         {
+            ASSERT(wrap_ <= cols, "");
             cells.resize(cols, Cell::blank());
         }
 
@@ -603,6 +604,7 @@ public:
         }
 
         line.wrap = std::max<int16_t>(line.wrap, _cursor.pos.col + 1);
+        ASSERT(line.wrap <= getCols(), "");
 
         if (_cursor.pos.col == getCols() - 1) {
             _cursor.wrapNext = true;
@@ -734,6 +736,10 @@ public:
 
         _cursor.pos.row = std::min<int16_t>(_cursor.pos.row, rows - 1);
         _cursor.pos.col = std::min<int16_t>(_cursor.pos.col, cols - 1);
+        _cursor.wrapNext = false;
+
+        _savedCursor.pos.row = std::min<int16_t>(_savedCursor.pos.row, rows - 1);
+        _savedCursor.pos.col = std::min<int16_t>(_savedCursor.pos.col, cols - 1);
 
         _damage.resize(rows);
         damageViewport(false);
@@ -939,6 +945,8 @@ public:
         n = std::min<uint16_t>(n, getCols() - _cursor.pos.col);
 
         auto & line = _active[_cursor.pos.row];
+        line.wrap = std::min<int16_t>(getCols(), line.wrap + n);
+        ASSERT(line.wrap <= getCols(), "");
         std::copy_backward(line.cells.begin() + _cursor.pos.col,
                            line.cells.end() - n,
                            line.cells.end());
@@ -947,12 +955,22 @@ public:
                   Cell::blank());
 
         damageColumns(_cursor.pos.col, getCols());
+
+        ASSERT(!line.cont || line.wrap == _cols,
+               "line.cont=" << std::boolalpha << line.cont <<
+               ", line.wrap=" << line.wrap <<
+               ", _cols=" << _cols);
+
+        _cursor.wrapNext = false;
     }
 
     void eraseCells(uint16_t n) {
         n = std::min<uint16_t>(n, getCols() - _cursor.pos.col);
 
         auto & line = _active[_cursor.pos.row];
+        line.cont = false;
+        line.wrap = std::max<int16_t>(0, line.wrap - n);
+        ASSERT(line.wrap <= getCols(), "");
         std::copy(line.cells.begin() + _cursor.pos.col + n,
                   line.cells.end(),
                   line.cells.begin() + _cursor.pos.col);
@@ -961,9 +979,17 @@ public:
                   Cell::blank());
 
         damageColumns(_cursor.pos.col, getCols());
+
+        ASSERT(!line.cont || line.wrap == _cols,
+               "line.cont=" << std::boolalpha << line.cont <<
+               ", line.wrap=" << line.wrap <<
+               ", _cols=" << _cols);
+
+        _cursor.wrapNext = false;
     }
 
     void blankCells(uint16_t n) {
+        _cursor.wrapNext = false;
         n = std::min<uint16_t>(n, getCols() - _cursor.pos.col);
 
         auto & line = _active[_cursor.pos.row];
@@ -983,6 +1009,13 @@ public:
         _cursor.wrapNext = false;
         std::fill(line.cells.begin(), line.cells.end(), Cell::blank());
         damageColumns(0, getCols());
+
+        ASSERT(!line.cont || line.wrap == _cols,
+               "line.cont=" << std::boolalpha << line.cont <<
+               ", line.wrap=" << line.wrap <<
+               ", _cols=" << _cols);
+
+        _cursor.wrapNext = false;
     }
 
     void clearLineLeft() {
@@ -995,6 +1028,13 @@ public:
                   line.cells.begin() + _cursor.pos.col + 1,
                   Cell::blank());
         damageColumns(0, _cursor.pos.col + 1);
+
+        ASSERT(!line.cont || line.wrap == _cols,
+               "line.cont=" << std::boolalpha << line.cont <<
+               ", line.wrap=" << line.wrap <<
+               ", _cols=" << _cols);
+
+        _cursor.wrapNext = false;
     }
 
     void clearLineRight() {
@@ -1003,8 +1043,16 @@ public:
         line.cont = false;
         _cursor.wrapNext = false;
         line.wrap = std::min(line.wrap, _cursor.pos.col);
+        ASSERT(line.wrap <= getCols(), "");
         std::fill(line.cells.begin() + _cursor.pos.col, line.cells.end(), Cell::blank());
         damageColumns(_cursor.pos.col, line.cells.size());
+
+        ASSERT(!line.cont || line.wrap == _cols,
+               "line.cont=" << std::boolalpha << line.cont <<
+               ", line.wrap=" << line.wrap <<
+               ", _cols=" << _cols);
+
+        _cursor.wrapNext = false;
     }
 
     void clear() {
@@ -1614,7 +1662,7 @@ protected:
                 // Store _pending and the tag.
                 auto tag = _deduper.store(_pending);
                 ASSERT(tag != I_Deduper::invalidTag(), "");
-                ASSERT(_pending.empty(), "");       // store() clears it, right?
+                ASSERT(_pending.empty(), "_pending cleared by I_Deduper::store()");
                 ASSERT(_tags.back() == I_Deduper::invalidTag(), "");
                 _tags.back() = tag;
             }
