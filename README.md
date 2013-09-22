@@ -142,3 +142,8 @@ You may wish to create a config file like the following:
     bindsym shift+F10               debug-selection
     bindsym shift+F11               debug-stats
     bindsym shift+F12               debug-stats2
+    
+    bindsym ctrl+shift+H            window-narrower
+    bindsym ctrl+shift+L            window-wider
+    bindsym ctrl+shift+K            window-shorter
+    bindsym ctrl+shift+J            window-taller

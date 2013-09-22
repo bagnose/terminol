@@ -431,6 +431,18 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
         auto action = iter->second;
 
         switch (action) {
+            case Action::WINDOW_NARROWER:
+                _observer.terminalResizeBuffer(getRows(), getCols() - 1);
+                return true;
+            case Action::WINDOW_WIDER:
+                _observer.terminalResizeBuffer(getRows(), getCols() + 1);
+                return true;
+            case Action::WINDOW_SHORTER:
+                _observer.terminalResizeBuffer(getRows() - 1, getCols());
+                return true;
+            case Action::WINDOW_TALLER:
+                _observer.terminalResizeBuffer(getRows() + 1, getCols());
+                return true;
             case Action::LOCAL_FONT_RESET:
                 _observer.terminalResizeLocalFont(0);
                 return true;

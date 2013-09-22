@@ -139,7 +139,19 @@ void handleSet(const std::string & key,
 }
 
 Action lookupAction(const std::string & str) throw (ParseError) {
-    if (str == "local-font-reset") {
+    if (str == "window-narrower") {
+        return Action::WINDOW_NARROWER;
+    }
+    else if (str == "window-wider") {
+        return Action::WINDOW_WIDER;
+    }
+    else if (str == "window-shorter") {
+        return Action::WINDOW_SHORTER;
+    }
+    else if (str == "window-taller") {
+        return Action::WINDOW_TALLER;
+    }
+    else if (str == "local-font-reset") {
         return Action::LOCAL_FONT_RESET;
     }
     else if (str == "local-font-smaller") {

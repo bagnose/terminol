@@ -39,6 +39,10 @@ std::ostream & operator << (std::ostream & ost, const KeyCombo & keyCombo);
 //
 
 enum class Action {
+    WINDOW_NARROWER,
+    WINDOW_WIDER,
+    WINDOW_SHORTER,
+    WINDOW_TALLER,
     LOCAL_FONT_RESET,
     LOCAL_FONT_SMALLER,
     LOCAL_FONT_BIGGER,
