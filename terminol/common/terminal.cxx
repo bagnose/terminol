@@ -432,13 +432,13 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
 
         switch (action) {
             case Action::WINDOW_NARROWER:
-                _observer.terminalResizeBuffer(getRows(), getCols() - 1);
+                _observer.terminalResizeBuffer(getRows(), std::max(1, getCols() - 1));
                 return true;
             case Action::WINDOW_WIDER:
                 _observer.terminalResizeBuffer(getRows(), getCols() + 1);
                 return true;
             case Action::WINDOW_SHORTER:
-                _observer.terminalResizeBuffer(getRows() - 1, getCols());
+                _observer.terminalResizeBuffer(std::max(1, getRows() - 1), getCols());
                 return true;
             case Action::WINDOW_TALLER:
                 _observer.terminalResizeBuffer(getRows() + 1, getCols());

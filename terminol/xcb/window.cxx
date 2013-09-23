@@ -996,8 +996,8 @@ void Window::sizeToRowsCols(int16_t & rows, int16_t & cols) const {
     const auto BASE_WIDTH  = 2 * BORDER_THICKNESS + SCROLLBAR_WIDTH;
     const auto BASE_HEIGHT = 2 * BORDER_THICKNESS;
 
-    if (_width  > static_cast<uint32_t>(BASE_WIDTH  + _fontSet->getWidth()) &&
-        _height > static_cast<uint32_t>(BASE_HEIGHT + _fontSet->getHeight()))
+    if (_width  >= static_cast<uint32_t>(BASE_WIDTH  + _fontSet->getWidth()) &&
+        _height >= static_cast<uint32_t>(BASE_HEIGHT + _fontSet->getHeight()))
     {
         int16_t w = _width  - BASE_WIDTH;
         int16_t h = _height - BASE_HEIGHT;
@@ -1123,6 +1123,7 @@ void Window::terminalBeep() throw () {
 }
 
 void Window::terminalResizeBuffer(int16_t rows, int16_t cols) throw () {
+    ASSERT(rows > 0 && cols > 0, "");
     resizeToAccommodate(rows, cols);
 
     const auto BORDER_THICKNESS = _config.borderThickness;
