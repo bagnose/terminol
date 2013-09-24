@@ -763,46 +763,86 @@ public:
         }
 
         if (cols != getCols()) {
-            while (getRows() != 0) {
+            bool     doneCursor     = false;
+            uint32_t cursorTagIndex = 0;
+            uint32_t cursorOffset   = 0;
+
+            _active.back().cont = false;            // JUST MAKE SURE it isn't on for now.
+            ASSERT(!_active.back().cont, "");           // XXX this needs enforcing, e.g. in insertLineAt
+
+            while (!_active.empty()) {
+                auto s = _pending.size();
+
                 bump();
+
+                if (!doneCursor) {
+                    if (_cursor.pos.row == 0) {
+                        cursorTagIndex = _tags.size() - 1;
+                        cursorOffset   = s + _cursor.pos.col;
+                        doneCursor = true;
+                    }
+                    else {
+                        --_cursor.pos.row;
+                    }
+                }
             }
 
+            if (_cursor.wrapNext) {
+                ++cursorOffset;
+                _cursor.wrapNext = false;
+            }
+
+            ASSERT(doneCursor, "");
             ASSERT(!_tags.empty(), "");
+            ASSERT(_pending.empty(), "");
 
-            _history.clear();
+            _cols = cols;       // Must set before calling rebuildHistory()
+            rebuildHistory();
 
-            uint32_t index = 0;
-
-            for (auto tag : _tags) {
-                auto & cells = tag != I_Deduper::invalidTag() ? _deduper.lookup(tag) : _pending;
-
-                uint16_t seqnum = 0;
-                size_t   offset = 0;
-
-                do {
-                    auto size = std::min<int16_t>(cols, cells.size() - offset);
-                    //PRINT("offset=" << offset << ", seqnum=" << seqnum << ", size=" << size);
-                    _history.push_back(HLine(index + _lostTags, seqnum, size));
-
-                    ENFORCE(seqnum != static_cast<uint16_t>(-1), "Very long line: overflow");
-                    ++seqnum;
-                    offset += cols;
-                } while (offset < cells.size());
-
-                ++index;
-            }
-
-            _cols = cols;
+            doneCursor = false;
 
             // Pull rows out of history first.
             while (getRows() < rows && !_history.empty()) {
+                if (doneCursor) {
+                    ++_cursor.pos.row;
+                }
+                else if (_tags.size() - 1 == cursorTagIndex) {
+                    auto & hline = _history.back();
+                    uint32_t offset = hline.seqnum * cols;
+                    if (cursorOffset == offset + cols) {
+                        _cursor.pos.row  = 0;
+                        _cursor.pos.col  = cursorOffset - offset;
+                        _cursor.wrapNext = true;
+                        doneCursor       = true;
+                    }
+                    else if (cursorOffset < offset + cols) {
+                        _cursor.pos.row = 0;
+                        _cursor.pos.col = cursorOffset - offset;
+                        doneCursor      = true;
+
+                        if (_cursor.pos.col < 0) {
+                            // This can happen due to libreadline stepping on our toes.
+                            _cursor.pos.col = 0;
+                        }
+                    }
+                }
                 unbump();
+            }
+
+            ASSERT(_cursor.pos.col >= 0, "");
+
+            if (!doneCursor) {
+                _cursor.pos.row = 0;
+                _cursor.pos.col = 0;
             }
 
             // Add blank lines to get the rest.
             if (getRows() < rows) {
                 _active.resize(rows, ALine(cols));
             }
+
+            ASSERT(_active.size() == static_cast<size_t>(rows), "");
+            ASSERT(_active.front().cells.size() == static_cast<size_t>(cols), "");
         }
         else {
             if (getRows() < rows) {
@@ -829,6 +869,8 @@ public:
         //dumpActive(std::cerr);
 
         ASSERT(getRows() == rows && getCols() == cols, "rows=" << getRows() << ", cols=" << getCols());
+        ASSERT(_cursor.pos.row >= 0, "");
+        ASSERT(_cursor.pos.col >= 0, "");
 
         _active.shrink_to_fit();
 
@@ -839,9 +881,8 @@ public:
         _tabs.resize(cols);
         resetTabs();
 
-        _cursor.pos.row  = std::min<int16_t>(_cursor.pos.row, rows - 1);
-        _cursor.pos.col  = std::min<int16_t>(_cursor.pos.col, cols - 1);
-        _cursor.wrapNext = false;
+        _cursor.pos.row = std::min<int16_t>(_cursor.pos.row, rows - 1);
+        _cursor.pos.col = std::min<int16_t>(_cursor.pos.col, cols - 1);
 
         _savedCursor.pos.row = std::min<int16_t>(_savedCursor.pos.row, rows - 1);
         _savedCursor.pos.col = std::min<int16_t>(_savedCursor.pos.col, cols - 1);
@@ -1462,6 +1503,31 @@ public:
     }
 
 protected:
+    void rebuildHistory() {
+        _history.clear();
+
+        uint32_t index = 0;
+
+        for (auto tag : _tags) {
+            auto & cells = tag != I_Deduper::invalidTag() ? _deduper.lookup(tag) : _pending;
+
+            uint16_t seqnum = 0;
+            size_t   offset = 0;
+
+            do {
+                auto size = std::min<int16_t>(_cols, cells.size() - offset);
+                //PRINT("offset=" << offset << ", seqnum=" << seqnum << ", size=" << size);
+                _history.push_back(HLine(index + _lostTags, seqnum, size));
+
+                ENFORCE(seqnum != static_cast<uint16_t>(-1), "Very long line: overflow");
+                ++seqnum;
+                offset += _cols;
+            } while (offset < cells.size());
+
+            ++index;
+        }
+    }
+
     static bool isCellSelected(APos apos, APos begin, APos end, int16_t wrap) {
         if (apos.row >= begin.row && apos.row <= end.row) {
             // apos is within the selected row range
