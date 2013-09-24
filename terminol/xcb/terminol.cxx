@@ -296,7 +296,7 @@ std::string makeHelp(const std::string & progName) {
         << "  --font-name=NAME" << std::endl
         << "  --font-size=SIZE" << std::endl
         << "  --color-scheme=NAME" << std::endl
-        << "  --term=NAME" << std::endl
+        << "  --term-name=NAME" << std::endl
         << "  --trace" << std::endl
         << "  --sync" << std::endl
         ;

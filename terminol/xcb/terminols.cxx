@@ -512,7 +512,7 @@ std::string makeHelp(const std::string & progName) {
         << "  --font-name=NAME" << std::endl
         << "  --font-size=SIZE" << std::endl
         << "  --color-scheme=NAME" << std::endl
-        << "  --term=NAME" << std::endl
+        << "  --term-name=NAME" << std::endl
         << "  --trace|--no-trace" << std::endl
         << "  --sync|--no-sync" << std::endl
         << "  --socket=SOCKET" << std::endl
