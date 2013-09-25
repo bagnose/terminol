@@ -617,7 +617,7 @@ void Window::icccmConfigure() {
     // machine
     //
 
-    const auto & hostname = _basics.hostname();
+    auto & hostname = _basics.hostname();
     if (!hostname.empty()) {
         xcb_icccm_set_wm_client_machine(_basics.connection(),
                                         _window,

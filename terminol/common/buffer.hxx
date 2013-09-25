@@ -25,6 +25,7 @@ public:
     CharSub(const utf8::Seq * seqs, size_t offset, size_t size, bool special = false) :
         _seqs(seqs), _offset(offset), _size(size), _special(special) {}
 
+    // Bold and italic attributes are disabled from 'special' char subs.
     bool isSpecial() const { return _special; }
 
     void translate(utf8::Seq & seq) const {
@@ -162,24 +163,6 @@ class Buffer {
         }
     };
 
-    const Config               & _config;
-    I_Deduper                  & _deduper;
-    std::deque<I_Deduper::Tag>   _tags;
-    std::vector<Cell>            _pending;
-    std::deque<HLine>            _history;
-    std::deque<ALine>            _active;
-    std::vector<Damage>          _damage;           // viewport relative damage
-    std::vector<bool>            _tabs;
-    uint32_t                     _scrollOffset;     // 0 -> scroll bottom
-    uint32_t                     _historyLimit;
-    uint32_t                     _lostTags;
-    int16_t                      _cols;
-    int16_t                      _marginBegin;
-    int16_t                      _marginEnd;
-    bool                         _barDamage;
-    HAPos                        _selectMark;
-    HAPos                        _selectDelim;
-
     struct Cursor {
         Pos             pos;
         Style           style;
@@ -217,8 +200,25 @@ class Buffer {
             pos(), style(), wrapNext(false), charSet(CharSet::G0), g0(g0_), g1(g1_) {}
     };
 
-    Cursor             _cursor;
-    Cursor             _savedCursor;
+    const Config               & _config;
+    I_Deduper                  & _deduper;
+    std::deque<I_Deduper::Tag>   _tags;
+    std::vector<Cell>            _pending;
+    std::deque<HLine>            _history;
+    std::deque<ALine>            _active;
+    std::vector<Damage>          _damage;           // viewport relative damage
+    std::vector<bool>            _tabs;
+    uint32_t                     _scrollOffset;     // 0 -> scroll bottom
+    uint32_t                     _historyLimit;
+    uint32_t                     _lostTags;
+    int16_t                      _cols;
+    int16_t                      _marginBegin;
+    int16_t                      _marginEnd;
+    bool                         _barDamage;
+    HAPos                        _selectMark;
+    HAPos                        _selectDelim;
+    Cursor                       _cursor;
+    Cursor                       _savedCursor;
 
 public:
     Buffer(const Config  & config,
@@ -230,6 +230,9 @@ public:
            const CharSub * g1) :
         _config(config),
         _deduper(deduper),
+        _tags(),
+        _pending(),
+        _history(),
         _active(rows, ALine(cols)),
         _damage(rows),
         _tabs(cols),
