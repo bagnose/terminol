@@ -61,6 +61,12 @@ else ifeq ($(MODE),coverage)
   else
     $(error Coverage is only support by gnu compiler)
   endif
+else ifeq ($(MODE),analysis)
+  ifeq ($(COMPILER),clang)
+    CXXFLAGS += --analyze
+  else
+    $(error Coverage is only support by clang compiler)
+  endif
 else
   $(error Unrecognised MODE: $(MODE))
 endif
@@ -137,7 +143,11 @@ $$($(1)_LIB): $$($(1)_OBJ)
 ifeq ($(VERBOSE),false)
 	@echo ' [LIB] $$@'
 endif
+ifeq ($(MODE),analysis)
+	$(V)touch $$@
+else
 	$(V)$(AR) $(ARFLAGS) $$@ $$($(1)_OBJ)
+endif
 endef
 
 # Create an executable.
@@ -184,7 +194,11 @@ $$($(2)_EXE): $$($(2)_OBJ) $$($(2)_LIB) | $$($(2)_TDIR)
 ifeq ($(VERBOSE),false)
 	@echo ' [EXE] $$@'
 endif
+ifeq ($(MODE),analysis)
+	$(V)touch $$@
+else
 	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(2)_OBJ) $$($(2)_LIB) $(6)
+endif
 
 ifeq (TEST,$(1))
 $(2)_OUT  := $$($(2)_EXE).out
@@ -194,7 +208,11 @@ $$($(2)_PASS): $$($(2)_EXE)
 ifeq ($(VERBOSE),false)
 	@echo ' [TST] $$($(2)_OUT)'
 endif
+ifeq ($(MODE),analysis)
+	$(V)touch $$@
+else
 	$(V)$$($(2)_EXE) > $$($(2)_OUT) 2>&1 && touch $$@ || (rm -f $$@ && echo "Test failed '$$($(2)_NAME)'." && cat $$($(2)_OUT)) > /dev/stderr
+endif
 
 all: $$($(2)_PASS)
 else

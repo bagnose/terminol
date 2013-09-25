@@ -8,7 +8,7 @@ Usage: $0 BUILDIR MODE COMPILER
 
 e.g.: $0 build-dir debug gnu
 
-MODE=debug|release|coverage
+MODE=debug|release|coverage|analysis
 COMPILER=gnu|clang
 EOF
     exit 1
