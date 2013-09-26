@@ -13,6 +13,7 @@
 #include "terminol/support/debug.hxx"
 #include "terminol/support/pattern.hxx"
 #include "terminol/support/cmdline.hxx"
+#include "terminol/support/net.hxx"
 
 #include <set>
 
@@ -22,11 +23,6 @@
 
 #include <unistd.h>
 #include <sys/select.h>
-
-// For the server FIFO:
-#include <fcntl.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 
 class I_Creator {
 public:
@@ -39,15 +35,12 @@ protected:
 };
 
 //
-// This server will ultimately be replaced with one based on
-// Unix domain sockets.
+//
 //
 
-class Server : protected I_Selector::I_ReadHandler {
-    I_Selector   & _selector;
+class Server : protected SocketServer::I_Observer {
     I_Creator    & _creator;
-    const Config & _config;
-    int            _fd;
+    SocketServer   _socket;
 
 public:
     struct Error {
@@ -55,92 +48,41 @@ public:
         std::string message;
     };
 
-    Server(I_Selector & selector, I_Creator & creator, const Config & config) throw (Error) :
-        _selector(selector),
+    Server(I_Creator    & creator,
+           I_Selector   & selector,
+           const Config & config) throw (Error) try :
         _creator(creator),
-        _config(config),
-        _fd(-1)
-    {
-        auto & socketPath = _config.socketPath;
-        if (::mkfifo(socketPath.c_str(), 0600) == -1) {
-            switch (errno) {
-                case EEXIST:
-                    // No problem
-                    break;
-                default:
-                    throw Error("Failed to create fifo: " + socketPath);
-            }
-        }
-
-        open();
+        _socket(*this, selector, config.socketPath)
+    {}
+    catch (const SocketServer::Error & ex) {
+        throw Error(ex.message);
     }
 
-    virtual ~Server() {
-        if (_fd != -1) {
-            close();
-        }
-
-        auto & socketPath = _config.socketPath;
-        if (::unlink(socketPath.c_str()) == -1) {
-            ERROR("Failed to unlink fifo: " << socketPath);
-        }
-    }
+    virtual ~Server() {}
 
 protected:
-    void reopen() {
-        close();
 
-        try {
-            open();
-        }
-        catch (const Error & ex) {
-            ERROR("Lost fifo");
-        }
+    // SocketServer::I_Observer implementation:
+
+    void serverConnected(int UNUSED(id)) throw () {
+        //PRINT("Server connected: " << id);
     }
 
-    void open() throw (Error) {
-        ASSERT(_fd == -1, "");
-        auto & socketPath = _config.socketPath;
+    void serverReceived(int id, const uint8_t * data, size_t UNUSED(size)) throw () {
+        //PRINT("Server received bytes, " << id << ": " << size << "b");
 
-        // Open non-blocking so we don't have to wait for the other
-        // end to open.
-        _fd = ::open(socketPath.c_str(), O_RDONLY | O_NONBLOCK | O_CLOEXEC);
-        if (_fd == -1) {
-            throw Error("Failed to open fifo: " + socketPath);
-        }
-        _selector.addReadable(_fd, this);
-    }
-
-    void close() {
-        ASSERT(_fd != -1, "");
-        _selector.removeReadable(_fd);
-        ENFORCE_SYS(::close(_fd) != -1, "::close() failed");
-        _fd = -1;
-    }
-
-    // I_Selector::I_ReadHandler implementation:
-
-    void handleRead(int fd) throw () {
-        ASSERT(_fd == fd, "");
-
-        uint8_t buffer[1024];
-        auto    rval = TEMP_FAILURE_RETRY(::read(_fd, static_cast<void *>(buffer),
-                                                 sizeof buffer));
-
-        ENFORCE_SYS(rval != -1, "::read() failed");
-
-        if (rval == 0) {
-            reopen();
+        if (data[0] == 0xFF) {
+            _creator.shutdown();
         }
         else {
-            ASSERT(rval > 0, "");
-            if (buffer[0] == 0xFF) {
-                _creator.shutdown();
-            }
-            else {
-                _creator.create();
-            }
+            _creator.create();
         }
+
+        _socket.disconnect(id);
+    }
+
+    void serverDisconnected(int UNUSED(id)) throw () {
+        //PRINT("Server disconnected: " << id);
     }
 };
 
@@ -158,9 +100,9 @@ class EventLoop :
     Tty::Command                       _command;
     Selector                           _selector;
     Pipe                               _pipe;
-    Server                             _server;         // FIXME what order? socket then X, or other way around?
     Deduper                            _deduper;
     Basics                             _basics;
+    Server                             _server;
     ColorSet                           _colorSet;
     FontManager                        _fontManager;
     std::map<xcb_window_t, Window *>   _windows;
@@ -178,14 +120,14 @@ public:
 
     explicit EventLoop(const Config       & config,
                        const Tty::Command & command)
-        throw (Server::Error, Basics::Error, FontSet::Error, Error) :
+        throw (Basics::Error, Server::Error, FontSet::Error, Error) :
         _config(config),
         _command(command),
         _selector(),
         _pipe(),
-        _server(_selector, *this, config),
         _deduper(),
         _basics(),
+        _server(*this, _selector, config),
         _colorSet(config, _basics),
         _fontManager(config, _basics),
         _windows(),

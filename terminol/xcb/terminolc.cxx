@@ -4,9 +4,47 @@
 #include "terminol/common/parser.hxx"
 #include "terminol/support/debug.hxx"
 #include "terminol/support/cmdline.hxx"
+#include "terminol/support/net.hxx"
 
-#include <unistd.h>
-#include <fcntl.h>
+class Client : protected SocketClient::I_Observer {
+    SocketClient   _socket;
+    bool         & _done;
+
+public:
+    struct Error {
+        explicit Error(const std::string & message_) : message(message_) {}
+        std::string message;
+    };
+
+    Client(I_Selector   & selector,
+           const Config & config,
+           bool           shutdown,
+           bool         & done) try :
+        _socket(*this, selector, config.socketPath),
+        _done(done)
+    {
+        uint8_t byte = shutdown ? 0xFF : 0;
+        _socket.send(&byte, 1);
+    }
+    catch (const SocketClient::Error & ex) {
+        throw Error(ex.message);
+    }
+
+    virtual ~Client() {}
+
+protected:
+
+    // SocketClient::I_Observer implementation:
+
+    void clientDisconnected() throw () {
+        ERROR("Client disconnected");
+        _done = true;
+    }
+
+    void clientQueueEmpty() throw () {
+        _done = true;
+    }
+};
 
 namespace {
 
@@ -44,32 +82,19 @@ int main(int argc, char * argv[]) {
         FATAL(ex.message);
     }
 
-    const auto & socketPath = config.socketPath;
-    auto fd = ::open(socketPath.c_str(), O_WRONLY | O_NONBLOCK);
+    Selector selector;
 
-    if (fd == -1) {
-        std::cerr << "Failed to open: " << socketPath << std::endl;
-        return 1;
-    }
+    try {
+        bool done = false;
+        Client client(selector, config, shutdown, done);
 
-    char c = shutdown ? 0xFF : 0;
-    auto rval = TEMP_FAILURE_RETRY(::write(fd, &c, 1));
-
-    if (rval == -1) {
-        switch (errno) {
-            case EAGAIN:
-                // The server does not have the socket open for
-                // read. Note, this can be caused by a race condition
-                // due to the el-cheapo FIFO scheme.
-                FATAL("Would block");
-                break;
-            default:
-                FATAL("");
-                break;
+        while (!done) {
+            selector.animate();
         }
     }
-
-    ENFORCE_SYS(::close(fd) != -1, "");
+    catch (const Client::Error & ex) {
+        FATAL(ex.message);
+    }
 
     return 0;
 }
