@@ -753,15 +753,6 @@ public:
         ASSERT(_cursor.pos.row >= 0 && _cursor.pos.row < getRows(), "");
         ASSERT(_cursor.pos.col >= 0 && _cursor.pos.col < getCols(), "");
 
-        /*
-        std::cerr
-            << "resizeReflow: "
-            << getRows() << "x" << getCols()
-            << " --> "
-            << rows << "x" << cols
-            << std::endl;
-            */
-
         // Remove blank lines from the back, stopping if we hit the cursor.
         while (getRows() > rows &&
                _cursor.pos.row < getRows() - 1 &&
@@ -787,7 +778,7 @@ public:
                     if (_cursor.pos.row == 0) {
                         cursorTagIndex = _tags.size() - 1;
                         cursorOffset   = s + _cursor.pos.col;
-                        doneCursor = true;
+                        doneCursor     = true;
                     }
                     else {
                         --_cursor.pos.row;
@@ -873,8 +864,6 @@ public:
                 }
             }
         }
-
-        //dumpActive(std::cerr);
 
         ASSERT(getRows() == rows && getCols() == cols, "rows=" << getRows() << ", cols=" << getCols());
         ASSERT(_cursor.pos.row >= 0, "");

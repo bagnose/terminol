@@ -445,7 +445,7 @@ namespace {
 
 std::string makeHelp(const std::string & progName) {
     std::ostringstream ost;
-    ost << "terminol " << VERSION << std::endl
+    ost << "terminols " << VERSION << std::endl
         << "Usage: " << progName << " [OPTION]... [--execute COMMAND]" << std::endl
         << std::endl
         << "Options:" << std::endl
@@ -462,13 +462,13 @@ std::string makeHelp(const std::string & progName) {
         ;
     return ost.str();
 }
+
 } // namespace {anonymous}
 
 int main(int argc, char * argv[]) {
     Config config;
     parseConfig(config);
 
-    //CmdLine cmdLine(makeHelp(argv[0]), VERSION);
     CmdLine cmdLine(makeHelp(argv[0]), VERSION, "--execute");
     cmdLine.add(new StringHandler(config.fontName),   '\0', "font-name");
     cmdLine.add(new IntHandler(config.fontSize),      '\0', "font-size");
@@ -477,7 +477,9 @@ int main(int argc, char * argv[]) {
     cmdLine.add(new StringHandler(config.termName),   '\0', "term-name");
     cmdLine.add(new StringHandler(config.socketPath), '\0', "socket");
     cmdLine.add(new BoolHandler(config.serverFork),   '\0', "fork");
-    cmdLine.add(new_MiscHandler([&](const std::string & name) { config.setColorScheme(name); }), '\0', "color-scheme");
+    cmdLine.add(new_MiscHandler([&](const std::string & name) {
+                                config.setColorScheme(name);
+                                }), '\0', "color-scheme");
 
     try {
         auto command = cmdLine.parse(argc, const_cast<const char **>(argv));

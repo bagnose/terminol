@@ -22,7 +22,7 @@ std::string lowercase(const std::string & str) {
 
 void handleSet(const std::string & key,
                const std::string & value,
-               Config & config) throw (ParseError) {
+               Config            & config) throw (ParseError) {
     if (key == "font-name") {
         config.fontName = value;
     }

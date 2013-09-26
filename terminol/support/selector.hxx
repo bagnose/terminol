@@ -154,6 +154,8 @@ public:
     }
 
     void animate() {
+        ASSERT(!_readRegs.empty() || !_writeRegs.empty(), "");
+
         const int MAX_EVENTS = 8;
         struct epoll_event event_array[MAX_EVENTS];
 
