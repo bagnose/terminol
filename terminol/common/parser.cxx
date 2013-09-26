@@ -330,20 +330,13 @@ void parseConfig(Config & config) {
     auto xdg_config_dirs = static_cast<const char *>(::getenv("XDG_CONFIG_DIRS"));
 
     if (xdg_config_dirs) {
-        std::string str = xdg_config_dirs;
-        size_t      i   = 0;
+        std::vector<std::string> dirs;
+        split(xdg_config_dirs, dirs, ":");
 
-        for (;;) {
-            size_t j = str.find(':', i);
-
-            if (j == std::string::npos) { j = str.size(); }
-
-            if (tryConfig(str.substr(i, j - i) + conf, config)) {
+        for (auto & d : dirs) {
+            if (tryConfig(d + conf, config)) {
                 return;
             }
-
-            if (j == str.size()) { break; }
-            else { i = j + 1; }
         }
     }
 
