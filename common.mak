@@ -19,7 +19,7 @@ XCB_LDFLAGS := $(shell pkg-config --libs   $(XCB_MODULES))
 
 CPPFLAGS    := -DVERSION=\"$(VERSION)\" -iquotesrc
 CXXFLAGS    := -fpic -fno-rtti -pedantic -std=c++11
-WFLAGS      := -Werror -Wextra -Wall -Wno-long-long -Wundef           \
+WFLAGS      := -Wextra -Wall -Wno-long-long -Wundef                   \
                -Wredundant-decls -Wshadow -Wsign-compare              \
                -Wmissing-field-initializers -Wno-format-zero-length   \
                -Wno-unused-function -Woverloaded-virtual -Wsign-promo \
@@ -27,6 +27,10 @@ WFLAGS      := -Werror -Wextra -Wall -Wno-long-long -Wundef           \
 AR          := ar
 ARFLAGS     := csr
 LDFLAGS     :=
+
+ifneq ($(WARN),noerror)
+  CXXFLAGS += -Werror
+endif
 
 ifeq ($(COMPILER),gnu)
   CXX := g++
