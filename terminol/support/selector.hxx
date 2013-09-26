@@ -48,20 +48,8 @@ protected:
 //
 
 class SelectSelector : public I_Selector {
-    struct ReadReg {
-        ReadReg(int fd_, I_ReadHandler * handler_) : fd(fd_), handler(handler_) {}
-        int             fd;
-        I_ReadHandler * handler;
-    };
-
-    struct WriteReg {
-        WriteReg(int fd_, I_WriteHandler * handler_) : fd(fd_), handler(handler_) {}
-        int             fd;
-        I_WriteHandler * handler;
-    };
-
-    std::vector<ReadReg>  _readRegs;
-    std::vector<WriteReg> _writeRegs;
+    std::map<int, I_ReadHandler *>  _readRegs;
+    std::map<int, I_WriteHandler *> _writeRegs;
 
 public:
     SelectSelector() {}
@@ -82,34 +70,37 @@ public:
         FD_ZERO(&writeFds);
 
         for (auto reg : _readRegs) {
-            FD_SET(reg.fd, &readFds);
-            max = std::max(max, reg.fd);
+            auto fd = reg.first;
+            FD_SET(fd, &readFds);
+            max = std::max(max, fd);
         }
 
         for (auto reg : _writeRegs) {
-            FD_SET(reg.fd, &writeFds);
-            max = std::max(max, reg.fd);
+            auto fd = reg.first;
+            FD_SET(fd, &writeFds);
+            max = std::max(max, fd);
         }
 
-        //PRINT("Selecting, max=" << max);
         ENFORCE_SYS(TEMP_FAILURE_RETRY(
             ::select(max + 1, &readFds, &writeFds, nullptr, nullptr)) != -1, "");
 
-        // Copy the vectors in case they change during dispatch.
+        for (auto iter = _readRegs.begin(); iter != _readRegs.end(); /**/) {
+            auto fd      = iter->first;
+            auto handler = iter->second;
+            ++iter;
 
-        auto readRegsCopy = _readRegs;
-        for (auto reg : readRegsCopy) {
-            if (FD_ISSET(reg.fd, &readFds)) {
-                //PRINT("readable: " << reg.fd);
-                reg.handler->handleRead(reg.fd);
+            if (FD_ISSET(fd, &readFds)) {
+                handler->handleRead(fd);
             }
         }
 
-        auto writeRegsCopy = _writeRegs;
-        for (auto reg : writeRegsCopy) {
-            if (FD_ISSET(reg.fd, &writeFds)) {
-                //PRINT("writeable: " << reg.fd);
-                reg.handler->handleWrite(reg.fd);
+        for (auto iter = _writeRegs.begin(); iter != _writeRegs.end(); /**/) {
+            auto fd      = iter->first;
+            auto handler = iter->second;
+            ++iter;
+
+            if (FD_ISSET(fd, &writeFds)) {
+                handler->handleWrite(fd);
             }
         }
     }
@@ -117,31 +108,23 @@ public:
     // I_Selector implementation:
 
     void addReadable(int fd, I_ReadHandler * handler) {
-        //PRINT("Adding readable: " << fd);
-        ASSERT(std::find_if(_readRegs.begin(), _readRegs.end(),
-                            [fd](ReadReg & reg) { return reg.fd == fd; }) == _readRegs.end(), "");
-        _readRegs.push_back(ReadReg(fd, handler));
+        ASSERT(_readRegs.find(fd) == _readRegs.end(), "");
+        _readRegs.insert(std::make_pair(fd, handler));
     }
 
     void removeReadable(int fd) {
-        //PRINT("Removing readable: " << fd);
-        auto iter = std::find_if(_readRegs.begin(), _readRegs.end(),
-                                 [fd](ReadReg & reg) { return reg.fd == fd; });
+        auto iter = _readRegs.find(fd);
         ASSERT(iter != _readRegs.end(), "");
         _readRegs.erase(iter);
     }
 
     void addWriteable(int fd, I_WriteHandler * handler) {
-        //PRINT("Adding writeable: " << fd);
-        ASSERT(std::find_if(_writeRegs.begin(), _writeRegs.end(),
-                            [fd](WriteReg & reg) { return reg.fd == fd; }) == _writeRegs.end(), "");
-        _writeRegs.push_back(WriteReg(fd, handler));
+        ASSERT(_writeRegs.find(fd) == _writeRegs.end(), "");
+        _writeRegs.insert(std::make_pair(fd, handler));
     }
 
     void removeWriteable(int fd) {
-        //PRINT("Removing writeable: " << fd);
-        auto iter = std::find_if(_writeRegs.begin(), _writeRegs.end(),
-                                 [fd](WriteReg & reg) { return reg.fd == fd; });
+        auto iter = _writeRegs.find(fd);
         ASSERT(iter != _writeRegs.end(), "");
         _writeRegs.erase(iter);
     }
@@ -177,8 +160,6 @@ public:
         auto n = TEMP_FAILURE_RETRY(::epoll_wait(_fd, event_array, MAX_EVENTS, -1));
         ENFORCE_SYS(n != -1, "");
         ENFORCE(n > 0, "");
-
-        //PRINT("Got: " << n << " events");
 
         for (auto i = 0; i != n; ++i) {
             auto & event = event_array[i];
