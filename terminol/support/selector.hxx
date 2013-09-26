@@ -24,8 +24,19 @@ public:
         ~I_ReadHandler() {}
     };
 
+    class I_WriteHandler {
+    public:
+        virtual void handleWrite(int fd) throw () = 0;
+
+    protected:
+        I_WriteHandler() {}
+        ~I_WriteHandler() {}
+    };
+
     virtual void addReadable(int fd, I_ReadHandler * handler) = 0;
     virtual void removeReadable(int fd) = 0;
+    virtual void addWriteable(int fd, I_WriteHandler * handler) = 0;
+    virtual void removeWriteable(int fd) = 0;
 
 protected:
     I_Selector() {}
@@ -37,44 +48,68 @@ protected:
 //
 
 class SelectSelector : public I_Selector {
-    struct Reg {
-        Reg(int fd_, I_ReadHandler * handler_) : fd(fd_), handler(handler_) {}
+    struct ReadReg {
+        ReadReg(int fd_, I_ReadHandler * handler_) : fd(fd_), handler(handler_) {}
         int             fd;
         I_ReadHandler * handler;
     };
 
-    std::vector<Reg> _regs;
+    struct WriteReg {
+        WriteReg(int fd_, I_WriteHandler * handler_) : fd(fd_), handler(handler_) {}
+        int             fd;
+        I_WriteHandler * handler;
+    };
+
+    std::vector<ReadReg>  _readRegs;
+    std::vector<WriteReg> _writeRegs;
 
 public:
     SelectSelector() {}
 
     virtual ~SelectSelector() {
-        ASSERT(_regs.empty(), "");
+        ASSERT(_readRegs.empty(), "");
+        ASSERT(_writeRegs.empty(), "");
     }
 
     void animate() {
-        ASSERT(!_regs.empty(), "");
+        ASSERT(!_readRegs.empty() || !_writeRegs.empty(), "");
 
         fd_set readFds;
+        fd_set writeFds;
         int max = -1;
 
         FD_ZERO(&readFds);
+        FD_ZERO(&writeFds);
 
-        for (auto reg : _regs) {
+        for (auto reg : _readRegs) {
             FD_SET(reg.fd, &readFds);
+            max = std::max(max, reg.fd);
+        }
+
+        for (auto reg : _writeRegs) {
+            FD_SET(reg.fd, &writeFds);
             max = std::max(max, reg.fd);
         }
 
         //PRINT("Selecting, max=" << max);
         ENFORCE_SYS(TEMP_FAILURE_RETRY(
-            ::select(max + 1, &readFds, nullptr, nullptr, nullptr)) != -1, "");
+            ::select(max + 1, &readFds, &writeFds, nullptr, nullptr)) != -1, "");
 
-        // Copy the vector in case it changes during dispatch.
-        auto regsCopy = _regs;
-        for (auto reg : regsCopy) {
+        // Copy the vectors in case they change during dispatch.
+
+        auto readRegsCopy = _readRegs;
+        for (auto reg : readRegsCopy) {
             if (FD_ISSET(reg.fd, &readFds)) {
                 //PRINT("readable: " << reg.fd);
                 reg.handler->handleRead(reg.fd);
+            }
+        }
+
+        auto writeRegsCopy = _writeRegs;
+        for (auto reg : writeRegsCopy) {
+            if (FD_ISSET(reg.fd, &writeFds)) {
+                //PRINT("writeable: " << reg.fd);
+                reg.handler->handleWrite(reg.fd);
             }
         }
     }
@@ -83,17 +118,32 @@ public:
 
     void addReadable(int fd, I_ReadHandler * handler) {
         //PRINT("Adding readable: " << fd);
-        ASSERT(std::find_if(_regs.begin(), _regs.end(),
-                            [fd](Reg reg) { return reg.fd == fd; }) == _regs.end(), "");
-        _regs.push_back(Reg(fd, handler));
+        ASSERT(std::find_if(_readRegs.begin(), _readRegs.end(),
+                            [fd](ReadReg & reg) { return reg.fd == fd; }) == _readRegs.end(), "");
+        _readRegs.push_back(ReadReg(fd, handler));
     }
 
     void removeReadable(int fd) {
         //PRINT("Removing readable: " << fd);
-        auto iter = std::find_if(_regs.begin(), _regs.end(),
-                                 [fd](Reg reg) { return reg.fd == fd; });
-        ASSERT(iter != _regs.end(), "");
-        _regs.erase(iter);
+        auto iter = std::find_if(_readRegs.begin(), _readRegs.end(),
+                                 [fd](ReadReg & reg) { return reg.fd == fd; });
+        ASSERT(iter != _readRegs.end(), "");
+        _readRegs.erase(iter);
+    }
+
+    void addWriteable(int fd, I_WriteHandler * handler) {
+        //PRINT("Adding writeable: " << fd);
+        ASSERT(std::find_if(_writeRegs.begin(), _writeRegs.end(),
+                            [fd](WriteReg & reg) { return reg.fd == fd; }) == _writeRegs.end(), "");
+        _writeRegs.push_back(WriteReg(fd, handler));
+    }
+
+    void removeWriteable(int fd) {
+        //PRINT("Removing writeable: " << fd);
+        auto iter = std::find_if(_writeRegs.begin(), _writeRegs.end(),
+                                 [fd](WriteReg & reg) { return reg.fd == fd; });
+        ASSERT(iter != _writeRegs.end(), "");
+        _writeRegs.erase(iter);
     }
 };
 
@@ -102,8 +152,9 @@ public:
 //
 
 class EPollSelector : public I_Selector {
-    int                            _fd;
-    std::map<int, I_ReadHandler *> _regs;
+    int                             _fd;
+    std::map<int, I_ReadHandler *>  _readRegs;
+    std::map<int, I_WriteHandler *> _writeRegs;
 
 public:
     EPollSelector() {
@@ -140,10 +191,17 @@ public:
             }
 
             if (events & (EPOLLHUP | EPOLLIN)) {
-                auto iter = _regs.find(fd);
-                ASSERT(iter != _regs.end(), "");
+                auto iter = _readRegs.find(fd);
+                ASSERT(iter != _readRegs.end(), "");
                 auto handler = iter->second;
                 handler->handleRead(fd);
+            }
+
+            if (events & EPOLLOUT) {
+                auto iter = _writeRegs.find(fd);
+                ASSERT(iter != _writeRegs.end(), "");
+                auto handler = iter->second;
+                handler->handleWrite(fd);
             }
         }
     }
@@ -151,23 +209,77 @@ public:
     // I_Selector implementation:
 
     void addReadable(int fd, I_ReadHandler * handler) {
-        ASSERT(_regs.find(fd) == _regs.end(), "");
+        ASSERT(_readRegs.find(fd) == _readRegs.end(), "");
 
         struct epoll_event event;
         std::memset(&event, 0, sizeof event);
         event.data.fd = fd;
 
-        event.events = EPOLLIN;
-        ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_ADD, fd, &event) != -1, "");
-        _regs.insert(std::make_pair(fd, handler));
+        if (_writeRegs.find(fd) == _writeRegs.end()) {
+            event.events = EPOLLIN;
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_ADD, fd, &event) != -1, "");
+        }
+        else {
+            event.events = EPOLLIN | EPOLLOUT;
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");
+        }
+
+        _readRegs.insert(std::make_pair(fd, handler));
     }
 
     void removeReadable(int fd) {
-        auto iter = _regs.find(fd);
-        ASSERT(iter != _regs.end(), "");
+        auto iter = _readRegs.find(fd);
+        ASSERT(iter != _readRegs.end(), "");
 
-        ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_DEL, fd, nullptr) != -1, "");
-        _regs.erase(iter);
+        if (_writeRegs.find(fd) == _writeRegs.end()) {
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_DEL, fd, nullptr) != -1, "");
+        }
+        else {
+            struct epoll_event event;
+            std::memset(&event, 0, sizeof event);
+            event.events = EPOLLOUT;
+            event.data.fd = fd;
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");
+        }
+
+        _readRegs.erase(iter);
+    }
+
+    void addWriteable(int fd, I_WriteHandler * handler) {
+        ASSERT(_writeRegs.find(fd) == _writeRegs.end(), "");
+
+        struct epoll_event event;
+        std::memset(&event, 0, sizeof event);
+        event.data.fd = fd;
+
+        if (_readRegs.find(fd) == _readRegs.end()) {
+            event.events = EPOLLOUT;
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_ADD, fd, &event) != -1, "");
+        }
+        else {
+            event.events = EPOLLIN | EPOLLOUT;
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");
+        }
+
+        _writeRegs.insert(std::make_pair(fd, handler));
+    }
+
+    void removeWriteable(int fd) {
+        auto iter = _writeRegs.find(fd);
+        ASSERT(iter != _writeRegs.end(), "");
+
+        if (_readRegs.find(fd) == _readRegs.end()) {
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_DEL, fd, nullptr) != -1, "");
+        }
+        else {
+            struct epoll_event event;
+            std::memset(&event, 0, sizeof event);
+            event.events = EPOLLIN;
+            event.data.fd = fd;
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");
+        }
+
+        _writeRegs.erase(iter);
     }
 };
 
