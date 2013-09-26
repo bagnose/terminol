@@ -1150,9 +1150,13 @@ void Window::terminalResizeBuffer(int16_t rows, int16_t cols) throw () {
 }
 
 bool Window::terminalFixDamageBegin() throw () {
-    if (!_deferred && _mapped) {
+    // There is no point fixing damage if the pixmap isn't already "current".
+    // It's possible for the pixmap to be valid (because the window was mapped)
+    // but not current (because we haven't received an expose event yet).
+    if (!_deferred && _pixmapCurrent) {
         ASSERT(_surface, "");
-        ASSERT(_pixmapCurrent, "");
+        ASSERT(_mapped, "");
+        ASSERT(_pixmap, "");
         _cr = cairo_create(_surface);
         cairo_set_line_width(_cr, 1.0);
         return true;
