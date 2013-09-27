@@ -749,6 +749,10 @@ public:
     }
 
     void resizeReflow(int16_t rows, int16_t cols) {
+        ASSERT(rows > 0 && cols > 0, "");
+        ASSERT(_cursor.pos.row >= 0 && _cursor.pos.row < getRows(), "");
+        ASSERT(_cursor.pos.col >= 0 && _cursor.pos.col < getCols(), "");
+
         /*
         std::cerr
             << "resizeReflow: "
