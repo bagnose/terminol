@@ -758,11 +758,12 @@ public:
             << std::endl;
             */
 
-        if (getRows() > rows) {
-            // Remove blank lines from the back.
-            while (getRows() > rows && _active.back().isBlank()) {
-                _active.pop_back();
-            }
+        // Remove blank lines from the back, stopping if we hit the cursor.
+        while (getRows() > rows &&
+               _cursor.pos.row < getRows() - 1 &&
+               _active.back().isBlank())
+        {
+            _active.pop_back();
         }
 
         if (cols != getCols()) {
