@@ -1,0 +1,123 @@
+# ~/.config/terminol/config
+#
+# Search order:
+#   ${XDG_CONFIG_HOME}/terminol/config
+#   ${XDG_CONFIG_DIRS...}/terminol/config
+#   ${HOME}/.config/terminol/config
+
+set font-name                   "Meslo LG M"
+set font-size                   14
+
+set color-scheme solarized-dark
+# all options:
+#   linux
+#   rxvt
+#   tango
+#   xterm
+#   zenburn-dark
+#   zenburn
+#   solarized-dark
+#   solarized-light
+
+# Custom colors can also be specified:
+#set normal-fg-color             #faebd7
+#set normal-bg-color             #000000
+#set color-0                     #000000
+#set color-1                     #cd0000
+#set color-2                     #00cd00
+#set color-3                     #cdcd00
+#set color-4                     #0000cd
+#set color-5                     #cd00cd
+#set color-6                     #00cdcd
+#set color-7                     #faebd7
+#set color-8                     #404040
+#set color-9                     #ff0000
+#set color-10                    #00ff00
+#set color-11                    #ffff00
+#set color-12                    #0000ff
+#set color-13                    #ff00ff
+#set color-14                    #00ffff
+#set color-15                    #ffffff
+
+# By default the selection is drawn with swapped fg/bg.
+# This can be overridden:
+#set select-fg-color             #000000
+#set select-bg-color             #55ccff
+
+# Similary, by default the cursor drawn with swapped fg/bg.
+# This can be overridden:
+#set cursor-text-color           #000000
+#set cursor-fill-color           #55ccff
+
+# By default the scrollbar fg is:
+#set scrollbar-fg-color          #7f7f7f
+# And bg is taken from the theme's background.
+#set scrollbar-bg-color          #030303
+#set scrollbar-width             6
+
+#set server-fork                 true
+#set socket-path                 /tmp/my-terminols.socket
+#set term-name                   xterm-256color
+#set scroll-with-history         false
+#set scroll-on-tty-output        false
+#set scroll-on-tty-key-press     true
+#set scroll-on-resize            false
+#set scroll-on-paste             false
+#set title                       ""
+#set icon                        ""
+#set chdir                       ""
+#set scroll-back-history         1048576
+#set frames-per-second           50
+#set sync-tty                    false
+#set trace-tty                   false
+#set initial-x                   -1
+#set initial-y                   -1
+#set initial-rows                24
+#set initial-columns             80
+
+#set unlimited-scroll-back       true
+
+#set border-thickness 1
+# By default the border color is taken from the theme.
+#set border-color #ffff00
+
+#set double-click-timeout        400
+
+# Use this for compatibility with 'vttest':
+#set traditional-wrapping true
+
+# Key bindings (note, none are set by default)
+bindsym ctrl+0                  local-font-reset
+bindsym ctrl+minus              local-font-smaller
+bindsym ctrl+equal              local-font-bigger
+
+bindsym ctrl+shift+parenright   global-font-reset
+bindsym ctrl+shift+underscore   global-font-smaller
+bindsym ctrl+shift+plus         global-font-bigger
+
+bindsym ctrl+shift+C            copy-to-clipboard
+bindsym ctrl+shift+V            paste-from-clipboard
+
+bindsym shift+Up                scroll-up-line
+bindsym shift+Down              scroll-down-line
+bindsym shift+Page_Up           scroll-up-page
+bindsym shift+Page_Down         scroll-down-page
+bindsym shift+Home              scroll-top
+bindsym shift+End               scroll-bottom
+
+bindsym shift+F4                clear-history
+
+bindsym shift+F5                debug-global-tags
+bindsym shift+F6                debug-local-tags
+bindsym shift+F7                debug-history
+bindsym shift+F8                debug-active
+
+bindsym shift+F9                debug-modes
+bindsym shift+F10               debug-selection
+bindsym shift+F11               debug-stats
+bindsym shift+F12               debug-stats2
+
+bindsym ctrl+shift+H            window-narrower
+bindsym ctrl+shift+L            window-wider
+bindsym ctrl+shift+K            window-shorter
+bindsym ctrl+shift+J            window-taller
