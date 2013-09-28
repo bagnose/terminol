@@ -174,7 +174,7 @@ Config::Config() :
     icon("terminol"),
     chdir(),
     scrollBackHistory(1 * 1024 * 1024),
-    unlimitedScrollBack(false),
+    unlimitedScrollBack(true),
     framesPerSecond(50),
     traditionalWrapping(false),
     //
