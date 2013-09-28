@@ -34,6 +34,11 @@ void writeRandomControl(std::ostream & ost) {
 void writeRandomEsc(std::ostream & ost) {
     ost << ESC;
 
+    while (possibility(20)) {
+        // Intermediates
+        ost << randomChar(0x20, 0x30);
+    }
+
     uint8_t c;
 
     do {
@@ -58,19 +63,41 @@ void writeRandomCsi(std::ostream & ost) {
     ost << randomChar(0x40, 0x7F);
 }
 
-void writeRandomOsc(std::ostream & UNUSED(ost)) {
+void writeRandomOsc(std::ostream & ost) {
+    ost << ESC << ']';
+
+    int strLength = randomInt(0, 150);
+    for (int i = 0; i != strLength; ++i) {
+        ost << randomChar(0x20, 0x80);
+    }
+
+    if (possibility(50)) {
+        ost << '\a';
+    }
+    else {
+        ost << ESC << '\\';
+    }
 }
 
 void writeRandomDcs(std::ostream & UNUSED(ost)) {
+    // NYI
 }
 
-void writeRandomSpecial(std::ostream & UNUSED(ost)) {
+void writeRandomSosPmApc(std::ostream & UNUSED(ost)) {
+    // NYI
 }
 
 void writeRandomString(std::ostream & ost) {
     int strLength = randomInt(0, 150);
     for (int i = 0; i != strLength; ++i) {
-        ost << randomChar(0x20, 0x7F);
+        ost << randomChar(0x20, 0x80);
+    }
+}
+
+void writeRandomBytes(std::ostream & ost) {
+    int strLength = randomInt(0, 150);
+    for (int i = 0; i != strLength; ++i) {
+        ost << randomChar(0x0, 0x100);
     }
 }
 
@@ -86,7 +113,7 @@ int main(int argc, char * argv[]) {
     }
 
     for (;;) {
-        switch (randomInt(0, 7)) {
+        switch (randomInt(0, 8)) {
             case 0:
                 writeRandomControl(std::cout);
                 break;
@@ -103,11 +130,16 @@ int main(int argc, char * argv[]) {
                 writeRandomDcs(std::cout);
                 break;
             case 5:
-                writeRandomSpecial(std::cout);
+                writeRandomSosPmApc(std::cout);
                 break;
             case 6:
                 writeRandomString(std::cout);
                 break;
+            case 7:
+                writeRandomBytes(std::cout);
+                break;
+            default:
+                FATAL("Out of range.");
         }
     }
 
