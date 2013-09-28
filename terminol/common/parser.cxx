@@ -92,7 +92,6 @@ void handleSet(const std::string & key,
     else if (key == "normal-bg-color") {
         config.normalBgColor = Color::fromString(value);
     }
-    // systemColors[16]
     else if (key == "select-bg-color") {
         config.customSelectBgColor = true;
         config.selectBgColor = Color::fromString(value);
@@ -132,6 +131,54 @@ void handleSet(const std::string & key,
     }
     else if (key == "server-fork") {
         config.serverFork = unstringify<bool>(value);
+    }
+    else if (key == "color-0") {
+        config.systemColors[0] = Color::fromString(value);
+    }
+    else if (key == "color-1") {
+        config.systemColors[1] = Color::fromString(value);
+    }
+    else if (key == "color-2") {
+        config.systemColors[2] = Color::fromString(value);
+    }
+    else if (key == "color-3") {
+        config.systemColors[3] = Color::fromString(value);
+    }
+    else if (key == "color-4") {
+        config.systemColors[4] = Color::fromString(value);
+    }
+    else if (key == "color-5") {
+        config.systemColors[5] = Color::fromString(value);
+    }
+    else if (key == "color-6") {
+        config.systemColors[6] = Color::fromString(value);
+    }
+    else if (key == "color-7") {
+        config.systemColors[7] = Color::fromString(value);
+    }
+    else if (key == "color-8") {
+        config.systemColors[8] = Color::fromString(value);
+    }
+    else if (key == "color-9") {
+        config.systemColors[9] = Color::fromString(value);
+    }
+    else if (key == "color-10") {
+        config.systemColors[10] = Color::fromString(value);
+    }
+    else if (key == "color-11") {
+        config.systemColors[11] = Color::fromString(value);
+    }
+    else if (key == "color-12") {
+        config.systemColors[12] = Color::fromString(value);
+    }
+    else if (key == "color-13") {
+        config.systemColors[13] = Color::fromString(value);
+    }
+    else if (key == "color-14") {
+        config.systemColors[14] = Color::fromString(value);
+    }
+    else if (key == "color-15") {
+        config.systemColors[15] = Color::fromString(value);
     }
     else {
         throw ParseError("No such setting: '" + key + "'");
