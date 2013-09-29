@@ -51,17 +51,13 @@ ifeq ($(MODE),release)
 else ifeq ($(MODE),debug)
   CPPFLAGS += -DDEBUG=1
   CXXFLAGS += -g
-  ifeq ($(COMPILER),gnu)
-    CXXFLAGS += -Og
-  else
-    CXXFLAGS += -O1
-  endif
+  CXXFLAGS += -O1
 else ifeq ($(MODE),coverage)
   CPPFLAGS += -DDEBUG=1
   CXXFLAGS += -g --coverage
   LDFLAGS  += --coverage
   ifeq ($(COMPILER),gnu)
-    CXXFLAGS += -Og
+    CXXFLAGS += -O1
   else
     $(error Coverage is only support by gnu compiler)
   endif
