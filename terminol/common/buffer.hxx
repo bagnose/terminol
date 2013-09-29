@@ -272,12 +272,12 @@ public:
         _selectMark = _selectDelim = HAPos(hpos, _scrollOffset);
     }
 
-    void delimitSelection(HPos hpos, bool fresh) {
+    void delimitSelection(HPos hpos, bool initial) {
         damageSelection();
 
         HAPos hapos(hpos, _scrollOffset);
 
-        if (fresh) {
+        if (initial) {
             if (_selectDelim < _selectMark) {
                 std::swap(_selectMark, _selectDelim);
             }
