@@ -9,16 +9,8 @@
 #include "terminol/common/bindings.hxx"
 
 struct Config {
-    // TODO
-    // pointerfgColor
-    // pointerBgColor
     // scrollbarStrategy: show/hide/auto
-
     // titleUpdateStrategy: replace, append, prepend, ignore
-
-    // allow blink
-
-    // flow control?
 
     std::string fontName;
     int         fontSize;
