@@ -1195,94 +1195,192 @@ void Terminal::machineControl(uint8_t control) throw () {
     }
 }
 
-void Terminal::machineEscape(uint8_t code) throw () {
-    switch (code) {
-        case 'D':   // IND - Line Feed (opposite of RI)
-            // FIXME still dubious
-            _buffer->forwardIndex();
-            break;
-        case 'E':   // NEL - Next Line
-            // FIXME still dubious
-            _buffer->forwardIndex(true);
-            break;
-        case 'H':   // HTS - Horizontal Tab Stop
-            _buffer->setTab();
-            break;
-        case 'M':   // RI - Reverse Line Feed (opposite of IND)
-            // FIXME still dubious
-            _buffer->reverseIndex();
-            break;
-        case 'N':   // SS2 - Set Single Shift 2
-            NYI("SS2");
-            break;
-        case 'O':   // SS3 - Set Single Shift 3
-            NYI("SS3");
-            break;
-        case 'Z':   // DECID - Identify Terminal
-            write(reinterpret_cast<const uint8_t *>("\x1B[?6c"), 5);
-            break;
-        case 'c':   // RIS - Reset to initial state
-            resetAll();
-            break;
-        case '=':   // DECKPAM - Keypad Application Mode
-            _modes.set(Mode::APPKEYPAD);
-            break;
-        case '>':   // DECKPNM - Keypad Numeric Mode
-            _modes.unset(Mode::APPKEYPAD);
-            break;
-        case '7':   // DECSC - Save Cursor
-            _buffer->saveCursor();
-            break;
-        case '8':   // DECRC - Restore Cursor
-            _buffer->restoreCursor();
-            break;
-        default:
-            ERROR("Unknown escape sequence: ESC " << Char(code));
-            break;
+void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
+    if (esc.inters.empty()) {
+        switch (esc.code) {
+            case 'D':   // IND - Line Feed (opposite of RI)
+                // FIXME still dubious
+                _buffer->forwardIndex();
+                break;
+            case 'E':   // NEL - Next Line
+                // FIXME still dubious
+                _buffer->forwardIndex(true);
+                break;
+            case 'H':   // HTS - Horizontal Tab Stop
+                _buffer->setTab();
+                break;
+            case 'M':   // RI - Reverse Line Feed (opposite of IND)
+                // FIXME still dubious
+                _buffer->reverseIndex();
+                break;
+            case 'N':   // SS2 - Set Single Shift 2
+                NYI("SS2");
+                break;
+            case 'O':   // SS3 - Set Single Shift 3
+                NYI("SS3");
+                break;
+            case 'Z':   // DECID - Identify Terminal
+                write(reinterpret_cast<const uint8_t *>("\x1B[?6c"), 5);
+                break;
+            case 'c':   // RIS - Reset to initial state
+                resetAll();
+                break;
+            case '=':   // DECKPAM - Keypad Application Mode
+                _modes.set(Mode::APPKEYPAD);
+                break;
+            case '>':   // DECKPNM - Keypad Numeric Mode
+                _modes.unset(Mode::APPKEYPAD);
+                break;
+            case '7':   // DECSC - Save Cursor
+                _buffer->saveCursor();
+                break;
+            case '8':   // DECRC - Restore Cursor
+                _buffer->restoreCursor();
+                break;
+            default:
+                ERROR("Unknown escape sequence: ESC " << Char(esc.code));
+                break;
+        }
+    }
+    else if (esc.inters.size() == 1) {
+        switch (esc.inters.front()) {
+            case '#':
+                switch (esc.code) {
+                    case '3': // DECDHL - Double height/width (top half of char)
+                        NYI("Double height (top)");
+                        break;
+                    case '4': // DECDHL - Double height/width (bottom half of char)
+                        NYI("Double height (bottom)");
+                        break;
+                    case '5': // DECSWL - Single height/width
+                        break;
+                    case '6': // DECDWL - Double width
+                        NYI("Double width");
+                        break;
+                    case '8': // DECALN - Alignment
+                        _buffer->testPattern();
+                        break;
+                    default:
+                        NYI("?");
+                        break;
+                }
+                break;
+            case '(':
+                switch (esc.code) {
+                    case '0': // set specg0
+                        _buffer->setCharSub(CharSet::G0, &CS_SPECIAL);
+                        break;
+                    case '1': // set altg0
+                        NYI("Alternate Character rom");
+                        break;
+                    case '2': // set alt specg0
+                        NYI("Alternate Special Character rom");
+                        break;
+                    case 'A': // set ukg0
+                        _buffer->setCharSub(CharSet::G0, &CS_UK);
+                        break;
+                    case 'B': // set usg0
+                        _buffer->setCharSub(CharSet::G0, &CS_US);
+                        break;
+                    case '<': // Multinational character set
+                        NYI("Multinational character set");
+                        break;
+                    case '5': // Finnish
+                        NYI("Finnish 1");
+                        break;
+                    case 'C': // Finnish
+                        NYI("Finnish 2");
+                        break;
+                    case 'K': // German
+                        NYI("German");
+                        break;
+                    default:
+                        NYI("Unknown character set: " << esc.code);
+                        break;
+                }
+                break;
+            case ')':
+                switch (esc.code) {
+                    case '0': // set specg1
+                        _buffer->setCharSub(CharSet::G1, &CS_SPECIAL);
+                        break;
+                    case '1': // set altg1
+                        NYI("Alternate Character rom");
+                        break;
+                    case '2': // set alt specg1
+                        NYI("Alternate Special Character rom");
+                        break;
+                    case 'A': // set ukg0
+                        _buffer->setCharSub(CharSet::G1, &CS_UK);
+                        break;
+                    case 'B': // set usg0
+                        _buffer->setCharSub(CharSet::G1, &CS_US);
+                        break;
+                    case '<': // Multinational character set
+                        NYI("Multinational character set");
+                        break;
+                    case '5': // Finnish
+                        NYI("Finnish 1");
+                        break;
+                    case 'C': // Finnish
+                        NYI("Finnish 2");
+                        break;
+                    case 'K': // German
+                        NYI("German");
+                        break;
+                    default:
+                        NYI("Unknown character set: " << esc.code);
+                        break;
+                }
+                break;
+            default:
+                NYI("Special: " /*<< Str(seq)*/);
+                break;
+        }
+    }
+    else {
+        ERROR("Unhandled: " << esc);
     }
 }
 
-void Terminal::machineCsi(uint8_t priv,
-                          const std::vector<int32_t> & args,
-                          const std::vector<uint8_t> & inters,
-                          uint8_t mode) throw () {
-    if (inters.empty()) {
-        switch (mode) {
+void Terminal::machineCsiEsc(const CsiEsc & esc) throw () {
+    if (esc.inters.empty()) {
+        switch (esc.mode) {
             case '@': { // ICH - Insert Character
-                _buffer->insertCells(nthArgNonZero(args, 0, 1));
+                _buffer->insertCells(nthArgNonZero(esc.args, 0, 1));
                 break;
             }
             case 'A': // CUU - Cursor Up
-                _buffer->moveCursor2(true, -nthArgNonZero(args, 0, 1), true, 0);
+                _buffer->moveCursor2(true, -nthArgNonZero(esc.args, 0, 1), true, 0);
                 break;
             case 'B': // CUD - Cursor Down
-                _buffer->moveCursor2(true, nthArgNonZero(args, 0, 1), true, 0);
+                _buffer->moveCursor2(true, nthArgNonZero(esc.args, 0, 1), true, 0);
                 break;
             case 'C': // CUF - Cursor Forward
-                _buffer->moveCursor2(true, 0, true, nthArgNonZero(args, 0, 1));
+                _buffer->moveCursor2(true, 0, true, nthArgNonZero(esc.args, 0, 1));
                 break;
             case 'D': // CUB - Cursor Backward
-                _buffer->moveCursor2(true, 0, true, -nthArgNonZero(args, 0, 1));
+                _buffer->moveCursor2(true, 0, true, -nthArgNonZero(esc.args, 0, 1));
                 break;
             case 'E': // CNL - Cursor Next Line
-                _buffer->moveCursor2(true, nthArgNonZero(args, 0, 1), false, 0);
+                _buffer->moveCursor2(true, nthArgNonZero(esc.args, 0, 1), false, 0);
                 break;
             case 'F': // CPL - Cursor Preceding Line
-                _buffer->moveCursor2(true, -nthArgNonZero(args, 0, 1), false, 0);
+                _buffer->moveCursor2(true, -nthArgNonZero(esc.args, 0, 1), false, 0);
                 break;
             case 'G': // CHA - Cursor Horizontal Absolute
-                _buffer->moveCursor2(true, 0, false, nthArgNonZero(args, 0, 1) - 1);
+                _buffer->moveCursor2(true, 0, false, nthArgNonZero(esc.args, 0, 1) - 1);
                 break;
             case 'H': // CUP - Cursor Position
-                _buffer->moveCursor(Pos(nthArg(args, 0, 1) - 1, nthArg(args, 1, 1) - 1),
+                _buffer->moveCursor(Pos(nthArg(esc.args, 0, 1) - 1, nthArg(esc.args, 1, 1) - 1),
                                     _modes.get(Mode::ORIGIN));
                 break;
             case 'I': // CHT - Cursor Forward Tabulation *
-                _buffer->tabCursor(TabDir::FORWARD, nthArgNonZero(args, 0, 1));
+                _buffer->tabCursor(TabDir::FORWARD, nthArgNonZero(esc.args, 0, 1));
                 break;
             case 'J': // ED - Erase Data
                 // Clear screen.
-                switch (nthArg(args, 0)) {
+                switch (nthArg(esc.args, 0)) {
                     default:
                     case 0: // ED0 - Below
                         _buffer->clearBelow();
@@ -1297,7 +1395,7 @@ void Terminal::machineCsi(uint8_t priv,
                 }
                 break;
             case 'K':   // EL - Erase line
-                switch (nthArg(args, 0)) {
+                switch (nthArg(esc.args, 0)) {
                     default:
                     case 0: // EL0 - Right (inclusive of cursor position)
                         _buffer->clearLineRight();
@@ -1311,38 +1409,37 @@ void Terminal::machineCsi(uint8_t priv,
                 }
                 break;
             case 'L': // IL - Insert Lines
-                _buffer->insertLines(nthArgNonZero(args, 0, 1));
+                _buffer->insertLines(nthArgNonZero(esc.args, 0, 1));
                 break;
             case 'M': // DL - Delete Lines
-                _buffer->eraseLines(nthArgNonZero(args, 0, 1));
+                _buffer->eraseLines(nthArgNonZero(esc.args, 0, 1));
                 break;
             case 'P': { // DCH - Delete Character
-                // FIXME what about wrap-next?
-                _buffer->eraseCells(nthArgNonZero(args, 0, 1));
+                _buffer->eraseCells(nthArgNonZero(esc.args, 0, 1));
                 break;
             }
             case 'S': // SU - Scroll Up
-                _buffer->scrollUpMargins(nthArgNonZero(args, 0, 1));
+                _buffer->scrollUpMargins(nthArgNonZero(esc.args, 0, 1));
                 break;
             case 'T': // SD - Scroll Down
-                _buffer->scrollDownMargins(nthArgNonZero(args, 0, 1));
+                _buffer->scrollDownMargins(nthArgNonZero(esc.args, 0, 1));
                 break;
             case 'X': { // ECH - Erase Char
-                _buffer->blankCells(nthArgNonZero(args, 0, 1));
+                _buffer->blankCells(nthArgNonZero(esc.args, 0, 1));
                 break;
             }
             case 'Z': // CBT - Cursor Backward Tabulation
-                _buffer->tabCursor(TabDir::BACKWARD, nthArgNonZero(args, 0, 1));
+                _buffer->tabCursor(TabDir::BACKWARD, nthArgNonZero(esc.args, 0, 1));
                 break;
             case '`': // HPA
-                _buffer->moveCursor2(true, 0, false, nthArgNonZero(args, 0, 1) - 1);
+                _buffer->moveCursor2(true, 0, false, nthArgNonZero(esc.args, 0, 1) - 1);
                 break;
             case 'a': // HPR - Horizontal Position Relative
-                _buffer->moveCursor2(true, 0, true, nthArgNonZero(args, 0, 1));
+                _buffer->moveCursor2(true, 0, true, nthArgNonZero(esc.args, 0, 1));
                 break;
             case 'b': { // REP
                 if (_lastSeq.lead() != NUL) {
-                    auto count = nthArgNonZero(args, 0, 1);
+                    auto count = nthArgNonZero(esc.args, 0, 1);
                     for (auto i = 0; i != count; ++i) {
                         machineNormal(_lastSeq, utf8::leadLength(_lastSeq.lead()));
                     }
@@ -1354,17 +1451,17 @@ void Terminal::machineCsi(uint8_t priv,
                 write(reinterpret_cast<const uint8_t *>("\x1B[?6c"), 5);
                 break;
             case 'd': // VPA - Vertical Position Absolute
-                _buffer->moveCursor2(false, nthArg(args, 0, 1) - 1, true, 0);
+                _buffer->moveCursor2(false, nthArg(esc.args, 0, 1) - 1, true, 0);
                 break;
             case 'e': // VPR - Vertical Position Relative
-                _buffer->moveCursor2(true, nthArgNonZero(args, 0, 1), true, 0);
+                _buffer->moveCursor2(true, nthArgNonZero(esc.args, 0, 1), true, 0);
                 break;
             case 'f': // HVP - Horizontal and Vertical Position
-                _buffer->moveCursor(Pos(nthArg(args, 0, 1) - 1, nthArg(args, 1, 1) - 1),
+                _buffer->moveCursor(Pos(nthArg(esc.args, 0, 1) - 1, nthArg(esc.args, 1, 1) - 1),
                                     _modes.get(Mode::ORIGIN));
                 break;
             case 'g': // TBC
-                switch (nthArg(args, 0, 0)) {
+                switch (nthArg(esc.args, 0, 0)) {
                     case 0:
                         _buffer->unsetTab();
                         break;
@@ -1376,7 +1473,7 @@ void Terminal::machineCsi(uint8_t priv,
                 }
                 break;
             case 'W': // Tabulator functions
-                switch (nthArg(args, 0, 0)) {
+                switch (nthArg(esc.args, 0, 0)) {
                     case 0:
                         _buffer->setTab();     // HTS
                         break;
@@ -1391,31 +1488,31 @@ void Terminal::machineCsi(uint8_t priv,
                 }
                 break;
             case 'h': // SM
-                //PRINT("CSI: Set terminal mode: " << strArgs(args));
-                processModes(priv, true, args);
+                //PRINT("CSI: Set terminal mode: " << strArgs(esc.args));
+                processModes(esc.priv, true, esc.args);
                 break;
             case 'l': // RM
-                //PRINT("CSI: Reset terminal mode: " << strArgs(args));
-                processModes(priv, false, args);
+                //PRINT("CSI: Reset terminal mode: " << strArgs(esc.args));
+                processModes(esc.priv, false, esc.args);
                 break;
             case 'm': // SGR - Select Graphic Rendition
-                if (args.empty()) {
+                if (esc.args.empty()) {
                     std::vector<int32_t> args2;
                     args2.push_back(0);
                     processAttributes(args2);
                 }
                 else {
-                    processAttributes(args);
+                    processAttributes(esc.args);
                 }
                 break;
             case 'n': // DSR - Device Status Report
-                if (args.empty()) {
+                if (esc.args.empty()) {
                     // QDC - Query Device Code
                     // RDC - Report Device Code: <ESC>[{code}0c
                     NYI("What code should I send?");
                 }
                 else {
-                    switch (nthArg(args, 0)) {
+                    switch (nthArg(esc.args, 0)) {
                         case 5: {
                             // QDS - Query Device Status
                             // RDO - Report Device OK: <ESC>[0n
@@ -1475,7 +1572,7 @@ void Terminal::machineCsi(uint8_t priv,
                 }
                 break;
             case 'p':
-                if (priv == '!') {
+                if (esc.priv == '!') {
                     // DECSTR - Soft Terminal Reset
                     NYI("DECSTR");
                 }
@@ -1489,17 +1586,17 @@ void Terminal::machineCsi(uint8_t priv,
                 NYI("DECSCA");
                 break;
             case 'r': // DECSTBM - Set Top and Bottom Margins (scrolling)
-                if (priv) {
+                if (esc.priv) {
                     goto default_;
                 }
                 else {
-                    if (args.empty()) {
+                    if (esc.args.empty()) {
                         _buffer->resetMargins();
                     }
                     else {
                         // http://www.vt100.net/docs/vt510-rm/DECSTBM
-                        auto top    = nthArgNonZero(args, 0, 1) - 1;
-                        auto bottom = nthArgNonZero(args, 1, _buffer->getRows()) - 1;
+                        auto top    = nthArgNonZero(esc.args, 0, 1) - 1;
+                        auto bottom = nthArgNonZero(esc.args, 1, _buffer->getRows()) - 1;
 
                         top    = clamp<int32_t>(top,    0, _buffer->getRows() - 1);
                         bottom = clamp<int32_t>(bottom, 0, _buffer->getRows() - 1);
@@ -1524,19 +1621,19 @@ void Terminal::machineCsi(uint8_t priv,
                 break;
 default_:
             default:
-                PRINT("NYI:CSI: ESC  ??? " /*<< Str(seq)*/);
+                PRINT("Unhandled: " << esc);
                 break;
         }
     }
-    else if (inters.size() == 1) {
-        auto i = inters.back();
+    else if (esc.inters.size() == 1) {
+        auto i = esc.inters.back();
 
         if (i == '$') {
-            switch (mode) {
+            switch (esc.mode) {
                 case 'p': { // DECRQM
-                    if (priv == '?') {}
+                    if (esc.priv == '?') {}
 
-                    auto m = nthArgNonZero(args, 0, 1);
+                    auto m = nthArgNonZero(esc.args, 0, 1);
 
                     std::ostringstream ost;
                     ost << ESC << "[?" << m << ";0$y";
@@ -1553,24 +1650,25 @@ default_:
     }
 }
 
-void Terminal::machineDcs(const std::vector<uint8_t> & UNUSED(seq)) throw () {
+void Terminal::machineDcsEsc(const DcsEsc & esc) throw () {
+    PRINT("Unhandled: " << esc);
 }
 
-void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
-    if (!args.empty()) {
+void Terminal::machineOscEsc(const OscEsc & esc) throw () {
+    if (!esc.args.empty()) {
         try {
-            switch (unstringify<int>(args[0])) {
+            switch (unstringify<int>(esc.args[0])) {
                 case 0: // Icon name and window title
-                    if (args.size() > 1) {
-                        _observer.terminalSetIconName(args[1]);
-                        _observer.terminalSetWindowTitle(args[1]);
+                    if (esc.args.size() > 1) {
+                        _observer.terminalSetIconName(esc.args[1]);
+                        _observer.terminalSetWindowTitle(esc.args[1]);
                     }
                     break;
                 case 1: // Icon name
-                    if (args.size() > 1) { _observer.terminalSetIconName(args[1]); }
+                    if (esc.args.size() > 1) { _observer.terminalSetIconName(esc.args[1]); }
                     break;
                 case 2: // Window title
-                    if (args.size() > 1) { _observer.terminalSetWindowTitle(args[1]); }
+                    if (esc.args.size() > 1) { _observer.terminalSetWindowTitle(esc.args[1]); }
                     break;
                 case 55:
                     NYI("Log history to file");
@@ -1583,123 +1681,13 @@ void Terminal::machineOsc(const std::vector<std::string> & args) throw () {
                     break;
                 default:
                     // TODO consult http://rtfm.etla.org/xterm/ctlseq.html AND man 7 urxvt.
-                    PRINT("Unandled: OSC");
-                    for (const auto & a : args) {
-                        PRINT(a);
-                    }
+                    ERROR("Unhandled: " << esc);
                     break;
             }
         }
         catch (const ParseError & ex) {
             ERROR(ex.message);
         }
-    }
-}
-
-void Terminal::machineSpecial(const std::vector<uint8_t> & inters,
-                              uint8_t code) throw () {
-    ASSERT(!inters.empty(), "");
-
-    if (inters.size() == 1) {
-        auto i = inters.front();
-
-        switch (i) {
-            case '#':
-                switch (code) {
-                    case '3': // DECDHL - Double height/width (top half of char)
-                        NYI("Double height (top)");
-                        break;
-                    case '4': // DECDHL - Double height/width (bottom half of char)
-                        NYI("Double height (bottom)");
-                        break;
-                    case '5': // DECSWL - Single height/width
-                        break;
-                    case '6': // DECDWL - Double width
-                        NYI("Double width");
-                        break;
-                    case '8': // DECALN - Alignment
-                        _buffer->testPattern();
-                        break;
-                    default:
-                        NYI("?");
-                        break;
-                }
-                break;
-            case '(':
-                switch (code) {
-                    case '0': // set specg0
-                        _buffer->setCharSub(CharSet::G0, &CS_SPECIAL);
-                        break;
-                    case '1': // set altg0
-                        NYI("Alternate Character rom");
-                        break;
-                    case '2': // set alt specg0
-                        NYI("Alternate Special Character rom");
-                        break;
-                    case 'A': // set ukg0
-                        _buffer->setCharSub(CharSet::G0, &CS_UK);
-                        break;
-                    case 'B': // set usg0
-                        _buffer->setCharSub(CharSet::G0, &CS_US);
-                        break;
-                    case '<': // Multinational character set
-                        NYI("Multinational character set");
-                        break;
-                    case '5': // Finnish
-                        NYI("Finnish 1");
-                        break;
-                    case 'C': // Finnish
-                        NYI("Finnish 2");
-                        break;
-                    case 'K': // German
-                        NYI("German");
-                        break;
-                    default:
-                        NYI("Unknown character set: " << code);
-                        break;
-                }
-                break;
-            case ')':
-                switch (code) {
-                    case '0': // set specg1
-                        _buffer->setCharSub(CharSet::G1, &CS_SPECIAL);
-                        break;
-                    case '1': // set altg1
-                        NYI("Alternate Character rom");
-                        break;
-                    case '2': // set alt specg1
-                        NYI("Alternate Special Character rom");
-                        break;
-                    case 'A': // set ukg0
-                        _buffer->setCharSub(CharSet::G1, &CS_UK);
-                        break;
-                    case 'B': // set usg0
-                        _buffer->setCharSub(CharSet::G1, &CS_US);
-                        break;
-                    case '<': // Multinational character set
-                        NYI("Multinational character set");
-                        break;
-                    case '5': // Finnish
-                        NYI("Finnish 1");
-                        break;
-                    case 'C': // Finnish
-                        NYI("Finnish 2");
-                        break;
-                    case 'K': // German
-                        NYI("German");
-                        break;
-                    default:
-                        NYI("Unknown character set: " << code);
-                        break;
-                }
-                break;
-            default:
-                NYI("Special: " /*<< Str(seq)*/);
-                break;
-        }
-    }
-    else {
-        ERROR("Unhandled");
     }
 }
 

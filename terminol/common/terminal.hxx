@@ -166,15 +166,10 @@ protected:
 
     void     machineNormal(utf8::Seq seq, utf8::Length length) throw ();
     void     machineControl(uint8_t control) throw ();
-    void     machineEscape(uint8_t code) throw ();
-    void     machineCsi(uint8_t priv,
-                        const std::vector<int32_t> & args,
-                        const std::vector<uint8_t> & inters,
-                        uint8_t code) throw ();
-    void     machineDcs(const std::vector<uint8_t> & seq) throw ();
-    void     machineOsc(const std::vector<std::string> & args) throw ();
-    void     machineSpecial(const std::vector<uint8_t> & inter,
-                            uint8_t code) throw ();
+    void     machineSimpleEsc(const SimpleEsc & esc) throw ();
+    void     machineCsiEsc(const CsiEsc & esc) throw ();
+    void     machineDcsEsc(const DcsEsc & esc) throw ();
+    void     machineOscEsc(const OscEsc & esc) throw ();
 
     // Tty::I_Observer imlementation:
 

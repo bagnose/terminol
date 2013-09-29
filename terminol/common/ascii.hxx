@@ -81,18 +81,4 @@ inline std::ostream & operator << (std::ostream & ost, Char ch) {
     }
 }
 
-struct Str {
-    std::vector<uint8_t> s;
-    explicit Str(std::string s_) : s(s_.begin(), s_.end()) {}
-    explicit Str(std::vector<uint8_t> s_) : s(s_) {}     // The C++11 way, right?
-};
-
-inline std::ostream & operator << (std::ostream & ost, const Str & str) {
-    for (auto c : str.s) {
-        ost << Char(c);
-    }
-
-    return ost;
-}
-
 #endif // COMMON__ASCII__HXX

@@ -4,6 +4,73 @@
 #include "terminol/common/ascii.hxx"
 #include "terminol/support/escape.hxx"
 
+std::ostream & operator << (std::ostream & ost, const SimpleEsc & esc) {
+    // escape initiator
+    ost << "^[";
+
+    // intermediates
+    for (auto i : esc.inters) {
+        ost << i;
+    }
+
+    // code
+    ost << esc.code;
+
+    return ost;
+}
+
+std::ostream & operator << (std::ostream & ost, const CsiEsc & esc) {
+    // CSI initiator
+    ost << "^[[";
+
+    // private
+    if (esc.priv != NUL) { ost << esc.priv; }
+
+    // arguments
+    bool firstArg = true;
+    for (auto a : esc.args) {
+        if (firstArg) { firstArg = false; }
+        else          { ost << ';'; }
+        ost << a;
+    }
+
+    // intermediates
+    for (auto i : esc.inters) {
+        ost << i;
+    }
+
+    // mode
+    ost << esc.mode;
+
+    return ost;
+}
+
+std::ostream & operator << (std::ostream & ost, const DcsEsc & esc) {
+    // DCS initiator
+    ost << "^[P";
+
+    for (auto s : esc.seq) {
+        ost << s;
+    }
+
+    return ost;
+}
+
+std::ostream & operator << (std::ostream & ost, const OscEsc & esc) {
+    // OSC initiator
+    ost << "^[]";
+
+    // arguments
+    bool firstArg = true;
+    for (auto a : esc.args) {
+        if (firstArg) { firstArg = false; }
+        else          { ost << ';'; }
+        ost << a;
+    }
+
+    return ost;
+}
+
 namespace {
 
 bool inRange(uint8_t c, uint8_t min, uint8_t max) {
@@ -537,53 +604,28 @@ void VtStateMachine::processControl(uint8_t c) {
 void VtStateMachine::processEsc(const std::vector<uint8_t> & seq) {
     ASSERT(!seq.empty(), "");
 
-    if (seq.size() == 1) {
-        auto code = seq.back();
+    SimpleEsc esc;
+    esc.inters.insert(esc.inters.begin(), seq.begin(), seq.end() - 1);
+    esc.code = seq.back();
 
-        if (_config.traceTty) {
-            std::cerr
-                << SGR::FG_MAGENTA << "ESC" << Char(code)
-                << SGR::RESET_ALL;
-        }
-
-        _observer.machineEscape(code);
-    }
-    else {
-        auto inters = seq;
-        auto code   = inters.back();
-        inters.pop_back();
-
-        if (_config.traceTty) {
-            std::cerr << SGR::FG_BLUE << "ESC";
-            for (auto i : inters) { std::cerr << i; }
-            std::cerr << Char(code) << SGR::RESET_ALL;
-        }
-
-        _observer.machineSpecial(inters, code);
-    }
+    if (_config.traceTty) { std::cerr << esc; }
+    _observer.machineSimpleEsc(esc);
 }
 
 void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
-    if (_config.traceTty) {
-        std::cerr << SGR::FG_CYAN << "ESC[" << Str(seq) << SGR::RESET_ALL;
-    }
-
     ASSERT(seq.size() >= 1, "");
 
     size_t i = 0;
-    uint8_t priv;
-    std::vector<int32_t> args;
-    std::vector<uint8_t> inters;
-    uint8_t mode;
+    CsiEsc esc;
 
     // Private:
 
     if (inRange(seq[i], 0x3C /* < */, 0x3F /* ? */)) {
-        priv = seq[i];
+        esc.priv = seq[i];
         ++i;
     }
     else {
-        priv = NUL;
+        esc.priv = NUL;
     }
 
     // Arguments:
@@ -594,8 +636,8 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
         uint8_t c = seq[i];
 
         if (c >= '0' && c <= '9') {
-            if (!inArg) { args.push_back(0); inArg = true; }
-            args.back() = 10 * args.back() + c - '0';
+            if (!inArg) { esc.args.push_back(0); inArg = true; }
+            esc.args.back() = 10 * esc.args.back() + c - '0';
         }
         else {
             if (c != ';') { break; }
@@ -608,44 +650,35 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
     // Intermediates:
 
     while (inRange(seq[i], 0x20 /* SPACE */, 0x2F /* ? */)) {
-        inters.push_back(seq[i]);
+        esc.inters.push_back(seq[i]);
         ++i;
     }
 
-    ASSERT(i == seq.size() - 1, "i=" << i << ", seq.size=" << seq.size() << ", Seq: " << Str(seq));
+    ASSERT(i == seq.size() - 1, "");
 
     // Mode:
 
-    mode = seq[i];
+    esc.mode = seq[i];
 
     // Dispatch:
 
-    _observer.machineCsi(priv, args, inters, mode);
+    if (_config.traceTty) { std::cerr << esc; }
+    _observer.machineCsiEsc(esc);
 }
 
 void VtStateMachine::processOsc(const std::vector<uint8_t> & seq) {
-    if (_config.traceTty) {
-        std::cerr << SGR::FG_MAGENTA << "ESC]" << Str(seq) << SGR::RESET_ALL;
-    }
-
-    size_t i = 0;
-    std::vector<std::string> args;
-
-    // Arguments:
+    OscEsc esc;
 
     bool next = true;
-    while (i != seq.size()) {
-        uint8_t c = seq[i];
-
-        if (next) { args.push_back(std::string()); next = false; }
+    for (auto c : seq) {
+        if (next) { esc.args.push_back(std::string()); next = false; }
 
         if (c == ';') { next = true; }
-        else          { args.back().push_back(c); }
-
-        ++i;
+        else          { esc.args.back().push_back(c); }
     }
 
     // Dispatch:
 
-    _observer.machineOsc(args);
+    if (_config.traceTty) { std::cerr << esc; }
+    _observer.machineOscEsc(esc);
 }

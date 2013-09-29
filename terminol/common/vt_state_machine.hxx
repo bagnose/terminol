@@ -6,10 +6,55 @@
 #include "terminol/common/utf8.hxx"
 #include "terminol/common/config.hxx"
 
-#include <map>
 #include <vector>
 
 #include <stdint.h>
+
+struct SimpleEsc {
+    std::vector<uint8_t> inters;
+    uint8_t              code;
+};
+
+std::ostream & operator << (std::ostream & ost, const SimpleEsc & esc);
+
+//
+//
+//
+
+struct CsiEsc {
+    CsiEsc() : priv('\0'), args(), inters(), mode('\0') {}
+
+    uint8_t              priv;
+    std::vector<int32_t> args;
+    std::vector<uint8_t> inters;
+    uint8_t              mode;
+};
+
+std::ostream & operator << (std::ostream & ost, const CsiEsc & esc);
+
+//
+//
+//
+
+struct DcsEsc {
+    std::vector<uint8_t> seq;
+};
+
+std::ostream & operator << (std::ostream & ost, const DcsEsc & esc);
+
+//
+//
+//
+
+struct OscEsc {
+    std::vector<std::string> args;
+};
+
+std::ostream & operator << (std::ostream & ost, const OscEsc & esc);
+
+//
+//
+//
 
 class VtStateMachine {
 public:
@@ -17,15 +62,10 @@ public:
     public:
         virtual void machineNormal(utf8::Seq seq, utf8::Length length) throw () = 0;
         virtual void machineControl(uint8_t control) throw () = 0;
-        virtual void machineEscape(uint8_t code) throw () = 0;
-        virtual void machineCsi(uint8_t priv,
-                                const std::vector<int32_t> & args,
-                                const std::vector<uint8_t> & inters,
-                                uint8_t mode) throw () = 0;
-        virtual void machineDcs(const std::vector<uint8_t> & seq) throw () = 0;
-        virtual void machineOsc(const std::vector<std::string> & args) throw () = 0;
-        virtual void machineSpecial(const std::vector<uint8_t> & inters,
-                                    uint8_t code) throw () = 0;
+        virtual void machineSimpleEsc(const SimpleEsc & esc) throw () = 0;
+        virtual void machineCsiEsc(const CsiEsc & esc) throw () = 0;
+        virtual void machineDcsEsc(const DcsEsc & esc) throw () = 0;
+        virtual void machineOscEsc(const OscEsc & esc) throw () = 0;
 
     protected:
         ~I_Observer() {}
