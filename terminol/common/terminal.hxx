@@ -76,7 +76,6 @@ public:
 
 private:
     I_Observer          & _observer;
-    bool                  _dispatch;
 
     const Config        & _config;
     const I_Deduper     & _deduper;

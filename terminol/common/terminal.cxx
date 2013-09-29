@@ -77,7 +77,6 @@ Terminal::Terminal(I_Observer         & observer,
                    const std::string  & windowId,
                    const Tty::Command & command) throw (Tty::Error) :
     _observer(observer),
-    _dispatch(false),
     //
     _config(config),
     _deduper(deduper),
@@ -110,7 +109,6 @@ Terminal::Terminal(I_Observer         & observer,
 }
 
 Terminal::~Terminal() {
-    ASSERT(!_dispatch, "");
 }
 
 void Terminal::resize(int16_t rows, int16_t cols) {
@@ -131,9 +129,6 @@ void Terminal::redraw() {
 }
 
 bool Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
-    ASSERT(!_dispatch, "");
-    _dispatch = true;
-
     if (!handleKeyBinding(keySym, modifiers) && xkb::isPotent(keySym)) {
         if (_config.scrollOnTtyKeyPress && _buffer->scrollBottomHistory()) {
             fixDamage(Trigger::OTHER);
@@ -163,20 +158,15 @@ bool Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
             if (_modes.get(Mode::ECHO)) { echo(&input.front(), input.size()); }
         }
 
-        _dispatch = false;
         return true;
     }
     else {
-        _dispatch = false;
         return false;
     }
 }
 
 void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
                            bool UNUSED(within), HPos hpos) {
-    ASSERT(!_dispatch, "");
-    _dispatch = true;
-
     ASSERT(_press == Press::NONE, "");
 
     if (_modes.get(Mode::MOUSE_PRESS_RELEASE)) {
@@ -214,14 +204,9 @@ select:
     _pointerPos = hpos.pos;
 
     ASSERT(_press != Press::NONE, "");
-
-    _dispatch = false;
 }
 
 void Terminal::pointerMotion(ModifierSet modifiers, bool within, HPos hpos) {
-    ASSERT(!_dispatch, "");
-    _dispatch = true;
-
     if ((_press == Press::REPORT && _modes.get(Mode::MOUSE_DRAG)) ||
         (_press == Press::NONE   && _modes.get(Mode::MOUSE_MOTION)))
     {
@@ -265,14 +250,9 @@ void Terminal::pointerMotion(ModifierSet modifiers, bool within, HPos hpos) {
     }
 
     _pointerPos = hpos.pos;
-
-    _dispatch = false;
 }
 
 void Terminal::buttonRelease(bool UNUSED(broken), ModifierSet modifiers) {
-    ASSERT(!_dispatch, "");
-    _dispatch = true;
-
     ASSERT(_press != Press::NONE, "");
 
     if (_press == Press::SELECT) {
@@ -323,14 +303,9 @@ report:
     }
 
     _press = Press::NONE;
-
-    _dispatch = false;
 }
 
 void Terminal::scrollWheel(ScrollDir dir, ModifierSet modifiers, bool UNUSED(within), Pos pos) {
-    ASSERT(!_dispatch, "");
-    _dispatch = true;
-
     if (_modes.get(Mode::MOUSE_PRESS_RELEASE)) {
         sendMouseButton(dir == ScrollDir::UP ? 3 : 4, modifiers, pos);
     }
@@ -353,14 +328,9 @@ void Terminal::scrollWheel(ScrollDir dir, ModifierSet modifiers, bool UNUSED(wit
                 break;
         }
     }
-
-    _dispatch = false;
 }
 
 void Terminal::paste(const uint8_t * data, size_t size) {
-    ASSERT(!_dispatch, "");
-    _dispatch = true;
-
     if (_config.scrollOnPaste && _buffer->scrollBottomHistory()) {
         fixDamage(Trigger::OTHER);
     }
@@ -374,8 +344,6 @@ void Terminal::paste(const uint8_t * data, size_t size) {
     if (_modes.get(Mode::BRACKETED_PASTE)) {
         write(reinterpret_cast<const uint8_t *>("\x1B[201~"), 6);
     }
-
-    _dispatch = false;
 }
 
 void Terminal::tryReap() {
@@ -387,19 +355,11 @@ void Terminal::killReap() {
 }
 
 void Terminal::clearSelection() {
-    ASSERT(!_dispatch, "");
-    _dispatch = true;
-
     _buffer->clearSelection();
     fixDamage(Trigger::OTHER);
-
-    _dispatch = false;
 }
 
 void Terminal::focusChange(bool focused) {
-    ASSERT(!_dispatch, "");
-    _dispatch = true;
-
     if (_focused != focused) {
         _focused = focused;
 
@@ -416,8 +376,6 @@ void Terminal::focusChange(bool focused) {
             fixDamage(Trigger::FOCUS);
         }
     }
-
-    _dispatch = false;
 }
 
 bool Terminal::hasSubprocess() const {
@@ -658,8 +616,6 @@ void Terminal::write(const uint8_t * data, size_t size) {
 }
 
 void Terminal::echo(const uint8_t * data, size_t size) {
-    _dispatch = true;
-
     while (size != 0) {
         auto c = *data;
 
@@ -687,8 +643,6 @@ void Terminal::echo(const uint8_t * data, size_t size) {
     if (!_config.syncTty) {
         fixDamage(Trigger::TTY);
     }
-
-    _dispatch = false;
 }
 
 void Terminal::sendMouseButton(int num, ModifierSet modifiers, Pos pos) {
@@ -1752,24 +1706,15 @@ void Terminal::machineSpecial(const std::vector<uint8_t> & inters,
 // Tty::I_Observer imlementation:
 
 void Terminal::ttyData(const uint8_t * data, size_t size) throw () {
-    ASSERT(!_dispatch, "");
-    _dispatch = true;
     processRead(data, size);
-    _dispatch = false;
 }
 
 void Terminal::ttySync() throw () {
-    ASSERT(!_dispatch, "");
-    _dispatch = true;
     fixDamage(Trigger::TTY);
-    _dispatch = false;
 }
 
 void Terminal::ttyExited(int exitCode) throw () {
-    ASSERT(!_dispatch, "");
-    _dispatch = true;
     _observer.terminalChildExited(exitCode);
-    _dispatch = false;
 }
 
 std::ostream & operator << (std::ostream & ost, Terminal::Button button) {
