@@ -1243,6 +1243,10 @@ public:
             auto   c1    = c0;
 
             for (; c1 != d.end; ++c1) {
+                // Once we get past the wrap point all cells should be the same, so skip
+                // to the last iteration.
+                if (c1 >= wrap) { c1 = d.end - 1; }
+
                 auto   apos     = APos(r - _scrollOffset, c1);
                 auto   selected = selValid && isCellSelected(apos, selBegin, selEnd, wrap);
                 auto   c        = c1 + offset;
@@ -1314,17 +1318,21 @@ public:
             }
 
             auto & cells  = *cellsPtr;
-            auto   blank  = Cell::blank();
             auto   fg0    = UColor::stock(UColor::Name::TEXT_FG);
             auto   attrs0 = AttrSet();
             auto   c0     = d.begin;   // Accumulation start column.
             auto   c1     = c0;
 
             for (; c1 != d.end; ++c1) {
+                // Once we get past the wrap point all cells will be blank,
+                // so break out of the loop now.
+                if (c1 >= wrap) { break; }
+
                 auto   apos     = APos(r - _scrollOffset, c1);
                 auto   selected = selValid && isCellSelected(apos, selBegin, selEnd, wrap);
                 auto   c        = c1 + offset;
-                auto & cell     = c < cells.size() ? cells[c] : blank;
+                ASSERT(c < cells.size(), "");
+                auto & cell     = cells[c];
                 auto & attrs1   = cell.style.attrs;
                 auto   swap     = XOR(reverse, attrs1.get(Attr::INVERSE));
                 auto   fg1      = fg0; // About to be overridden.
