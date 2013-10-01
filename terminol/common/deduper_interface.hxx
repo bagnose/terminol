@@ -15,7 +15,7 @@ public:
     virtual Tag store(std::vector<Cell> & cells) = 0;           // Clears cells.
     virtual const std::vector<Cell> & lookup(Tag tag) const = 0;
     virtual void remove(Tag tag) = 0;
-    virtual void lookupRemove(Tag tag, std::vector<Cell> & cells) = 0;
+    virtual std::vector<Cell> lookupRemove(Tag tag) = 0;
     virtual void getStats(uint32_t & uniqueLines, uint32_t & totalLines) const = 0;
     virtual void getStats2(size_t & bytes1, size_t & bytes2) const = 0;
     virtual void dump(std::ostream & ost) const = 0;

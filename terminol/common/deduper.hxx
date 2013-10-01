@@ -115,22 +115,23 @@ again:
         --_totalRefs;
     }
 
-    void lookupRemove(Tag tag, std::vector<Cell> & cells) {
+    std::vector<Cell> lookupRemove(Tag tag) {
         ASSERT(tag != invalidTag(), "");
         auto iter = _lines.find(tag);
         ASSERT(iter != _lines.end(), "");
         auto & payload = iter->second;
 
+        --_totalRefs;
+
         if (--payload.refs == 0) {
-            cells = std::move(payload.cells);
+            auto rval = std::move(payload.cells);
             ASSERT(payload.cells.empty(), "");
             _lines.erase(iter);
+            return rval;
         }
         else {
-            cells = payload.cells;
+            return payload.cells;
         }
-
-        --_totalRefs;
     }
 
     void getStats(uint32_t & uniqueLines, uint32_t & totalLines) const {

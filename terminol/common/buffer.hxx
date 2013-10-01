@@ -1759,7 +1759,7 @@ protected:
             cont = false;
             auto tag = _tags.back();
             ASSERT(tag != I_Deduper::invalidTag(), "");
-            _deduper.lookupRemove(tag, _pending);
+            _pending     = _deduper.lookupRemove(tag);
             _tags.back() = I_Deduper::invalidTag();
         }
         else {
