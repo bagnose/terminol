@@ -27,8 +27,8 @@ At the bare minimum you need to specify the font:
 
     mkdir ~/.config/terminol
     cat << EOF > ~/.config/terminol/config
-    set font-name                   "Meslo LG M"
-    set font-size                   14
+    set font-name "Meslo LG M"
+    set font-size 14
     EOF
 
 Launch terminol

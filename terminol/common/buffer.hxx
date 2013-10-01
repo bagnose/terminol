@@ -164,6 +164,7 @@ class Buffer {
         }
     };
 
+    // Cursor
     struct Cursor {
         Pos             pos;
         Style           style;
@@ -1237,10 +1238,9 @@ public:
 
             auto & cells = *cellsPtr;
             auto   blank = Cell::blank();
-
-            auto bg0 = UColor::stock(UColor::Name::TEXT_BG);
-            auto c0  = d.begin;  // Accumulation start column.
-            auto c1  = c0;
+            auto   bg0   = UColor::stock(UColor::Name::TEXT_BG);
+            auto   c0    = d.begin;  // Accumulation start column.
+            auto   c1    = c0;
 
             for (; c1 != d.end; ++c1) {
                 auto   apos     = APos(r - _scrollOffset, c1);
@@ -1313,13 +1313,12 @@ public:
                 wrap     = aline.wrap;
             }
 
-            auto & cells = *cellsPtr;
-            auto   blank = Cell::blank();
-
-            auto fg0    = UColor::stock(UColor::Name::TEXT_FG);
-            auto attrs0 = AttrSet();
-            auto c0     = d.begin;   // Accumulation start column.
-            auto c1     = c0;
+            auto & cells  = *cellsPtr;
+            auto   blank  = Cell::blank();
+            auto   fg0    = UColor::stock(UColor::Name::TEXT_FG);
+            auto   attrs0 = AttrSet();
+            auto   c0     = d.begin;   // Accumulation start column.
+            auto   c1     = c0;
 
             for (; c1 != d.end; ++c1) {
                 auto   apos     = APos(r - _scrollOffset, c1);
@@ -1380,9 +1379,8 @@ public:
 
         int32_t r0 = _cursor.pos.row + getScrollOffset();
         if (r0 >= 0 && r0 < getRows()) {
-            auto r1 = static_cast<int16_t>(r0);
-            auto c1 = _cursor.pos.col;
-
+            auto   r1       = static_cast<int16_t>(r0);
+            auto   c1       = _cursor.pos.col;
             auto & aline    = _active[r1];
             auto   wrap     = aline.wrap;
             auto   apos     = APos(r1 - _scrollOffset, c1);

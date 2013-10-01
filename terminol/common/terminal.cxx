@@ -942,7 +942,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                     _buffer->setBg(UColor::indexed(v - 512));
                 }
                 else {
-                    ERROR("Unhandled attribute: " << v);
+                    WARNING("Unhandled attribute: " << v);
                 }
                 break;
         }
@@ -1123,7 +1123,7 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     _modes.setTo(Mode::BRACKETED_PASTE, set);
                     break;
                 default:
-                    ERROR("erresc: unknown private set/reset mode : " << a);
+                    WARNING("erresc: unknown private set/reset mode: " << a);
                     break;
             }
         }
@@ -1144,7 +1144,7 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     _modes.setTo(Mode::CR_ON_LF, set);
                     break;
                 default:
-                    ERROR("erresc: unknown set/reset mode: " <<  a);
+                    WARNING("erresc: unknown set/reset mode: " <<  a);
                     break;
             }
         }
@@ -1238,7 +1238,7 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
                 _buffer->restoreCursor();
                 break;
             default:
-                ERROR("Unknown escape sequence: ESC " << Char(esc.code));
+                WARNING("Unhandled: " << esc);
                 break;
         }
     }
@@ -1261,7 +1261,7 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
                         _buffer->testPattern();
                         break;
                     default:
-                        NYI("?");
+                        WARNING("Unhandled: " << esc);
                         break;
                 }
                 break;
@@ -1295,7 +1295,7 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
                         NYI("German");
                         break;
                     default:
-                        NYI("Unknown character set: " << esc.code);
+                        WARNING("Unknown character set: " << esc.code);
                         break;
                 }
                 break;
@@ -1329,17 +1329,17 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
                         NYI("German");
                         break;
                     default:
-                        NYI("Unknown character set: " << esc.code);
+                        WARNING("Unknown character set: " << esc.code);
                         break;
                 }
                 break;
             default:
-                NYI("Special: " /*<< Str(seq)*/);
+                WARNING("Unhandled: " << esc);
                 break;
         }
     }
     else {
-        ERROR("Unhandled: " << esc);
+        WARNING("Unhandled: " << esc);
     }
 }
 
@@ -1566,7 +1566,7 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) throw () {
                             break;
                         }
                         default:
-                            NYI("");
+                            WARNING("Unhandled: " << esc);
                             break;
                     }
                 }
@@ -1621,7 +1621,7 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) throw () {
                 break;
 default_:
             default:
-                PRINT("Unhandled: " << esc);
+                WARNING("Unhandled: " << esc);
                 break;
         }
     }
@@ -1681,7 +1681,7 @@ void Terminal::machineOscEsc(const OscEsc & esc) throw () {
                     break;
                 default:
                     // TODO consult http://rtfm.etla.org/xterm/ctlseq.html AND man 7 urxvt.
-                    ERROR("Unhandled: " << esc);
+                    WARNING("Unhandled: " << esc);
                     break;
             }
         }
