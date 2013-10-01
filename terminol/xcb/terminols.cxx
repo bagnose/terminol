@@ -216,8 +216,9 @@ protected:
             }
         }
 
-        if (xcb_connection_has_error(_basics.connection())) {
-            throw Error("Lost display connection.");
+        auto error = xcb_connection_has_error(_basics.connection());
+        if (error != 0) {
+            throw Error("Lost display connection, error=" + stringify(error));
         }
     }
 

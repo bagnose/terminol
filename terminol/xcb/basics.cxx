@@ -1,6 +1,7 @@
 // vi:noai:sw=4
 
 #include "terminol/xcb/basics.hxx"
+#include "terminol/xcb/common.hxx"
 #include "terminol/support/debug.hxx"
 
 #include <xkbcommon/xkbcommon-keysyms.h>
@@ -11,28 +12,6 @@
 
 #include <unistd.h>
 #include <limits.h>
-
-// TODO consolidate this function
-#define xcb_request_failed(connection, cookie, err_msg) _xcb_request_failed(connection, cookie, err_msg, __LINE__)
-namespace {
-
-bool _xcb_request_failed(xcb_connection_t * connection, xcb_void_cookie_t cookie,
-                         const char * err_msg, int line) {
-    auto error = xcb_request_check(connection, cookie);
-    if (error) {
-        std::cerr
-            << __FILE__ << ':' << line << ' ' << err_msg
-            << " (X Error Code: " << static_cast<int>(error->error_code) << ')'
-            << std::endl;
-        std::free(error);
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-
-} // namespace {anonymous}
 
 Basics::Basics() throw (Error) {
     char h[HOST_NAME_MAX + 1];

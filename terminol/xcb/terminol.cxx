@@ -4,6 +4,7 @@
 #include "terminol/xcb/color_set.hxx"
 #include "terminol/xcb/font_manager.hxx"
 #include "terminol/xcb/basics.hxx"
+#include "terminol/xcb/common.hxx"
 #include "terminol/common/deduper.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/parser.hxx"
@@ -123,8 +124,9 @@ protected:
             }
         }
 
-        if (xcb_connection_has_error(_basics.connection())) {
-            throw Error("Lost display connection.");
+        auto error = xcb_connection_has_error(_basics.connection());
+        if (error != 0) {
+            throw Error("Lost display connection, error=" + stringify(error));
         }
     }
 
