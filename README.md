@@ -16,7 +16,7 @@ A simple Linux/X11 VT220 terminal emulator featuring:
 
 # Quickstart #
 
-Build terminol (this requires xkbcommon, xcb, pango, cairo and a C++11 compiler).
+Build terminol (this requires pcre, xkbcommon, xcb, pango, cairo and a C++11 compiler).
 
     ./configure ./build-dir debug gnu
     cd build-dir

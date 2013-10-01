@@ -196,7 +196,9 @@ Config::Config() :
     borderThickness(1),
     doubleClickTimeout(400),
     //
-    serverFork(true)
+    serverFork(true),
+    bindings(),
+    cutChars("-A-Za-z0-9,./?%&#:_=+@~")
 {
     setColorScheme("solarized-dark");
 

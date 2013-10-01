@@ -1,32 +1,36 @@
-INSTALLDIR  ?= ~/local/terminol
-VERBOSE     ?= false
-VERSION     ?= $(shell git --git-dir=src/.git log -1 --format='%cd.%h' --date=short | tr -d -)
-BROWSER     ?= chromium
+INSTALLDIR      ?= ~/local/terminol
+VERBOSE         ?= false
+VERSION         ?= $(shell git --git-dir=src/.git log -1 --format='%cd.%h' --date=short | tr -d -)
+BROWSER         ?= chromium
 
-ALL_MODULES := pangocairo pango cairo fontconfig xcb-keysyms xcb-icccm xcb-ewmh xcb-util xkbcommon
+ALL_MODULES     := pangocairo pango cairo fontconfig xcb-keysyms xcb-icccm xcb-ewmh xcb-util xkbcommon libpcre
 
 ifeq ($(shell pkg-config $(ALL_MODULES) && echo installed),)
   $(error Missing packages from: $(ALL_MODULES))
 endif
 
-XKB_MODULES := xkbcommon
-XKB_CFLAGS  := $(shell pkg-config --cflags $(XKB_MODULES))
-XKB_LDFLAGS := $(shell pkg-config --libs   $(XKB_MODULES))
+SUPPORT_MODULES := libpcre
+SUPPORT_CFLAGS  := $(shell pkg-config --cflags $(SUPPORT_MODULES))
+SUPPORT_LDFLAGS := $(shell pkg-config --libs   $(SUPPORT_MODULES))
 
-XCB_MODULES := $(ALL_MODULES)
-XCB_CFLAGS  := $(shell pkg-config --cflags $(XCB_MODULES))
-XCB_LDFLAGS := $(shell pkg-config --libs   $(XCB_MODULES))
+COMMON_MODULES  := xkbcommon
+COMMON_CFLAGS   := $(shell pkg-config --cflags $(COMMON_MODULES))
+COMMON_LDFLAGS  := $(shell pkg-config --libs   $(COMMON_MODULES))
 
-CPPFLAGS    := -DVERSION=\"$(VERSION)\" -iquotesrc
-CXXFLAGS    := -fpic -fno-rtti -pedantic -std=c++11
-WFLAGS      := -Wextra -Wall -Wno-long-long -Wundef                   \
-               -Wredundant-decls -Wshadow -Wsign-compare              \
-               -Wmissing-field-initializers -Wno-format-zero-length   \
-               -Wno-unused-function -Woverloaded-virtual -Wsign-promo \
-               -Wctor-dtor-privacy -Wnon-virtual-dtor
-AR          := ar
-ARFLAGS     := csr
-LDFLAGS     :=
+XCB_MODULES     := $(ALL_MODULES)
+XCB_CFLAGS      := $(shell pkg-config --cflags $(XCB_MODULES))
+XCB_LDFLAGS     := $(shell pkg-config --libs   $(XCB_MODULES))
+
+CPPFLAGS        := -DVERSION=\"$(VERSION)\" -iquotesrc
+CXXFLAGS        := -fpic -fno-rtti -pedantic -std=c++11
+WFLAGS          := -Wextra -Wall -Wno-long-long -Wundef                   \
+                   -Wredundant-decls -Wshadow -Wsign-compare              \
+                   -Wmissing-field-initializers -Wno-format-zero-length   \
+                   -Wno-unused-function -Woverloaded-virtual -Wsign-promo \
+                   -Wctor-dtor-privacy -Wnon-virtual-dtor
+AR              := ar
+ARFLAGS         := csr
+LDFLAGS         :=
 
 ifneq ($(WARN),noerror)
   CXXFLAGS += -Werror
@@ -232,6 +236,8 @@ $(eval $(call EXE,TEST,terminol/support/test-net,test_net.cxx,,terminol/support,
 
 $(eval $(call EXE,TEST,terminol/support/test-cmdline,test_cmdline.cxx,,terminol/support,))
 
+$(eval $(call EXE,TEST,terminol/support/test-regex,test_regex.cxx,,terminol/support,$(SUPPORT_LDFLAGS)))
+
 #
 # COMMON
 #
@@ -266,4 +272,4 @@ $(eval $(call EXE,DIST,terminol/xcb/terminol,terminol.cxx,$(XCB_CFLAGS),terminol
 
 $(eval $(call EXE,DIST,terminol/xcb/terminols,terminols.cxx,$(XCB_CFLAGS),terminol/xcb terminol/common terminol/support,$(XCB_LDFLAGS) -lutil))
 
-$(eval $(call EXE,DIST,terminol/xcb/terminolc,terminolc.cxx,$(XKB_CFLAGS),terminol/common terminol/support,$(XKB_LDFLAGS)))
+$(eval $(call EXE,DIST,terminol/xcb/terminolc,terminolc.cxx,$(XKB_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))

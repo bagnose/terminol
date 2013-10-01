@@ -8,6 +8,8 @@
 set font-name                   "Meslo LG M"
 set font-size                   14
 
+set cut-chars                   "-A-Za-z0-9,./?%&#:_=+@~"
+
 set color-scheme solarized-dark
 # all options:
 #   linux

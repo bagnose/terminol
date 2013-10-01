@@ -180,6 +180,9 @@ void handleSet(const std::string & key,
     else if (key == "color-15") {
         config.systemColors[15] = Color::fromString(value);
     }
+    else if (key == "cut-chars") {
+        config.cutChars = value;
+    }
     else {
         throw ParseError("No such setting: '" + key + "'");
     }

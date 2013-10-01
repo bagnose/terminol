@@ -63,6 +63,8 @@ struct Config {
 
     Bindings    bindings;
 
+    std::string cutChars;
+
     //
     //
     //

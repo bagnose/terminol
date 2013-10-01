@@ -7,6 +7,7 @@
 #include "terminol/common/config.hxx"
 #include "terminol/common/deduper_interface.hxx"
 #include "terminol/support/escape.hxx"
+#include "terminol/support/regex.hxx"
 
 #include <deque>
 #include <vector>
@@ -334,11 +335,15 @@ public:
                                      getCols() - 1, Hand::RIGHT);
             }
             else {
+                Regex regex("[" + _config.cutChars + "]");
+
                 _selectMark      = hapos;
                 _selectMark.hand = Hand::LEFT;
 
                 while (left != 0) {
-                    if (cells[left - 1].seq.lead() == ' ') { break; }
+                    auto seq = cells[left - 1].seq;
+                    std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
+                    if (regex.match(s).empty()) { break; }
 
                     --left;
 
@@ -355,7 +360,9 @@ public:
                 _selectDelim.hand = Hand::RIGHT;
 
                 while (right != cells.size() - 1) {
-                    if (cells[right + 1].seq.lead() == ' ') { break; }
+                    auto seq = cells[right + 1].seq;
+                    std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
+                    if (regex.match(s).empty()) { break; }
 
                     ++right;
 
@@ -386,11 +393,15 @@ public:
                 _selectDelim = HAPos(hapos.apos.row, getCols() - 1, Hand::RIGHT);
             }
             else {
+                Regex regex("[" + _config.cutChars + "]");
+
                 _selectMark      = hapos;
                 _selectMark.hand = Hand::LEFT;
 
                 while (_selectMark.apos.col != 0) {
-                    if (cells[_selectMark.apos.col - 1].seq.lead() == ' ') { break; }
+                    auto seq = cells[_selectMark.apos.col - 1].seq;
+                    std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
+                    if (regex.match(s).empty()) { break; }
                     --_selectMark.apos.col;
                 }
 
@@ -398,7 +409,9 @@ public:
                 _selectDelim.hand = Hand::RIGHT;
 
                 while (_selectDelim.apos.col != static_cast<int16_t>(cells.size() - 1)) {
-                    if (cells[_selectDelim.apos.col + 1].seq.lead() == ' ') { break; }
+                    auto seq = cells[_selectDelim.apos.col + 1].seq;
+                    std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
+                    if (regex.match(s).empty()) { break; }
                     ++_selectDelim.apos.col;
                 }
             }
