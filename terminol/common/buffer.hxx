@@ -68,6 +68,12 @@ class Buffer {
         return !(lhs == rhs);
     }
 
+    friend bool operator <  (const APos & lhs, const APos & rhs) {
+        return
+            (lhs.row <  rhs.row) ||
+            (lhs.row == rhs.row && lhs.col < rhs.col);
+    }
+
     // Handed-Absolute-Position, where handed means left or right side of cell.
     struct HAPos {
         APos apos;
@@ -423,7 +429,7 @@ public:
 
     void clearSelection() {
         damageSelection();
-        _selectDelim = _selectMark;     // XXX need to be careful this always points to valid data.
+        _selectDelim = _selectMark = HAPos();
     }
 
     bool getSelectedText(std::string & text) const {
@@ -607,6 +613,15 @@ public:
             insertCells(1);
         }
 
+        APos begin, end;
+        if (normaliseSelection(begin, end)) {
+            APos cpos(_cursor.pos, 0);
+
+            if (!(cpos < begin) && cpos < end) {
+                clearSelection();
+            }
+        }
+
         auto & line = _active[_cursor.pos.row];
 
         if (cs->isSpecial()) {
@@ -727,6 +742,12 @@ public:
     }
 
     void resizeClip(int16_t rows, int16_t cols) {
+        ASSERT(rows > 0 && cols > 0, "");
+        ASSERT(_cursor.pos.row >= 0 && _cursor.pos.row < getRows(), "");
+        ASSERT(_cursor.pos.col >= 0 && _cursor.pos.col < getCols(), "");
+
+        clearSelection();
+
         if (cols != getCols()) {
             for (auto & line : _active) {
                 line.cells.resize(cols, Cell::blank());
@@ -766,6 +787,8 @@ public:
         ASSERT(rows > 0 && cols > 0, "");
         ASSERT(_cursor.pos.row >= 0 && _cursor.pos.row < getRows(), "");
         ASSERT(_cursor.pos.col >= 0 && _cursor.pos.col < getCols(), "");
+
+        clearSelection();
 
         // Remove blank lines from the back, stopping if we hit the cursor.
         while (getRows() > rows &&
@@ -994,6 +1017,13 @@ public:
     }
 
     void insertCells(uint16_t n) {
+        APos begin, end;
+        if (normaliseSelection(begin, end)) {
+            if (begin.row <= _cursor.pos.row && end.row >= _cursor.pos.row) {
+                clearSelection();
+            }
+        }
+
         n = std::min<uint16_t>(n, getCols() - _cursor.pos.col);
 
         auto & line = _active[_cursor.pos.row];
@@ -1017,6 +1047,13 @@ public:
     }
 
     void eraseCells(uint16_t n) {
+        APos begin, end;
+        if (normaliseSelection(begin, end)) {
+            if (begin.row <= _cursor.pos.row && end.row >= _cursor.pos.row) {
+                clearSelection();
+            }
+        }
+
         n = std::min<uint16_t>(n, getCols() - _cursor.pos.col);
 
         auto & line = _active[_cursor.pos.row];
@@ -1601,12 +1638,27 @@ protected:
         ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n <<
                ", margin-end=" << _marginEnd);
 
+        APos begin, end;
+        if (normaliseSelection(begin, end)) {
+            if (begin.row < row && end.row >= row) {
+                // Clear the selection because it spans the insertion point.
+                clearSelection();
+            }
+            else if (begin.row < _marginEnd - n && end.row >= _marginEnd - n) {
+                // Clear the selection because it spans or will collide with the
+                // erasure point.
+                clearSelection();
+            }
+            else {
+                _selectMark.apos.row  += n;
+                _selectDelim.apos.row += n;
+            }
+        }
+
         _active.erase (_active.begin() + _marginEnd - n, _active.begin() + _marginEnd);
         _active.insert(_active.begin() + row, n, ALine(getCols()));
 
         damageRows(row, _marginEnd);
-
-        clearSelection();
     }
 
     void eraseLinesAt(int16_t row, uint16_t n) {
@@ -1614,12 +1666,28 @@ protected:
         ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n <<
                ", margin-end=" << _marginEnd);
 
+        APos begin, end;
+        if (normaliseSelection(begin, end)) {
+            if (begin.row < row + n && end.row >= row) {
+                // Clear the selection because it spans the erasure point or will collidate
+                // with the erasure point.
+                clearSelection();
+            }
+            else if (begin.row < _marginEnd && end.row >= _marginEnd) {
+                // Clear the selection because it spans the insertion point.
+                clearSelection();
+            }
+            else {
+                _selectMark.apos.row  -= n;
+                _selectDelim.apos.row -= n;
+            }
+        }
+
+
         _active.erase (_active.begin() + row, _active.begin() + row + n);
         _active.insert(_active.begin() + _marginEnd - n, n, ALine(getCols()));
 
         damageRows(row, _marginEnd);
-
-        clearSelection();
     }
 
     bool marginsSet() const {
@@ -1655,19 +1723,35 @@ protected:
             if (damageRow < static_cast<uint32_t>(getRows())) {
                 _damage[i].damageSet(0, getCols());
             }
+            else {
+                break;
+            }
         }
     }
 
     void damageSelection() {
-        damageViewport(false);        // FIXME just damage selection
+        APos begin, end;
+
+        if (normaliseSelection(begin, end)) {
+            // Convert to viewport relative.
+            auto row0 = begin.row   + static_cast<int32_t>(_scrollOffset);
+            auto row1 = end.row + 1 + static_cast<int32_t>(_scrollOffset);
+
+            // Clamp to viewport.
+            auto row2 = std::max<int32_t>(row0, 0);
+            auto row3 = std::min<int32_t>(row1, getRows());
+
+            if (row2 < row3) {
+                for (auto i = row2; i != row3; ++i) {
+                    _damage[i].damageSet(0, getCols());
+                }
+            }
+        }
     }
 
     void addLine() {
         if (marginsSet()) {
-            _active.erase (_active.begin() + _marginBegin);
-            _active.insert(_active.begin() + _marginEnd - 1, ALine(getCols()));
-
-            damageRows(_marginBegin, _marginEnd);
+            eraseLinesAt(_marginBegin, 1);
         }
         else {
             if (_historyLimit == 0) {
@@ -1685,11 +1769,19 @@ protected:
 
             _active.push_back(ALine(getCols()));
 
+            APos begin, end;
+            if (normaliseSelection(begin, end)) {
+                if (begin.row == -static_cast<int32_t>(_history.size())) {
+                    clearSelection();
+                }
+                else {
+                    --_selectMark.apos.row;
+                    --_selectDelim.apos.row;
+                }
+            }
+
             damageViewport(true);
         }
-
-        --_selectMark.apos.row;
-        --_selectDelim.apos.row;
 
         enforceHistoryLimit();
     }
