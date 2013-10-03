@@ -1759,7 +1759,8 @@ protected:
         std::vector<Cell> cells(_pending.begin() + offset, _pending.end());
         _pending.erase(_pending.begin() + offset, _pending.end());
 
-        _active.push_front(ALine(cells, cont, hline.size, _cols));
+        _active.push_front(ALine(cells, cont, cells.size(), _cols));
+        ASSERT(_active.front().wrap <= _cols, "");
 
         _history.pop_back();
 
