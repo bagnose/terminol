@@ -99,7 +99,7 @@ protected:
         if (fd == _fd) {
             struct sockaddr_un address;
             ::memset(&address, 0, sizeof address);
-            socklen_t length;
+            socklen_t length = sizeof address;
             auto conFd = TEMP_FAILURE_RETRY(::accept(fd, reinterpret_cast<struct sockaddr *>(&address),
                                                      &length));
 
