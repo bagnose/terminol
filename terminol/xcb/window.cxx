@@ -1104,28 +1104,6 @@ void Window::terminalBeep() throw () {
 void Window::terminalResizeBuffer(int16_t rows, int16_t cols) throw () {
     ASSERT(rows > 0 && cols > 0, "");
     resizeToAccommodate(rows, cols);
-
-    const auto BORDER_THICKNESS = _config.borderThickness;
-    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
-
-    uint32_t width  = 2 * BORDER_THICKNESS + cols * _fontSet->getWidth() + SCROLLBAR_WIDTH;
-    uint32_t height = 2 * BORDER_THICKNESS + rows * _fontSet->getHeight();
-
-    if (_width != width || _height != height) {
-        uint32_t values[] = { width, height };
-        auto cookie = xcb_configure_window(_basics.connection(),
-                                           _window,
-                                           XCB_CONFIG_WINDOW_WIDTH |
-                                           XCB_CONFIG_WINDOW_HEIGHT,
-                                           values);
-        if (!xcb_request_failed(_basics.connection(), cookie,
-                               "Failed to configure window")) {
-            xcb_flush(_basics.connection());
-            _deferralsAllowed = false;
-            _observer.windowSync();
-            _deferralsAllowed = true;
-        }
-    }
 }
 
 bool Window::terminalFixDamageBegin() throw () {
