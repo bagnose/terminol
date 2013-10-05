@@ -60,11 +60,11 @@ public:
         if (TEMP_FAILURE_RETRY(::bind(_fd, reinterpret_cast<struct sockaddr *>(&address),
                                       sizeof(address))) == -1) {
             ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(_fd)) != -1, "");
-            if (errno == EADDRINUSE) {
-                throw Error("Failed to bind to socket " + path + ": " + std::string(::strerror(errno)));
-            }
-            else {
-                ENFORCE_SYS(false, "");
+            switch (errno) {
+                case EADDRINUSE:
+                    throw Error("Failed to bind to socket " + path + ": " + std::string(::strerror(errno)));
+                default:
+                    ENFORCE_SYS(false, "");
             }
         }
 
@@ -173,14 +173,18 @@ public:
         address.sun_path[0] = '\0';     // First byte nul for abstract.
         ::snprintf(address.sun_path + 1, UNIX_PATH_MAX - 1, "%s", path.c_str());
 
+        auto saved_flags = ::fcntl(_fd, F_GETFL);
+        ::fcntl(_fd, F_SETFL, saved_flags | O_NONBLOCK);
+
         if (TEMP_FAILURE_RETRY(::connect(_fd, reinterpret_cast<struct sockaddr *>(&address),
                                          sizeof(address))) == -1) {
             ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(_fd)) != -1, "");
-            if (errno == ECONNREFUSED) {
-                throw Error("Failed to connect to socket " + path + ": " + std::string(::strerror(errno)));
-            }
-            else {
-                ENFORCE_SYS(false, "");
+            switch (errno) {
+                case ECONNREFUSED:
+                case EAGAIN:
+                    throw Error("Failed to connect to socket " + path + ": " + std::string(::strerror(errno)));
+                default:
+                    ENFORCE_SYS(false, "");
             }
         }
     }
