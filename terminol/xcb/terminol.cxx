@@ -49,7 +49,7 @@ public:
 
     EventLoop(const Config       & config,
               const Tty::Command & command)
-        throw (Basics::Error, FontSet::Error, Window::Error, Error) :
+        throw (Basics::Error, Window::Error, Error) :
         _selector(),
         _pipe(),
         _deduper(),
@@ -329,9 +329,6 @@ int main(int argc, char * argv[]) {
         FATAL(ex.message);
     }
     catch (const Window::Error & ex) {
-        FATAL(ex.message);
-    }
-    catch (const FontSet::Error & ex) {
         FATAL(ex.message);
     }
     catch (const Basics::Error & ex) {

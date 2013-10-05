@@ -8,24 +8,27 @@
 
 FontSet::FontSet(const Config & config,
                  Basics       & basics,
-                 int            delta) throw (Error) :
+                 int            size) throw () :
     _config(config),
     _basics(basics)
 {
+    ASSERT(size > 0, "");
     auto & name = _config.fontName;
-    auto   size = _config.fontSize + delta;
 
-    if (size <= 0) { throw Error("Too small"); }
-
-    _normal = load(name, size, true, false, false);
+    try {
+        _normal = load(name, size, true, false, false);
+    }
+    catch (const Error &) {
+        FATAL("Master font should always load.");
+    }
     auto normalGuard = scopeGuard([&] { unload(_normal); });
 
     try {
         _bold = load(name, size, false, true, false);
     }
     catch (const Error &) {
-        std::cerr << "Note, trying non-bold font" << std::endl;
-        _bold = load(name, size, false, false, false);
+        std::cerr << "Using non-bold font" << std::endl;
+        _bold = pango_font_description_copy(_normal);
     }
     auto boldGuard = scopeGuard([&] { unload(_bold); });
 
@@ -33,8 +36,8 @@ FontSet::FontSet(const Config & config,
         _italic = load(name, size, false, false, true);
     }
     catch (const Error &) {
-        std::cerr << "Note, trying non-italic font" << std::endl;
-        _italic = load(name, size, false, false, false);
+        std::cerr << "Using non-italic font" << std::endl;
+        _italic = pango_font_description_copy(_normal);
     }
     auto italicGuard = scopeGuard([&] { unload(_italic); });
 
@@ -47,8 +50,8 @@ FontSet::FontSet(const Config & config,
             _italicBold = load(name, size, false, false, true);
         }
         catch (const Error &) {
-            std::cerr << "Note, trying non-bold, non-italic font" << std::endl;
-            _italicBold = load(name, size, false, false, false);
+            std::cerr << "Using trying non-bold, non-italic font" << std::endl;
+            _italicBold = pango_font_description_copy(_normal);
         }
     }
     auto italicBoldGuard = scopeGuard([&] { unload(_italicBold); });
@@ -93,8 +96,8 @@ PangoFontDescription * FontSet::load(const std::string & family,
 #endif
 
     auto desc = pango_font_description_new();
-    pango_font_description_set_family(desc, family.c_str());
     auto descGuard = scopeGuard([&] { pango_font_description_free(desc); });
+    pango_font_description_set_family(desc, family.c_str());
     //pango_font_description_set_size(desc, size * PANGO_SCALE);
     pango_font_description_set_absolute_size(desc, size * PANGO_SCALE);
     pango_font_description_set_weight(desc,

@@ -21,12 +21,7 @@ class FontSet : protected Uncopyable {
     uint16_t               _height;
 
 public:
-    struct Error {
-        explicit Error(const std::string & message_) : message(message_) {}
-        std::string message;
-    };
-
-    FontSet(const Config & config, Basics & basics, int delta) throw (Error);
+    FontSet(const Config & config, Basics & basics, int size) throw ();
     ~FontSet();
 
     PangoFontDescription * get(bool italic, bool bold) {
@@ -43,6 +38,11 @@ public:
     uint16_t getHeight() const { return _height; }
 
 protected:
+    struct Error {
+        explicit Error(const std::string & message_) : message(message_) {}
+        std::string message;
+    };
+
     PangoFontDescription * load(const std::string & family, int size, bool master,
                                 bool bold, bool italic) throw (Error);
     void unload(PangoFontDescription * desc);

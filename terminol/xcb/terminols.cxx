@@ -120,7 +120,7 @@ public:
 
     explicit EventLoop(const Config       & config,
                        const Tty::Command & command)
-        throw (Basics::Error, Server::Error, FontSet::Error, Error) :
+        throw (Basics::Error, Server::Error, Error) :
         _config(config),
         _command(command),
         _selector(),
@@ -487,9 +487,6 @@ int main(int argc, char * argv[]) {
         EventLoop eventLoop(config, command);
     }
     catch (const EventLoop::Error & ex) {
-        FATAL(ex.message);
-    }
-    catch (const FontSet::Error & ex) {
         FATAL(ex.message);
     }
     catch (const Basics::Error & ex) {
