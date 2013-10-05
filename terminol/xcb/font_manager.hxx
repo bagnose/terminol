@@ -78,7 +78,7 @@ public:
     }
 
     void localDelta(I_Client * client, int delta) {
-        if (_dispatch) { return; }
+        ASSERT(!_dispatch, "");
 
         ASSERT(_clients.find(client) != _clients.end(), "");
         resizeClient(client, delta);
@@ -86,7 +86,7 @@ public:
     }
 
     void globalDelta(int delta) {
-        if (_dispatch) { return; }
+        ASSERT(!_dispatch, "");
 
         for (auto & p : _clients) {
             resizeClient(p.first, delta);

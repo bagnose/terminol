@@ -944,7 +944,7 @@ void Window::handleResize() {
     }
 }
 
-void Window::resizeToAccommodate(int16_t rows, int16_t cols) {
+void Window::resizeToAccommodate(int16_t rows, int16_t cols, bool sync) {
     const auto BORDER_THICKNESS = _config.borderThickness;
     const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
@@ -960,10 +960,12 @@ void Window::resizeToAccommodate(int16_t rows, int16_t cols) {
                                            values);
         if (!xcb_request_failed(_basics.connection(), cookie,
                                "Failed to configure window")) {
-            xcb_flush(_basics.connection());
-            _deferralsAllowed = false;
-            _observer.windowSync();
-            _deferralsAllowed = true;
+            if (sync) {
+                xcb_flush(_basics.connection());
+                _deferralsAllowed = false;
+                _observer.windowSync();
+                _deferralsAllowed = true;
+            }
         }
     }
 }
@@ -1103,7 +1105,7 @@ void Window::terminalBeep() throw () {
 
 void Window::terminalResizeBuffer(int16_t rows, int16_t cols) throw () {
     ASSERT(rows > 0 && cols > 0, "");
-    resizeToAccommodate(rows, cols);
+    resizeToAccommodate(rows, cols, true);
 }
 
 bool Window::terminalFixDamageBegin() throw () {
@@ -1335,7 +1337,7 @@ void Window::useFontSet(FontSet * fontSet, int delta) throw () {
                                   _window,
                                   &sizeHints);
 
-    resizeToAccommodate(_terminal->getRows(), _terminal->getCols());
+    resizeToAccommodate(_terminal->getRows(), _terminal->getCols(), false);
 
     int16_t rows, cols;
     sizeToRowsCols(rows, cols);

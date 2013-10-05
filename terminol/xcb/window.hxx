@@ -142,7 +142,7 @@ protected:
     void copy(int x, int y, int w, int h);
 
     void handleResize();
-    void resizeToAccommodate(int16_t rows, int16_t cols);
+    void resizeToAccommodate(int16_t rows, int16_t cols, bool sync);
 
     void sizeToRowsCols(int16_t & rows, int16_t & cols) const;
 
