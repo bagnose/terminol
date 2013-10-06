@@ -13,7 +13,11 @@
 #include <vector>
 #include <iomanip>
 
-// Character-Substitution
+
+// CharSub (or Character-Substitution) is a translation layer used to
+// support different character sets, e.g. US versus UK. CharSub uses a
+// table to translate ASCII characters into UTF-8 sequences. If there is
+// no entry for the ASCII character then it remains unchanged.
 class CharSub {
     const utf8::Seq * _seqs;
     size_t            _offset;
@@ -21,14 +25,19 @@ class CharSub {
     bool              _special;
 
 public:
+    // Construct a dummy CharSub - one that does no actual substitution.
     CharSub() : _seqs(nullptr), _offset(0), _size(0), _special(false) {}
 
+    // Construct a CharSub with a substitution table. Note 'seqs' must be
+    // static data.
     CharSub(const utf8::Seq * seqs, size_t offset, size_t size, bool special = false) :
         _seqs(seqs), _offset(offset), _size(size), _special(special) {}
 
     // Bold and italic attributes are disabled from 'special' char subs.
     bool isSpecial() const { return _special; }
 
+    // If the UTF-8 sequence is the ASCII subset then translate it if there is
+    // an entry in the table.
     void translate(utf8::Seq & seq) const {
         if (utf8::leadLength(seq.lead()) == utf8::Length::L1) {
             auto ascii = seq.lead();
@@ -39,18 +48,45 @@ public:
     }
 };
 
-// Character-Set
+// CharSet (or Character-Set) enumerates the CharSub registers. Terminol supports
+// two active CharSubs.
 enum class CharSet { G0, G1 };
 
-// Tab-Direction
+// TabDir (or Tab-Direction).
 enum class TabDir { FORWARD, BACKWARD };
 
+// Buffer is the in-memory representation of the on-screen terminal data.
+// Conceptually, the Buffer is just a grid of Cells, where a Cell is a description
+// of a grid element, including the UTF-8 character at that location and its
+// rendering style. The Buffer is made up of two regions: the "active" region (or
+// non-scroll-back region) and the "historical" region (or scroll-back region).
+// The key distinction here is that the active region is mutable, whereas the
+// historical region is constant (note, historical content can become active again
+// during resizes if the number of rows increases).
 //
+// The data structures of the active region are essentially just a 2-dimensional
+// array - the first dimension represents the rows and the second dimension represents
+// the columns. Each element in the array is a Cell object.
 //
+// To facility low-overhead text reflow and historical deduplication, the data
+// structures of the historical region are more elaborate. Firstly, historical
+// data is stored in an "unwrapped" state, e.g. if some text is continued across
+// three lines then the concatenation of those three lines is stored in the
+// historical data.
+// An additional data structure, HLine, allows historical data to be indexed
+// (by row/column) by mapping the grid into segments of these unwrapped lines.
 //
-
+// During a reflowed-resize the HLines are invalidated but the unwrapped lines
+// are not. The HLines must be rebuilt by re-traversing the unwrapped lines.
+// Because the unwrapped lines are never invalidated (not even during resize)
+// they are stored in a deduplicator object to reduce memory usage for large
+// histories.
+//
+// The cost of representing the on-screen data in these two different ways
+// is the complexity of harmonising access to them.
 class Buffer {
-    // Absolute-Position, able to refer to historical AND active lines.
+    // APos (Absolute-Position) is a position identifier that is able to
+    // refer to historical AND active lines.
     struct APos {
         int32_t row; // >= 0 --> _active, < 0 --> _history
         int16_t col;
@@ -74,7 +110,9 @@ class Buffer {
             (lhs.row == rhs.row && lhs.col < rhs.col);
     }
 
-    // Handed-Absolute-Position, where handed means left or right side of cell.
+    // HAPos (Handed-Absolute-Position) where handed means left or right side of cell.
+    // The significance of left versus right is used to determine the resultant
+    // selection from user mouse gestures.
     struct HAPos {
         APos apos;
         Hand hand;
@@ -100,7 +138,8 @@ class Buffer {
             (lhs.apos.row == rhs.apos.row && lhs.apos.col == rhs.apos.col && lhs.hand < rhs.hand);
     }
 
-    // Historical-Line
+    // HLine (or Historical-Line) represents a line of text in the historical region.
+    // It can also be thought of as representing a segment of an unwrapped line.
     struct HLine {
         uint32_t index;             // index into _tags (adjusted by _lostTags)
         uint16_t seqnum;            // continuation number, 0 -> first line
@@ -110,7 +149,8 @@ class Buffer {
             index(index_), seqnum(seqnum_), size(size_) {}
     };
 
-    // Active-Line
+    // ALine (or Active-Line) represents a line of text in the active region.
+    // An ALine directly contains its cells
     struct ALine {
         std::vector<Cell> cells;    // active lines have a greater/equal capacity to their wrap/size
         bool              cont;     // does this line continue on the next line?
@@ -142,44 +182,50 @@ class Buffer {
 
     // Damage for a visible line (active or historical, but in the viewport)
     struct Damage {
-        int16_t begin;
-        int16_t end;
+        int16_t begin;      // inclusive
+        int16_t end;        // exclusive
 
+        // Initially there is no damage.
         Damage() : begin(0), end(0) {}
 
+        // Explicitly specify the damage.
         void damageSet(int16_t begin_, int16_t end_) {
+            ASSERT(begin_ <= end_, "");
+
             begin = begin_;
             end   = end_;
         }
 
+        // Accumulate more damage.
         void damageAdd(int16_t begin_, int16_t end_) {
             ASSERT(begin_ <= end_, "");
 
-            if (begin != end) {
+            if (begin == end) {
+                damageSet(begin_, end_);
+            }
+            else {
                 begin = std::min(begin, begin_);
                 end   = std::max(end,   end_);
             }
-            else {
-                begin = begin_;
-                end   = end_;
-            }
         }
 
+        // Reset to initial state.
         void reset() {
             *this = Damage();
         }
     };
 
-    // Cursor
+    // Cursor encompasses the state associated with a VT cursor.
     struct Cursor {
-        Pos             pos;
-        Style           style;
-        bool            wrapNext;
+        Pos             pos;            // Current cursor position.
+        Style           style;          // Current cursor style.
+        bool            wrapNext;       // Flag indicating whether the next char wraps.
 
-        CharSet         charSet;
-        const CharSub * g0;
-        const CharSub * g1;
+        CharSet         charSet;        // Which CharSet is in use?
+        const CharSub * g0;             // CharSub associated with G0.
+        const CharSub * g1;             // CharSub associated with G1.
 
+        // Getter for the current CharSub.
         const CharSub * getCharSub() const {
             switch (charSet) {
                 case CharSet::G0:
@@ -191,6 +237,7 @@ class Buffer {
             FATAL("Unreachable");
         }
 
+        // Setter for the current CharSub.
         void setCharSub(CharSet charSet_, const CharSub * charSub) {
             switch (charSet_) {
                 case CharSet::G0:
@@ -205,28 +252,32 @@ class Buffer {
         }
 
         Cursor(const CharSub * g0_, const CharSub * g1_) :
-            pos(), style(), wrapNext(false), charSet(CharSet::G0), g0(g0_), g1(g1_) {}
+            pos(), style(), wrapNext(false), charSet(CharSet::G0), g0(g0_), g1(g1_)
+        {
+            ASSERT(g0, "");
+            ASSERT(g1, "");
+        }
     };
 
     const Config               & _config;
     I_Deduper                  & _deduper;
-    std::deque<I_Deduper::Tag>   _tags;
-    std::vector<Cell>            _pending;
-    std::deque<HLine>            _history;
-    std::deque<ALine>            _active;
-    std::vector<Damage>          _damage;           // viewport relative damage
-    std::vector<bool>            _tabs;
+    std::deque<I_Deduper::Tag>   _tags;             // The unwrapped history.
+    uint32_t                     _lostTags;         // Incremented for each _tags.pop_front().
+    std::vector<Cell>            _pending;          // Unwrapped line pending to become historical.
+    std::deque<HLine>            _history;          // Wrapped history line segments. Indexable.
+    std::deque<ALine>            _active;           // Wrapped active line segments. Indexable.
+    std::vector<Damage>          _damage;           // Viewport-relative damage.
+    std::vector<bool>            _tabs;             // Column-indexable, true if tab stop exists.
     uint32_t                     _scrollOffset;     // 0 -> scroll bottom
-    uint32_t                     _historyLimit;
-    uint32_t                     _lostTags;
-    int16_t                      _cols;
-    int16_t                      _marginBegin;
-    int16_t                      _marginEnd;
-    bool                         _barDamage;
-    HAPos                        _selectMark;
-    HAPos                        _selectDelim;
-    Cursor                       _cursor;
-    Cursor                       _savedCursor;
+    uint32_t                     _historyLimit;     // Maximum number of _unwrapped_ lines to keep.
+    int16_t                      _cols;             // Current width of buffer.
+    int16_t                      _marginBegin;      // Index of first row in margin (inclusive).
+    int16_t                      _marginEnd;        // Index of last row in  margin (exclusive).
+    bool                         _barDamage;        // Has the scrollbar been invalidated?
+    HAPos                        _selectMark;       // Start of user selection.
+    HAPos                        _selectDelim;      // End of user selection.
+    Cursor                       _cursor;           // Current cursor.
+    Cursor                       _savedCursor;      // Saved cursor.
 
 public:
     Buffer(const Config  & config,
@@ -239,6 +290,7 @@ public:
         _config(config),
         _deduper(deduper),
         _tags(),
+        _lostTags(0),
         _pending(),
         _history(),
         _active(rows, ALine(cols)),
@@ -246,7 +298,6 @@ public:
         _tabs(cols),
         _scrollOffset(0),
         _historyLimit(historyLimit),
-        _lostTags(0),
         _cols(cols),
         _barDamage(true),
         _selectMark(),
@@ -259,6 +310,8 @@ public:
     }
 
     ~Buffer() {
+        // Deregister all of our valid tags. Note, really only the last tag can
+        // be invalid.
         for (auto tag : _tags) {
             if (tag != I_Deduper::invalidTag()) {
                 _deduper.remove(tag);
@@ -269,10 +322,15 @@ public:
     int16_t  getRows() const { return static_cast<int16_t>(_active.size()); }
     int16_t  getCols() const { return _cols; }
 
+    // How many _wrapped_ lines are there in the scroll-back history?
     uint32_t getHistoricalRows() const { return _history.size(); }
+    // How many historical and active lines are there?
     uint32_t getTotalRows() const { return _history.size() + _active.size(); }
+    // How many rows is viewport offset from the start of history?
     uint32_t getHistoryOffset() const { return _history.size() - _scrollOffset; }
+    // How many rows is the viewport offset from the beginning of active?
     uint32_t getScrollOffset() const { return _scrollOffset; }
+    // Is the bar damaged (does it need redrawing)?
     bool     getBarDamage() const { return _barDamage; }
 
     void markSelection(HPos hpos) {
@@ -286,6 +344,9 @@ public:
         HAPos hapos(hpos, _scrollOffset);
 
         if (initial) {
+            // Work out whether hpos is closer to the mark or the delimiter
+            // and adjust that one.
+
             if (_selectDelim < _selectMark) {
                 std::swap(_selectMark, _selectDelim);
             }

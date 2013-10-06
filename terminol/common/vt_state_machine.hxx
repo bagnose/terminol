@@ -10,6 +10,10 @@
 
 #include <stdint.h>
 
+//
+// Simple Escape.
+//
+
 struct SimpleEsc {
     std::vector<uint8_t> inters;
     uint8_t              code;
@@ -18,7 +22,7 @@ struct SimpleEsc {
 std::ostream & operator << (std::ostream & ost, const SimpleEsc & esc);
 
 //
-//
+// Control Sequence Initiator.
 //
 
 struct CsiEsc {
@@ -33,7 +37,7 @@ struct CsiEsc {
 std::ostream & operator << (std::ostream & ost, const CsiEsc & esc);
 
 //
-//
+// Device Control Sequence.
 //
 
 struct DcsEsc {
@@ -43,7 +47,7 @@ struct DcsEsc {
 std::ostream & operator << (std::ostream & ost, const DcsEsc & esc);
 
 //
-//
+// Operating System Command.
 //
 
 struct OscEsc {
