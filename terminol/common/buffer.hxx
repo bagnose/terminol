@@ -269,9 +269,9 @@ public:
     int16_t  getRows() const { return static_cast<int16_t>(_active.size()); }
     int16_t  getCols() const { return _cols; }
 
-    uint32_t getHistory() const { return _history.size(); }
-    uint32_t getTotal() const { return _history.size() + _active.size(); }
-    uint32_t getBar() const { return _history.size() - _scrollOffset; }
+    uint32_t getHistoricalRows() const { return _history.size(); }
+    uint32_t getTotalRows() const { return _history.size() + _active.size(); }
+    uint32_t getHistoryOffset() const { return _history.size() - _scrollOffset; }
     uint32_t getScrollOffset() const { return _scrollOffset; }
     bool     getBarDamage() const { return _barDamage; }
 
@@ -512,8 +512,8 @@ public:
     bool scrollUpHistory(uint16_t rows) {
         auto oldScrollOffset = _scrollOffset;
 
-        if (_scrollOffset + rows > getHistory()) {
-            _scrollOffset = getHistory();
+        if (_scrollOffset + rows > getHistoricalRows()) {
+            _scrollOffset = getHistoricalRows();
         }
         else {
             _scrollOffset += rows;
@@ -548,8 +548,8 @@ public:
     }
 
     bool scrollTopHistory() {
-        if (_scrollOffset != getHistory()) {
-            _scrollOffset = getHistory();
+        if (_scrollOffset != getHistoricalRows()) {
+            _scrollOffset = getHistoricalRows();
             damageViewport(true);
             return true;
         }

@@ -495,7 +495,7 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                 return true;
             }
             case Action::DEBUG_STATS2: {
-                uint32_t localLines = _priBuffer.getHistory();
+                uint32_t localLines = _priBuffer.getHistoricalRows();
                 uint32_t uniqueLines;
                 uint32_t globalLines;
                 _deduper.getStats(uniqueLines, globalLines);
@@ -602,8 +602,8 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
         scrollbar = _buffer->getBarDamage();
 
         if (scrollbar) {
-            _observer.terminalDrawScrollbar(_buffer->getTotal(),
-                                            _buffer->getBar(),
+            _observer.terminalDrawScrollbar(_buffer->getTotalRows(),
+                                            _buffer->getHistoryOffset(),
                                             _buffer->getRows());
         }
 
