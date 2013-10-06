@@ -57,7 +57,8 @@ void handleSet(const std::string & key,
         config.icon = value;
     }
     else if (key == "scroll-back-history") {
-        config.scrollBackHistory = unstringify<size_t>(value);
+        config.unlimitedScrollBack = false;
+        config.scrollBackHistory   = unstringify<size_t>(value);
     }
     else if (key == "unlimited-scroll-back") {
         config.unlimitedScrollBack = unstringify<bool>(value);
