@@ -1244,8 +1244,9 @@ public:
 
             for (; c1 != d.end; ++c1) {
                 // Once we get past the wrap point all cells should be the same, so skip
-                // to the last iteration.
-                if (c1 >= wrap) { c1 = d.end - 1; }
+                // to the last iteration. Unlike in dispatchFg() we must iterate over
+                // the wrap character to handle selection correctly.
+                if (c1 > wrap) { c1 = d.end - 1; }
 
                 auto   apos     = APos(r - _scrollOffset, c1);
                 auto   selected = selValid && isCellSelected(apos, selBegin, selEnd, wrap);
