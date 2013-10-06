@@ -1765,6 +1765,8 @@ protected:
                         ++_scrollOffset;
                     }
                 }
+
+                enforceHistoryLimit();
             }
 
             _active.push_back(ALine(getCols()));
@@ -1782,8 +1784,6 @@ protected:
 
             damageViewport(true);
         }
-
-        enforceHistoryLimit();
     }
 
     void bump() {
