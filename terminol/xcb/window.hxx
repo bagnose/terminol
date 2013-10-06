@@ -163,15 +163,15 @@ protected:
     void terminalBeep() throw ();
     void terminalResizeBuffer(int16_t rows, int16_t cols) throw ();
     bool terminalFixDamageBegin() throw ();
-    void terminalDrawBg(Pos    pos,
-                        UColor color,
-                        size_t count) throw ();
-    void terminalDrawFg(Pos    pos,
+    void terminalDrawBg(Pos     pos,
+                        int16_t count,
+                        UColor color) throw ();
+    void terminalDrawFg(Pos             pos,
+                        int16_t         count,
                         UColor          color,
                         AttrSet         attrs,
                         const uint8_t * str,
-                        size_t          size,
-                        size_t          count) throw ();
+                        size_t          size) throw ();
     void terminalDrawCursor(Pos             pos,
                             UColor          fg,
                             UColor          bg,

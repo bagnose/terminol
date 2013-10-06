@@ -566,20 +566,20 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
                                   damage.begin.col, damage.end.col);
         _buffer->dispatchBg(_modes.get(Mode::REVERSE),
                             [&]
-                            (Pos    pos,
-                             UColor color,
-                             size_t count)
-                            { _observer.terminalDrawBg(pos, color, count); }
+                            (Pos     pos,
+                             int16_t count,
+                             UColor  color)
+                            { _observer.terminalDrawBg(pos, count, color); }
                            );
         _buffer->dispatchFg(_modes.get(Mode::REVERSE),
                             [&]
                             (Pos             pos,
+                             int16_t         count,
                              UColor          color,
                              AttrSet         attrs,
                              const uint8_t * str,
-                             size_t          size,
-                             size_t          count)
-                            { _observer.terminalDrawFg(pos, color, attrs, str, size, count); }
+                             size_t          size)
+                            { _observer.terminalDrawFg(pos, count, color, attrs, str, size); }
                            );
         if (_modes.get(Mode::SHOW_CURSOR /* && CURSOR IS DAMAGED FIXME */)) {
             _buffer->dispatchCursor(_modes.get(Mode::REVERSE),

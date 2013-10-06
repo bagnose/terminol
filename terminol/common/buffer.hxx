@@ -1310,7 +1310,7 @@ public:
 
                 if (bg0 != bg1) {
                     if (c1 != c0) {
-                        func(Pos(r, c0), bg0, c1 - c0);
+                        func(Pos(r, c0), c1 - c0, bg0);
                     }
 
                     c0  = c1;
@@ -1320,7 +1320,7 @@ public:
 
             // There may be an unterminated run to flush.
             if (c1 != c0) {
-                func(Pos(r, c0), bg0, c1 - c0);
+                func(Pos(r, c0), c1 - c0, bg0);
             }
         }
     }
@@ -1395,7 +1395,7 @@ public:
                         // flush run
                         auto size = run.size();
                         run.push_back(NUL);
-                        func(Pos(r, c0), fg0, attrs0, &run.front(), size, c1 - c0);
+                        func(Pos(r, c0), c1 - c0, fg0, attrs0, &run.front(), size);
                         run.clear();
                     }
 
@@ -1413,7 +1413,7 @@ public:
                 // flush run
                 auto size = run.size();
                 run.push_back(NUL);
-                func(Pos(r, c0), fg0, attrs0, &run.front(), size, c1 - c0);
+                func(Pos(r, c0), c1 - c0, fg0, attrs0, &run.front(), size);
                 run.clear();
             }
         }

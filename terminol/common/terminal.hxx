@@ -39,15 +39,15 @@ public:
         virtual void terminalBeep() throw () = 0;
         virtual void terminalResizeBuffer(int16_t rows, int16_t cols) throw () = 0;
         virtual bool terminalFixDamageBegin() throw () = 0;
-        virtual void terminalDrawBg(Pos    pos,
-                                    UColor color,
-                                    size_t count) throw () = 0;
+        virtual void terminalDrawBg(Pos     pos,
+                                    int16_t count,
+                                    UColor  color) throw () = 0;
         virtual void terminalDrawFg(Pos             pos,
+                                    int16_t         count,
                                     UColor          color,
                                     AttrSet         attrs,
                                     const uint8_t * str,       // nul-terminated
-                                    size_t          size,
-                                    size_t          count) throw () = 0;
+                                    size_t          size) throw () = 0;
         virtual void terminalDrawCursor(Pos             pos,
                                         UColor          fg,
                                         UColor          bg,

@@ -1125,9 +1125,9 @@ bool Window::terminalFixDamageBegin() throw () {
     }
 }
 
-void Window::terminalDrawBg(Pos    pos,
-                            UColor color,
-                            size_t count) throw () {
+void Window::terminalDrawBg(Pos     pos,
+                            int16_t count,
+                            UColor  color) throw () {
     ASSERT(_cr, "");
 
     cairo_save(_cr); {
@@ -1149,11 +1149,11 @@ void Window::terminalDrawBg(Pos    pos,
 }
 
 void Window::terminalDrawFg(Pos             pos,
+                            int16_t         count,
                             UColor          color,
                             AttrSet         attrs,
                             const uint8_t * str,
-                            size_t          size,
-                            size_t          count) throw () {
+                            size_t          size) throw () {
     ASSERT(_cr, "");
 
     cairo_save(_cr); {
