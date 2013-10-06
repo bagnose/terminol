@@ -301,6 +301,9 @@ public:
             if (col < 0)          { col += getCols(); --row; }
             if (col >= getCols()) { col -= getCols(); ++row; }
 
+            ASSERT(col >= 0, "");
+            ASSERT(col < getCols(), "");
+
             HAPos centre(row, col);
 
             if (hapos < centre) {
