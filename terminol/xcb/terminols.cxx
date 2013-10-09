@@ -475,6 +475,7 @@ int main(int argc, char * argv[]) {
     cmdLine.add(new IntHandler(config.fontSize),      '\0', "font-size");
     cmdLine.add(new BoolHandler(config.traceTty),     '\0', "trace");
     cmdLine.add(new BoolHandler(config.syncTty),      '\0', "sync");
+    cmdLine.add(new BoolHandler(config.traditionalWrapping), '\0', "traditional-wrapping");
     cmdLine.add(new StringHandler(config.termName),   '\0', "term-name");
     cmdLine.add(new StringHandler(config.socketPath), '\0', "socket");
     cmdLine.add(new BoolHandler(config.serverFork),   '\0', "fork");
