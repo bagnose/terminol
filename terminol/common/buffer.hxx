@@ -706,12 +706,13 @@ public:
         damageCell();
 
         if (marginRelative) {
-            pos.row += _marginBegin;
+            // Don't allow the cursor below the bottom margin.
+            pos.row = std::min(pos.row + _marginBegin, _marginEnd - 1);
         }
 
         _cursor.pos = pos;
 
-        _cursor.pos.row = clamp<int16_t>(_cursor.pos.row, _marginBegin, _marginEnd - 1);
+        _cursor.pos.row = clamp<int16_t>(_cursor.pos.row, 0, getRows() - 1);
         _cursor.pos.col = clamp<int16_t>(_cursor.pos.col, 0, getCols() - 1);
 
         damageCell();
@@ -722,10 +723,38 @@ public:
         _cursor.wrapNext = false;
         damageCell();
 
-        _cursor.pos.row = rowRelative ? _cursor.pos.row + row : row;
+        if (rowRelative) {
+            if (row > 0) {
+                // If the cursor isn't already below the bottom margin then don't
+                // allow it to go below.
+                if (_cursor.pos.row < _marginEnd) {
+                    _cursor.pos.row = std::min<int16_t>(_cursor.pos.row + row, _marginEnd - 1);
+                }
+                else {
+                    _cursor.pos.row += row;
+                }
+            }
+            else if (row < 0) {
+                // If the cursor isn't already above the bottom margin then don't
+                // allow it to go above.
+                if (_cursor.pos.row >= _marginBegin) {
+                    _cursor.pos.row = std::max<int16_t>(_cursor.pos.row + row, _marginBegin);
+                }
+                else {
+                    _cursor.pos.row += row;
+                }
+            }
+            else {
+                // nothing to do
+            }
+        }
+        else {
+            _cursor.pos.row = row;
+        }
+
         _cursor.pos.col = colRelative ? _cursor.pos.col + col : col;
 
-        _cursor.pos.row = clamp<int16_t>(_cursor.pos.row, _marginBegin, _marginEnd - 1);
+        _cursor.pos.row = clamp<int16_t>(_cursor.pos.row, 0, getRows() - 1);
         _cursor.pos.col = clamp<int16_t>(_cursor.pos.col, 0, getCols() - 1);
 
         damageCell();
