@@ -1113,8 +1113,6 @@ public:
     void clearLineLeft() {
         auto & line = _active[_cursor.pos.row];
 
-        line.cont = false;
-        line.wrap = 0;
         _cursor.wrapNext = false;
         std::fill(line.cells.begin(),
                   line.cells.begin() + _cursor.pos.col + 1,
