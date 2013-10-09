@@ -608,7 +608,9 @@ void VtStateMachine::processEsc(const std::vector<uint8_t> & seq) {
     esc.inters.insert(esc.inters.begin(), seq.begin(), seq.end() - 1);
     esc.code = seq.back();
 
-    if (_config.traceTty) { std::cerr << esc; }
+    if (_config.traceTty) {
+        std::cerr << SGR::FG_CYAN << esc << SGR::RESET_ALL;
+    }
     _observer.machineSimpleEsc(esc);
 }
 
@@ -662,7 +664,9 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
 
     // Dispatch:
 
-    if (_config.traceTty) { std::cerr << esc; }
+    if (_config.traceTty) {
+        std::cerr << SGR::FG_GREEN << esc << SGR::RESET_ALL;
+    }
     _observer.machineCsiEsc(esc);
 }
 
@@ -679,6 +683,8 @@ void VtStateMachine::processOsc(const std::vector<uint8_t> & seq) {
 
     // Dispatch:
 
-    if (_config.traceTty) { std::cerr << esc; }
+    if (_config.traceTty) {
+        std::cerr << SGR::FG_RED << esc << SGR::RESET_ALL;
+    }
     _observer.machineOscEsc(esc);
 }
