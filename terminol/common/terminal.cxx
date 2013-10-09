@@ -1198,6 +1198,18 @@ void Terminal::machineControl(uint8_t control) throw () {
 void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
     if (esc.inters.empty()) {
         switch (esc.code) {
+            case '7':   // DECSC - Save Cursor
+                _buffer->saveCursor();
+                break;
+            case '8':   // DECRC - Restore Cursor
+                _buffer->restoreCursor();
+                break;
+            case '=':   // DECKPAM - Keypad Application Mode
+                _modes.set(Mode::APPKEYPAD);
+                break;
+            case '>':   // DECKPNM - Keypad Numeric Mode
+                _modes.unset(Mode::APPKEYPAD);
+                break;
             case 'D':   // IND - Line Feed (opposite of RI)
                 // FIXME still dubious
                 _buffer->forwardIndex();
@@ -1224,18 +1236,6 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
                 break;
             case 'c':   // RIS - Reset to initial state
                 resetAll();
-                break;
-            case '=':   // DECKPAM - Keypad Application Mode
-                _modes.set(Mode::APPKEYPAD);
-                break;
-            case '>':   // DECKPNM - Keypad Numeric Mode
-                _modes.unset(Mode::APPKEYPAD);
-                break;
-            case '7':   // DECSC - Save Cursor
-                _buffer->saveCursor();
-                break;
-            case '8':   // DECRC - Restore Cursor
-                _buffer->restoreCursor();
                 break;
             default:
                 WARNING("Unhandled: " << esc);
@@ -1424,6 +1424,21 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) throw () {
             case 'T': // SD - Scroll Down
                 _buffer->scrollDownMargins(nthArgNonZero(esc.args, 0, 1));
                 break;
+            case 'W': // CTC - Tabulator functions
+                switch (nthArg(esc.args, 0, 0)) {
+                    case 0:
+                        _buffer->setTab();     // HTS
+                        break;
+                    case 2:
+                        _buffer->unsetTab();   // TBC
+                        break;
+                    case 5:
+                        _buffer->clearTabs();
+                        break;
+                    default:
+                        goto default_;
+                }
+                break;
             case 'X': { // ECH - Erase Char
                 _buffer->blankCells(nthArgNonZero(esc.args, 0, 1));
                 break;
@@ -1466,21 +1481,6 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) throw () {
                         _buffer->unsetTab();
                         break;
                     case 3:
-                        _buffer->clearTabs();
-                        break;
-                    default:
-                        goto default_;
-                }
-                break;
-            case 'W': // Tabulator functions
-                switch (nthArg(esc.args, 0, 0)) {
-                    case 0:
-                        _buffer->setTab();     // HTS
-                        break;
-                    case 2:
-                        _buffer->unsetTab();   // TBC
-                        break;
-                    case 5:
                         _buffer->clearTabs();
                         break;
                     default:
