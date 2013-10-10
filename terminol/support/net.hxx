@@ -81,10 +81,6 @@ public:
 
         _selector.removeReadable(_fd);
         ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(_fd)) != -1, "");
-
-        if (TEMP_FAILURE_RETRY(::unlink(_path.c_str())) == -1) {
-            ERROR("Failed to unlink " << _path << ": " << ::strerror(errno));
-        }
     }
 
     void disconnect(int id) {
