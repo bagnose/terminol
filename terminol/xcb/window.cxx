@@ -109,12 +109,12 @@ Window::Window(I_Observer         & observer,
                                        0,            // border width
                                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
                                        _basics.screen()->root_visual,
-                                       XCB_CW_BACK_PIXEL |
-                                       XCB_CW_BIT_GRAVITY |
-                                       XCB_CW_WIN_GRAVITY |
+                                       XCB_CW_BACK_PIXEL    |
+                                       XCB_CW_BIT_GRAVITY   |
+                                       XCB_CW_WIN_GRAVITY   |
                                        XCB_CW_BACKING_STORE |
-                                       XCB_CW_SAVE_UNDER |
-                                       XCB_CW_EVENT_MASK |
+                                       XCB_CW_SAVE_UNDER    |
+                                       XCB_CW_EVENT_MASK    |
                                        XCB_CW_CURSOR,
                                        winValues);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to create window")) {

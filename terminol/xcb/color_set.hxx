@@ -49,8 +49,8 @@ public:
     const XColor & getScrollBarFgColor() const { return _scrollBarFgColor; }
     const XColor & getScrollBarBgColor() const { return _scrollBarBgColor; }
     const XColor & getIndexedColor(uint8_t index) const { return _indexedColors[index]; }
-    const XColor & getNormalFgColor()  const { return _normalFgColor; }
-    const XColor & getNormalBgColor()  const { return _normalBgColor; }
+    const XColor & getNormalFgColor()    const { return _normalFgColor; }
+    const XColor & getNormalBgColor()    const { return _normalBgColor; }
     uint32_t       getBackgroundPixel()  const { return _backgroundPixel; }
     uint32_t       getVisualBellPixel()  const { return _visualBellPixel; }
 

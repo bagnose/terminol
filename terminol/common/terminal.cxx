@@ -489,7 +489,7 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                 _deduper.getStats2(bytes1, bytes2);
 
                 std::ostringstream ost;
-                ost << "line-data=" << humanSize(bytes1) << " "
+                ost << "line-data="   << humanSize(bytes1) << " "
                     << "(non-dedupe=" << humanSize(bytes2) << ")";
                 _observer.terminalSetWindowTitle(ost.str());
                 return true;
