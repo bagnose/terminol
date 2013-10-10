@@ -357,7 +357,7 @@ protected:
                 // ignored
                 break;
             default:
-                PRINT("Unrecognised event: " << static_cast<int>(responseType));
+                // Ignore any events we aren't interested in.
                 break;
         }
     }
