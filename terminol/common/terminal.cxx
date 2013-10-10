@@ -599,12 +599,14 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
                                    );
         }
 
-        scrollbar = _buffer->getBarDamage();
+        if (_config.scrollbarVisible) {
+            scrollbar = _buffer->getBarDamage();
 
-        if (scrollbar) {
-            _observer.terminalDrawScrollbar(_buffer->getTotalRows(),
-                                            _buffer->getHistoryOffset(),
-                                            _buffer->getRows());
+            if (scrollbar) {
+                _observer.terminalDrawScrollbar(_buffer->getTotalRows(),
+                                                _buffer->getHistoryOffset(),
+                                                _buffer->getRows());
+            }
         }
 
         _buffer->resetDamage();

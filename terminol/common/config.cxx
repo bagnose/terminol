@@ -191,6 +191,7 @@ Config::Config() :
     customCursorFillColor(false),
     customCursorTextColor(false),
     //
+    scrollbarVisible(true),
     scrollbarWidth(6),
     //
     borderThickness(1),

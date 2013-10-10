@@ -62,7 +62,7 @@ Window::Window(I_Observer         & observer,
     auto cols = _config.initialCols;
 
     const auto BORDER_THICKNESS = _config.borderThickness;
-    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
+    const auto SCROLLBAR_WIDTH  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
     _width  = 2 * BORDER_THICKNESS + cols * _fontSet->getWidth() + SCROLLBAR_WIDTH;
     _height = 2 * BORDER_THICKNESS + rows * _fontSet->getHeight();
@@ -622,7 +622,7 @@ void Window::icccmConfigure() {
     //
 
     const auto BORDER_THICKNESS = _config.borderThickness;
-    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
+    const auto SCROLLBAR_WIDTH  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
     const auto BASE_WIDTH  = 2 * BORDER_THICKNESS + SCROLLBAR_WIDTH;
     const auto BASE_HEIGHT = 2 * BORDER_THICKNESS;
@@ -821,7 +821,7 @@ void Window::draw() {
 
 void Window::drawBorder() {
     const auto BORDER_THICKNESS = _config.borderThickness;
-    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
+    const auto SCROLLBAR_WIDTH  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
     cairo_save(_cr); {
         auto & bg = _colorSet.getBorderColor();
@@ -947,7 +947,7 @@ void Window::handleResize() {
 
 void Window::resizeToAccommodate(int16_t rows, int16_t cols, bool sync) {
     const auto BORDER_THICKNESS = _config.borderThickness;
-    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
+    const auto SCROLLBAR_WIDTH  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
     uint16_t width  = 2 * BORDER_THICKNESS + cols * _fontSet->getWidth() + SCROLLBAR_WIDTH;
     uint16_t height = 2 * BORDER_THICKNESS + rows * _fontSet->getHeight();
@@ -973,7 +973,7 @@ void Window::resizeToAccommodate(int16_t rows, int16_t cols, bool sync) {
 
 void Window::sizeToRowsCols(int16_t & rows, int16_t & cols) const {
     const auto BORDER_THICKNESS = _config.borderThickness;
-    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
+    const auto SCROLLBAR_WIDTH  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
     const auto BASE_WIDTH  = 2 * BORDER_THICKNESS + SCROLLBAR_WIDTH;
     const auto BASE_HEIGHT = 2 * BORDER_THICKNESS;
@@ -1285,6 +1285,7 @@ void Window::terminalDrawScrollbar(size_t  totalRows,
                                    size_t  historyOffset,
                                    int16_t visibleRows) throw () {
     ASSERT(_cr, "");
+    ASSERT(_config.scrollbarVisible, "");
 
     const int SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 

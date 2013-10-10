@@ -55,6 +55,7 @@ set color-scheme solarized-dark
 #set scrollbar-fg-color          #7f7f7f
 # And bg is taken from the theme's background.
 #set scrollbar-bg-color          #030303
+#set scrollbar-visible           true
 #set scrollbar-width             6
 
 #set server-fork                 true

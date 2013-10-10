@@ -9,7 +9,6 @@
 #include "terminol/common/bindings.hxx"
 
 struct Config {
-    // scrollbarStrategy: show/hide/auto
     // titleUpdateStrategy: replace, append, prepend, ignore
 
     std::string fontName;
@@ -52,6 +51,7 @@ struct Config {
 
     Color       scrollbarFgColor;
     Color       scrollbarBgColor;
+    bool        scrollbarVisible;
     int         scrollbarWidth;
 
     Color       borderColor;

@@ -115,6 +115,9 @@ void handleSet(const std::string & key,
     else if (key == "scrollbar-bg-color") {
         config.scrollbarBgColor = Color::fromString(value);
     }
+    else if (key == "scrollbar-visible") {
+        config.scrollbarVisible = unstringify<bool>(value);
+    }
     else if (key == "scrollbar-width") {
         config.scrollbarWidth = unstringify<int>(value);
     }
