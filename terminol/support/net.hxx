@@ -119,6 +119,7 @@ protected:
                 _observer.serverDisconnected(fd);
                 _connections.erase(fd);
                 _selector.removeReadable(fd);
+                ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(fd)) != -1, "");
             }
             else {
                 _observer.serverReceived(fd, buf, rval);
