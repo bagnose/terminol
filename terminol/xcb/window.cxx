@@ -948,8 +948,8 @@ void Window::resizeToAccommodate(int16_t rows, int16_t cols, bool sync) {
     const auto BORDER_THICKNESS = _config.borderThickness;
     const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
-    uint32_t width  = 2 * BORDER_THICKNESS + cols * _fontSet->getWidth() + SCROLLBAR_WIDTH;
-    uint32_t height = 2 * BORDER_THICKNESS + rows * _fontSet->getHeight();
+    uint16_t width  = 2 * BORDER_THICKNESS + cols * _fontSet->getWidth() + SCROLLBAR_WIDTH;
+    uint16_t height = 2 * BORDER_THICKNESS + rows * _fontSet->getHeight();
 
     if (_width != width || _height != height) {
         uint32_t values[] = { width, height };
@@ -977,8 +977,8 @@ void Window::sizeToRowsCols(int16_t & rows, int16_t & cols) const {
     const auto BASE_WIDTH  = 2 * BORDER_THICKNESS + SCROLLBAR_WIDTH;
     const auto BASE_HEIGHT = 2 * BORDER_THICKNESS;
 
-    if (_width  >= static_cast<uint32_t>(BASE_WIDTH  + _fontSet->getWidth()) &&
-        _height >= static_cast<uint32_t>(BASE_HEIGHT + _fontSet->getHeight()))
+    if (_width  >= static_cast<uint16_t>(BASE_WIDTH  + _fontSet->getWidth()) &&
+        _height >= static_cast<uint16_t>(BASE_HEIGHT + _fontSet->getHeight()))
     {
         int16_t w = _width  - BASE_WIDTH;
         int16_t h = _height - BASE_HEIGHT;

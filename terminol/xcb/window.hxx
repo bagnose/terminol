@@ -45,8 +45,8 @@ private:
     xcb_window_t      _window;
     bool              _destroyed;
     xcb_gcontext_t    _gc;
-    uint32_t          _width;
-    uint32_t          _height;
+    uint16_t          _width;
+    uint16_t          _height;
     Terminal        * _terminal;
     bool              _open;
     HPos              _pointerPos;
