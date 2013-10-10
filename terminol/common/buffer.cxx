@@ -2,7 +2,6 @@
 // Copyright © 2013 David Bryant
 
 #include "terminol/common/buffer.hxx"
-#include "terminol/support/regex.hxx"
 #include "terminol/support/escape.hxx"
 
 Buffer::ParaIter::ParaIter(const Buffer & buffer, APos apos) :
@@ -188,10 +187,7 @@ void Buffer::BufferIter::moveBackward() {
     do {
         --_row;
 
-        PRINT("Move backward to: " << _row);
-
         if (static_cast<uint32_t>(-_row - 1) == _buffer.getHistoricalRows()) {
-            PRINT("Break");
             _valid = false;
             break;
         }
@@ -1393,6 +1389,20 @@ void Buffer::dispatchCursor(bool reverse, I_Renderer & renderer) const {
     }
 }
 
+void Buffer::dispatchSearch(I_Renderer & renderer) const {
+    auto row = getRows() - 1;
+
+    auto str = "?" + _search->pattern;
+
+    renderer.bufferDrawBg(Pos(row, 0), getCols(), UColor::stock(UColor::Name::TEXT_FG));
+    renderer.bufferDrawFg(Pos(row, 0),
+                          str.size(),
+                          UColor::stock(UColor::Name::TEXT_BG),
+                          AttrSet(),
+                          reinterpret_cast<const uint8_t *>(str.data()),
+                          str.size());
+}
+
 void Buffer::useCharSet(CharSet charSet) {
     _cursor.charSet = charSet;
 }
@@ -1403,6 +1413,75 @@ void Buffer::setCharSub(CharSet charSet, const CharSub * charSub) {
 
 const CharSub * Buffer::getCharSub(CharSet charSet) const {
     return _charSubs.get(charSet);
+}
+
+void Buffer::beginSearch(const std::string & pattern) {
+    ASSERT(!_search, "Already searching.");
+    _search = new Search(*this, pattern);
+    _damage.back().damageAdd(0, getCols());
+
+    auto & bufferIter = _search->iter;
+    auto & allOffsets = _search->allOffsets;
+
+    Regex regex(pattern);
+
+    while (bufferIter.valid()) {
+        auto paraIter = bufferIter.getParaIter();
+
+        std::vector<uint8_t> para;
+
+        while (paraIter.valid()) {
+            auto & cell = paraIter.getCell();
+            auto   seq  = cell.seq;
+
+            std::copy(&seq.bytes[0],
+                      &seq.bytes[utf8::leadLength(seq.lead())],
+                      back_inserter(para));
+
+            paraIter.moveForward();
+        }
+
+        para.push_back('\0');
+
+        std::cout << &para.front() << std::endl;
+
+        // PCRE_NOTEMPTY, PCRE_NO_UTF8_CHECK
+        allOffsets = regex.matchAllOffsets(reinterpret_cast<const char *>(&para.front()),
+                                           para.size());
+
+        if (!allOffsets.empty()) {
+            break;
+        }
+
+        bufferIter.moveBackward();
+    }
+}
+
+const std::string & Buffer::getSearchPattern() const {
+    ASSERT(_search, "Not searching.");
+    return _search->pattern;
+}
+
+void Buffer::setSearchPattern(const std::string & pattern) {
+    ASSERT(_search, "Not searching.");
+    _search->pattern = pattern;
+    // TODO
+}
+
+void Buffer::nextSearch() {
+    ASSERT(_search, "Not searching.");
+    NYI("");
+}
+
+void Buffer::prevSearch() {
+    ASSERT(_search, "Not searching.");
+    NYI("");
+}
+
+void Buffer::endSearch() {
+    ASSERT(_search, "Not searching.");
+    delete _search;
+    _search = nullptr;
 }
 
 void Buffer::dumpTags(std::ostream & ost) const {

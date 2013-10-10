@@ -139,3 +139,5 @@ bindsym ctrl+shift+H            window-narrower
 bindsym ctrl+shift+L            window-wider
 bindsym ctrl+shift+K            window-shorter
 bindsym ctrl+shift+J            window-taller
+
+bindsym alt+s                   search

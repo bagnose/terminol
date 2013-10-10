@@ -33,6 +33,7 @@ private:
     pid_t                  _pid;
     int                    _fd;
     bool                   _dumpWrites;
+    bool                   _suspended;
 
 public:
     struct Error {
@@ -57,6 +58,9 @@ public:
     void resize(uint16_t rows, uint16_t cols);
     void write(const uint8_t * buffer, size_t size);
     bool hasSubprocess() const;
+
+    void suspend();
+    void resume();
 
 protected:
     void close();

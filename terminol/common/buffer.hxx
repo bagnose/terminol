@@ -7,6 +7,7 @@
 #include "terminol/common/data_types.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/deduper_interface.hxx"
+#include "terminol/support/regex.hxx"
 
 #include <deque>
 #include <vector>
@@ -297,6 +298,20 @@ class Buffer {
     //
     //
 
+    struct Search {
+        Search(const Buffer & buffer, const std::string & pattern_) :
+            iter(buffer, buffer.getRows() - 2),
+            pattern(pattern_) {}
+
+        BufferIter                              iter;
+        std::string                             pattern;
+        std::vector<std::vector<Regex::Substr>> allOffsets;
+    };
+
+    //
+    //
+    //
+
     const Config               & _config;
     I_Deduper                  & _deduper;
     std::deque<I_Deduper::Tag>   _tags;             // The paragraph history.
@@ -317,6 +332,7 @@ class Buffer {
     Cursor                       _cursor;           // Current cursor.
     SavedCursor                  _savedCursor;      // Saved cursor.
     CharSubArray                 _charSubs;
+    Search                     * _search;
 
 public:
     class I_Renderer {
@@ -366,13 +382,18 @@ public:
         _selectDelim(),
         _cursor(),
         _savedCursor(),
-        _charSubs(charSubs)
+        _charSubs(charSubs),
+        _search(nullptr)
     {
         resetMargins();
         resetTabs();
     }
 
     ~Buffer() {
+        if (_search) {
+            delete _search;
+        }
+
         // Deregister all of our valid tags. Note, really only the last tags can
         // be invalid.
         for (auto tag : _tags) {
@@ -517,9 +538,11 @@ public:
 
     void accumulateDamage(Region & damage) const;
 
+    // FIXME we shouldn't need separate public functions for each of these things.
     void dispatchBg(bool reverse, I_Renderer & renderer) const;
     void dispatchFg(bool reverse, I_Renderer & renderer) const;
     void dispatchCursor(bool reverse, I_Renderer & renderer) const;
+    void dispatchSearch(I_Renderer & renderer) const;
 
     void useCharSet(CharSet charSet);
 
@@ -527,12 +550,17 @@ public:
 
     const CharSub * getCharSub(CharSet charSet) const;
 
+    bool isSearching() const { return _search; }
+    void beginSearch(const std::string & pattern);
+    const std::string & getSearchPattern() const;
+    void setSearchPattern(const std::string & pattern);
+    void nextSearch();
+    void prevSearch();
+    void endSearch();
+
     void dumpTags(std::ostream & ost) const;
-
     void dumpHistory(std::ostream & ost) const;
-
     void dumpActive(std::ostream & ost) const;
-
     void dumpSelection(std::ostream & ost) const;
 
 protected:

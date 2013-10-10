@@ -58,7 +58,8 @@ Tty::Tty(I_Observer        & observer,
     _config(config),
     _pid(0),
     _fd(-1),
-    _dumpWrites(false)
+    _dumpWrites(false),
+    _suspended(false)
 {
     openPty(rows, cols, windowId, command);
     ASSERT(_pid != 0, "Expected non-zero PID.");
@@ -117,6 +118,8 @@ void Tty::resize(uint16_t rows, uint16_t cols) {
 }
 
 void Tty::write(const uint8_t * data, size_t size) {
+    ASSERT(!_suspended, "");
+
     if (_dumpWrites) {
         return;
     }
@@ -176,10 +179,28 @@ bool Tty::hasSubprocess() const {
     }
 }
 
+void Tty::suspend() {
+    ASSERT(_fd != -1, "");
+    ASSERT(!_suspended, "");
+
+    _selector.removeReadable(_fd);
+    _suspended = true;
+}
+
+void Tty::resume() {
+    ASSERT(_fd != -1, "");
+    ASSERT(_suspended, "");
+
+    _selector.addReadable(_fd, this);
+    _suspended = false;
+}
+
 void Tty::close() {
     ASSERT(_fd != -1, "");
 
-    _selector.removeReadable(_fd);
+    if (!_suspended) {
+        _selector.removeReadable(_fd);
+    }
 
     ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(_fd)) != -1, "::close() failed");
     _fd = -1;
@@ -345,6 +366,12 @@ void Tty::handleRead(int fd) throw () {
 
     ASSERT(_fd != -1, "");
     ASSERT(_fd == fd, "");
+
+    // It's possible to be invoked to handle read even though we are suspended
+    // if the suspend() call came during a Selector::animate() when we were
+    // already in the event queue. Just return now to honour our contract
+    // that we are suspended.
+    if (_suspended) { return; }
 
     Timer   timer(1000 / _config.framesPerSecond);
     uint8_t buf[BUFSIZ];          // 8192 last time I looked.

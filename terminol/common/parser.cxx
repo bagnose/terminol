@@ -201,6 +201,7 @@ Parser::Parser(Config & config) : _config(config) {
     //
     //
 
+    _actions.insert(std::make_pair("search",               Action::SEARCH));
     _actions.insert(std::make_pair("window-narrower",      Action::WINDOW_NARROWER));
     _actions.insert(std::make_pair("window-wider",         Action::WINDOW_WIDER));
     _actions.insert(std::make_pair("window-shorter",       Action::WINDOW_SHORTER));

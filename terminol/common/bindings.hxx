@@ -57,6 +57,7 @@ enum class Action {
     SCROLL_TOP,
     SCROLL_BOTTOM,
     CLEAR_HISTORY,
+    SEARCH,
     DEBUG_GLOBAL_TAGS,
     DEBUG_LOCAL_TAGS,
     DEBUG_HISTORY,

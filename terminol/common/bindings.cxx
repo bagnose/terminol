@@ -50,6 +50,8 @@ std::ostream & operator << (std::ostream & ost, Action action) {
             return ost << "SCROLL_BOTTOM";
         case Action::CLEAR_HISTORY:
             return ost << "CLEAR_HISTORY";
+        case Action::SEARCH:
+            return ost << "SEARCH";
         case Action::DEBUG_GLOBAL_TAGS:
             return ost << "DEBUG_GLOBAL_TAGS";
         case Action::DEBUG_LOCAL_TAGS:

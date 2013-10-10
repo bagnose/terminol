@@ -112,8 +112,7 @@ Terminal::Terminal(I_Observer         & observer,
     _modes.set(Mode::ALT_SENDS_ESC);
 }
 
-Terminal::~Terminal() {
-}
+Terminal::~Terminal() {}
 
 void Terminal::resize(int16_t rows, int16_t cols) {
     // Special exception, resizes can occur during dispatch to support
@@ -474,6 +473,17 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                 _priBuffer.clearHistory();
                 fixDamage(Trigger::OTHER);
                 return true;
+            case Action::SEARCH:
+                if (_buffer->isSearching()) {
+                    _tty.resume();
+                    _buffer->endSearch();
+                }
+                else {
+                    _tty.suspend();
+                    _buffer->beginSearch("da");
+                }
+                fixDamage(Trigger::CLIENT); // kludgy
+                return true;
             case Action::DEBUG_GLOBAL_TAGS:
                 _deduper.dump(std::cerr);
                 return true;
@@ -548,7 +558,7 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
     damage.clear();
 
     if (trigger == Trigger::FOCUS) {
-        if (_modes.get(Mode::SHOW_CURSOR)) {
+        if (_modes.get(Mode::SHOW_CURSOR) && !_buffer->isSearching()) {
             _buffer->damageCell();
             _buffer->accumulateDamage(damage);
             _buffer->dispatchCursor(_modes.get(Mode::REVERSE), *this);
@@ -563,8 +573,14 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
         _buffer->accumulateDamage(damage);
         _buffer->dispatchBg(_modes.get(Mode::REVERSE), *this);
         _buffer->dispatchFg(_modes.get(Mode::REVERSE), *this);
-        if (_modes.get(Mode::SHOW_CURSOR /* && CURSOR IS DAMAGED FIXME */)) {
-            _buffer->dispatchCursor(_modes.get(Mode::REVERSE), *this);
+
+        if (_buffer->isSearching()) {
+            _buffer->dispatchSearch(*this);
+        }
+        else {
+            if (_modes.get(Mode::SHOW_CURSOR)) {
+                _buffer->dispatchCursor(_modes.get(Mode::REVERSE), *this);
+            }
         }
 
         if (_config.scrollbarVisible) {
@@ -585,7 +601,11 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
 }
 
 void Terminal::write(const uint8_t * data, size_t size) {
-    _tty.write(data, size);
+    if (_buffer->isSearching()) {
+    }
+    else {
+        _tty.write(data, size);
+    }
 }
 
 void Terminal::echo(const uint8_t * data, size_t size) {
