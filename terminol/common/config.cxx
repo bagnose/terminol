@@ -198,7 +198,12 @@ Config::Config() :
     //
     serverFork(true),
     bindings(),
-    cutChars("-A-Za-z0-9,./?%&#:_=+@~")
+    cutChars("-A-Za-z0-9,./?%&#:_=+@~"),
+    visualBellDuration(25),
+    mapOnBell(false),
+    urgentOnBell(false),
+    audibleBell(false),
+    visualBell(true)
 {
     setColorScheme("solarized-dark");
 
@@ -277,4 +282,5 @@ void Config::setColorScheme(const std::string & name) {
     scrollbarFgColor = { 0x7F, 0x7F, 0x7F };
     scrollbarBgColor = normalBgColor;
     borderColor      = normalBgColor;
+    visualBellColor  = { 0x7F, 0x7F, 0x7F };
 }

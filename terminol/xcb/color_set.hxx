@@ -35,6 +35,7 @@ class ColorSet {
     XColor         _normalFgColor;
     XColor         _normalBgColor;
     uint32_t       _backgroundPixel;
+    uint32_t       _visualBellPixel;
 
 public:
     ColorSet(const Config & config, Basics & basics);
@@ -51,8 +52,11 @@ public:
     const XColor & getNormalFgColor()  const { return _normalFgColor; }
     const XColor & getNormalBgColor()  const { return _normalBgColor; }
     uint32_t       getBackgroundPixel()  const { return _backgroundPixel; }
+    uint32_t       getVisualBellPixel()  const { return _visualBellPixel; }
 
 private:
+    uint32_t alloc_color(const Color & color);
+
     static XColor convert(const Color & color);
 };
 

@@ -65,6 +65,14 @@ struct Config {
 
     std::string cutChars;
 
+    Color       visualBellColor;
+    uint32_t    visualBellDuration;
+
+    bool        mapOnBell;
+    bool        urgentOnBell;
+    bool        audibleBell;
+    bool        visualBell;
+
     //
     //
     //

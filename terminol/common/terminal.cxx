@@ -1164,7 +1164,7 @@ void Terminal::machineNormal(utf8::Seq seq, utf8::Length UNUSED(length)) throw (
 void Terminal::machineControl(uint8_t control) throw () {
     switch (control) {
         case BEL:
-            _observer.terminalBeep();
+            _observer.terminalBell();
             break;
         case HT:
             _buffer->tabCursor(TabDir::FORWARD, 1);

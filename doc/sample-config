@@ -88,6 +88,14 @@ set color-scheme solarized-dark
 # Use this for compatibility with 'vttest':
 #set traditional-wrapping true
 
+#set visual-bell-color           #7f7f7f
+#set visual-bell-duration        25
+
+#set map-on-bell                 false
+#set urgent-on-bell              false
+#set audible-bell                false
+#set visual-bell                 true
+
 # Key bindings (note, none are set by default)
 bindsym ctrl+0                  local-font-reset
 bindsym ctrl+minus              local-font-smaller

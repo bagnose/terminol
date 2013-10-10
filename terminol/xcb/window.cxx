@@ -134,6 +134,7 @@ Window::Window(I_Observer         & observer,
     //
 
     uint32_t gcValues[] = {
+        _colorSet.getVisualBellPixel(),
         0 // no exposures
     };
 
@@ -141,7 +142,7 @@ Window::Window(I_Observer         & observer,
     cookie = xcb_create_gc_checked(_basics.connection(),
                                    _gc,
                                    _window,
-                                   XCB_GC_GRAPHICS_EXPOSURES,
+                                   XCB_GC_FOREGROUND | XCB_GC_GRAPHICS_EXPOSURES,
                                    gcValues);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate GC")) {
         throw Error("Failed to create GC.");
@@ -1096,11 +1097,38 @@ void Window::terminalSetIconName(const std::string & str) throw () {
     updateIcon();
 }
 
-void Window::terminalBeep() throw () {
-    xcb_icccm_wm_hints_t wmHints;
-    wmHints.flags = 0;
-    xcb_icccm_wm_hints_set_urgency(&wmHints);
-    xcb_icccm_set_wm_hints(_basics.connection(), _window, &wmHints);
+void Window::terminalBell() throw () {
+    if (_config.mapOnBell) {
+        if (!_mapped) {
+            xcb_map_window(_basics.connection(), _window);
+        }
+    }
+
+    if (_config.urgentOnBell) {
+        xcb_icccm_wm_hints_t wmHints;
+        wmHints.flags = 0;
+        xcb_icccm_wm_hints_set_urgency(&wmHints);
+        xcb_icccm_set_wm_hints(_basics.connection(), _window, &wmHints);
+    }
+
+    if (_config.audibleBell) {
+        xcb_bell(_basics.connection(), 100);
+    }
+
+    if (_config.visualBell) {
+        if (_mapped && _pixmapCurrent) {
+            xcb_rectangle_t rect = { 0, 0, _width, _height };
+            xcb_poly_fill_rectangle(_basics.connection(),
+                                    _window,
+                                    _gc,
+                                    1,
+                                    &rect);
+            xcb_flush(_basics.connection());
+
+            ::usleep(_config.visualBellDuration * 1000);
+            copy(0, 0, _width, _height);
+        }
+    }
 }
 
 void Window::terminalResizeBuffer(int16_t rows, int16_t cols) throw () {

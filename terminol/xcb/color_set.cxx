@@ -47,31 +47,37 @@ ColorSet::ColorSet(const Config & config,
     _normalBgColor = convert(_config.normalBgColor);
 
     //
-    // Allocate the background pixel.
+    // Allocate the pixels.
     //
 
-    auto max = static_cast<double>(std::numeric_limits<uint16_t>::max());
-
-    auto r = static_cast<uint16_t>(_normalBgColor.r * max + 0.5);
-    auto g = static_cast<uint16_t>(_normalBgColor.g * max + 0.5);
-    auto b = static_cast<uint16_t>(_normalBgColor.b * max + 0.5);
-
-    auto cookie = xcb_alloc_color(_basics.connection(),
-                                  _basics.screen()->default_colormap,
-                                  r, g, b);
-    auto * reply = xcb_alloc_color_reply(_basics.connection(), cookie, nullptr);
-    ENFORCE(reply, "");
-    _backgroundPixel = reply->pixel;
-    std::free(reply);
+    _backgroundPixel = alloc_color(_config.normalBgColor);
+    _visualBellPixel = alloc_color(_config.visualBellColor);
 }
 
 ColorSet::~ColorSet() {
+    uint32_t colors[2] = { _backgroundPixel, _visualBellPixel };
     // Freeing the colour probably does nothing due to direct-color displays...
     xcb_free_colors(_basics.connection(),
                     _basics.screen()->default_colormap,
                     0,
-                    1,
-                    &_backgroundPixel);
+                    2,
+                    colors);
+}
+
+uint32_t ColorSet::alloc_color(const Color & color) {
+    auto r = color.r * 0xFF;
+    auto g = color.g * 0xFF;
+    auto b = color.b * 0xFF;
+
+    auto cookie = xcb_alloc_color(_basics.connection(),
+                                  _basics.screen()->default_colormap,
+                                  r, g, b);
+    auto reply  = xcb_alloc_color_reply(_basics.connection(), cookie, nullptr);
+    ENFORCE(reply, "");
+    auto pixel = reply->pixel;
+    std::free(reply);
+
+    return pixel;
 }
 
 XColor ColorSet::convert(const Color & color) {

@@ -36,7 +36,7 @@ public:
         virtual void terminalResetTitleAndIcon() throw () = 0;
         virtual void terminalSetWindowTitle(const std::string & str) throw () = 0;
         virtual void terminalSetIconName(const std::string & str) throw () = 0;
-        virtual void terminalBeep() throw () = 0;
+        virtual void terminalBell() throw () = 0;
         virtual void terminalResizeBuffer(int16_t rows, int16_t cols) throw () = 0;
         virtual bool terminalFixDamageBegin() throw () = 0;
         virtual void terminalDrawBg(Pos     pos,

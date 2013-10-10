@@ -160,7 +160,7 @@ protected:
     void terminalResetTitleAndIcon() throw ();
     void terminalSetWindowTitle(const std::string & str) throw ();
     void terminalSetIconName(const std::string & str) throw ();
-    void terminalBeep() throw ();
+    void terminalBell() throw ();
     void terminalResizeBuffer(int16_t rows, int16_t cols) throw ();
     bool terminalFixDamageBegin() throw ();
     void terminalDrawBg(Pos     pos,

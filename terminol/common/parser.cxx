@@ -184,6 +184,24 @@ void handleSet(const std::string & key,
     else if (key == "cut-chars") {
         config.cutChars = value;
     }
+    else if (key == "visual-bell-color") {
+        config.visualBellColor = Color::fromString(value);
+    }
+    else if (key == "visual-bell-duration") {
+        config.visualBellDuration = unstringify<uint32_t>(value);
+    }
+    else if (key == "map-on-bell") {
+        config.mapOnBell = unstringify<bool>(value);
+    }
+    else if (key == "urgent-on-bell") {
+        config.urgentOnBell = unstringify<bool>(value);
+    }
+    else if (key == "visual-bell") {
+        config.visualBell = unstringify<bool>(value);
+    }
+    else if (key == "audible-bell") {
+        config.audibleBell = unstringify<bool>(value);
+    }
     else {
         throw ParseError("No such setting: '" + key + "'");
     }
