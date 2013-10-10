@@ -4,6 +4,7 @@
 #define SUPPORT__SELECTOR__HXX
 
 #include "terminol/support/debug.hxx"
+#include "terminol/support/sys.hxx"
 
 #include <map>
 #include <algorithm>
@@ -142,11 +143,7 @@ class EPollSelector : public I_Selector {
 public:
     EPollSelector() {
         _fd = ::epoll_create1(0);
-        ENFORCE_SYS(_fd != -1, "");
-        int flags;
-        ENFORCE_SYS((flags = ::fcntl(_fd, F_GETFD)) != -1, "");
-        flags |= FD_CLOEXEC;
-        ENFORCE_SYS(::fcntl(_fd, F_SETFD, flags) != -1, "");
+        fdCloseExec(_fd);
     }
 
     virtual ~EPollSelector() {

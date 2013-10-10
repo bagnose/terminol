@@ -51,6 +51,8 @@ public:
         _fd = TEMP_FAILURE_RETRY(::socket(PF_UNIX, SOCK_SEQPACKET, 0));
         ENFORCE_SYS(_fd != -1, "Failed to create socket.");
 
+        fdCloseExec(_fd);
+
         struct sockaddr_un address;
         ::memset(&address, 0, sizeof address);
         address.sun_family  = AF_UNIX;
@@ -100,6 +102,8 @@ protected:
                                                      &length));
 
             if (conFd == -1) {
+                fdCloseExec(conFd);
+
                 ERROR("Failed to accept connection: " << strerror(errno));
             }
             else {
@@ -164,14 +168,14 @@ public:
         _fd = TEMP_FAILURE_RETRY(::socket(PF_UNIX, SOCK_SEQPACKET, 0));
         ENFORCE_SYS(_fd != -1, "Failed to create socket.");
 
+        fdCloseExec(_fd);
+        fdNonBlock(_fd);
+
         struct sockaddr_un address;
         ::memset(&address, 0, sizeof address);
         address.sun_family  = AF_UNIX;
         address.sun_path[0] = '\0';     // First byte nul for abstract.
         ::snprintf(address.sun_path + 1, UNIX_PATH_MAX - 1, "%s", path.c_str());
-
-        auto saved_flags = ::fcntl(_fd, F_GETFL);
-        ::fcntl(_fd, F_SETFL, saved_flags | O_NONBLOCK);
 
         if (TEMP_FAILURE_RETRY(::connect(_fd, reinterpret_cast<struct sockaddr *>(&address),
                                          sizeof(address))) == -1) {

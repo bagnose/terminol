@@ -2,6 +2,7 @@
 
 #include "terminol/common/tty.hxx"
 #include "terminol/support/time.hxx"
+#include "terminol/support/sys.hxx"
 
 #include <unistd.h>
 #include <pty.h>
@@ -187,10 +188,7 @@ void Tty::openPty(uint16_t            rows,
         ENFORCE_SYS(::close(slave) != -1, "");
 
         // Set non-blocking.
-        int flags;
-        ENFORCE_SYS((flags = ::fcntl(master, F_GETFL)) != -1, "");
-        flags |= O_NONBLOCK;
-        ENFORCE_SYS(::fcntl(master, F_SETFL, flags) != -1, "");
+        fdNonBlock(master);
 
         // Stash the master descriptor.
         _fd  = master;

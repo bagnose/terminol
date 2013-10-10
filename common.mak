@@ -228,7 +228,7 @@ endef
 # SUPPORT
 #
 
-$(eval $(call LIB,terminol/support,conv.cxx debug.cxx escape.cxx pattern.cxx time.cxx,))
+$(eval $(call LIB,terminol/support,conv.cxx debug.cxx escape.cxx pattern.cxx sys.cxx time.cxx,))
 
 $(eval $(call EXE,TEST,terminol/support/test-support,test_support.cxx,,terminol/support,))
 
