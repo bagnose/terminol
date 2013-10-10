@@ -5,11 +5,10 @@
 
 #include <utility>
 
-// Inherit from this to be uncopyable.
+// Inherit from this to be uncopyable (and unassignable).
 class Uncopyable {
 public:
-    Uncopyable() {}
-
+    Uncopyable              ()                   = default;
     Uncopyable              (const Uncopyable &) = delete;
     Uncopyable & operator = (const Uncopyable &) = delete;
 };
