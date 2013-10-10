@@ -9,6 +9,8 @@
 #include <vector>
 #include <sstream>
 
+#define STATIC_ARRAY_SIZE(a) (sizeof a / sizeof a[0])
+
 struct ParseError {
     explicit ParseError(const std::string & message_) : message(message_) {}
     std::string message;

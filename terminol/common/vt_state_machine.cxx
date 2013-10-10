@@ -98,6 +98,9 @@ namespace {
         nullptr     // '~'
     };
 
+    static_assert(STATIC_ARRAY_SIZE(SIMPLE_STR) == 0x7F - 0x30,
+                  "Incorrect size: SIMPLE_STR.");
+
     // [0x40..0x80)
     const char * CSI_STR[] = {
         "ICH",      // '@'              0x40
@@ -172,6 +175,9 @@ namespace {
         nullptr,    // '~'
         nullptr     // DEL
     };
+
+    static_assert(STATIC_ARRAY_SIZE(CSI_STR) == 0x80 - 0x40,
+                  "Incorrect size: CSI_STR.");
 
 } // namespace {anonymous}
 
