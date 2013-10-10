@@ -254,26 +254,11 @@ void Config::setColorScheme(const std::string & name) {
 
         normalFgColor = systemColors[12];
         normalBgColor = systemColors[8];
-
-        //customSelectFgColor   = true;
-        selectFgColor         = Color(255, 0, 0);
-
-        //customSelectBgColor   = true;
-        selectBgColor         = Color(100, 130, 205);
-
-        //customCursorFillColor = true;
-        cursorFillColor       = Color(255, 0, 0);
-
-        //customCursorTextColor = true;
-        cursorTextColor       = Color(255, 0, 0);
     }
     else if (name == "solarized-light") {
         std::copy(COLOURS_SOLARIZED_LIGHT, COLOURS_SOLARIZED_LIGHT + 16, systemColors);
         normalFgColor = systemColors[12];
         normalBgColor = systemColors[8];
-
-        customCursorFillColor = true;
-        cursorFillColor       = systemColors[14];
     }
     else {
         ERROR("No such color scheme: " << name);
