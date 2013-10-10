@@ -685,7 +685,7 @@ void Window::pos2XY(Pos pos, int & x, int & y) const {
 bool Window::xy2Pos(int x, int y, HPos & hpos) const {
     auto within = true;
 
-    const int BORDER_THICKNESS = _config.borderThickness;
+    const auto BORDER_THICKNESS = _config.borderThickness;
 
     // x / cols:
 
@@ -823,7 +823,7 @@ void Window::drawBorder() {
     const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
     cairo_save(_cr); {
-        const auto & bg = _colorSet.getBorderColor();
+        auto & bg = _colorSet.getBorderColor();
         cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
 
         double x1 = BORDER_THICKNESS + _fontSet->getWidth() * _terminal->getCols();

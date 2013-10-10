@@ -139,7 +139,7 @@ void functionKeyResponse(char escape,
         ost << ESC << escape << num << code;
     }
 
-    const std::string & s = ost.str();
+    const auto & s = ost.str();
     std::copy(s.begin(), s.end(), std::back_inserter(str));
 }
 

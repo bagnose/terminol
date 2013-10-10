@@ -27,7 +27,7 @@ std::ostream & operator << (std::ostream & ost, const CsiEsc & esc) {
     if (esc.priv != NUL) { ost << esc.priv; }
 
     // arguments
-    bool firstArg = true;
+    auto firstArg = true;
     for (auto a : esc.args) {
         if (firstArg) { firstArg = false; }
         else          { ost << ';'; }
@@ -61,7 +61,7 @@ std::ostream & operator << (std::ostream & ost, const OscEsc & esc) {
     ost << "^[]";
 
     // arguments
-    bool firstArg = true;
+    auto firstArg = true;
     for (auto a : esc.args) {
         if (firstArg) { firstArg = false; }
         else          { ost << ';'; }
@@ -88,7 +88,7 @@ VtStateMachine::VtStateMachine(I_Observer   & observer,
 
 void VtStateMachine::consume(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (c == 0x18 /* CAN */ || c == 0x1A /* SUB */) {
             _state = State::GROUND;
@@ -157,7 +157,7 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::ground(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (inRange(c, 0x00, 0x17) || c == 0x19 || inRange(c, 0x1C, 0x1F)) {
             processControl(c);
@@ -179,7 +179,7 @@ void VtStateMachine::ground(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::escape(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (inRange(c, 0x00, 0x17) || c == 0x19 || inRange(c, 0x1C, 0x1F)) {
             processControl(c);
@@ -224,7 +224,7 @@ void VtStateMachine::escape(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::escapeIntermediate(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (inRange(c, 0x00, 0x17) || c == 0x19 || inRange(c, 0x1C, 0x1F)) {
             processControl(c);
@@ -253,7 +253,7 @@ void VtStateMachine::escapeIntermediate(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::sosPmApcString(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (inRange(c, 0x00, 0x17) || c == 0x19 || inRange(c, 0x1C, 0x1F)) {
             // ignore
@@ -273,7 +273,7 @@ void VtStateMachine::sosPmApcString(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::csiEntry(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (inRange(c, 0x00, 0x17) || c == 0x19 || inRange(c, 0x1C, 0x1F)) {
             processControl(c);
@@ -317,7 +317,7 @@ void VtStateMachine::csiEntry(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::csiParam(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (inRange(c, 0x00, 0x17) || c == 0x19 || inRange(c, 0x1C, 0x1F)) {
             processControl(c);
@@ -354,7 +354,7 @@ void VtStateMachine::csiParam(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::csiIgnore(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (inRange(c, 0x00, 0x17) || c == 0x19 || inRange(c, 0x1C, 0x1F)) {
             processControl(c);
@@ -381,7 +381,7 @@ void VtStateMachine::csiIgnore(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::csiIntermediate(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (inRange(c, 0x00, 0x17) || c == 0x19 || inRange(c, 0x1C, 0x1F)) {
             processControl(c);
@@ -414,7 +414,7 @@ void VtStateMachine::csiIntermediate(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::oscString(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (c == 0x07 /* BEL */) {        // XXX parser specific
             // ST (ESC \)
@@ -442,7 +442,7 @@ void VtStateMachine::oscString(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::dcsEntry(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (inRange(c, 0x00, 0x17) || c == 0x19 || inRange(c, 0x1C, 0x1F)) {
             // ignore
@@ -483,7 +483,7 @@ void VtStateMachine::dcsEntry(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::dcsParam(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (inRange(c, 0x00, 0x17) || c == 0x19 || inRange(c, 0x1C, 0x1F)) {
             // ignore
@@ -518,7 +518,7 @@ void VtStateMachine::dcsParam(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::dcsIgnore(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (inRange(c, 0x00, 0x17) || c == 0x19 || inRange(c, 0x1C, 0x1F)) {
             // ignore
@@ -538,7 +538,7 @@ void VtStateMachine::dcsIgnore(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::dcsIntermediate(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (inRange(c, 0x00, 0x17) || c == 0x19 || inRange(c, 0x1C, 0x1F)) {
             // ignore
@@ -568,7 +568,7 @@ void VtStateMachine::dcsIntermediate(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::dcsPassthrough(utf8::Seq seq, utf8::Length length) {
     if (length == utf8::Length::L1) {
-        uint8_t c = seq.lead();
+        auto c = seq.lead();
 
         if (inRange(c, 0x00, 0x17) || c == 0x19 || inRange(c, 0x1C, 0x1F) ||
             inRange(c, 0x20 /* SPACE */, 0x7E /* ~ */)) {
@@ -632,10 +632,10 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
 
     // Arguments:
 
-    bool inArg = false;
+    auto inArg = false;
 
     while (i != seq.size()) {
-        uint8_t c = seq[i];
+        auto c = seq[i];
 
         if (c >= '0' && c <= '9') {
             if (!inArg) { esc.args.push_back(0); inArg = true; }
@@ -673,7 +673,7 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
 void VtStateMachine::processOsc(const std::vector<uint8_t> & seq) {
     OscEsc esc;
 
-    bool next = true;
+    auto next = true;
     for (auto c : seq) {
         if (next) { esc.args.push_back(std::string()); next = false; }
 
