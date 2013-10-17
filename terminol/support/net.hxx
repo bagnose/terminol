@@ -93,7 +93,7 @@ public:
 protected:
     // I_Selector::I_ReadHandler implementation:
 
-    void handleRead(int fd) throw () {
+    void handleRead(int fd) throw () override {
         if (fd == _fd) {
             struct sockaddr_un address;
             ::memset(&address, 0, sizeof address);
@@ -210,7 +210,7 @@ public:
 protected:
     // I_Selector::I_Writer implementation:
 
-    void handleWrite(int fd) throw () {
+    void handleWrite(int fd) throw () override {
         ASSERT(fd == _fd, "");
         ASSERT(!_queue.empty(), "");
         auto rval = TEMP_FAILURE_RETRY(::write(fd, &_queue.front(), _queue.size()));

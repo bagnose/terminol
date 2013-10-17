@@ -152,26 +152,26 @@ protected:
 
     // Terminal::I_Observer implementation:
 
-    void terminalGetDisplay(std::string & display) throw ();
-    void terminalCopy(const std::string & text, Terminal::Selection selection) throw ();
-    void terminalPaste(Terminal::Selection selection) throw ();
-    void terminalResizeLocalFont(int delta) throw ();
-    void terminalResizeGlobalFont(int delta) throw ();
-    void terminalResetTitleAndIcon() throw ();
-    void terminalSetWindowTitle(const std::string & str) throw ();
-    void terminalSetIconName(const std::string & str) throw ();
-    void terminalBell() throw ();
-    void terminalResizeBuffer(int16_t rows, int16_t cols) throw ();
-    bool terminalFixDamageBegin() throw ();
+    void terminalGetDisplay(std::string & display) throw () override;
+    void terminalCopy(const std::string & text, Terminal::Selection selection) throw () override;
+    void terminalPaste(Terminal::Selection selection) throw () override;
+    void terminalResizeLocalFont(int delta) throw () override;
+    void terminalResizeGlobalFont(int delta) throw () override;
+    void terminalResetTitleAndIcon() throw () override;
+    void terminalSetWindowTitle(const std::string & str) throw () override;
+    void terminalSetIconName(const std::string & str) throw () override;
+    void terminalBell() throw () override;
+    void terminalResizeBuffer(int16_t rows, int16_t cols) throw () override;
+    bool terminalFixDamageBegin() throw () override;
     void terminalDrawBg(Pos     pos,
                         int16_t count,
-                        UColor color) throw ();
+                        UColor color) throw () override;
     void terminalDrawFg(Pos             pos,
                         int16_t         count,
                         UColor          color,
                         AttrSet         attrs,
                         const uint8_t * str,
-                        size_t          size) throw ();
+                        size_t          size) throw () override;
     void terminalDrawCursor(Pos             pos,
                             UColor          fg,
                             UColor          bg,
@@ -179,17 +179,17 @@ protected:
                             const uint8_t * str,
                             size_t          size,
                             bool            wrapNext,
-                            bool            focused) throw ();
+                            bool            focused) throw () override;
     void terminalDrawScrollbar(size_t  totalRows,
                                size_t  historyOffset,
-                               int16_t visibleRows) throw ();
+                               int16_t visibleRows) throw () override;
     void terminalFixDamageEnd(const Region & damage,
-                              bool           scrollbar) throw ();
-    void terminalChildExited(int exitStatus) throw ();
+                              bool           scrollbar) throw () override;
+    void terminalChildExited(int exitStatus) throw () override;
 
     // FontManager::I_Client implementation:
 
-    void useFontSet(FontSet * fontSet, int delta) throw ();
+    void useFontSet(FontSet * fontSet, int delta) throw () override;
 
 private:
     XColor getColor(const UColor & ucolor) const {

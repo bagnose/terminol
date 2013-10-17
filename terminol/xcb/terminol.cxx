@@ -229,7 +229,7 @@ protected:
 
     // I_Selector::I_ReadHandler implementation:
 
-    void handleRead(int fd) throw () {
+    void handleRead(int fd) throw () override {
         if (fd == _basics.fd()) {
             xevent();
         }
@@ -243,7 +243,7 @@ protected:
 
     // Window::I_Observer implementation:
 
-    void windowSync() throw () {
+    void windowSync() throw () override {
         xcb_aux_sync(_basics.connection());
 
         for (;;) {
@@ -264,16 +264,16 @@ protected:
         }
     }
 
-    void windowDefer(Window * window) throw () {
+    void windowDefer(Window * window) throw () override {
         ASSERT(window == &_window, "");
         _deferral = true;
     }
 
-    void windowSelected(Window * UNUSED(window)) throw () {
+    void windowSelected(Window * UNUSED(window)) throw () override {
         // Nothing to do.
     }
 
-    void windowExited(Window * window, int UNUSED(exitCode)) throw () {
+    void windowExited(Window * window, int UNUSED(exitCode)) throw () override {
         ASSERT(window == &_window, "");
         _windowOpen = false;
     }

@@ -36,12 +36,12 @@ protected:
 
     // SocketClient::I_Observer implementation:
 
-    void clientDisconnected() throw () {
+    void clientDisconnected() throw () override {
         ERROR("Client disconnected");
         _done = true;
     }
 
-    void clientQueueEmpty() throw () {
+    void clientQueueEmpty() throw () override {
         _done = true;
     }
 };

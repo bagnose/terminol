@@ -18,16 +18,16 @@ protected:
 
     // SocketServer::I_Observer implementation:
 
-    void serverConnected(int id) throw () {
+    void serverConnected(int id) throw () override {
         PRINT("Server connected: " << id);
     }
 
-    void serverReceived(int id, const uint8_t * UNUSED(data), size_t size) throw () {
+    void serverReceived(int id, const uint8_t * UNUSED(data), size_t size) throw () override {
         PRINT("Server received bytes: " << size);
         _socket.disconnect(id);
     }
 
-    void serverDisconnected(int id) throw () {
+    void serverDisconnected(int id) throw () override {
         PRINT("Server disconnected: " << id);
         ++_count;
     }
@@ -55,11 +55,11 @@ protected:
 
     // SocketClient::I_Observer implementation:
 
-    void clientDisconnected() throw () {
+    void clientDisconnected() throw () override {
         PRINT("Client disconnected");
     }
 
-    void clientQueueEmpty() throw () {
+    void clientQueueEmpty() throw () override {
         PRINT("Client queue empty");
     }
 };

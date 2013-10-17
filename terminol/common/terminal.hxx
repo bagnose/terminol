@@ -164,18 +164,18 @@ protected:
 
     // VtStateMachine::I_Observer implementation:
 
-    void     machineNormal(utf8::Seq seq, utf8::Length length) throw ();
-    void     machineControl(uint8_t control) throw ();
-    void     machineSimpleEsc(const SimpleEsc & esc) throw ();
-    void     machineCsiEsc(const CsiEsc & esc) throw ();
-    void     machineDcsEsc(const DcsEsc & esc) throw ();
-    void     machineOscEsc(const OscEsc & esc) throw ();
+    void     machineNormal(utf8::Seq seq, utf8::Length length) throw () override;
+    void     machineControl(uint8_t control) throw () override;
+    void     machineSimpleEsc(const SimpleEsc & esc) throw () override;
+    void     machineCsiEsc(const CsiEsc & esc) throw () override;
+    void     machineDcsEsc(const DcsEsc & esc) throw () override;
+    void     machineOscEsc(const OscEsc & esc) throw () override;
 
     // Tty::I_Observer imlementation:
 
-    void     ttyData(const uint8_t * data, size_t size) throw ();
-    void     ttySync() throw ();
-    void     ttyExited(int exitCode) throw ();
+    void     ttyData(const uint8_t * data, size_t size) throw () override;
+    void     ttySync() throw () override;
+    void     ttyExited(int exitCode) throw () override;
 };
 
 std::ostream & operator << (std::ostream & ost, Terminal::Button button);

@@ -223,7 +223,7 @@ public:
     bool isNegatable() const { return true; }
     bool wantsValue()  const { return false; }
 
-    void handle(bool negated, const std::string & UNUSED(value)) throw () {
+    void handle(bool negated, const std::string & UNUSED(value)) throw () override {
         _value = !negated;
     }
 };
@@ -236,7 +236,7 @@ public:
     bool isNegatable() const { return false; }
     bool wantsValue()  const { return true; }
 
-    void handle(bool UNUSED(negated), const std::string & value) throw (Error) {
+    void handle(bool UNUSED(negated), const std::string & value) throw (Error) override {
         try {
             _value = unstringify<V>(value);
         }
@@ -257,7 +257,7 @@ public:
     bool isNegatable() const { return false; }
     bool wantsValue()  const { return true; }
 
-    void handle(bool UNUSED(negated), const std::string & value) throw (Error) {
+    void handle(bool UNUSED(negated), const std::string & value) throw (Error) override {
         _func(value);
     }
 };

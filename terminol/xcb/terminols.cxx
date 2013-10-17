@@ -298,7 +298,7 @@ protected:
 
     // I_Selector::I_ReadHandler implementation:
 
-    void handleRead(int fd) throw () {
+    void handleRead(int fd) throw () override {
         if (fd == _basics.fd()) {
             xevent();
         }
@@ -312,7 +312,7 @@ protected:
 
     // Window::I_Observer implementation:
 
-    void windowSync() throw () {
+    void windowSync() throw () override {
         xcb_aux_sync(_basics.connection());
 
         for (;;) {
@@ -333,11 +333,11 @@ protected:
         }
     }
 
-    void windowDefer(Window * window) throw () {
+    void windowDefer(Window * window) throw () override {
         _deferrals.insert(window);
     }
 
-    void windowSelected(Window * window) throw () {
+    void windowSelected(Window * window) throw () override {
         for (auto & p : _windows) {
             auto w = p.second;
             if (w != window) {
@@ -346,14 +346,14 @@ protected:
         }
     }
 
-    void windowExited(Window * window, int UNUSED(exitCode)) throw () {
+    void windowExited(Window * window, int UNUSED(exitCode)) throw () override {
         ASSERT(std::find(_exits.begin(), _exits.end(), window) == _exits.end(), "");
         _exits.push_back(window);
     }
 
     // I_Creator implementation:
 
-    void create() throw () {
+    void create() throw () override {
         try {
             auto window = new Window(*this, _config, _selector, _deduper,
                                      _basics, _colorSet, _fontManager, _command);
@@ -365,7 +365,7 @@ protected:
         }
     }
 
-    void shutdown() throw () {
+    void shutdown() throw () override {
         _finished = true;
     }
 };

@@ -21,7 +21,7 @@ class FontSet : protected Uncopyable {
     uint16_t               _height;
 
 public:
-    FontSet(const Config & config, Basics & basics, int size) throw ();
+    FontSet(const Config & config, Basics & basics, int size);
     ~FontSet();
 
     PangoFontDescription * get(bool italic, bool bold) {

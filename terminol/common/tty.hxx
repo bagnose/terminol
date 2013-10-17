@@ -72,7 +72,7 @@ protected:
 
     // I_Selector::I_ReadHandler implementation:
 
-    void handleRead(int fd) throw ();
+    void handleRead(int fd) throw () override;
 };
 
 #endif // COMMON__TTY__H

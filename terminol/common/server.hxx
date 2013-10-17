@@ -46,11 +46,11 @@ protected:
 
     // SocketServer::I_Observer implementation:
 
-    void serverConnected(int UNUSED(id)) throw () {
+    void serverConnected(int UNUSED(id)) throw () override {
         //PRINT("Server connected: " << id);
     }
 
-    void serverReceived(int id, const uint8_t * data, size_t UNUSED(size)) throw () {
+    void serverReceived(int id, const uint8_t * data, size_t UNUSED(size)) throw () override {
         //PRINT("Server received bytes, " << id << ": " << size << "b");
 
         if (data[0] == 0xFF) {
@@ -63,7 +63,7 @@ protected:
         _socket.disconnect(id);
     }
 
-    void serverDisconnected(int UNUSED(id)) throw () {
+    void serverDisconnected(int UNUSED(id)) throw () override {
         //PRINT("Server disconnected: " << id);
     }
 };

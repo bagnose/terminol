@@ -8,7 +8,7 @@
 
 FontSet::FontSet(const Config & config,
                  Basics       & basics,
-                 int            size) throw () :
+                 int            size) :
     _config(config),
     _basics(basics)
 {
