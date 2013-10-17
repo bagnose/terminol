@@ -48,7 +48,7 @@ public:
         _selector(selector),
         _path(path)
     {
-        _fd = TEMP_FAILURE_RETRY(::socket(PF_UNIX, SOCK_SEQPACKET, 0));
+        _fd = ::socket(PF_UNIX, SOCK_SEQPACKET, 0);     // socket() doesn't raise EINTR.
         ENFORCE_SYS(_fd != -1, "Failed to create socket.");
 
         fdCloseExec(_fd);
@@ -66,11 +66,11 @@ public:
                 case EADDRINUSE:
                     throw Error("Failed to bind to socket " + path + ": " + std::string(::strerror(errno)));
                 default:
-                    ENFORCE_SYS(false, "");
+                    FATAL("");
             }
         }
 
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::listen(_fd, 5)) != -1, "");
+        ENFORCE_SYS(::listen(_fd, 5) != -1, "");        // listen() doesn't raise EINTR.
 
         _selector.addReadable(_fd, this);
     }
@@ -87,7 +87,7 @@ public:
 
     void disconnect(int id) {
         auto fd = id;
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::shutdown(fd, SHUT_RDWR)) != -1, "");
+        ENFORCE_SYS(::shutdown(fd, SHUT_RDWR) != -1, "");   // shutdown() doesn't raise EINTR.
     }
 
 protected:
@@ -165,7 +165,7 @@ public:
         _observer(observer),
         _selector(selector)
     {
-        _fd = TEMP_FAILURE_RETRY(::socket(PF_UNIX, SOCK_SEQPACKET, 0));
+        _fd = ::socket(PF_UNIX, SOCK_SEQPACKET, 0);     // socket() doesn't raise EINTR.
         ENFORCE_SYS(_fd != -1, "Failed to create socket.");
 
         fdCloseExec(_fd);
@@ -185,7 +185,7 @@ public:
                 case EAGAIN:
                     throw Error("Failed to connect to socket " + path + ": " + std::string(::strerror(errno)));
                 default:
-                    ENFORCE_SYS(false, "");
+                    FATAL("");
             }
         }
     }

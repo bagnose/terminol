@@ -197,11 +197,11 @@ public:
 
         if (_writeRegs.find(fd) == _writeRegs.end()) {
             event.events = EPOLLIN;
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_ADD, fd, &event) != -1, "");
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_ADD, fd, &event) != -1, "");     // epoll_ctl() doesn't raise EINTR.
         }
         else {
             event.events = EPOLLIN | EPOLLOUT;
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");     // epoll_ctl() doesn't raise EINTR.
         }
 
         _readRegs.insert(std::make_pair(fd, handler));
@@ -212,14 +212,14 @@ public:
         ASSERT(iter != _readRegs.end(), "");
 
         if (_writeRegs.find(fd) == _writeRegs.end()) {
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_DEL, fd, nullptr) != -1, "");
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_DEL, fd, nullptr) != -1, "");        // epoll_ctl() doesn't raise EINTR.
         }
         else {
             struct epoll_event event;
             std::memset(&event, 0, sizeof event);
             event.events = EPOLLOUT;
             event.data.fd = fd;
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");     // epoll_ctl() doesn't raise EINTR.
         }
 
         _readRegs.erase(iter);
@@ -234,11 +234,11 @@ public:
 
         if (_readRegs.find(fd) == _readRegs.end()) {
             event.events = EPOLLOUT;
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_ADD, fd, &event) != -1, "");
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_ADD, fd, &event) != -1, "");     // epoll_ctl() doesn't raise EINTR.
         }
         else {
             event.events = EPOLLIN | EPOLLOUT;
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");     // epoll_ctl() doesn't raise EINTR.
         }
 
         _writeRegs.insert(std::make_pair(fd, handler));
@@ -249,14 +249,14 @@ public:
         ASSERT(iter != _writeRegs.end(), "");
 
         if (_readRegs.find(fd) == _readRegs.end()) {
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_DEL, fd, nullptr) != -1, "");
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_DEL, fd, nullptr) != -1, "");        // epoll_ctl() doesn't raise EINTR.
         }
         else {
             struct epoll_event event;
             std::memset(&event, 0, sizeof event);
             event.events = EPOLLIN;
             event.data.fd = fd;
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");
+            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");     // epoll_ctl() doesn't raise EINTR.
         }
 
         _writeRegs.erase(iter);

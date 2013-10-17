@@ -11,7 +11,7 @@ class Pipe {
 
 public:
     Pipe() {
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::pipe2(_fds, O_NONBLOCK | O_CLOEXEC)) != -1, "");
+        ENFORCE_SYS(::pipe2(_fds, O_NONBLOCK | O_CLOEXEC) != -1, "");   // pipe2() doesn't raise EINTR.
     }
 
     ~Pipe() {

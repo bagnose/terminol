@@ -152,7 +152,7 @@ void Tty::close() {
 
     _selector.removeReadable(_fd);
 
-    ENFORCE_SYS(::close(_fd) != -1, "::close() failed");
+    ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(_fd)) != -1, "::close() failed");
     _fd = -1;
 }
 
@@ -185,7 +185,7 @@ void Tty::openPty(uint16_t            rows,
     if (_pid != 0) {
         // Parent code-path.
 
-        ENFORCE_SYS(::close(slave) != -1, "");
+        ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(slave)) != -1, "");
 
         // Set non-blocking.
         fdNonBlock(master);
@@ -199,21 +199,21 @@ void Tty::openPty(uint16_t            rows,
         // Child code-path.
 
         // Create a new process group.
-        ENFORCE_SYS(::setsid() != -1, "");
+        ENFORCE_SYS(::setsid() != -1, "");      // No EINTR.
 
         // Hook stdin/out/err up to the PTY.
-        ENFORCE_SYS(::close(STDIN_FILENO) != -1, "");
-        ENFORCE_SYS(::fcntl(slave, F_DUPFD, STDIN_FILENO) != -1, "");
-        ENFORCE_SYS(::close(STDOUT_FILENO) != -1, "");
-        ENFORCE_SYS(::fcntl(slave, F_DUPFD, STDOUT_FILENO) != -1, "");
-        ENFORCE_SYS(::close(STDERR_FILENO) != -1, "");
-        ENFORCE_SYS(::fcntl(slave, F_DUPFD, STDERR_FILENO) != -1, "");
+        ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(STDIN_FILENO)) != -1, "");
+        ENFORCE_SYS(TEMP_FAILURE_RETRY(::fcntl(slave, F_DUPFD, STDIN_FILENO)) != -1, "");
+        ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(STDOUT_FILENO)) != -1, "");
+        ENFORCE_SYS(TEMP_FAILURE_RETRY(::fcntl(slave, F_DUPFD, STDOUT_FILENO)) != -1, "");
+        ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(STDERR_FILENO)) != -1, "");
+        ENFORCE_SYS(TEMP_FAILURE_RETRY(::fcntl(slave, F_DUPFD, STDERR_FILENO)) != -1, "");
 
         // Acquire controlling TTY.
-        ENFORCE_SYS(::ioctl(slave, TIOCSCTTY, nullptr) != -1, "");
+        ENFORCE_SYS(TEMP_FAILURE_RETRY(::ioctl(slave, TIOCSCTTY, nullptr)) != -1, "");
 
-        ENFORCE_SYS(::close(slave) != -1, "");
-        ENFORCE_SYS(::close(master) != -1, "");
+        ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(slave)) != -1, "");
+        ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(master)) != -1, "");
 
         execShell(windowId, command);
     }
@@ -298,7 +298,7 @@ int Tty::waitReap() {
     ASSERT(_pid != 0, "");
 
     int stat;
-    ENFORCE_SYS(::waitpid(_pid, &stat, 0) == _pid, "::waitpid() failed.");
+    ENFORCE_SYS(TEMP_FAILURE_RETRY(::waitpid(_pid, &stat, 0)) == _pid, "::waitpid() failed.");
     _pid = 0;
     return WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
 }
