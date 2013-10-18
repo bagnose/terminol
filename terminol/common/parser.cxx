@@ -349,35 +349,24 @@ void interpretTokens(const std::vector<std::string> & tokens,
     }
 }
 
-void readLines(std::istream & ist, Config & config) throw (ParseError) {
-    size_t num = 0;
-    std::string line;
-    while (getline(ist, line).good()) {
-        ++num;
-
-        std::vector<std::string> tokens;
-        try {
-            if (split(line, tokens)) {
-                interpretTokens(tokens, config);
-            }
-        }
-        catch (const ParseError & ex) {
-            std::ostringstream ost;
-            ost << num << ": ";
-            throw ParseError(ost.str() + ex.message);
-        }
-    }
-}
-
 bool tryConfig(const std::string & path, Config & config) {
     std::ifstream ifs;
 
     if (open(ifs, path)) {
-        try {
-            readLines(ifs, config);
-        }
-        catch (const ParseError & ex) {
-            std::cerr << path << ":" << ex.message << std::endl;
+        size_t num = 0;
+        std::string line;
+        while (getline(ifs, line).good()) {
+            ++num;
+
+            std::vector<std::string> tokens;
+            try {
+                if (split(line, tokens)) {
+                    interpretTokens(tokens, config);
+                }
+            }
+            catch (const ParseError & ex) {
+                std::cerr << path << ":" << num << ": " << ex.message << std::endl;
+            }
         }
         return true;
     }
