@@ -204,7 +204,7 @@ Config::Config() :
     mapOnBell(false),
     urgentOnBell(false),
     audibleBell(false),
-    visualBell(true),
+    visualBell(false),
     x11PseudoTransparency(false),
     x11TransparencyValue(0.1)
 {

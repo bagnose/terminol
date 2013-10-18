@@ -95,7 +95,7 @@ set color-scheme solarized-dark
 #set map-on-bell                 false
 #set urgent-on-bell              false
 #set audible-bell                false
-#set visual-bell                 true
+#set visual-bell                 false
 
 #set x11-pseudo-transparency     false
 #set x11-transparency-value      0.1
