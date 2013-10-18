@@ -6,362 +6,293 @@
 #include "terminol/support/debug.hxx"
 
 #include <fstream>
+#include <unordered_map>
 
-namespace {
+class Parser : protected Uncopyable {
+    class Handler {
+    public:
+        virtual ~Handler() {}
 
-bool open(std::ifstream & ifs, const std::string & path) {
-    ifs.open(path.c_str());
-    return ifs.good();
-}
+        virtual void handle(const std::string & value) throw (ParseError) = 0;
+    };
 
-std::string lowercase(const std::string & str) {
-    auto copy = str;
-    for (auto & c : copy) { c = tolower(c); }
-    return copy;
-}
+    typedef std::unordered_map<std::string, Handler *> Handlers;
 
-void handleSet(const std::string & key,
-               const std::string & value,
-               Config            & config) throw (ParseError) {
-    if (key == "font-name") {
-        config.fontName = value;
-    }
-    else if (key == "font-size") {
-        config.fontSize = unstringify<int>(value);
-    }
-    else if (key == "term-name") {
-        config.termName = value;
-    }
-    else if (key == "scroll-with-history") {
-        config.scrollWithHistory = unstringify<bool>(value);
-    }
-    else if (key == "scroll-on-tty-output") {
-        config.scrollOnTtyOutput = unstringify<bool>(value);
-    }
-    else if (key == "scroll-on-tty-key-press") {
-        config.scrollOnTtyKeyPress = unstringify<bool>(value);
-    }
-    else if (key == "scroll-on-resize") {
-        config.scrollOnResize = unstringify<bool>(value);
-    }
-    else if (key == "scroll-on-paste") {
-        config.scrollOnPaste = unstringify<bool>(value);
-    }
-    else if (key == "title") {
-        config.title = value;
-    }
-    else if (key == "icon") {
-        config.icon = value;
-    }
-    else if (key == "chdir") {
-        config.icon = value;
-    }
-    else if (key == "scroll-back-history") {
-        config.unlimitedScrollBack = false;
-        config.scrollBackHistory   = unstringify<size_t>(value);
-    }
-    else if (key == "unlimited-scroll-back") {
-        config.unlimitedScrollBack = unstringify<bool>(value);
-    }
-    else if (key == "frames-per-second") {
-        config.framesPerSecond = unstringify<int>(value);
-    }
-    else if (key == "traditional-wrapping") {
-        config.traditionalWrapping = unstringify<bool>(value);
-    }
-    else if (key == "trace-tty") {
-        config.traceTty = unstringify<bool>(value);
-    }
-    else if (key == "sync-tty") {
-        config.syncTty = unstringify<bool>(value);
-    }
-    else if (key == "initial-x") {
-        config.initialX = unstringify<uint16_t>(value);
-    }
-    else if (key == "initial-y") {
-        config.initialY = unstringify<uint16_t>(value);
-    }
-    else if (key == "initial-rows") {
-        config.initialRows = unstringify<uint16_t>(value);
-    }
-    else if (key == "initial-cols") {
-        config.initialCols = unstringify<uint16_t>(value);
-    }
-    else if (key == "normal-fg-color") {
-        config.normalFgColor = Color::fromString(value);
-    }
-    else if (key == "normal-bg-color") {
-        config.normalBgColor = Color::fromString(value);
-    }
-    else if (key == "select-bg-color") {
-        config.customSelectBgColor = true;
-        config.selectBgColor = Color::fromString(value);
-    }
-    else if (key == "select-fg-color") {
-        config.customSelectFgColor = true;
-        config.selectFgColor = Color::fromString(value);
-    }
-    else if (key == "cursor-fill-color") {
-        config.customCursorFillColor = true;
-        config.cursorFillColor = Color::fromString(value);
-    }
-    else if (key == "cursor-text-color") {
-        config.customCursorTextColor = true;
-        config.cursorTextColor = Color::fromString(value);
-    }
-    else if (key == "scrollbar-fg-color") {
-        config.scrollbarFgColor = Color::fromString(value);
-    }
-    else if (key == "scrollbar-bg-color") {
-        config.scrollbarBgColor = Color::fromString(value);
-    }
-    else if (key == "scrollbar-visible") {
-        config.scrollbarVisible = unstringify<bool>(value);
-    }
-    else if (key == "scrollbar-width") {
-        config.scrollbarWidth = unstringify<int>(value);
-    }
-    else if (key == "auto-hide-cursor") {
-        config.autoHideCursor = unstringify<bool>(value);
-    }
-    else if (key == "border-color") {
-        config.borderColor = Color::fromString(value);
-    }
-    else if (key == "border-thickness") {
-        config.borderThickness = unstringify<int>(value);
-    }
-    else if (key == "double-click-timeout") {
-        config.doubleClickTimeout = unstringify<uint32_t>(value);
-    }
-    else if (key == "color-scheme") {
-        config.setColorScheme(value);
-    }
-    else if (key == "server-fork") {
-        config.serverFork = unstringify<bool>(value);
-    }
-    else if (key == "color-0") {
-        config.systemColors[0] = Color::fromString(value);
-    }
-    else if (key == "color-1") {
-        config.systemColors[1] = Color::fromString(value);
-    }
-    else if (key == "color-2") {
-        config.systemColors[2] = Color::fromString(value);
-    }
-    else if (key == "color-3") {
-        config.systemColors[3] = Color::fromString(value);
-    }
-    else if (key == "color-4") {
-        config.systemColors[4] = Color::fromString(value);
-    }
-    else if (key == "color-5") {
-        config.systemColors[5] = Color::fromString(value);
-    }
-    else if (key == "color-6") {
-        config.systemColors[6] = Color::fromString(value);
-    }
-    else if (key == "color-7") {
-        config.systemColors[7] = Color::fromString(value);
-    }
-    else if (key == "color-8") {
-        config.systemColors[8] = Color::fromString(value);
-    }
-    else if (key == "color-9") {
-        config.systemColors[9] = Color::fromString(value);
-    }
-    else if (key == "color-10") {
-        config.systemColors[10] = Color::fromString(value);
-    }
-    else if (key == "color-11") {
-        config.systemColors[11] = Color::fromString(value);
-    }
-    else if (key == "color-12") {
-        config.systemColors[12] = Color::fromString(value);
-    }
-    else if (key == "color-13") {
-        config.systemColors[13] = Color::fromString(value);
-    }
-    else if (key == "color-14") {
-        config.systemColors[14] = Color::fromString(value);
-    }
-    else if (key == "color-15") {
-        config.systemColors[15] = Color::fromString(value);
-    }
-    else if (key == "cut-chars") {
-        config.cutChars = value;
-    }
-    else if (key == "visual-bell-color") {
-        config.visualBellColor = Color::fromString(value);
-    }
-    else if (key == "visual-bell-duration") {
-        config.visualBellDuration = unstringify<uint32_t>(value);
-    }
-    else if (key == "map-on-bell") {
-        config.mapOnBell = unstringify<bool>(value);
-    }
-    else if (key == "urgent-on-bell") {
-        config.urgentOnBell = unstringify<bool>(value);
-    }
-    else if (key == "visual-bell") {
-        config.visualBell = unstringify<bool>(value);
-    }
-    else if (key == "audible-bell") {
-        config.audibleBell = unstringify<bool>(value);
-    }
-    else if (key == "x11-pseudo-transparency") {
-        config.x11PseudoTransparency = unstringify<bool>(value);
-    }
-    else if (key == "x11-transparency-value") {
-        config.x11TransparencyValue = unstringify<double>(value);
-    }
-    else {
-        throw ParseError("No such setting: '" + key + "'");
-    }
-}
+    //
 
-Action lookupAction(const std::string & str) throw (ParseError) {
-    if (str == "window-narrower") {
-        return Action::WINDOW_NARROWER;
-    }
-    else if (str == "window-wider") {
-        return Action::WINDOW_WIDER;
-    }
-    else if (str == "window-shorter") {
-        return Action::WINDOW_SHORTER;
-    }
-    else if (str == "window-taller") {
-        return Action::WINDOW_TALLER;
-    }
-    else if (str == "local-font-reset") {
-        return Action::LOCAL_FONT_RESET;
-    }
-    else if (str == "local-font-smaller") {
-        return Action::LOCAL_FONT_SMALLER;
-    }
-    else if (str == "local-font-bigger") {
-        return Action::LOCAL_FONT_BIGGER;
-    }
-    else if (str == "global-font-reset") {
-        return Action::GLOBAL_FONT_RESET;
-    }
-    else if (str == "global-font-smaller") {
-        return Action::GLOBAL_FONT_SMALLER;
-    }
-    else if (str == "global-font-bigger") {
-        return Action::GLOBAL_FONT_BIGGER;
-    }
-    else if (str == "copy-to-clipboard") {
-        return Action::COPY_TO_CLIPBOARD;
-    }
-    else if (str == "paste-from-clipboard") {
-        return Action::PASTE_FROM_CLIPBOARD;
-    }
-    else if (str == "scroll-up-line") {
-        return Action::SCROLL_UP_LINE;
-    }
-    else if (str == "scroll-down-line") {
-        return Action::SCROLL_DOWN_LINE;
-    }
-    else if (str == "scroll-up-page") {
-        return Action::SCROLL_UP_PAGE;
-    }
-    else if (str == "scroll-down-page") {
-        return Action::SCROLL_DOWN_PAGE;
-    }
-    else if (str == "scroll-top") {
-        return Action::SCROLL_TOP;
-    }
-    else if (str == "scroll-bottom") {
-        return Action::SCROLL_BOTTOM;
-    }
-    else if (str == "clear-history") {
-        return Action::CLEAR_HISTORY;
-    }
-    else if (str == "debug-global-tags") {
-        return Action::DEBUG_GLOBAL_TAGS;
-    }
-    else if (str == "debug-local-tags") {
-        return Action::DEBUG_LOCAL_TAGS;
-    }
-    else if (str == "debug-history") {
-        return Action::DEBUG_HISTORY;
-    }
-    else if (str == "debug-active") {
-        return Action::DEBUG_ACTIVE;
-    }
-    else if (str == "debug-modes") {
-        return Action::DEBUG_MODES;
-    }
-    else if (str == "debug-selection") {
-        return Action::DEBUG_SELECTION;
-    }
-    else if (str == "debug-stats") {
-        return Action::DEBUG_STATS;
-    }
-    else if (str == "debug-stats2") {
-        return Action::DEBUG_STATS2;
-    }
-    else {
-        throw ParseError("Bad action: '" + str + "'");
-    }
-}
+    template <class T> class SimpleHandler : public Handler {
+        T & _t;
+    public:
+        SimpleHandler(T & t) : _t(t) {}
 
-void handleBindSym(const std::string & sym,
-                   const std::string & action,
-                   Config & config) throw (ParseError) {
-    //PRINT("sym=" << sym << ", action=" << action);
-
-    std::vector<std::string> tokens;
-    if (split(sym, tokens, "+")) {
-        auto key = tokens.back(); tokens.pop_back();
-
-        ModifierSet modifiers;
-
-        for (const auto & m : tokens) {
-            auto modifier = xkb::nameToModifier(m);
-            modifiers.set(modifier);
+        void handle(const std::string & value) throw (ParseError) override {
+            _t = unstringify<T>(value);
         }
+    };
 
-        auto keySym = xkb::nameToSym(key);
+    //
 
-        KeyCombo keyCombo(keySym, modifiers);
-        Action   action2 = lookupAction(action);
+    class ColorHandler : public Handler {
+        Color & _color;
+    public:
+        ColorHandler(Color & color) : _color(color) {}
 
-        //PRINT("Bound: " << modifiers << "-" << xkb::symToName(keySym) << " to " << action);
+        void handle(const std::string & value) throw (ParseError) override {
+            _color = Color::fromString(value);
+        }
+    };
 
-        config.bindings.insert(std::make_pair(keyCombo, action2));
+    //
+
+    template <class F> class GenericHandler : public Handler {
+        F _func;
+    public:
+        GenericHandler(F func) : _func(func) {}
+        void handle(const std::string & value) throw (ParseError) override {
+            _func(value);
+        }
+    };
+
+    //
+
+    typedef std::unordered_map<std::string, Action> Actions;
+
+    //
+
+    Config   & _config;
+    Handlers   _handlers;
+    Actions    _actions;
+
+    template <class T> void registerSimpleHandler(const std::string & name, T & value) {
+        auto handler = new SimpleHandler<T>(value);
+        _handlers.insert(std::make_pair(name, handler));
+    }
+
+    void registerColorHandler(const std::string & name, Color & color) {
+        auto handler = new ColorHandler(color);
+        _handlers.insert(std::make_pair(name, handler));
+    }
+
+    template <class F> void registerGenericHandler(const std::string & name, F func) {
+        auto handler = new GenericHandler<F>(func);
+        _handlers.insert(std::make_pair(name, handler));
+    }
+
+public:
+    explicit Parser(Config & config);
+    ~Parser();
+
+protected:
+    void parse();
+    bool tryPath(const std::string & path);
+    void interpretTokens(const std::vector<std::string> & tokens) throw (ParseError);
+    void handleSet(const std::string & key, const std::string & value) throw (ParseError);
+    void handleBindSym(const std::string & sym, const std::string & action) throw (ParseError);
+};
+
+//
+//
+//
+
+Parser::Parser(Config & config) : _config(config) {
+    registerSimpleHandler("font-name", _config.fontName);
+
+    registerSimpleHandler("font-size", _config.fontSize);
+    registerSimpleHandler("term-name", _config.termName);
+    registerSimpleHandler("scroll-with-history", _config.scrollWithHistory);
+    registerSimpleHandler("scroll-on-tty-output", _config.scrollOnTtyOutput);
+    registerSimpleHandler("scroll-on-tty-key-press", _config.scrollOnTtyKeyPress);
+    registerSimpleHandler("scroll-on-resize", _config.scrollOnResize);
+    registerSimpleHandler("scroll-on-paste", _config.scrollOnPaste);
+    registerSimpleHandler("title", _config.title);
+    registerSimpleHandler("icon", _config.icon);
+    registerSimpleHandler("chdir", _config.icon);
+
+    registerGenericHandler("scroll-back-history",
+                           [&](const std::string & value)
+                           {
+                           _config.unlimitedScrollBack = false;
+                           _config.scrollBackHistory = unstringify<size_t>(value);
+                           }
+                          );
+
+    registerSimpleHandler("unlimited-scroll-back", _config.unlimitedScrollBack);
+    registerSimpleHandler("frames-per-second", _config.framesPerSecond);
+    registerSimpleHandler("traditional-wrapping", _config.traditionalWrapping);
+    registerSimpleHandler("trace-tty", _config.traceTty);
+    registerSimpleHandler("sync-tty", _config.syncTty);
+    registerSimpleHandler("initial-x", _config.initialX);
+    registerSimpleHandler("initial-y", _config.initialY);
+    registerSimpleHandler("initial-rows", _config.initialRows);
+    registerSimpleHandler("initial-cols", _config.initialCols);
+
+    registerColorHandler("normal-fg-color", _config.normalFgColor);
+    registerColorHandler("normal-bg-color", _config.normalBgColor);
+
+    registerGenericHandler("select-fg-color",
+                           [&](const std::string & value)
+                           {
+                           _config.customSelectFgColor = true;
+                           _config.selectFgColor       = Color::fromString(value);
+                           }
+                          );
+
+    registerGenericHandler("select-bg-color",
+                           [&](const std::string & value)
+                           {
+                           _config.customSelectBgColor = true;
+                           _config.selectBgColor       = Color::fromString(value);
+                           }
+                          );
+
+    registerGenericHandler("cursor-fill-color",
+                           [&](const std::string & value)
+                           {
+                           _config.customCursorFillColor = true;
+                           _config.cursorFillColor      = Color::fromString(value);
+                           }
+                          );
+
+    registerGenericHandler("cursor-text-color",
+                           [&](const std::string & value)
+                           {
+                           _config.customCursorTextColor = true;
+                           _config.cursorTextColor      = Color::fromString(value);
+                           }
+                          );
+
+    registerColorHandler("scrollbar-fg-color", _config.scrollbarFgColor);
+    registerColorHandler("scrollbar-bg-color", _config.scrollbarBgColor);
+
+    registerSimpleHandler("scrollbar-visible", _config.scrollbarVisible);
+    registerSimpleHandler("scrollbar-width", _config.scrollbarWidth);
+    registerSimpleHandler("auto-hide-cursor", _config.autoHideCursor);
+
+    registerColorHandler("border-color", _config.borderColor);
+
+    registerSimpleHandler("border-thickness", _config.borderThickness);
+    registerSimpleHandler("double-click-timeout", _config.doubleClickTimeout);
+
+    registerGenericHandler("color-scheme",
+                           [&](const std::string & value)
+                           {
+                           _config.setColorScheme(value);
+                           }
+                          );
+
+    registerSimpleHandler("server-fork", _config.serverFork);
+
+    registerColorHandler("color-0", _config.systemColors[0]);
+    registerColorHandler("color-1", _config.systemColors[1]);
+    registerColorHandler("color-2", _config.systemColors[2]);
+    registerColorHandler("color-3", _config.systemColors[3]);
+    registerColorHandler("color-4", _config.systemColors[4]);
+    registerColorHandler("color-5", _config.systemColors[5]);
+    registerColorHandler("color-6", _config.systemColors[6]);
+    registerColorHandler("color-7", _config.systemColors[7]);
+    registerColorHandler("color-8", _config.systemColors[8]);
+    registerColorHandler("color-9", _config.systemColors[9]);
+    registerColorHandler("color-10", _config.systemColors[10]);
+    registerColorHandler("color-11", _config.systemColors[11]);
+    registerColorHandler("color-12", _config.systemColors[12]);
+    registerColorHandler("color-13", _config.systemColors[13]);
+    registerColorHandler("color-14", _config.systemColors[14]);
+    registerColorHandler("color-15", _config.systemColors[15]);
+
+    registerSimpleHandler("cut-chars", _config.cutChars);
+
+    registerColorHandler("visual-bell-color", _config.visualBellColor);
+
+    registerSimpleHandler("visual-bell-duration", _config.visualBellDuration);
+    registerSimpleHandler("map-on-bell", _config.mapOnBell);
+    registerSimpleHandler("urgent-on-bell", _config.urgentOnBell);
+    registerSimpleHandler("visual-bell", _config.visualBell);
+    registerSimpleHandler("audible-bell", _config.audibleBell);
+    registerSimpleHandler("x11-pseudo-transparency", _config.x11PseudoTransparency);
+    registerSimpleHandler("x11-transparency-value", _config.x11TransparencyValue);
+
+    //
+    //
+    //
+
+    _actions.insert(std::make_pair("window-narrower",      Action::WINDOW_NARROWER));
+    _actions.insert(std::make_pair("window-wider",         Action::WINDOW_WIDER));
+    _actions.insert(std::make_pair("window-shorter",       Action::WINDOW_SHORTER));
+    _actions.insert(std::make_pair("window-taller",        Action::WINDOW_TALLER));
+    _actions.insert(std::make_pair("local-font-reset",     Action::LOCAL_FONT_RESET));
+    _actions.insert(std::make_pair("local-font-smaller",   Action::LOCAL_FONT_SMALLER));
+    _actions.insert(std::make_pair("local-font-bigger",    Action::LOCAL_FONT_BIGGER));
+    _actions.insert(std::make_pair("global-font-reset",    Action::GLOBAL_FONT_RESET));
+    _actions.insert(std::make_pair("global-font-smaller",  Action::GLOBAL_FONT_SMALLER));
+    _actions.insert(std::make_pair("global-font-bigger",   Action::GLOBAL_FONT_BIGGER));
+    _actions.insert(std::make_pair("copy-to-clipboard",    Action::COPY_TO_CLIPBOARD));
+    _actions.insert(std::make_pair("paste-from-clipboard", Action::PASTE_FROM_CLIPBOARD));
+    _actions.insert(std::make_pair("scroll-up-line",       Action::SCROLL_UP_LINE));
+    _actions.insert(std::make_pair("scroll-down-line",     Action::SCROLL_DOWN_LINE));
+    _actions.insert(std::make_pair("scroll-up-page",       Action::SCROLL_UP_PAGE));
+    _actions.insert(std::make_pair("scroll-down-page",     Action::SCROLL_DOWN_PAGE));
+    _actions.insert(std::make_pair("scroll-top",           Action::SCROLL_TOP));
+    _actions.insert(std::make_pair("scroll-bottom",        Action::SCROLL_BOTTOM));
+    _actions.insert(std::make_pair("clear-history",        Action::CLEAR_HISTORY));
+    _actions.insert(std::make_pair("debug-global-tags",    Action::DEBUG_GLOBAL_TAGS));
+    _actions.insert(std::make_pair("debug-local-tags",     Action::DEBUG_LOCAL_TAGS));
+    _actions.insert(std::make_pair("debug-history",        Action::DEBUG_HISTORY));
+    _actions.insert(std::make_pair("debug-active",         Action::DEBUG_ACTIVE));
+    _actions.insert(std::make_pair("debug-modes",          Action::DEBUG_MODES));
+    _actions.insert(std::make_pair("debug-selection",      Action::DEBUG_SELECTION));
+    _actions.insert(std::make_pair("debug-stats",          Action::DEBUG_STATS));
+    _actions.insert(std::make_pair("debug-stats2",         Action::DEBUG_STATS2));
+
+    parse();
+}
+
+Parser::~Parser() {
+    for (auto & t : _handlers) {
+        auto handler = t.second;
+        delete handler;
     }
 }
 
-void interpretTokens(const std::vector<std::string> & tokens,
-                     Config & config) throw (ParseError) {
-    ASSERT(!tokens.empty(), "No tokens!");
+void Parser::parse() {
+    const std::string conf = "/terminol/config";
 
-    if (tokens[0] == "set") {
-        if (tokens.size() == 3) {
-            handleSet(tokens[1], tokens[2], config);
-        }
-        else {
-            throw ParseError("Syntax: 'set NAME VALUE'");
+    auto xdg_config_home = static_cast<const char *>(::getenv("XDG_CONFIG_HOME"));
+
+    if (xdg_config_home) {
+        if (tryPath(xdg_config_home + conf)) {
+            return;
         }
     }
-    else if (tokens[0] == "bindsym") {
-        if (tokens.size() == 3) {
-            handleBindSym(tokens[1], tokens[2], config);
-        }
-        else {
-            throw ParseError("Syntax: 'bindsym KEY ACTION'");
+
+    auto xdg_config_dirs = static_cast<const char *>(::getenv("XDG_CONFIG_DIRS"));
+
+    if (xdg_config_dirs) {
+        std::vector<std::string> dirs;
+        split(xdg_config_dirs, dirs, ":");
+
+        for (auto & d : dirs) {
+            if (tryPath(d + conf)) {
+                return;
+            }
         }
     }
-    else {
-        throw ParseError("Unrecognised token: '" + tokens[0] + "'");
+
+    auto home = static_cast<const char *>(::getenv("HOME"));
+
+    if (home) {
+        if (tryPath(home + std::string("/.config") + conf)) {
+            return;
+        }
     }
+
+    std::cerr << "No configuration file found." << std::endl;
 }
 
-bool tryConfig(const std::string & path, Config & config) {
+bool Parser::tryPath(const std::string & path) {
     std::ifstream ifs;
+    ifs.open(path.c_str());
 
-    if (open(ifs, path)) {
+    if (ifs.good()) {
         size_t num = 0;
         std::string line;
         while (getline(ifs, line).good()) {
@@ -370,7 +301,7 @@ bool tryConfig(const std::string & path, Config & config) {
             std::vector<std::string> tokens;
             try {
                 if (split(line, tokens)) {
-                    interpretTokens(tokens, config);
+                    interpretTokens(tokens);
                 }
             }
             catch (const ParseError & ex) {
@@ -384,39 +315,78 @@ bool tryConfig(const std::string & path, Config & config) {
     }
 }
 
-} // namespace {anonymous}
+void Parser::interpretTokens(const std::vector<std::string> & tokens) throw (ParseError) {
+    ASSERT(!tokens.empty(), "No tokens!");
+
+    if (tokens[0] == "set") {
+        if (tokens.size() == 3) {
+            handleSet(tokens[1], tokens[2]);
+        }
+        else {
+            throw ParseError("Syntax: 'set NAME VALUE'");
+        }
+    }
+    else if (tokens[0] == "bindsym") {
+        if (tokens.size() == 3) {
+            handleBindSym(tokens[1], tokens[2]);
+        }
+        else {
+            throw ParseError("Syntax: 'bindsym KEY ACTION'");
+        }
+    }
+    else {
+        throw ParseError("Unrecognised token: '" + tokens[0] + "'");
+    }
+}
+
+void Parser::handleSet(const std::string & key, const std::string & value) throw (ParseError) {
+    auto iter = _handlers.find(key);
+    if (iter == _handlers.end()) {
+        throw ParseError("No such setting: '" + key + "'");
+    }
+    else {
+        auto handler = iter->second;
+        handler->handle(value);
+    }
+}
+
+void Parser::handleBindSym(const std::string & sym, const std::string & action) throw (ParseError) {
+    std::vector<std::string> tokens;
+    if (split(sym, tokens, "+")) {
+        auto key = tokens.back(); tokens.pop_back();
+
+        ModifierSet modifiers;
+
+        for (auto & m : tokens) {
+            auto modifier = xkb::nameToModifier(m);
+            modifiers.set(modifier);
+        }
+
+        auto keySym = xkb::nameToSym(key);
+
+        KeyCombo keyCombo(keySym, modifiers);
+
+        auto iter = _actions.find(action);
+        if (iter == _actions.end()) {
+            throw ParseError("Bad action: '" + action + "'");
+        }
+        else {
+            auto action2 = iter->second;
+
+            //PRINT("Bound: " << modifiers << "-" << xkb::symToName(keySym) << " to " << action);
+
+            _config.bindings.insert(std::make_pair(keyCombo, action2));
+        }
+    }
+    else {
+        throw ParseError("??");
+    }
+}
+
+//
+//
+//
 
 void parseConfig(Config & config) {
-    const std::string conf = "/terminol/config";
-
-    auto xdg_config_home = static_cast<const char *>(::getenv("XDG_CONFIG_HOME"));
-
-    if (xdg_config_home) {
-        if (tryConfig(xdg_config_home + conf, config)) {
-            return;
-        }
-    }
-
-    auto xdg_config_dirs = static_cast<const char *>(::getenv("XDG_CONFIG_DIRS"));
-
-    if (xdg_config_dirs) {
-        std::vector<std::string> dirs;
-        split(xdg_config_dirs, dirs, ":");
-
-        for (auto & d : dirs) {
-            if (tryConfig(d + conf, config)) {
-                return;
-            }
-        }
-    }
-
-    auto home = static_cast<const char *>(::getenv("HOME"));
-
-    if (home) {
-        if (tryConfig(home + std::string("/.config") + conf, config)) {
-            return;
-        }
-    }
-
-    std::cerr << "No configuration file found." << std::endl;
+    Parser parser(config);
 }
