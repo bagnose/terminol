@@ -50,14 +50,12 @@ private:
     Terminal        * _terminal;
     bool              _open;
     HPos              _pointerPos;
-    bool              _mapped;          // Is the window mapped?
 
-    bool              _pixmapCurrent;   // Is the pixmap up-to-date?
+    bool              _mapped;          // Is the window mapped? If so then _pixmap and _surface are good.
     xcb_pixmap_t      _pixmap;          // Created when mapped, destroyed when unmapped.
-
     cairo_surface_t * _surface;
 
-    cairo_t         * _cr;
+    cairo_t         * _cr;              // Cairo drawing context. Created only as required.
 
     std::string       _title;
     std::string       _icon;
@@ -66,7 +64,7 @@ private:
     std::string       _clipboardSelection;
 
     bool              _pressed;         // Is there an active button press?
-    int               _pressCount;
+    int               _pressCount;      // single, double, triple-click, etc
     xcb_timestamp_t   _lastPressTime;
     xcb_button_t      _button;
 
@@ -136,9 +134,10 @@ protected:
 
     void setTitle(const std::string & title);
 
+    void createPixmapAndSurface();
+    void destroySurfaceAndPixmap();
     void draw();
     void drawBorder();
-
     void copy(int x, int y, int w, int h);
 
     void handleResize();
