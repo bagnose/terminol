@@ -218,7 +218,9 @@ Window::~Window() {
 void Window::keyPress(xcb_key_press_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
 
-    cursorVisibility(false);
+    if (_config.autoHideCursor) {
+        cursorVisibility(false);
+    }
 
     if (!_open) { return; }
 
@@ -248,7 +250,9 @@ void Window::keyRelease(xcb_key_release_event_t * event) {
 void Window::buttonPress(xcb_button_press_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
 
-    cursorVisibility(true);
+    if (_config.autoHideCursor) {
+        cursorVisibility(true);
+    }
 
     //PRINT("Button-press: " << event->event_x << " " << event->event_y);
     if (!_open) { return; }
@@ -306,7 +310,9 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
 void Window::buttonRelease(xcb_button_release_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
 
-    cursorVisibility(true);
+    if (_config.autoHideCursor) {
+        cursorVisibility(true);
+    }
 
     if (!_open) { return; }
     if (event->detail < XCB_BUTTON_INDEX_1 ||
@@ -323,7 +329,9 @@ void Window::buttonRelease(xcb_button_release_event_t * event) {
 void Window::motionNotify(xcb_motion_notify_event_t * event) {
     ASSERT(event->event == _window, "Which window?");
 
-    cursorVisibility(true);
+    if (_config.autoHideCursor) {
+        cursorVisibility(true);
+    }
 
     if (!_open) { return; }
 
@@ -1067,6 +1075,8 @@ void Window::handleDelete() {
 }
 
 void Window::cursorVisibility(bool visible) {
+    ASSERT(_config.autoHideCursor, "");
+
     if (_cursorVisible != visible) {
         auto mask   = XCB_CW_CURSOR;
         auto values = visible ? _basics.normalCursor() : _basics.invisibleCursor();

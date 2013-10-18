@@ -65,6 +65,8 @@ struct Config {
 
     std::string cutChars;
 
+    bool        autoHideCursor;
+
     Color       visualBellColor;
     uint32_t    visualBellDuration;
 

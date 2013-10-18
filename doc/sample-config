@@ -58,6 +58,8 @@ set color-scheme solarized-dark
 #set scrollbar-visible           true
 #set scrollbar-width             6
 
+#set auto-hide-cursor            true
+
 #set server-fork                 true
 #set socket-path                 /tmp/my-terminols.socket
 #set term-name                   xterm-256color
