@@ -36,10 +36,10 @@ Basics::Basics() throw (Error) {
     _screen = screenIter.data;
 
     _visual = nullptr;
-    for (xcb_depth_iterator_t depth_iter = xcb_screen_allowed_depths_iterator(_screen);
-         depth_iter.rem; xcb_depth_next(&depth_iter))
+    for (xcb_depth_iterator_t depthIter = xcb_screen_allowed_depths_iterator(_screen);
+         depthIter.rem; xcb_depth_next(&depthIter))
     {
-        for (auto visual_iter = xcb_depth_visuals_iterator(depth_iter.data);
+        for (auto visual_iter = xcb_depth_visuals_iterator(depthIter.data);
              visual_iter.rem; xcb_visualtype_next(&visual_iter))
         {
             if (_screen->root_visual == visual_iter.data->visual_id) {
@@ -114,7 +114,7 @@ Basics::~Basics() {
     xcb_disconnect(_connection);
 }
 
-// The following code was stolen and modified from awesome/keyresolv.c
+// The following function was stolen and modified from awesome/keyresolv.c
 
 // Copyright © 2008-2009 Julien Danjou <julien@danjou.info>
 // Copyright © 2008 Pierre Habouzit <madcoder@debian.org>
@@ -233,8 +233,7 @@ xcb_atom_t Basics::lookupAtom(const std::string & name,
 }
 
 xcb_cursor_t Basics::loadNormalCursor() throw (Error) {
-    auto cursorId = 152;    // XC_xterm
-
+    uint16_t          cursorId = 152;    // XC_xterm
     const std::string fontName = "cursor";
 
     // Load the font:
