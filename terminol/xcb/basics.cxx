@@ -269,6 +269,7 @@ xcb_cursor_t Basics::loadInvisibleCursor() throw (Error) {
     if (xcb_request_failed(_connection, cookie, "couldn't create pixmap")) {
         throw Error("Failed to create pixmap.");
     }
+    auto guard = scopeGuard([&] { xcb_free_pixmap(_connection, pixmap); });
 
     auto cursor = xcb_generate_id(_connection);
     cookie = xcb_create_cursor_checked(_connection,
