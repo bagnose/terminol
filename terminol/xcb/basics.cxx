@@ -319,6 +319,24 @@ xcb_pixmap_t Basics::getRootPixmap(xcb_atom_t atom) throw (Error) {
     return pixmap;
 }
 
+namespace {
+
+void resolveCode(uint8_t             & mask,
+                 const xcb_keycode_t * codes,
+                 xcb_keycode_t         kcode,
+                 int                   bit) {
+    if (mask == 0 && codes) {
+        for (auto ktest = codes; *ktest; ++ktest) {
+            if (*ktest == kcode) {
+                mask = (1 << bit);
+                break;
+            }
+        }
+    }
+}
+
+} // namespace {anonymous}
+
 void Basics::determineMasks() throw (Error) {
     // Note, xcb_key_symbols_get_keycode() may return nullptr.
     auto shiftCodes      = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Shift_L);
@@ -332,38 +350,25 @@ void Basics::determineMasks() throw (Error) {
 
     auto cookie      = xcb_get_modifier_mapping(_connection);
     auto modmapReply = xcb_get_modifier_mapping_reply(_connection, cookie, nullptr);
-    if (!modmapReply) {
-        throw Error("Couldn't determine masks.");
-    }
+    if (!modmapReply) { throw Error("Couldn't determine masks."); }     // FIXME leak
     auto modmap      = xcb_get_modifier_mapping_keycodes(modmapReply);
 
     // Clear the masks.
     _maskShift = _maskAlt = _maskControl = _maskSuper =
         _maskNumLock = _maskShiftLock = _maskCapsLock = _maskModeSwitch = 0;
 
-    for (int i = 0; i != 8; ++i) {
-        for (int j = 0; j != modmapReply->keycodes_per_modifier; ++j) {
+    for (auto i = 0; i != 8; ++i) {
+        for (auto j = 0; j != modmapReply->keycodes_per_modifier; ++j) {
             auto kcode = modmap[i * modmapReply->keycodes_per_modifier + j];
 
-#define LOOK_FOR(mask, codes) \
-            if (mask == 0 && codes) { \
-                for (auto ktest = codes; *ktest; ++ktest) { \
-                    if (*ktest == kcode) { \
-                        mask = (1 << i); \
-                        break; \
-                    } \
-                } \
-            }
-
-            LOOK_FOR(_maskShift,      shiftCodes);
-            LOOK_FOR(_maskAlt,        altCodes);
-            LOOK_FOR(_maskControl,    controlCodes);
-            LOOK_FOR(_maskSuper,      superCodes);
-            LOOK_FOR(_maskNumLock,    numLockCodes);
-            LOOK_FOR(_maskShiftLock,  shiftLockCodes);
-            LOOK_FOR(_maskCapsLock,   capsLockCodes);
-            LOOK_FOR(_maskModeSwitch, modeSwitchCodes);
-#undef LOOK_FOR
+            resolveCode(_maskShift,      shiftCodes,      kcode, i);
+            resolveCode(_maskAlt,        altCodes,        kcode, i);
+            resolveCode(_maskControl,    controlCodes,    kcode, i);
+            resolveCode(_maskSuper,      superCodes,      kcode, i);
+            resolveCode(_maskNumLock,    numLockCodes,    kcode, i);
+            resolveCode(_maskShiftLock,  shiftLockCodes,  kcode, i);
+            resolveCode(_maskCapsLock,   capsLockCodes,   kcode, i);
+            resolveCode(_maskModeSwitch, modeSwitchCodes, kcode, i);
         }
     }
 
