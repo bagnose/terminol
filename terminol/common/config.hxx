@@ -73,6 +73,9 @@ struct Config {
     bool        audibleBell;
     bool        visualBell;
 
+    bool        x11PseudoTransparency;
+    double      x11TransparencyValue;
+
     //
     //
     //

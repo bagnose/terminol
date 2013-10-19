@@ -205,6 +205,12 @@ void handleSet(const std::string & key,
     else if (key == "audible-bell") {
         config.audibleBell = unstringify<bool>(value);
     }
+    else if (key == "x11-pseudo-transparency") {
+        config.x11PseudoTransparency = unstringify<bool>(value);
+    }
+    else if (key == "x11-transparency-value") {
+        config.x11TransparencyValue = unstringify<double>(value);
+    }
     else {
         throw ParseError("No such setting: '" + key + "'");
     }

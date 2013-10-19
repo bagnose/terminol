@@ -30,8 +30,8 @@ Window::Window(I_Observer         & observer,
     _window(0),
     _destroyed(false),
     _gc(0),
-    _width(0),
-    _height(0),
+    _geometry({0, 0, 0, 0}),
+    _deferredGeometry({0, 0, 0, 0}),
     _terminal(nullptr),
     _open(false),
     _pointerPos(HPos::invalid()),
@@ -63,8 +63,8 @@ Window::Window(I_Observer         & observer,
     const auto BORDER_THICKNESS = _config.borderThickness;
     const auto SCROLLBAR_WIDTH  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
-    _width  = 2 * BORDER_THICKNESS + cols * _fontSet->getWidth() + SCROLLBAR_WIDTH;
-    _height = 2 * BORDER_THICKNESS + rows * _fontSet->getHeight();
+    _geometry.width  = 2 * BORDER_THICKNESS + cols * _fontSet->getWidth() + SCROLLBAR_WIDTH;
+    _geometry.height = 2 * BORDER_THICKNESS + rows * _fontSet->getHeight();
 
     xcb_void_cookie_t cookie;
 
@@ -104,7 +104,7 @@ Window::Window(I_Observer         & observer,
                                        _window,
                                        _basics.screen()->root,
                                        _config.initialX, config.initialY,
-                                       _width, _height,
+                                       _geometry.width, _geometry.height,
                                        0,            // border width
                                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
                                        _basics.screen()->root_visual,
@@ -391,13 +391,28 @@ void Window::expose(xcb_expose_event_t * event) {
 void Window::configureNotify(xcb_configure_notify_event_t * event) {
     ASSERT(event->window == _window, "Which window?");
 
-    // We are only interested in size changes (not moves).
-    if (_width == event->width && _height == event->height) {
-        return;
+    if (!_deferred && !_config.x11PseudoTransparency) {
+        // We are only interested in size changes (not moves).
+        if (_geometry.width == event->width && _geometry.height == event->height) {
+            return;
+        }
     }
 
-    _width  = event->width;
-    _height = event->height;
+    _deferredGeometry.width  = event->width;
+    _deferredGeometry.height = event->height;
+
+    auto cookie = xcb_translate_coordinates(_basics.connection(), _window,
+                                            _basics.screen()->root, 0, 0); 
+    auto reply  = xcb_translate_coordinates_reply(_basics.connection(), cookie, nullptr);
+    if (reply) {
+        _deferredGeometry.x = reply->dst_x;
+        _deferredGeometry.y = reply->dst_y;
+        //PRINT(reply->dst_x << ", " << reply->dst_y);
+        std::free(reply);
+    }
+    else {
+        ERROR("Failed to translate coordinates.");
+    }
 
     if (_deferralsAllowed) {
         if (!_deferred) {
@@ -406,7 +421,7 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
         }
     }
     else {
-        handleResize();
+        handleConfigure();
     }
 }
 
@@ -555,7 +570,7 @@ void Window::clearSelection() {
 
 void Window::deferral() {
     ASSERT(_deferred, "");
-    handleResize();
+    handleConfigure();
     _deferred = false;
 }
 
@@ -770,15 +785,15 @@ void Window::createPixmapAndSurface() {
                                             _basics.screen()->root_depth,
                                             _pixmap,
                                             _basics.screen()->root,
-                                            _width,
-                                            _height);
+                                            _geometry.width,
+                                            _geometry.height);
     xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap");
 
     _surface = cairo_xcb_surface_create(_basics.connection(),
                                         _pixmap,
                                         _basics.visual(),
-                                        _width,
-                                        _height);
+                                        _geometry.width,
+                                        _geometry.height);
     ENFORCE(_surface, "Failed to create surface");
     ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
 
@@ -824,46 +839,99 @@ void Window::drawBorder() {
     const auto BORDER_THICKNESS = _config.borderThickness;
     const auto SCROLLBAR_WIDTH  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
+    auto x0 = 0;
+    auto x1 = BORDER_THICKNESS;
+    auto x2 = BORDER_THICKNESS + _fontSet->getWidth() * _terminal->getCols();
+    auto x3 = _geometry.width - SCROLLBAR_WIDTH;
+
+    auto y0 = 0;
+    auto y1 = BORDER_THICKNESS;
+    auto y2 = BORDER_THICKNESS + _fontSet->getHeight() * _terminal->getRows();
+    auto y3 = _geometry.height;
+
+    if (_config.x11PseudoTransparency) {
+        auto x = _geometry.x;
+        auto y = _geometry.y;
+
+        // Left edge.
+        xcb_copy_area(_basics.connection(),
+                      _basics.rootPixmap(),
+                      _pixmap,
+                      _gc,
+                      x + x0, y + y0,       // src
+                      x0, y0,               // dst
+                      x1 - x0, y3 - y0);    // w/h
+
+        // Top edge.
+        xcb_copy_area(_basics.connection(),
+                      _basics.rootPixmap(),
+                      _pixmap,
+                      _gc,
+                      x + x1, y + y0,       // src
+                      x1, y0,               // dst
+                      x2 - x1, y1 - y0);    // w/h
+
+        // Right edge.
+        xcb_copy_area(_basics.connection(),
+                      _basics.rootPixmap(),
+                      _pixmap,
+                      _gc,
+                      x + x2, y + y0,       // src
+                      x2, y0,               // dst
+                      x3 - x2, y3 - y0);    // w/h
+
+        // Bottom edge.
+        xcb_copy_area(_basics.connection(),
+                      _basics.rootPixmap(),
+                      _pixmap,
+                      _gc,
+                      x + x1, y + y2,       // src
+                      x1, y2,
+                      x2 - x1, y3 - y2);
+
+        xcb_flush(_basics.connection());
+    }
+
+
     cairo_save(_cr); {
+        auto alpha =
+            _config.x11PseudoTransparency ?
+            1.0 - _config.x11TransparencyValue :
+            1.0;
+
         auto & bg = _colorSet.getBorderColor();
-        cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
-
-        double x1 = BORDER_THICKNESS + _fontSet->getWidth() * _terminal->getCols();
-        double x2 = _width - SCROLLBAR_WIDTH;
-
-        double y1 = BORDER_THICKNESS + _fontSet->getHeight() * _terminal->getRows();
-        double y2 = _height;
+        cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
 
         // Left edge.
         cairo_rectangle(_cr,
-                        0.0,
-                        0.0,
-                        static_cast<double>(BORDER_THICKNESS),
-                        static_cast<double>(_height));
+                        static_cast<double>(x0),
+                        static_cast<double>(y0),
+                        static_cast<double>(x1 - x0),
+                        static_cast<double>(y3 - y0));
         cairo_fill(_cr);
 
         // Top edge.
         cairo_rectangle(_cr,
-                        0.0,
-                        0.0,
-                        x2,
-                        static_cast<double>(BORDER_THICKNESS));
+                        static_cast<double>(x1),
+                        static_cast<double>(y0),
+                        static_cast<double>(x2 - x1),
+                        static_cast<double>(y1 - y0));
         cairo_fill(_cr);
 
         // Right edge.
         cairo_rectangle(_cr,
-                        x1,
-                        0.0,
-                        x2 - x1,
-                        y2);
+                        static_cast<double>(x2),
+                        static_cast<double>(y0),
+                        static_cast<double>(x3 - x2),
+                        static_cast<double>(y3 - y0));
         cairo_fill(_cr);
 
         // Bottom edge.
         cairo_rectangle(_cr,
-                        0.0,
-                        y1,
-                        x2,
-                        y2 - y1);
+                        static_cast<double>(x1),
+                        static_cast<double>(y2),
+                        static_cast<double>(x2 - x1),
+                        static_cast<double>(y3 - y2));
         cairo_fill(_cr);
     } cairo_restore(_cr);
 }
@@ -884,15 +952,21 @@ void Window::copy(int x, int y, int w, int h) {
     xcb_flush(_basics.connection());
 }
 
-void Window::handleResize() {
-    int16_t rows, cols;
-    sizeToRowsCols(rows, cols);
-
-    _terminal->resize(rows, cols);      // Ok to resize if not open?
-
-    if (!_transientTitle) {
-        updateTitle();
+void Window::handleConfigure() {
+    if (_deferredGeometry.width != _geometry.width ||
+        _deferredGeometry.height != _geometry.height)
+    {
+        handleResize();
     }
+    else {
+        if (_config.x11PseudoTransparency) {
+            handleMove();
+        }
+    }
+}
+
+void Window::handleResize() {
+    _geometry = _deferredGeometry;
 
     if (_mapped) {
         ASSERT(_pixmap, "");
@@ -901,7 +975,29 @@ void Window::handleResize() {
         destroySurfaceAndPixmap();
         createPixmapAndSurface();
 
-        copy(0, 0, _width, _height);
+        copy(0, 0, _geometry.width, _geometry.height);
+    }
+
+    int16_t rows, cols;
+    sizeToRowsCols(rows, cols);
+
+    _terminal->resize(rows, cols);      // Ok to resize if not open?
+
+    if (!_transientTitle) {
+        updateTitle();
+    }
+}
+
+void Window::handleMove() {
+    ASSERT(_config.x11PseudoTransparency, "");
+
+    _geometry = _deferredGeometry;
+
+    if (_mapped) {
+        ASSERT(_pixmap, "");
+        ASSERT(_surface, "");
+        draw();
+        copy(0, 0, _geometry.width, _geometry.height);
     }
 }
 
@@ -912,7 +1008,7 @@ void Window::resizeToAccommodate(int16_t rows, int16_t cols, bool sync) {
     uint16_t width  = 2 * BORDER_THICKNESS + cols * _fontSet->getWidth() + SCROLLBAR_WIDTH;
     uint16_t height = 2 * BORDER_THICKNESS + rows * _fontSet->getHeight();
 
-    if (_width != width || _height != height) {
+    if (_geometry.width != width || _geometry.height != height) {
         uint32_t values[] = { width, height };
         auto cookie = xcb_configure_window(_basics.connection(),
                                            _window,
@@ -938,11 +1034,11 @@ void Window::sizeToRowsCols(int16_t & rows, int16_t & cols) const {
     const auto BASE_WIDTH  = 2 * BORDER_THICKNESS + SCROLLBAR_WIDTH;
     const auto BASE_HEIGHT = 2 * BORDER_THICKNESS;
 
-    if (_width  >= static_cast<uint16_t>(BASE_WIDTH  + _fontSet->getWidth()) &&
-        _height >= static_cast<uint16_t>(BASE_HEIGHT + _fontSet->getHeight()))
+    if (_geometry.width  >= static_cast<uint16_t>(BASE_WIDTH  + _fontSet->getWidth()) &&
+        _geometry.height >= static_cast<uint16_t>(BASE_HEIGHT + _fontSet->getHeight()))
     {
-        int16_t w = _width  - BASE_WIDTH;
-        int16_t h = _height - BASE_HEIGHT;
+        int16_t w = _geometry.width  - BASE_WIDTH;
+        int16_t h = _geometry.height - BASE_HEIGHT;
 
         rows = h / _fontSet->getHeight();
         cols = w / _fontSet->getWidth();
@@ -1080,7 +1176,7 @@ void Window::terminalBell() throw () {
             ASSERT(_pixmap, "");
             ASSERT(_surface, "");
 
-            xcb_rectangle_t rect = { 0, 0, _width, _height };
+            xcb_rectangle_t rect = { 0, 0, _geometry.width, _geometry.height };
             xcb_poly_fill_rectangle(_basics.connection(),
                                     _window,
                                     _gc,
@@ -1089,7 +1185,7 @@ void Window::terminalBell() throw () {
             xcb_flush(_basics.connection());
 
             ::usleep(_config.visualBellDuration * 1000);
-            copy(0, 0, _width, _height);
+            copy(0, 0, _geometry.width, _geometry.height);
         }
     }
 }
@@ -1118,17 +1214,31 @@ bool Window::terminalFixDamageBegin() throw () {
 void Window::terminalDrawBg(Pos     pos,
                             int16_t count,
                             UColor  color) throw () {
+    int x, y;
+    pos2XY(pos, x, y);
+
+    double w = count * _fontSet->getWidth();
+    double h = _fontSet->getHeight();
+
+    if (_config.x11PseudoTransparency) {
+        xcb_copy_area(_basics.connection(),
+                      _basics.rootPixmap(),
+                      _pixmap,
+                      _gc,
+                      _geometry.x + x, _geometry.y + y,   // src
+                      x, y,                               // dst
+                      w, h);
+    }
+
     ASSERT(_cr, "");
-
     cairo_save(_cr); {
-        int x, y;
-        pos2XY(pos, x, y);
-
-        double w = count * _fontSet->getWidth();
-        double h = _fontSet->getHeight();
+        auto alpha =
+            _config.x11PseudoTransparency ?
+            1.0 - _config.x11TransparencyValue :
+            1.0;
 
         auto bg = getColor(color);
-        cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
+        cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
 
         cairo_rectangle(_cr, x, y, w, h);
         cairo_fill(_cr);
@@ -1249,40 +1359,59 @@ void Window::terminalDrawScrollbar(size_t  totalRows,
     ASSERT(_cr, "");
     ASSERT(_config.scrollbarVisible, "");
 
-    const int SCROLLBAR_WIDTH  = _config.scrollbarWidth;
+    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
-    double x = static_cast<double>(_width - SCROLLBAR_WIDTH);
-    double y = 0.0;
-    double h = static_cast<double>(_height);
-    double w = static_cast<double>(SCROLLBAR_WIDTH);
+    auto x = _geometry.width - SCROLLBAR_WIDTH;
+    auto y = 0;
+    auto h = _geometry.height;
+    auto w = SCROLLBAR_WIDTH;
 
     // Draw the gutter.
 
-    const auto & bg = _colorSet.getScrollBarBgColor();
-    cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
+    if (_config.x11PseudoTransparency) {
+        xcb_copy_area(_basics.connection(),
+                      _basics.rootPixmap(),
+                      _pixmap,
+                      _gc,
+                      _geometry.x + x, _geometry.y + y,   // src
+                      x, y,                               // dst
+                      w, h);
 
-    cairo_rectangle(_cr,
-                    x,
-                    y,
-                    w,
-                    h);
-    cairo_fill(_cr);
+        xcb_flush(_basics.connection());
+    }
 
-    // Draw the bar.
+    cairo_save(_cr); {
+        auto alpha =
+            _config.x11PseudoTransparency ?
+            1.0 - _config.x11TransparencyValue :
+            1.0;
 
-    auto min  = 2.0;
-    auto yBar = static_cast<double>(historyOffset) / static_cast<double>(totalRows) * (h - min);
-    auto hBar = static_cast<double>(visibleRows)   / static_cast<double>(totalRows) * (h - min);
+        auto & bg = _colorSet.getScrollBarBgColor();
+        cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
 
-    const auto & fg = _colorSet.getScrollBarFgColor();
-    cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
+        cairo_rectangle(_cr,
+                        static_cast<double>(x),
+                        static_cast<double>(y),
+                        static_cast<double>(w),
+                        static_cast<double>(h));
+        cairo_fill(_cr);
 
-    cairo_rectangle(_cr,
-                    x + 1.0,
-                    yBar,
-                    w - 2.0,
-                    hBar + min);
-    cairo_fill(_cr);
+        // Draw the bar.
+
+        auto min  = 2.0;        // Minimum height we allow the scrollbar to be.
+        auto yBar = static_cast<double>(historyOffset) / static_cast<double>(totalRows) * (h - min);
+        auto hBar = static_cast<double>(visibleRows)   / static_cast<double>(totalRows) * (h - min);
+
+        auto & fg = _colorSet.getScrollBarFgColor();
+        cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
+
+        cairo_rectangle(_cr,
+                        static_cast<double>(x + 1),
+                        yBar,
+                        static_cast<double>(w - 2),
+                        hBar + min);
+        cairo_fill(_cr);
+    } cairo_restore(_cr);
 }
 
 void Window::terminalFixDamageEnd(const Region & damage,
@@ -1302,8 +1431,8 @@ void Window::terminalFixDamageEnd(const Region & damage,
     if (scrollBar) {
         // Expand the region to include the scroll bar
         y0 = 0;
-        x1 = _width;
-        y1 = _height;
+        x1 = _geometry.width;
+        y1 = _geometry.height;
     }
 
     copy(x0, y0, x1 - x0, y1 - y0);
@@ -1342,7 +1471,7 @@ void Window::useFontSet(FontSet * fontSet, int delta) throw () {
         ASSERT(_surface, "");
 
         draw();
-        copy(0, 0, _width, _height);
+        copy(0, 0, _geometry.width, _geometry.height);
     }
 
     std::ostringstream ost;

@@ -38,6 +38,10 @@ class Basics : protected Uncopyable {
     xcb_atom_t              _atomTargets;
     xcb_atom_t              _atomWmProtocols;
     xcb_atom_t              _atomWmDeleteWindow;
+    xcb_atom_t              _atomXRootPixmapId;
+    xcb_atom_t              _atomESetRootPmapId;
+
+    xcb_pixmap_t            _rootPixmap;
 
     uint8_t                 _maskShift;
     uint8_t                 _maskAlt;
@@ -77,6 +81,9 @@ public:
     xcb_atom_t              atomTargets()          { return _atomTargets; }
     xcb_atom_t              atomWmProtocols()      { return _atomWmProtocols; }
     xcb_atom_t              atomWmDeleteWindow()   { return _atomWmDeleteWindow; }
+    xcb_atom_t              atomXRootPixmapId()    { return _atomXRootPixmapId; }
+
+    xcb_pixmap_t            rootPixmap()           { return _rootPixmap; }
 
     bool                    getKeySym(xcb_keycode_t   keyCode,
                                       uint8_t         state,
@@ -90,6 +97,7 @@ protected:
                             bool create) throw (NotFoundError, Error);
     xcb_cursor_t loadNormalCursor() throw (Error);
     xcb_cursor_t loadInvisibleCursor() throw (Error);
+    xcb_pixmap_t getRootPixmap(xcb_atom_t atom) throw (Error);
     void         determineMasks() throw (Error);
 };
 

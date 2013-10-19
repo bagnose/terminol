@@ -85,9 +85,16 @@ Basics::Basics() throw (Error) {
         _atomTargets        = lookupAtom("TARGETS", true);
         _atomWmProtocols    = lookupAtom("WM_PROTOCOLS", false);
         _atomWmDeleteWindow = lookupAtom("WM_DELETE_WINDOW", false);
+        _atomXRootPixmapId  = lookupAtom("_XROOTPMAP_ID", false);
+        _atomESetRootPmapId = lookupAtom("ESETROOT_PMAP_ID", true);
     }
     catch (const NotFoundError & ex) {
         throw Error(ex.message);
+    }
+
+    _rootPixmap = getRootPixmap(_atomXRootPixmapId);
+    if (_rootPixmap == 0) {
+        _rootPixmap = getRootPixmap(_atomESetRootPmapId);
     }
 
     determineMasks();
@@ -284,6 +291,32 @@ xcb_cursor_t Basics::loadInvisibleCursor() throw (Error) {
     }
 
     return cursor;
+}
+
+xcb_pixmap_t Basics::getRootPixmap(xcb_atom_t atom) throw (Error) {
+    auto cookie = xcb_get_property(_connection,
+                                   0,     // delete
+                                   _screen->root,
+                                   atom,
+                                   XCB_ATOM_PIXMAP,
+                                   0,
+                                   1);
+
+    auto reply = xcb_get_property_reply(_connection, cookie, nullptr);
+
+    if (!reply) {
+        throw Error("Couldn't query root pixmap [1].");
+    }
+
+    auto guard = scopeGuard([&] { std::free(reply); });
+
+    if (xcb_get_property_value_length(reply) != sizeof(xcb_pixmap_t)) {
+        throw Error("Couldn't query root pixmap [2].");
+    }
+
+    auto pixmap = *static_cast<xcb_pixmap_t *>(xcb_get_property_value(reply));
+
+    return pixmap;
 }
 
 void Basics::determineMasks() throw (Error) {

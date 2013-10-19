@@ -97,6 +97,9 @@ set color-scheme solarized-dark
 #set audible-bell                false
 #set visual-bell                 true
 
+#set x11-pseudo-transparency     false
+#set x11-transparency-value      0.1
+
 # Key bindings (note, none are set by default)
 bindsym ctrl+0                  local-font-reset
 bindsym ctrl+minus              local-font-smaller

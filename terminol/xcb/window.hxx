@@ -45,8 +45,8 @@ private:
     xcb_window_t      _window;
     bool              _destroyed;
     xcb_gcontext_t    _gc;
-    uint16_t          _width;
-    uint16_t          _height;
+    xcb_rectangle_t   _geometry;
+    xcb_rectangle_t   _deferredGeometry;
     Terminal        * _terminal;
     bool              _open;
     HPos              _pointerPos;
@@ -140,7 +140,9 @@ protected:
     void drawBorder();
     void copy(int x, int y, int w, int h);
 
+    void handleConfigure();
     void handleResize();
+    void handleMove();
     void resizeToAccommodate(int16_t rows, int16_t cols, bool sync);
 
     void sizeToRowsCols(int16_t & rows, int16_t & cols) const;
