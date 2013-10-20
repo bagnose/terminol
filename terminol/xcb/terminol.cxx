@@ -126,10 +126,7 @@ protected:
             auto guard        = scopeGuard([event] { std::free(event); });
             auto responseType = XCB_EVENT_RESPONSE_TYPE(event);
 
-            if (responseType == 0) {
-                ERROR("Zero response type");
-            }
-            else {
+            if (responseType != 0) {
                 dispatch(responseType, event);
             }
         }
