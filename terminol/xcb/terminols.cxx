@@ -78,6 +78,14 @@ public:
             }
         }
 
+        if (_config.x11PseudoTransparency) {
+            uint32_t mask = XCB_EVENT_MASK_PROPERTY_CHANGE;
+            xcb_change_window_attributes(_basics.connection(),
+                                         _basics.screen()->root,
+                                         XCB_CW_EVENT_MASK,
+                                         &mask);
+        }
+
         loop();
     }
 
@@ -289,6 +297,20 @@ protected:
             }
             case XCB_REPARENT_NOTIFY:
                 // ignored
+                break;
+            case XCB_PROPERTY_NOTIFY:
+                if (_config.x11PseudoTransparency) {
+                    auto e = reinterpret_cast<xcb_property_notify_event_t *>(event);
+                    if (e->window == _basics.screen()->root &&
+                        e->atom == _basics.atomXRootPixmapId())
+                    {
+                        _basics.updateRootPixmap();
+                        for (auto & pair : _windows) {
+                            auto window = pair.second;
+                            window->redraw();
+                        }
+                    }
+                }
                 break;
             default:
                 // Ignore any events we aren't interested in.

@@ -29,6 +29,7 @@ class EventLoop :
     protected Window::I_Observer,
     protected Uncopyable
 {
+    const Config     & _config;
     Selector           _selector;
     Pipe               _pipe;
     Deduper            _deduper;
@@ -50,6 +51,7 @@ public:
     EventLoop(const Config       & config,
               const Tty::Command & command)
         throw (Basics::Error, Window::Error, Error) :
+        _config(config),
         _selector(),
         _pipe(),
         _deduper(),
@@ -69,6 +71,14 @@ public:
     {
         ASSERT(!_singleton, "");
         _singleton = this;
+
+        if (_config.x11PseudoTransparency) {
+            uint32_t mask = XCB_EVENT_MASK_PROPERTY_CHANGE;
+            xcb_change_window_attributes(_basics.connection(),
+                                         _basics.screen()->root,
+                                         XCB_CW_EVENT_MASK,
+                                         &mask);
+        }
 
         loop();
     }
@@ -220,6 +230,17 @@ protected:
                 break;
             case XCB_REPARENT_NOTIFY:
                 // ignored
+                break;
+            case XCB_PROPERTY_NOTIFY:
+                if (_config.x11PseudoTransparency) {
+                    auto e = reinterpret_cast<xcb_property_notify_event_t *>(event);
+                    if (e->window == _basics.screen()->root &&
+                        e->atom == _basics.atomXRootPixmapId())
+                    {
+                        _basics.updateRootPixmap();
+                        _window.redraw();
+                    }
+                }
                 break;
             default:
                 // Ignore any events we aren't interested in.

@@ -91,6 +91,8 @@ public:
 
     ModifierSet             convertState(uint8_t state) const;
 
+    void                    updateRootPixmap();
+
 protected:
     xcb_atom_t   lookupAtom(const std::string & name,
                             bool create) throw (NotFoundError, Error);

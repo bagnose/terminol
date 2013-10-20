@@ -206,6 +206,15 @@ ModifierSet Basics::convertState(uint8_t state) const {
     return modifiers;
 }
 
+void Basics::updateRootPixmap() {
+    try {
+        _rootPixmap = getRootPixmap(_atomXRootPixmapId);
+    }
+    catch (const Error & ex) {
+        ERROR("Failed to get root pixmap: " << ex.message);
+    }
+}
+
 xcb_atom_t Basics::lookupAtom(const std::string & name,
                               bool create) throw (NotFoundError, Error) {
     auto cookie = xcb_intern_atom(_connection, create ? 0 : 1, name.length(), name.data());

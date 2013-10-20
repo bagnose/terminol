@@ -568,6 +568,15 @@ void Window::clientMessage(xcb_client_message_event_t * event) {
     }
 }
 
+void Window::redraw() {
+    if (_mapped) {
+        ASSERT(_pixmap, "");
+        ASSERT(_surface, "");
+        draw();
+        copy(0, 0, _geometry.width, _geometry.height);
+    }
+}
+
 void Window::tryReap() {
     _terminal->tryReap();
 }
