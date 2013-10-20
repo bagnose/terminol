@@ -86,16 +86,12 @@ Basics::Basics() throw (Error) {
         _atomWmProtocols    = lookupAtom("WM_PROTOCOLS", false);
         _atomWmDeleteWindow = lookupAtom("WM_DELETE_WINDOW", false);
         _atomXRootPixmapId  = lookupAtom("_XROOTPMAP_ID", false);
-        _atomESetRootPmapId = lookupAtom("ESETROOT_PMAP_ID", true);
     }
     catch (const NotFoundError & ex) {
         throw Error(ex.message);
     }
 
     _rootPixmap = getRootPixmap(_atomXRootPixmapId);
-    if (_rootPixmap == 0) {
-        _rootPixmap = getRootPixmap(_atomESetRootPmapId);
-    }
 
     determineMasks();
 
