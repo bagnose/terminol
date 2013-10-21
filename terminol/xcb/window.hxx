@@ -110,7 +110,6 @@ public:
     void focusOut(xcb_focus_out_event_t * event);
     void enterNotify(xcb_enter_notify_event_t * event);
     void leaveNotify(xcb_leave_notify_event_t * event);
-    void visibilityNotify(xcb_visibility_notify_event_t * event);
     void destroyNotify(xcb_destroy_notify_event_t * event);
     void selectionClear(xcb_selection_clear_event_t * event);
     void selectionNotify(xcb_selection_notify_event_t * event);

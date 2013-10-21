@@ -201,10 +201,6 @@ protected:
                 _window.configureNotify(
                         reinterpret_cast<xcb_configure_notify_event_t *>(event));
                 break;
-            case XCB_VISIBILITY_NOTIFY:
-                _window.visibilityNotify(
-                        reinterpret_cast<xcb_visibility_notify_event_t *>(event));
-                break;
             case XCB_DESTROY_NOTIFY:
                 _window.destroyNotify(
                         reinterpret_cast<xcb_destroy_notify_event_t *>(event));

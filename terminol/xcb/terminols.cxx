@@ -256,12 +256,6 @@ protected:
                 if (i != _windows.end()) { i->second->configureNotify(e); }
                 break;
             }
-            case XCB_VISIBILITY_NOTIFY: {
-                auto e = reinterpret_cast<xcb_visibility_notify_event_t *>(event);
-                auto i = _windows.find(e->window);
-                if (i != _windows.end()) { i->second->visibilityNotify(e); }
-                break;
-            }
             case XCB_DESTROY_NOTIFY: {
                 auto e = reinterpret_cast<xcb_destroy_notify_event_t *>(event);
                 auto i = _windows.find(e->window);

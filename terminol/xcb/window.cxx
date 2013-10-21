@@ -92,7 +92,6 @@ Window::Window(I_Observer         & observer,
         XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW |
         XCB_EVENT_MASK_POINTER_MOTION_HINT | XCB_EVENT_MASK_POINTER_MOTION |
         XCB_EVENT_MASK_EXPOSURE |
-        XCB_EVENT_MASK_VISIBILITY_CHANGE |
         XCB_EVENT_MASK_STRUCTURE_NOTIFY |
         XCB_EVENT_MASK_FOCUS_CHANGE,
         // XCB_CW_CURSOR
@@ -455,20 +454,6 @@ void Window::leaveNotify(xcb_leave_notify_event_t * event) {
             _terminal->buttonRelease(true, ModifierSet());
             _pressed = false;
         }
-    }
-}
-
-void Window::visibilityNotify(xcb_visibility_notify_event_t * event) {
-    switch (event->state) {
-        case XCB_VISIBILITY_UNOBSCURED:
-            PRINT("Unobscured");
-            break;
-        case XCB_VISIBILITY_PARTIALLY_OBSCURED:
-            PRINT("Partially obscured");
-            break;
-        case XCB_VISIBILITY_FULLY_OBSCURED:
-            PRINT("Fully obscured");
-            break;
     }
 }
 
