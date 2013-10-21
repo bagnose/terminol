@@ -30,7 +30,7 @@ Basics::Basics() throw (Error) {
 
     auto setup      = xcb_get_setup(_connection);
     auto screenIter = xcb_setup_roots_iterator(setup);
-    for (int i = 0; i != _screenNum; ++i) {
+    for (auto i = 0; i != _screenNum; ++i) {
         xcb_screen_next(&screenIter);
     }
     _screen = screenIter.data;
@@ -82,16 +82,23 @@ Basics::Basics() throw (Error) {
             WARNING("No atom UTF8_STRING, falling back on STRING.");
             _atomUtf8String = XCB_ATOM_STRING;
         }
-        _atomTargets        = lookupAtom("TARGETS", true);
-        _atomWmProtocols    = lookupAtom("WM_PROTOCOLS", false);
-        _atomWmDeleteWindow = lookupAtom("WM_DELETE_WINDOW", false);
-        _atomXRootPixmapId  = lookupAtom("_XROOTPMAP_ID", false);
+        _atomTargets            = lookupAtom("TARGETS", true);
+        _atomWmProtocols        = lookupAtom("WM_PROTOCOLS", false);
+        _atomWmDeleteWindow     = lookupAtom("WM_DELETE_WINDOW", true);
+        _atomXRootPixmapId      = lookupAtom("_XROOTPMAP_ID", true);
+        _atomNetWmWindowOpacity = lookupAtom("_NET_WM_WINDOW_OPACITY", true);           // FIXME need a wrapper method that throws if atom doesn't exist. getAtom() -> lookupAtom()
     }
     catch (const NotFoundError & ex) {
         throw Error(ex.message);
     }
 
-    _rootPixmap = getRootPixmap(_atomXRootPixmapId);
+    try {
+        _rootPixmap = getRootPixmap(_atomXRootPixmapId);
+    }
+    catch (const Error & ex) {
+        _rootPixmap = XCB_PIXMAP_NONE;
+        // XXX disable PseudoTransparency?
+    }
 
     determineMasks();
 
@@ -388,5 +395,4 @@ void Basics::determineMasks() throw (Error) {
     }
 
     std::free(modmapReply);
-
 }

@@ -39,6 +39,7 @@ class Basics : protected Uncopyable {
     xcb_atom_t              _atomWmProtocols;
     xcb_atom_t              _atomWmDeleteWindow;
     xcb_atom_t              _atomXRootPixmapId;
+    xcb_atom_t              _atomNetWmWindowOpacity;
 
     xcb_pixmap_t            _rootPixmap;
 
@@ -81,6 +82,7 @@ public:
     xcb_atom_t              atomWmProtocols()      { return _atomWmProtocols; }
     xcb_atom_t              atomWmDeleteWindow()   { return _atomWmDeleteWindow; }
     xcb_atom_t              atomXRootPixmapId()    { return _atomXRootPixmapId; }
+    xcb_atom_t              atomNetWmWindowOpacity() { return _atomNetWmWindowOpacity; }
 
     xcb_pixmap_t            rootPixmap()           { return _rootPixmap; }
 

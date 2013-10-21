@@ -209,6 +209,7 @@ Parser::Parser(Config & config) : _config(config) {
     registerSimpleHandler("visual-bell", _config.visualBell);
     registerSimpleHandler("audible-bell", _config.audibleBell);
     registerSimpleHandler("x11-pseudo-transparency", _config.x11PseudoTransparency);
+    registerSimpleHandler("x11-composited-transparency", _config.x11CompositedTransparency);
     registerSimpleHandler("x11-transparency-value", _config.x11TransparencyValue);
 
     //

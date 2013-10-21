@@ -207,6 +207,7 @@ Config::Config() :
     audibleBell(false),
     visualBell(false),
     x11PseudoTransparency(false),
+    x11CompositedTransparency(false),
     x11TransparencyValue(0.1)
 {
     setColorScheme("solarized-dark");

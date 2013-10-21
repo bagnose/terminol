@@ -123,6 +123,25 @@ Window::Window(I_Observer         & observer,
     auto windowGuard = scopeGuard([&] {xcb_destroy_window(_basics.connection(), _window);});
 
     //
+    // Opacity
+    //
+
+    if (_config.x11CompositedTransparency) {
+        auto max   = std::numeric_limits<uint32_t>::max();
+        auto value = clamp<uint32_t>(_config.x11TransparencyValue * max, 0, max);
+
+        cookie = xcb_change_property_checked(_basics.connection(),
+                                             XCB_PROP_MODE_REPLACE,
+                                             _window,
+                                             _basics.atomNetWmWindowOpacity(),
+                                             XCB_ATOM_CARDINAL,
+                                             32,
+                                             1,
+                                             &value);
+        xcb_request_failed(_basics.connection(), cookie, "Failed to set opacity.");
+    }
+
+    //
     // Do the ICCC jive.
     //
 

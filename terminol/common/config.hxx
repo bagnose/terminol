@@ -76,6 +76,7 @@ struct Config {
     bool        visualBell;
 
     bool        x11PseudoTransparency;
+    bool        x11CompositedTransparency;
     double      x11TransparencyValue;
 
     //
