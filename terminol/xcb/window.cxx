@@ -976,6 +976,15 @@ void Window::handleConfigure() {
 void Window::handleResize() {
     _geometry = _deferredGeometry;
 
+    int16_t rows, cols;
+    sizeToRowsCols(rows, cols);
+
+    _terminal->resize(rows, cols);      // Ok to resize if not open?
+
+    if (!_transientTitle) {
+        updateTitle();
+    }
+
     if (_mapped) {
         ASSERT(_pixmap, "");
         ASSERT(_surface, "");
@@ -984,15 +993,6 @@ void Window::handleResize() {
         createPixmapAndSurface();
 
         copy(0, 0, _geometry.width, _geometry.height);
-    }
-
-    int16_t rows, cols;
-    sizeToRowsCols(rows, cols);
-
-    _terminal->resize(rows, cols);      // Ok to resize if not open?
-
-    if (!_transientTitle) {
-        updateTitle();
     }
 }
 
