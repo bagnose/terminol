@@ -383,6 +383,12 @@ bool Terminal::hasSubprocess() const {
 }
 
 bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
+    // Unset the modifiers that don't count when matching.
+    modifiers.unset(Modifier::NUM_LOCK);
+    modifiers.unset(Modifier::SHIFT_LOCK);
+    modifiers.unset(Modifier::CAPS_LOCK);
+    modifiers.unset(Modifier::MODE_SWITCH);
+
     auto iter = _config.bindings.find(KeyCombo(keySym, modifiers));
 
     if (iter != _config.bindings.end()) {
