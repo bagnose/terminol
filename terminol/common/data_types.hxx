@@ -15,20 +15,6 @@ struct Color {
 
     Color() : r(0), g(0), b(0) {}
     Color(uint8_t r_, uint8_t g_, uint8_t b_) : r(r_), g(g_), b(b_) {}
-
-    static Color fromString(const std::string & str) throw (ParseError) {
-        if (str.size() != 7) {
-            throw ParseError("Expected 7 characters");
-        }
-
-        if (str.front() != '#') {
-            throw ParseError("Expected leading '#'");
-        }
-
-        return Color(hexToByte(str[1], str[2]),
-                     hexToByte(str[3], str[4]),
-                     hexToByte(str[5], str[6]));
-    }
 };
 
 inline bool operator == (Color lhs, Color rhs) {
@@ -38,6 +24,9 @@ inline bool operator == (Color lhs, Color rhs) {
 inline bool operator != (Color lhs, Color rhs) {
     return !(lhs == rhs);
 }
+
+std::ostream & operator << (std::ostream & ost, Color   color);
+std::istream & operator >> (std::istream & ist, Color & color);
 
 //
 // Unified (hybrid) color.

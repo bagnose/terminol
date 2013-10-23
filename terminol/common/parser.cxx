@@ -32,18 +32,6 @@ class Parser : protected Uncopyable {
 
     //
 
-    class ColorHandler : public Handler {
-        Color & _color;
-    public:
-        ColorHandler(Color & color) : _color(color) {}
-
-        void handle(const std::string & value) throw (ParseError) override {
-            _color = Color::fromString(value);
-        }
-    };
-
-    //
-
     template <class F> class GenericHandler : public Handler {
         F _func;
     public:
@@ -65,11 +53,6 @@ class Parser : protected Uncopyable {
 
     template <class T> void registerSimpleHandler(const std::string & name, T & value) {
         auto handler = new SimpleHandler<T>(value);
-        _handlers.insert(std::make_pair(name, handler));
-    }
-
-    void registerColorHandler(const std::string & name, Color & color) {
-        auto handler = new ColorHandler(color);
         _handlers.insert(std::make_pair(name, handler));
     }
 
@@ -126,14 +109,14 @@ Parser::Parser(Config & config) : _config(config) {
     registerSimpleHandler("initial-rows", _config.initialRows);
     registerSimpleHandler("initial-cols", _config.initialCols);
 
-    registerColorHandler("normal-fg-color", _config.normalFgColor);
-    registerColorHandler("normal-bg-color", _config.normalBgColor);
+    registerSimpleHandler("normal-fg-color", _config.normalFgColor);
+    registerSimpleHandler("normal-bg-color", _config.normalBgColor);
 
     registerGenericHandler("select-fg-color",
                            [&](const std::string & value)
                            {
                            _config.customSelectFgColor = true;
-                           _config.selectFgColor       = Color::fromString(value);
+                           _config.selectFgColor       = unstringify<Color>(value);
                            }
                           );
 
@@ -141,7 +124,7 @@ Parser::Parser(Config & config) : _config(config) {
                            [&](const std::string & value)
                            {
                            _config.customSelectBgColor = true;
-                           _config.selectBgColor       = Color::fromString(value);
+                           _config.selectBgColor       = unstringify<Color>(value);
                            }
                           );
 
@@ -149,7 +132,7 @@ Parser::Parser(Config & config) : _config(config) {
                            [&](const std::string & value)
                            {
                            _config.customCursorFillColor = true;
-                           _config.cursorFillColor      = Color::fromString(value);
+                           _config.cursorFillColor      = unstringify<Color>(value);
                            }
                           );
 
@@ -157,18 +140,18 @@ Parser::Parser(Config & config) : _config(config) {
                            [&](const std::string & value)
                            {
                            _config.customCursorTextColor = true;
-                           _config.cursorTextColor      = Color::fromString(value);
+                           _config.cursorTextColor      = unstringify<Color>(value);
                            }
                           );
 
-    registerColorHandler("scrollbar-fg-color", _config.scrollbarFgColor);
-    registerColorHandler("scrollbar-bg-color", _config.scrollbarBgColor);
+    registerSimpleHandler("scrollbar-fg-color", _config.scrollbarFgColor);
+    registerSimpleHandler("scrollbar-bg-color", _config.scrollbarBgColor);
 
     registerSimpleHandler("scrollbar-visible", _config.scrollbarVisible);
     registerSimpleHandler("scrollbar-width", _config.scrollbarWidth);
     registerSimpleHandler("auto-hide-cursor", _config.autoHideCursor);
 
-    registerColorHandler("border-color", _config.borderColor);
+    registerSimpleHandler("border-color", _config.borderColor);
 
     registerSimpleHandler("border-thickness", _config.borderThickness);
     registerSimpleHandler("double-click-timeout", _config.doubleClickTimeout);
@@ -182,26 +165,26 @@ Parser::Parser(Config & config) : _config(config) {
 
     registerSimpleHandler("server-fork", _config.serverFork);
 
-    registerColorHandler("color-0", _config.systemColors[0]);
-    registerColorHandler("color-1", _config.systemColors[1]);
-    registerColorHandler("color-2", _config.systemColors[2]);
-    registerColorHandler("color-3", _config.systemColors[3]);
-    registerColorHandler("color-4", _config.systemColors[4]);
-    registerColorHandler("color-5", _config.systemColors[5]);
-    registerColorHandler("color-6", _config.systemColors[6]);
-    registerColorHandler("color-7", _config.systemColors[7]);
-    registerColorHandler("color-8", _config.systemColors[8]);
-    registerColorHandler("color-9", _config.systemColors[9]);
-    registerColorHandler("color-10", _config.systemColors[10]);
-    registerColorHandler("color-11", _config.systemColors[11]);
-    registerColorHandler("color-12", _config.systemColors[12]);
-    registerColorHandler("color-13", _config.systemColors[13]);
-    registerColorHandler("color-14", _config.systemColors[14]);
-    registerColorHandler("color-15", _config.systemColors[15]);
+    registerSimpleHandler("color-0", _config.systemColors[0]);
+    registerSimpleHandler("color-1", _config.systemColors[1]);
+    registerSimpleHandler("color-2", _config.systemColors[2]);
+    registerSimpleHandler("color-3", _config.systemColors[3]);
+    registerSimpleHandler("color-4", _config.systemColors[4]);
+    registerSimpleHandler("color-5", _config.systemColors[5]);
+    registerSimpleHandler("color-6", _config.systemColors[6]);
+    registerSimpleHandler("color-7", _config.systemColors[7]);
+    registerSimpleHandler("color-8", _config.systemColors[8]);
+    registerSimpleHandler("color-9", _config.systemColors[9]);
+    registerSimpleHandler("color-10", _config.systemColors[10]);
+    registerSimpleHandler("color-11", _config.systemColors[11]);
+    registerSimpleHandler("color-12", _config.systemColors[12]);
+    registerSimpleHandler("color-13", _config.systemColors[13]);
+    registerSimpleHandler("color-14", _config.systemColors[14]);
+    registerSimpleHandler("color-15", _config.systemColors[15]);
 
     registerSimpleHandler("cut-chars", _config.cutChars);
 
-    registerColorHandler("visual-bell-color", _config.visualBellColor);
+    registerSimpleHandler("visual-bell-color", _config.visualBellColor);
 
     registerSimpleHandler("visual-bell-duration", _config.visualBellDuration);
     registerSimpleHandler("map-on-bell", _config.mapOnBell);

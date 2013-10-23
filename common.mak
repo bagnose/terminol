@@ -246,6 +246,8 @@ $(eval $(call LIB,terminol/common,ascii.cxx bindings.cxx bit_sets.cxx buffer.cxx
 
 $(eval $(call EXE,TEST,terminol/common/test-utf8,test_utf8.cxx,,terminol/common terminol/support,))
 
+$(eval $(call EXE,TEST,terminol/common/test-data_types,test_data_types.cxx,,terminol/common terminol/support,))
+
 $(eval $(call EXE,PRIV,terminol/common/abuse,abuse.cxx,,terminol/common terminol/support,))
 
 $(eval $(call EXE,PRIV,terminol/common/wedge,wedge.cxx,,terminol/common terminol/support,))
