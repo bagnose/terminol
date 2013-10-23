@@ -372,11 +372,8 @@ void Parser::handleBindSym(const std::string & sym, const std::string & action) 
             throw ParseError("Bad action: '" + action + "'");
         }
         else {
-            auto action2 = iter->second;
-
-            //PRINT("Bound: " << modifiers << "-" << xkb::symToName(keySym) << " to " << action);
-
-            _config.bindings.insert(std::make_pair(keyCombo, action2));
+            auto resolvedAction = iter->second;
+            _config.bindings.insert(std::make_pair(keyCombo, resolvedAction));
         }
     }
     else {

@@ -30,9 +30,7 @@ inline bool operator < (const KeyCombo & lhs, const KeyCombo & rhs) {
     }
 }
 
-/*
 std::ostream & operator << (std::ostream & ost, const KeyCombo & keyCombo);
-*/
 
 //
 //
@@ -68,7 +66,7 @@ enum class Action {
     DEBUG_STATS2
 };
 
-//std::ostream & operator << (std::ostream & ost, Action action);
+std::ostream & operator << (std::ostream & ost, Action action);
 
 //
 //
