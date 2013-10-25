@@ -346,7 +346,7 @@ protected:
         }
     }
 
-    void windowExited(Window * window, int UNUSED(exitCode)) throw () override {
+    void windowReaped(Window * window, int UNUSED(status)) throw () override {
         ASSERT(std::find(_exits.begin(), _exits.end(), window) == _exits.end(), "");
         _exits.push_back(window);
     }

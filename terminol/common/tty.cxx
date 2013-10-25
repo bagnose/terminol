@@ -65,31 +65,32 @@ Tty::~Tty() {
 
 void Tty::tryReap() {
     ASSERT(_pid != 0, "Child already reaped.");
-    int exitCode;
-    if (pollReap(0, exitCode)) {
-        _observer.ttyExited(exitCode);
+    int status;
+    if (pollReap(0, status)) {
+        _observer.ttyReaped(status);
+        _pid = 0;
     }
 }
 
 void Tty::killReap() {
-    int exitCode;
+    int status;
 
     // Give the child a chance to exit nicely.
     ::kill(_pid, SIGCONT);
     ::kill(_pid, SIGPIPE);
-    if (pollReap(100, exitCode)) { goto done; }
+    if (pollReap(100, status)) { goto done; }
     ::kill(_pid, SIGINT);
-    if (pollReap(100, exitCode)) { goto done; }
+    if (pollReap(100, status)) { goto done; }
     ::kill(_pid, SIGTERM);
-    if (pollReap(100, exitCode)) { goto done; }
+    if (pollReap(100, status)) { goto done; }
     ::kill(_pid, SIGQUIT);
-    if (pollReap(100, exitCode)) { goto done; }
+    if (pollReap(100, status)) { goto done; }
     // Too slow - knock it on the head.
     ::kill(_pid, SIGKILL);
-    exitCode = waitReap();
+    status = waitReap();
 
 done:
-    _observer.ttyExited(exitCode);
+    _observer.ttyReaped(status);
 }
 
 void Tty::resize(uint16_t rows, uint16_t cols) {
@@ -275,7 +276,7 @@ void Tty::execShell(const std::string & windowId,
     std::exit(127); // Same as ::system() for failed commands.
 }
 
-bool Tty::pollReap(int msec, int & exitCode) {
+bool Tty::pollReap(int msec, int & status) {
     ASSERT(_pid != 0, "");
     ASSERT(msec >= 0, "");
 
@@ -286,7 +287,7 @@ bool Tty::pollReap(int msec, int & exitCode) {
         if (pid != 0) {
             ASSERT(pid == _pid, "pid mismatch.");
             _pid = 0;
-            exitCode = WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
+            status = WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
             return true;
         }
 

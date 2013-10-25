@@ -1703,8 +1703,8 @@ void Terminal::ttySync() throw () {
     fixDamage(Trigger::TTY);
 }
 
-void Terminal::ttyExited(int exitCode) throw () {
-    _observer.terminalChildExited(exitCode);
+void Terminal::ttyReaped(int status) throw () {
+    _observer.terminalReaped(status);
 }
 
 std::ostream & operator << (std::ostream & ost, Terminal::Button button) {

@@ -1448,9 +1448,9 @@ void Window::terminalFixDamageEnd(const Region & damage,
     copy(x0, y0, x1 - x0, y1 - y0);
 }
 
-void Window::terminalChildExited(int exitStatus) throw () {
+void Window::terminalReaped(int status) throw () {
     _open = false;
-    _observer.windowExited(this, exitStatus);       // FIXME code vs status
+    _observer.windowReaped(this, status);
 }
 
 // FontManager::I_Client implementation:

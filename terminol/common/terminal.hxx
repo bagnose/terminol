@@ -61,7 +61,7 @@ public:
                                            int16_t visibleRows) throw () = 0;
         virtual void terminalFixDamageEnd(const Region & damage,
                                           bool           scrollbar) throw () = 0;
-        virtual void terminalChildExited(int exitStatus) throw () = 0;
+        virtual void terminalReaped(int status) throw () = 0;
 
     protected:
         ~I_Observer() {}
@@ -175,7 +175,7 @@ protected:
 
     void     ttyData(const uint8_t * data, size_t size) throw () override;
     void     ttySync() throw () override;
-    void     ttyExited(int exitCode) throw () override;
+    void     ttyReaped(int status) throw () override;
 };
 
 std::ostream & operator << (std::ostream & ost, Terminal::Button button);

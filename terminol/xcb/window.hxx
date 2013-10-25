@@ -28,7 +28,7 @@ public:
         virtual void windowSync() throw () = 0;
         virtual void windowDefer(Window * window) throw () = 0;
         virtual void windowSelected(Window * window) throw () = 0;
-        virtual void windowExited(Window * window, int exitCode) throw () = 0;
+        virtual void windowReaped(Window * window, int status) throw () = 0;
 
     protected:
         I_Observer() {}
@@ -186,7 +186,7 @@ protected:
                                int16_t visibleRows) throw () override;
     void terminalFixDamageEnd(const Region & damage,
                               bool           scrollbar) throw () override;
-    void terminalChildExited(int exitStatus) throw () override;
+    void terminalReaped(int exitStatus) throw () override;
 
     // FontManager::I_Client implementation:
 

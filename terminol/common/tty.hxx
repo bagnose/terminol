@@ -19,7 +19,7 @@ public:
     public:
         virtual void ttyData(const uint8_t * data, size_t size) throw () = 0;
         virtual void ttySync() throw () = 0;
-        virtual void ttyExited(int exitCode) throw () = 0;
+        virtual void ttyReaped(int status) throw () = 0;
 
     protected:
         ~I_Observer() {}
@@ -67,7 +67,7 @@ protected:
     void execShell(const std::string & windowId,
                    const Command     & command);
 
-    bool pollReap(int msec, int & exitCode);
+    bool pollReap(int msec, int & status);
     int  waitReap();
 
     // I_Selector::I_ReadHandler implementation:
