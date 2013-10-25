@@ -61,14 +61,15 @@ Window::Window(I_Observer         & observer,
 
     // Calculate what our initial geometry should be. Though the WM
     // may give us something else.
-    auto rows = _config.initialRows;
-    auto cols = _config.initialCols;
 
-    const auto BORDER_THICKNESS = _config.borderThickness;
-    const auto SCROLLBAR_WIDTH  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
+    auto rows             = _config.initialRows;
+    auto cols             = _config.initialCols;
+    auto border_thickness = _config.borderThickness;
+    auto scrollbar_width  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
-    _geometry.width  = 2 * BORDER_THICKNESS + cols * _fontSet->getWidth() + SCROLLBAR_WIDTH;
-    _geometry.height = 2 * BORDER_THICKNESS + rows * _fontSet->getHeight();
+    _geometry.width  = 2 * border_thickness + cols * _fontSet->getWidth() + scrollbar_width;
+    _geometry.height = 2 * border_thickness + rows * _fontSet->getHeight();
+
     // A generic cookie for all subsequent checked XCB calls.
 
     xcb_void_cookie_t cookie;
@@ -648,23 +649,23 @@ void Window::icccmConfigure() {
     // size
     //
 
-    const auto BORDER_THICKNESS = _config.borderThickness;
-    const auto SCROLLBAR_WIDTH  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
+    auto border_thickness = _config.borderThickness;
+    auto scrollbar_width  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
-    const auto BASE_WIDTH  = 2 * BORDER_THICKNESS + SCROLLBAR_WIDTH;
-    const auto BASE_HEIGHT = 2 * BORDER_THICKNESS;
+    auto base_width  = 2 * border_thickness + scrollbar_width;
+    auto base_height = 2 * border_thickness;
 
-    const auto MIN_COLS = 8;
-    const auto MIN_ROWS = 2;
+    auto min_cols = 8;
+    auto min_rows = 2;
 
     xcb_size_hints_t sizeHints;
     sizeHints.flags = 0;
     xcb_icccm_size_hints_set_min_size(&sizeHints,
-                                      BASE_WIDTH  + MIN_COLS * _fontSet->getWidth(),
-                                      BASE_HEIGHT + MIN_ROWS * _fontSet->getHeight());
+                                      base_width  + min_cols * _fontSet->getWidth(),
+                                      base_height + min_rows * _fontSet->getHeight());
     xcb_icccm_size_hints_set_base_size(&sizeHints,
-                                       BASE_WIDTH,
-                                       BASE_HEIGHT);
+                                       base_width,
+                                       base_height);
     xcb_icccm_size_hints_set_resize_inc(&sizeHints,
                                         _fontSet->getWidth(),
                                         _fontSet->getHeight());
@@ -704,26 +705,26 @@ void Window::pos2XY(Pos pos, int & x, int & y) const {
     ASSERT(pos.row <= _terminal->getRows(), "pos.row=" << pos.row << ", getRows()=" << _terminal->getRows());
     ASSERT(pos.col <= _terminal->getCols(), "pos.col=" << pos.col << ", getCols()=" << _terminal->getCols());
 
-    const auto BORDER_THICKNESS = _config.borderThickness;
+    auto border_thickness = _config.borderThickness;
 
-    x = BORDER_THICKNESS + pos.col * _fontSet->getWidth();
-    y = BORDER_THICKNESS + pos.row * _fontSet->getHeight();
+    x = border_thickness + pos.col * _fontSet->getWidth();
+    y = border_thickness + pos.row * _fontSet->getHeight();
 }
 
 bool Window::xy2Pos(int x, int y, HPos & hpos) const {
     auto within = true;
 
-    const auto BORDER_THICKNESS = _config.borderThickness;
+    auto border_thickness = _config.borderThickness;
 
     // x / cols:
 
-    if (x < BORDER_THICKNESS) {
+    if (x < border_thickness) {
         hpos.pos.col = 0;
         hpos.hand = Hand::LEFT;
         within = false;
     }
-    else if (x < BORDER_THICKNESS + _fontSet->getWidth() * _terminal->getCols()) {
-        auto xx = x - BORDER_THICKNESS;
+    else if (x < border_thickness + _fontSet->getWidth() * _terminal->getCols()) {
+        auto xx = x - border_thickness;
         hpos.pos.col = xx / _fontSet->getWidth();
         auto remainder = xx - hpos.pos.col * _fontSet->getWidth();
         hpos.hand = remainder < _fontSet->getWidth() / 2 ? Hand::LEFT : Hand::RIGHT;
@@ -739,12 +740,12 @@ bool Window::xy2Pos(int x, int y, HPos & hpos) const {
 
     // y / rows:
 
-    if (y < BORDER_THICKNESS) {
+    if (y < border_thickness) {
         hpos.pos.row = 0;
         within = false;
     }
-    else if (y < BORDER_THICKNESS + _fontSet->getHeight() * _terminal->getRows()) {
-        auto yy = y - BORDER_THICKNESS;
+    else if (y < border_thickness + _fontSet->getHeight() * _terminal->getRows()) {
+        auto yy = y - border_thickness;
         hpos.pos.row = yy / _fontSet->getHeight();
         ASSERT(hpos.pos.row < _terminal->getRows(),
                "row is: " << hpos.pos.row << ", getRows() is: " <<
@@ -862,17 +863,17 @@ void Window::draw() {
 }
 
 void Window::drawBorder() {
-    const auto BORDER_THICKNESS = _config.borderThickness;
-    const auto SCROLLBAR_WIDTH  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
+    auto border_thickness = _config.borderThickness;
+    auto scrollbar_width  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
     auto x0 = 0;
-    auto x1 = BORDER_THICKNESS;
-    auto x2 = BORDER_THICKNESS + _fontSet->getWidth() * _terminal->getCols();
-    auto x3 = _geometry.width - SCROLLBAR_WIDTH;
+    auto x1 = border_thickness;
+    auto x2 = border_thickness + _fontSet->getWidth() * _terminal->getCols();
+    auto x3 = _geometry.width - scrollbar_width;
 
     auto y0 = 0;
-    auto y1 = BORDER_THICKNESS;
-    auto y2 = BORDER_THICKNESS + _fontSet->getHeight() * _terminal->getRows();
+    auto y1 = border_thickness;
+    auto y2 = border_thickness + _fontSet->getHeight() * _terminal->getRows();
     auto y3 = _geometry.height;
 
     if (_config.x11PseudoTransparency) {
@@ -1035,11 +1036,11 @@ void Window::handleMove() {
 }
 
 void Window::resizeToAccommodate(int16_t rows, int16_t cols, bool sync) {
-    const auto BORDER_THICKNESS = _config.borderThickness;
-    const auto SCROLLBAR_WIDTH  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
+    auto border_thickness = _config.borderThickness;
+    auto scrollbar_width  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
-    uint16_t width  = 2 * BORDER_THICKNESS + cols * _fontSet->getWidth() + SCROLLBAR_WIDTH;
-    uint16_t height = 2 * BORDER_THICKNESS + rows * _fontSet->getHeight();
+    uint16_t width  = 2 * border_thickness + cols * _fontSet->getWidth() + scrollbar_width;
+    uint16_t height = 2 * border_thickness + rows * _fontSet->getHeight();
 
     if (_geometry.width != width || _geometry.height != height) {
         uint32_t values[] = { width, height };
@@ -1061,17 +1062,17 @@ void Window::resizeToAccommodate(int16_t rows, int16_t cols, bool sync) {
 }
 
 void Window::sizeToRowsCols(int16_t & rows, int16_t & cols) const {
-    const auto BORDER_THICKNESS = _config.borderThickness;
-    const auto SCROLLBAR_WIDTH  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
+    auto border_thickness = _config.borderThickness;
+    auto scrollbar_width  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
-    const auto BASE_WIDTH  = 2 * BORDER_THICKNESS + SCROLLBAR_WIDTH;
-    const auto BASE_HEIGHT = 2 * BORDER_THICKNESS;
+    auto base_width  = 2 * border_thickness + scrollbar_width;
+    auto base_height = 2 * border_thickness;
 
-    if (_geometry.width  >= static_cast<uint16_t>(BASE_WIDTH  + _fontSet->getWidth()) &&
-        _geometry.height >= static_cast<uint16_t>(BASE_HEIGHT + _fontSet->getHeight()))
+    if (_geometry.width  >= static_cast<uint16_t>(base_width  + _fontSet->getWidth()) &&
+        _geometry.height >= static_cast<uint16_t>(base_height + _fontSet->getHeight()))
     {
-        int16_t w = _geometry.width  - BASE_WIDTH;
-        int16_t h = _geometry.height - BASE_HEIGHT;
+        int16_t w = _geometry.width  - base_width;
+        int16_t h = _geometry.height - base_height;
 
         rows = h / _fontSet->getHeight();
         cols = w / _fontSet->getWidth();
