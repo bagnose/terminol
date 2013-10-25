@@ -551,7 +551,7 @@ void Window::selectionRequest(xcb_selection_request_event_t * event) {
                                                   32,
                                                   1,
                                                   &atomUtf8String);
-        xcb_request_failed(_basics.connection(), cookie, "Failed to change property");
+        xcb_request_failed(_basics.connection(), cookie, "Failed to change property.");
         response.property = event->property;
     }
     else if (event->target == _basics.atomUtf8String()) {
@@ -564,7 +564,7 @@ void Window::selectionRequest(xcb_selection_request_event_t * event) {
             text = _clipboardSelection;
         }
         else {
-            ERROR("Unexpected selection");
+            ERROR("Unexpected selection.");
         }
 
         auto cookie = xcb_change_property_checked(_basics.connection(),
@@ -575,7 +575,7 @@ void Window::selectionRequest(xcb_selection_request_event_t * event) {
                                                   8,
                                                   text.length(),
                                                   text.data());
-        xcb_request_failed(_basics.connection(), cookie, "Failed to change property");
+        xcb_request_failed(_basics.connection(), cookie, "Failed to change property.");
         response.property = event->property;
     }
 
@@ -584,7 +584,7 @@ void Window::selectionRequest(xcb_selection_request_event_t * event) {
                                          event->requestor,
                                          0,
                                          reinterpret_cast<const char *>(&response));
-    xcb_request_failed(_basics.connection(), cookie, "Failed to send event");
+    xcb_request_failed(_basics.connection(), cookie, "Failed to send event.");
 
     xcb_flush(_basics.connection());        // Required?
 }
@@ -814,15 +814,16 @@ void Window::createPixmapAndSurface() {
                                             _basics.screen()->root,
                                             _geometry.width,
                                             _geometry.height);
-    xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap");
+    xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap.");
 
     _surface = cairo_xcb_surface_create(_basics.connection(),
                                         _pixmap,
                                         _basics.visual(),
                                         _geometry.width,
                                         _geometry.height);
-    ENFORCE(_surface, "Failed to create surface");
-    ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
+    ENFORCE(_surface, "Failed to create surface.");
+    ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS,
+            "Bad cairo surface status.");
 
     renderPixmap();
 }
@@ -859,7 +860,8 @@ void Window::renderPixmap() {
     _cr = nullptr;
 
     cairo_surface_flush(_surface);      // Useful?
-    ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
+    ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS,
+            "Bad cairo surface status.");
 }
 
 void Window::drawBorder() {
@@ -1048,7 +1050,7 @@ void Window::resizeToAccommodate(int16_t rows, int16_t cols, bool sync) {
                                            XCB_CONFIG_WINDOW_HEIGHT,
                                            values);
         if (!xcb_request_failed(_basics.connection(), cookie,
-                               "Failed to configure window")) {
+                               "Failed to configure window.")) {
             if (sync) {
                 xcb_flush(_basics.connection());
                 _deferralsAllowed = false;
@@ -1079,7 +1081,7 @@ void Window::sizeToRowsCols(int16_t & rows, int16_t & cols) const {
         rows = cols = 1;
     }
 
-    ASSERT(rows > 0 && cols > 0, "");
+    ASSERT(rows > 0 && cols > 0, "Rows or cols not positive.");
 }
 
 void Window::handleDelete() {
@@ -1108,7 +1110,8 @@ void Window::cursorVisibility(bool visible) {
                                                            _window,
                                                            mask,
                                                            &values);
-        xcb_request_failed(_basics.connection(), cookie, "couldn't change window attributes");
+        xcb_request_failed(_basics.connection(), cookie,
+                           "Failed to change window attributes.");
 
         _cursorVisible = visible;
     }
@@ -1214,8 +1217,8 @@ void Window::terminalBell() throw () {
 
     if (_config.visualBell) {
         if (_mapped) {
-            ASSERT(_pixmap, "");
-            ASSERT(_surface, "");
+            ASSERT(_pixmap, "Null pixmap.");
+            ASSERT(_surface, "Null surface.");
 
             // Fill the window with a solid colour.
 
@@ -1227,14 +1230,19 @@ void Window::terminalBell() throw () {
                                     &rect);
             xcb_flush(_basics.connection());
 
+            // Wait a moment.
+
             ::usleep(_config.visualBellDuration * 1000);
+
+            // Copy the pixmap to the window again.
+
             copyPixmapToWindow(0, 0, _geometry.width, _geometry.height);
         }
     }
 }
 
 void Window::terminalResizeBuffer(int16_t rows, int16_t cols) throw () {
-    ASSERT(rows > 0 && cols > 0, "");
+    ASSERT(rows > 0 && cols > 0, "Rows or cols not positive.");
     resizeToAccommodate(rows, cols, true);
 }
 
@@ -1243,8 +1251,8 @@ bool Window::terminalFixDamageBegin() throw () {
     // It's possible for the pixmap to be valid (because the window was mapped)
     // but not current (because we haven't received an expose event yet).
     if (!_deferred && _mapped) {
-        ASSERT(_surface, "");
-        ASSERT(_pixmap, "");
+        ASSERT(_pixmap, "Null pixmap.");
+        ASSERT(_surface, "Null surface.");
         _cr = cairo_create(_surface);
         cairo_set_line_width(_cr, 1.0);
         return true;
