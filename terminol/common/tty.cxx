@@ -60,7 +60,10 @@ Tty::Tty(I_Observer        & observer,
 
 Tty::~Tty() {
     ASSERT(_pid == 0, "Child not reaped.");
-    close();
+
+    if (_fd != -1) {
+        close();
+    }
 }
 
 void Tty::tryReap() {
@@ -332,6 +335,7 @@ void Tty::handleRead(int fd) throw () {
                     goto done;
                 case EIO:
                     // The other end of the PTY is gone.
+                    close();
                     goto done;
                 default:
                     FATAL("Unexpected error: " << errno << " " << ::strerror(errno));
