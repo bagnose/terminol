@@ -328,7 +328,7 @@ namespace {
 void resolveCode(uint8_t             & mask,
                  const xcb_keycode_t * codes,
                  xcb_keycode_t         kcode,
-                 int                   bit) {
+                 uint8_t               bit) {
     if (mask == 0 && codes) {
         for (auto ktest = codes; *ktest; ++ktest) {
             if (*ktest == kcode) {
@@ -372,8 +372,8 @@ void Basics::determineMasks() throw (Error) {
     _maskShift = _maskAlt = _maskControl = _maskSuper =
         _maskNumLock = _maskShiftLock = _maskCapsLock = _maskModeSwitch = 0;
 
-    for (auto i = 0; i != 8; ++i) {
-        for (auto j = 0; j != modmapReply->keycodes_per_modifier; ++j) {
+    for (uint8_t i = 0; i != 8; ++i) {
+        for (uint8_t j = 0; j != modmapReply->keycodes_per_modifier; ++j) {
             auto kcode = modmap[i * modmapReply->keycodes_per_modifier + j];
 
             resolveCode(_maskShift,      shiftCodes,      kcode, i);
