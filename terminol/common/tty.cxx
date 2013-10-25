@@ -18,6 +18,8 @@ namespace {
 
 // TODO consolidate this function
 std::string nthToken(const std::string & str, size_t n) throw (ParseError) {
+    ASSERT(n > 0, "n must be positive.");
+
     size_t i = 0;
     size_t j = 0;
 
@@ -52,14 +54,17 @@ Tty::Tty(I_Observer        & observer,
     _dumpWrites(false)
 {
     openPty(rows, cols, windowId, command);
+    ASSERT(_pid != 0, "Expected non-zero PID.");
+    ASSERT(_fd != -1, "Expected valid file-descriptor.");
 }
 
 Tty::~Tty() {
+    ASSERT(_pid == 0, "Child not reaped.");
     close();
 }
 
 void Tty::tryReap() {
-    ASSERT(_pid != 0, "");
+    ASSERT(_pid != 0, "Child already reaped.");
     int exitCode;
     if (pollReap(0, exitCode)) {
         _observer.ttyExited(exitCode);
@@ -88,7 +93,8 @@ done:
 }
 
 void Tty::resize(uint16_t rows, uint16_t cols) {
-    ASSERT(_fd != -1, "");
+    ASSERT(_fd != -1, "PTY already closed.");
+    ASSERT(_pid != 0, "Child already reaped.");
     const struct winsize winsize = { rows, cols, 0, 0 };
     ENFORCE_SYS(::ioctl(_fd, TIOCSWINSZ, &winsize) != -1, "");
 }
@@ -111,6 +117,7 @@ void Tty::write(const uint8_t * data, size_t size) {
                     WARNING("Dropping: " << size << " bytes");
                     goto done;
                 case EIO:
+                    // Don't close the PTY, wait for handleRead() to error.
                     _dumpWrites = true;
                     goto done;
                 default:
@@ -298,7 +305,9 @@ int Tty::waitReap() {
     ASSERT(_pid != 0, "");
 
     int stat;
-    ENFORCE_SYS(TEMP_FAILURE_RETRY(::waitpid(_pid, &stat, 0)) == _pid, "::waitpid() failed.");
+    auto pid = TEMP_FAILURE_RETRY(::waitpid(_pid, &stat, 0));
+    ENFORCE_SYS(pid != -1, "::waitpid() failed.");
+    ASSERT(pid == _pid, "pid mismatch.");
     _pid = 0;
     return WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
 }
@@ -318,9 +327,10 @@ void Tty::handleRead(int fd) throw () {
         if (rval == -1) {
             switch (errno) {
                 case EAGAIN:
+                    // Our non-blocking fd has no more data.
                     goto done;
                 case EIO:
-                    // Show must be over. Expect SIGCHLD next.
+                    // The other end of the PTY is gone.
                     goto done;
                 default:
                     FATAL("Unexpected error: " << errno << " " << ::strerror(errno));
