@@ -966,16 +966,14 @@ void Window::drawBorder() {
 void Window::copyPixmapToWindow(int x, int y, int w, int h) {
     ASSERT(_mapped, "");
     ASSERT(_pixmap, "");
-    // Copy the buffer region
-    auto cookie = xcb_copy_area_checked(_basics.connection(),
-                                        _pixmap,
-                                        _window,
-                                        _gc,
-                                        x, y,   // src
-                                        x, y,   // dst
-                                        w, h);
-    xcb_request_check(_basics.connection(), cookie);
-    //xcb_request_failed(_basics.connection(), cookie, "Failed to copy area");
+    // Copy the buffer region and flush.
+    xcb_copy_area(_basics.connection(),
+                  _pixmap,
+                  _window,
+                  _gc,
+                  x, y,   // src
+                  x, y,   // dst
+                  w, h);
     xcb_flush(_basics.connection());
 }
 
