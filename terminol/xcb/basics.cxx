@@ -352,9 +352,20 @@ void Basics::determineMasks() throw (Error) {
     auto capsLockCodes   = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Caps_Lock);
     auto modeSwitchCodes = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Mode_switch);
 
+    auto guard = scopeGuard([&] {
+                            if (modeSwitchCodes) { std::free(modeSwitchCodes); }
+                            if (capsLockCodes)   { std::free(capsLockCodes); }
+                            if (shiftLockCodes)  { std::free(shiftLockCodes); }
+                            if (numLockCodes)    { std::free(numLockCodes); }
+                            if (superCodes)      { std::free(superCodes); }
+                            if (controlCodes)    { std::free(controlCodes); }
+                            if (altCodes)        { std::free(altCodes); }
+                            if (shiftCodes)      { std::free(shiftCodes); }
+                            });
+
     auto cookie      = xcb_get_modifier_mapping(_connection);
     auto modmapReply = xcb_get_modifier_mapping_reply(_connection, cookie, nullptr);
-    if (!modmapReply) { throw Error("Couldn't determine masks."); }     // FIXME leak
+    if (!modmapReply) { throw Error("Couldn't determine masks."); }
     auto modmap      = xcb_get_modifier_mapping_keycodes(modmapReply);
 
     // Clear the masks.
@@ -378,12 +389,4 @@ void Basics::determineMasks() throw (Error) {
 
     std::free(modmapReply);
 
-    if (modeSwitchCodes) { std::free(modeSwitchCodes); }
-    if (capsLockCodes)   { std::free(capsLockCodes); }
-    if (shiftLockCodes)  { std::free(shiftLockCodes); }
-    if (numLockCodes)    { std::free(numLockCodes); }
-    if (superCodes)      { std::free(superCodes); }
-    if (controlCodes)    { std::free(controlCodes); }
-    if (altCodes)        { std::free(altCodes); }
-    if (shiftCodes)      { std::free(shiftCodes); }
 }
