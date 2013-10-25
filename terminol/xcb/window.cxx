@@ -601,7 +601,7 @@ void Window::redraw() {
     if (_mapped) {
         ASSERT(_pixmap, "");
         ASSERT(_surface, "");
-        draw();
+        renderPixmap();
         copyPixmapToWindow(0, 0, _geometry.width, _geometry.height);
     }
 }
@@ -824,7 +824,7 @@ void Window::createPixmapAndSurface() {
     ENFORCE(_surface, "Failed to create surface");
     ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, "");
 
-    draw();
+    renderPixmap();
 }
 
 void Window::destroySurfaceAndPixmap() {
@@ -837,7 +837,7 @@ void Window::destroySurfaceAndPixmap() {
     _pixmap = 0;
 }
 
-void Window::draw() {
+void Window::renderPixmap() {
     ASSERT(_mapped, "");
     ASSERT(_pixmap, "");
     ASSERT(_surface, "");
@@ -1030,7 +1030,7 @@ void Window::handleMove() {
     if (_mapped) {
         ASSERT(_pixmap, "");
         ASSERT(_surface, "");
-        draw();
+        renderPixmap();
         copyPixmapToWindow(0, 0, _geometry.width, _geometry.height);
     }
 }
@@ -1517,8 +1517,7 @@ void Window::useFontSet(FontSet * fontSet, int delta) throw () {
     if (_mapped) {
         ASSERT(_pixmap, "");
         ASSERT(_surface, "");
-
-        draw();
+        renderPixmap();
         copyPixmapToWindow(0, 0, _geometry.width, _geometry.height);
     }
 

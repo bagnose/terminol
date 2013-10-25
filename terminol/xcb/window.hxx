@@ -141,7 +141,7 @@ protected:
 
     void createPixmapAndSurface();
     void destroySurfaceAndPixmap();
-    void draw();
+    void renderPixmap();
     void drawBorder();
     void copyPixmapToWindow(int x, int y, int w, int h);
 
