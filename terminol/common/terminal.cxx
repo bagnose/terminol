@@ -484,7 +484,7 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
             case Action::DEBUG_MODES: {
                 std::ostringstream ost;
                 ost << _modes;
-                _observer.terminalSetWindowTitle(ost.str());
+                _observer.terminalSetWindowTitle(ost.str(), true);
                 return true;
             }
             case Action::DEBUG_SELECTION:
@@ -497,7 +497,7 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                 std::ostringstream ost;
                 ost << "line-data="   << humanSize(bytes1) << " "
                     << "(non-dedupe=" << humanSize(bytes2) << ")";
-                _observer.terminalSetWindowTitle(ost.str());
+                _observer.terminalSetWindowTitle(ost.str(), true);
                 return true;
             }
             case Action::DEBUG_STATS2: {
@@ -514,7 +514,7 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                     << " global=" << globalLines
                     << " unique=" << uniqueLines
                     << " (dedupe-factor=" << dedupe << ")";
-                _observer.terminalSetWindowTitle(ost.str());
+                _observer.terminalSetWindowTitle(ost.str(), true);
                 return true;
             }
         }
@@ -1554,7 +1554,7 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) throw () {
                         }
                         case 8: {
                             // Ps = 8   Request Version Number (place in window title)
-                            _observer.terminalSetWindowTitle("Terminol " VERSION);
+                            _observer.terminalSetWindowTitle("Terminol " VERSION, true);
                             break;
                         }
                         case 15: {
@@ -1669,14 +1669,18 @@ void Terminal::machineOscEsc(const OscEsc & esc) throw () {
                 case 0: // Icon name and window title
                     if (esc.args.size() > 1) {
                         _observer.terminalSetIconName(esc.args[1]);
-                        _observer.terminalSetWindowTitle(esc.args[1]);
+                        _observer.terminalSetWindowTitle(esc.args[1], false);
                     }
                     break;
                 case 1: // Icon name
-                    if (esc.args.size() > 1) { _observer.terminalSetIconName(esc.args[1]); }
+                    if (esc.args.size() > 1) {
+                        _observer.terminalSetIconName(esc.args[1]);
+                    }
                     break;
                 case 2: // Window title
-                    if (esc.args.size() > 1) { _observer.terminalSetWindowTitle(esc.args[1]); }
+                    if (esc.args.size() > 1) {
+                        _observer.terminalSetWindowTitle(esc.args[1], false);
+                    }
                     break;
                 case 55:
                     NYI("Log history to file");

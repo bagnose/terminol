@@ -39,6 +39,7 @@ Window::Window(I_Observer         & observer,
     _pixmap(0),
     _surface(nullptr),
     _cr(nullptr),
+    _entitlement(Entitlement::PERMANENT),
     _title(_config.title),
     _icon(_config.icon),
     _primarySelection(),
@@ -50,7 +51,6 @@ Window::Window(I_Observer         & observer,
     _cursorVisible(true),
     _deferralsAllowed(true),
     _deferred(false),
-    _transientTitle(false),
     _hadDeleteRequest(false)
 {
     _fontSet = _fontManager.addClient(this);
@@ -185,7 +185,7 @@ Window::Window(I_Observer         & observer,
     // Update the window title and map the window.
     //
 
-    updateTitle();
+    setTitle(_title, true);
 
     cookie = xcb_map_window_checked(_basics.connection(), _window);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to map window")) {
@@ -252,9 +252,9 @@ void Window::keyPress(xcb_key_press_event_t * event) {
                 _hadDeleteRequest = false;
             }
 
-            if (_transientTitle) {
-                _transientTitle = false;
-                updateTitle();
+            if (_entitlement == Entitlement::TRANSIENT) {
+                _entitlement = Entitlement::PERMANENT;
+                setTitle(_title, true);
             }
         }
     }
@@ -745,67 +745,48 @@ bool Window::xy2Pos(int x, int y, HPos & hpos) const {
     return within;
 }
 
-void Window::updateTitle() {
-    ASSERT(_terminal, "");
-
+void Window::setTitle(const std::string & title, bool prependGeometry) {
     std::ostringstream ost;
+    if (prependGeometry) {
+        ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
+    }
+    ost << title;
 
-#if 0
-    ost << VERSION " ";
-#endif
-
-    ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
-    ost << _title;
-
-    setTitle(ost.str());
-}
-
-void Window::updateIcon() {
-    ASSERT(_terminal, "");
-
-    std::ostringstream ost;
-
-#if 0
-    ost << VERSION " ";
-#endif
-
-    ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
-    ost << _icon;
-
-    const auto & fullIcon = ost.str();
-
-#if 1
-    xcb_icccm_set_wm_icon_name(_basics.connection(),
-                               _window,
-                               XCB_ATOM_STRING,
-                               8,
-                               fullIcon.size(),
-                               fullIcon.data());
-#else
-    xcb_ewmh_set_wm_icon_name(_basics.ewmhConnection(),
-                              _window,
-                              fullIcon.size(),
-                              fullIcon.data());
-#endif
-}
-
-void Window::setTitle(const std::string & title) {
+    const auto & fullTitle = ost.str();
 
 #if 1
     xcb_icccm_set_wm_name(_basics.connection(),
                           _window,
                           XCB_ATOM_STRING,
                           8,
-                          title.size(),
-                          title.data());
+                          fullTitle.size(),
+                          fullTitle.data());
 #else
     xcb_ewmh_set_wm_name(_basics.ewmhConnection(),
                          _window,
-                         title.size(),
-                         title.data());
+                         fullTitle.size(),
+                         fullTitle.data());
 #endif
 
     xcb_flush(_basics.connection());
+}
+
+void Window::setIcon(const std::string & icon) {
+    ASSERT(_terminal, "Null terminal.");
+
+#if 1
+    xcb_icccm_set_wm_icon_name(_basics.connection(),
+                               _window,
+                               XCB_ATOM_STRING,
+                               8,
+                               icon.size(),
+                               icon.data());
+#else
+    xcb_ewmh_set_wm_icon_name(_basics.ewmhConnection(),
+                              _window,
+                              icon.size(),
+                              icon.data());
+#endif
 }
 
 void Window::createPixmapAndSurface() {
@@ -1005,8 +986,14 @@ void Window::handleResize() {
 
     _terminal->resize(rows, cols);      // Ok to resize if not open?
 
-    if (!_transientTitle) {
-        updateTitle();
+    if (_hadDeleteRequest) {
+        _hadDeleteRequest = false;
+    }
+
+    if (_entitlement != Entitlement::PENDING) {
+        // Resizes reset transient titles if no title is pending.
+        _entitlement = Entitlement::PERMANENT;
+        setTitle(_title, true);
     }
 
     if (_mapped) {
@@ -1089,8 +1076,8 @@ void Window::handleDelete() {
         }
         else {
             _hadDeleteRequest = true;
-            _transientTitle   = true;
-            setTitle("Process is running, once more to confirm...");
+            _entitlement      = Entitlement::TRANSIENT;
+            setTitle("Process is running, once more to confirm...", false);
         }
     }
     else {
@@ -1173,18 +1160,25 @@ void Window::terminalResizeGlobalFont(int delta) throw () {
 void Window::terminalResetTitleAndIcon() throw () {
     _title = _config.title;
     _icon  = _config.icon;
-    updateTitle();
-    updateIcon();
+    setTitle(_title, true);
+    setIcon(_icon);
 }
 
-void Window::terminalSetWindowTitle(const std::string & str) throw () {
-    _title = str;
-    updateTitle();
+void Window::terminalSetWindowTitle(const std::string & str, bool transient) throw () {
+    if (transient) {
+        _entitlement = Entitlement::TRANSIENT;
+        setTitle(str, false);
+    }
+    else {
+        _entitlement = Entitlement::PERMANENT;
+        _title = str;
+        setTitle(_title, true);
+    }
 }
 
 void Window::terminalSetIconName(const std::string & str) throw () {
     _icon = str;
-    updateIcon();
+    setIcon(_icon);
 }
 
 void Window::terminalBell() throw () {
@@ -1491,7 +1485,10 @@ void Window::useFontSet(FontSet * fontSet, int delta) throw () {
                                   _window,
                                   &sizeHints);
 
-    resizeToAccommodate(_terminal->getRows(), _terminal->getCols(), false);
+    // Pass 'true' for sync so that the window has handled the configure
+    // event when this function returns.
+    _entitlement = Entitlement::PENDING;
+    resizeToAccommodate(_terminal->getRows(), _terminal->getCols(), true);
 
     int16_t rows, cols;
     sizeToRowsCols(rows, cols);
@@ -1509,8 +1506,7 @@ void Window::useFontSet(FontSet * fontSet, int delta) throw () {
     }
 
     std::ostringstream ost;
-    ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
-    ost << "font: " << explicitSign(delta);
-    _transientTitle = true;
-    setTitle(ost.str());
+    ost << "Font size: " << explicitSign(delta);
+    _entitlement = Entitlement::TRANSIENT;
+    setTitle(ost.str(), true);
 }

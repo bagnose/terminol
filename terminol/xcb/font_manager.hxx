@@ -78,7 +78,7 @@ public:
     }
 
     void localDelta(I_Client * client, int delta) {
-        ASSERT(!_dispatch, "");
+        if (_dispatch) { return; }
 
         ASSERT(_clients.find(client) != _clients.end(), "");
         resizeClient(client, delta);
@@ -86,7 +86,7 @@ public:
     }
 
     void globalDelta(int delta) {
-        ASSERT(!_dispatch, "");
+        if (_dispatch) { return; }
 
         for (auto & p : _clients) {
             resizeClient(p.first, delta);
@@ -104,11 +104,12 @@ public:
 
 protected:
     void resizeClient(I_Client * client, int delta) {
-        auto iter1    = _clients.find(client);
+        auto iter1       = _clients.find(client);
         ASSERT(iter1 != _clients.end(), "");
-        auto old_size = iter1->second;
-        auto new_size = delta == 0 ? _config.fontSize : old_size + delta;
-        auto iter2    = _fontSets.find(new_size);
+        auto old_size    = iter1->second;
+        auto new_size    = delta == 0 ? _config.fontSize : old_size + delta;
+        auto iter2       = _fontSets.find(new_size);
+        auto total_delta = new_size - _config.fontSize;
 
         if (new_size < 1) { return; }
 
@@ -119,10 +120,10 @@ protected:
         if (iter2 == _fontSets.end()) {
             auto fontSet = new FontSet(_config, _basics, new_size);
             _fontSets.insert(std::make_pair(new_size, fontSet));
-            client->useFontSet(fontSet, new_size);
+            client->useFontSet(fontSet, total_delta);
         }
         else {
-            client->useFontSet(iter2->second, new_size);
+            client->useFontSet(iter2->second, total_delta);
         }
 
         _dispatch = false;

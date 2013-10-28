@@ -57,6 +57,13 @@ private:
 
     cairo_t         * _cr;              // Cairo drawing context. Created only as required.
 
+    enum class Entitlement {
+        PERMANENT,
+        TRANSIENT,
+        PENDING
+    };
+
+    Entitlement       _entitlement;
     std::string       _title;
     std::string       _icon;
 
@@ -73,7 +80,6 @@ private:
     bool              _deferralsAllowed;
     bool              _deferred;
 
-    bool              _transientTitle;
     bool              _hadDeleteRequest;
 
 public:
@@ -129,10 +135,8 @@ protected:
     void pos2XY(Pos pos, int & x, int & y) const;
     bool xy2Pos(int x, int y, HPos & pos) const;
 
-    void updateTitle();
-    void updateIcon();
-
-    void setTitle(const std::string & title);
+    void setTitle(const std::string & title, bool prependGeometry);
+    void setIcon(const std::string & icon);
 
     void createPixmapAndSurface();
     void destroySurfaceAndPixmap();
@@ -159,7 +163,7 @@ protected:
     void terminalResizeLocalFont(int delta) throw () override;
     void terminalResizeGlobalFont(int delta) throw () override;
     void terminalResetTitleAndIcon() throw () override;
-    void terminalSetWindowTitle(const std::string & str) throw () override;
+    void terminalSetWindowTitle(const std::string & str, bool transient) throw () override;
     void terminalSetIconName(const std::string & str) throw () override;
     void terminalBell() throw () override;
     void terminalResizeBuffer(int16_t rows, int16_t cols) throw () override;

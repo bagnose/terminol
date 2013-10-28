@@ -34,7 +34,7 @@ public:
         virtual void terminalResizeLocalFont(int delta) throw () = 0;
         virtual void terminalResizeGlobalFont(int delta) throw () = 0;
         virtual void terminalResetTitleAndIcon() throw () = 0;
-        virtual void terminalSetWindowTitle(const std::string & str) throw () = 0;
+        virtual void terminalSetWindowTitle(const std::string & str, bool transient) throw () = 0;
         virtual void terminalSetIconName(const std::string & str) throw () = 0;
         virtual void terminalBell() throw () = 0;
         virtual void terminalResizeBuffer(int16_t rows, int16_t cols) throw () = 0;
