@@ -53,10 +53,14 @@ Window::Window(I_Observer         & observer,
     _deferred(false),
     _hadDeleteRequest(false)
 {
+    // Register our object with the font manager.
+
     _fontSet = _fontManager.addClient(this);
-    ASSERT(_fontSet, "");
+    ASSERT(_fontSet, "Null font-set.");
     auto fontGuard = scopeGuard([&] { _fontManager.removeClient(this); });
 
+    // Calculate what our initial geometry should be. Though the WM
+    // may give us something else.
     auto rows = _config.initialRows;
     auto cols = _config.initialCols;
 
@@ -65,12 +69,11 @@ Window::Window(I_Observer         & observer,
 
     _geometry.width  = 2 * BORDER_THICKNESS + cols * _fontSet->getWidth() + SCROLLBAR_WIDTH;
     _geometry.height = 2 * BORDER_THICKNESS + rows * _fontSet->getHeight();
+    // A generic cookie for all subsequent checked XCB calls.
 
     xcb_void_cookie_t cookie;
 
-    //
     // Create the window.
-    //
 
     uint32_t winValues[] = {
         // XCB_CW_BACK_PIXEL
@@ -99,32 +102,29 @@ Window::Window(I_Observer         & observer,
     };
 
     _window = xcb_generate_id(_basics.connection());
-    cookie = xcb_create_window_checked(_basics.connection(),
-                                       _basics.screen()->root_depth,
-                                       _window,
-                                       _basics.screen()->root,
-                                       _config.initialX, config.initialY,
-                                       _geometry.width, _geometry.height,
-                                       0,            // border width
-                                       XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                       _basics.screen()->root_visual,
-                                       XCB_CW_BACK_PIXEL    |
-                                       XCB_CW_BIT_GRAVITY   |
-                                       XCB_CW_WIN_GRAVITY   |
-                                       XCB_CW_BACKING_STORE |
-                                       XCB_CW_SAVE_UNDER    |
-                                       XCB_CW_EVENT_MASK    |
-                                       XCB_CW_CURSOR,
-                                       winValues);
-    if (xcb_request_failed(_basics.connection(), cookie, "Failed to create window")) {
+    cookie  = xcb_create_window_checked(_basics.connection(),
+                                        _basics.screen()->root_depth,
+                                        _window,
+                                        _basics.screen()->root,
+                                        _config.initialX, config.initialY,
+                                        _geometry.width, _geometry.height,
+                                        0,            // border width
+                                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
+                                        _basics.screen()->root_visual,
+                                        XCB_CW_BACK_PIXEL    |
+                                        XCB_CW_BIT_GRAVITY   |
+                                        XCB_CW_WIN_GRAVITY   |
+                                        XCB_CW_BACKING_STORE |
+                                        XCB_CW_SAVE_UNDER    |
+                                        XCB_CW_EVENT_MASK    |
+                                        XCB_CW_CURSOR,
+                                        winValues);
+    if (xcb_request_failed(_basics.connection(), cookie, "Failed to create window.")) {
         throw Error("Failed to create window.");
     }
+    auto windowGuard = scopeGuard([&] { xcb_destroy_window(_basics.connection(), _window); });
 
-    auto windowGuard = scopeGuard([&] {xcb_destroy_window(_basics.connection(), _window);});
-
-    //
-    // Opacity
-    //
+    // Possibly set the window's opacity.
 
     if (_config.x11CompositedTransparency) {
         auto max   = std::numeric_limits<uint32_t>::max();
@@ -141,22 +141,18 @@ Window::Window(I_Observer         & observer,
         xcb_request_failed(_basics.connection(), cookie, "Failed to set opacity.");
     }
 
-    //
     // Do the ICCC jive.
-    //
 
     icccmConfigure();
 
-    //
     // Create the GC.
-    //
 
     uint32_t gcValues[] = {
         _colorSet.getVisualBellPixel(),
         0 // no exposures
     };
 
-    _gc = xcb_generate_id(_basics.connection());
+    _gc    = xcb_generate_id(_basics.connection());
     cookie = xcb_create_gc_checked(_basics.connection(),
                                    _gc,
                                    _window,
@@ -165,38 +161,35 @@ Window::Window(I_Observer         & observer,
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate GC")) {
         throw Error("Failed to create GC.");
     }
-
     auto gcGuard = scopeGuard([&] { xcb_free_gc(_basics.connection(), _window); });
 
-    //
     // Create the TTY and terminal.
-    //
 
     try {
-        _terminal = new Terminal(*this, _config, selector, deduper, rows, cols, stringify(_window), command);
+        _terminal = new Terminal(*this, _config, selector, deduper,
+                                 rows, cols, stringify(_window), command);
+        _open     = true;
     }
     catch (const Tty::Error & ex) {
         throw Error("Failed to create tty: " + ex.message);
     }
 
-    _open = true;
-
-    //
-    // Update the window title and map the window.
-    //
+    // Update the window title.
 
     setTitle(_title, true);
+
+    // Map the window.
 
     cookie = xcb_map_window_checked(_basics.connection(), _window);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to map window")) {
         throw Error("Failed to map window.");
     }
 
+    // Flush our XCB calls.
+
     xcb_flush(_basics.connection());
 
-    //
     // Dismiss the guards.
-    //
 
     gcGuard.dismiss();
     windowGuard.dismiss();
@@ -205,29 +198,38 @@ Window::Window(I_Observer         & observer,
 
 Window::~Window() {
     if (_mapped) {
-        ASSERT(_pixmap, "");
-        ASSERT(_surface, "");
+        ASSERT(_pixmap, "Null pixmap.");
+        ASSERT(_surface, "Null surface.");
 
         destroySurfaceAndPixmap();
     }
     else {
-        ASSERT(!_surface, "");
-        ASSERT(!_pixmap, "");
+        ASSERT(!_surface, "Surface not null.");
+        ASSERT(!_pixmap, "Pixmap not null.");
     }
+
+    // A generic cookie for all subsequent checked XCB calls.
+
+    xcb_void_cookie_t cookie;
 
     // Unwind constructor.
 
     delete _terminal;
 
-    xcb_free_gc(_basics.connection(), _gc);
+    cookie = xcb_free_gc_checked(_basics.connection(), _gc);
+    xcb_request_failed(_basics.connection(), cookie, "Failed to free GC.");
 
     // The window may have been destroyed exogenously.
     if (!_destroyed) {
-        auto cookie = xcb_destroy_window_checked(_basics.connection(), _window);
-        xcb_request_failed(_basics.connection(), cookie, "Failed to destroy window");
+        cookie = xcb_destroy_window_checked(_basics.connection(), _window);
+        xcb_request_failed(_basics.connection(), cookie, "Failed to destroy window.");
     }
 
+    // Flush our XCB calls.
+
     xcb_flush(_basics.connection());
+
+    // Deregister our object with the font manager.
 
     _fontManager.removeClient(this);
 }
@@ -235,9 +237,10 @@ Window::~Window() {
 // Events:
 
 void Window::keyPress(xcb_key_press_event_t * event) {
-    ASSERT(event->event == _window, "Which window?");
+    ASSERT(event->event == _window, "Unexpected window.");
 
     if (_config.autoHideCursor) {
+        // Key presses hide the cursor.
         cursorVisibility(false);
     }
 
@@ -249,10 +252,13 @@ void Window::keyPress(xcb_key_press_event_t * event) {
     if (_basics.getKeySym(event->detail, event->state, keySym, modifiers)) {
         if (_terminal->keyPress(keySym, modifiers)) {
             if (_hadDeleteRequest) {
+                // Key presses clear delete requests that are
+                // waiting for confirmation.
                 _hadDeleteRequest = false;
             }
 
             if (_entitlement == Entitlement::TRANSIENT) {
+                // Key presses reset transient titles.
                 _entitlement = Entitlement::PERMANENT;
                 setTitle(_title, true);
             }
@@ -260,20 +266,18 @@ void Window::keyPress(xcb_key_press_event_t * event) {
     }
 }
 
-void Window::keyRelease(xcb_key_release_event_t * event) {
-    ASSERT(event->event == _window, "Which window?");
-
-    if (!_open) { return; }
+void Window::keyRelease(xcb_key_release_event_t * UNUSED(event)) {
+    // XXX Drop this override?
 }
 
 void Window::buttonPress(xcb_button_press_event_t * event) {
-    ASSERT(event->event == _window, "Which window?");
+    ASSERT(event->event == _window, "Unexpected window.");
 
     if (_config.autoHideCursor) {
+        // Button presses show the cursor.
         cursorVisibility(true);
     }
 
-    //PRINT("Button-press: " << event->event_x << " " << event->event_y);
     if (!_open) { return; }
     if (event->detail < XCB_BUTTON_INDEX_1 || event->detail > XCB_BUTTON_INDEX_5) { return; }
 
@@ -292,7 +296,7 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
     }
 
     if (_pressed) {
-        ASSERT(event->detail != _button, "Already pressed!");
+        ASSERT(event->detail != _button, "This button is already pressed.");
         return;
     }
 
@@ -327,28 +331,29 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
 }
 
 void Window::buttonRelease(xcb_button_release_event_t * event) {
-    ASSERT(event->event == _window, "Which window?");
+    ASSERT(event->event == _window, "Unexpected window.");
 
     if (_config.autoHideCursor) {
+        // Button releases show the cursor.
         cursorVisibility(true);
     }
 
     if (!_open) { return; }
-    if (event->detail < XCB_BUTTON_INDEX_1 ||
-        event->detail > XCB_BUTTON_INDEX_5) { return; }
+    if (event->detail < XCB_BUTTON_INDEX_1 || event->detail > XCB_BUTTON_INDEX_5) { return; }
 
-    auto modifiers = _basics.convertState(event->state);
 
     if (_pressed && _button == event->detail) {
+        auto modifiers = _basics.convertState(event->state);
         _terminal->buttonRelease(false, modifiers);
         _pressed = false;
     }
 }
 
 void Window::motionNotify(xcb_motion_notify_event_t * event) {
-    ASSERT(event->event == _window, "Which window?");
+    ASSERT(event->event == _window, "Unexpected window.");
 
     if (_config.autoHideCursor) {
+        // Pointer motion show the cursor.
         cursorVisibility(true);
     }
 
@@ -380,7 +385,6 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
 
     if (_pointerPos != hpos) {
         auto modifiers = _basics.convertState(mask);
-
         _pointerPos = hpos;
         _terminal->pointerMotion(modifiers, within, hpos);
     }
@@ -388,36 +392,39 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
 }
 
 void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
-    ASSERT(!_mapped, "");
+    ASSERT(!_mapped, "Received map notification, but already mapped.");
 
     _mapped = true;
     createPixmapAndSurface();
 }
 
 void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
-    ASSERT(_mapped, "");
+    ASSERT(_mapped, "Received unmap notification, but not mapped.");
 
     _mapped = false;
     destroySurfaceAndPixmap();
 }
 
 void Window::expose(xcb_expose_event_t * event) {
+    // If there is a deferral then our pixmap won't be valid.
     if (_deferred) { return; }
 
-    ASSERT(event->window == _window, "Which window?");
-
-    ASSERT(_mapped, "");
+    ASSERT(event->window == _window, "Unexpected window.");
+    ASSERT(_mapped, "Received expose event, but not mapped.");
 
     if (_mapped) {
-        ASSERT(_pixmap, "");
-        ASSERT(_surface, "");
+        ASSERT(_pixmap, "Null pixmap.");
+        ASSERT(_surface, "Null surface.");
         copy(event->x, event->y, event->width, event->height);
     }
 }
 
 void Window::configureNotify(xcb_configure_notify_event_t * event) {
-    ASSERT(event->window == _window, "Which window?");
+    ASSERT(event->window == _window, "Unexpected window.");
 
+    // Note, once we've had a deferral we don't apply the
+    // optimisation: no transparency and just a move -> no-op.
+    // This is because we might have a resize followed by a move, for example.
     if (!_deferred && !_config.x11PseudoTransparency) {
         // We are only interested in size changes (not moves).
         if (_geometry.width == event->width && _geometry.height == event->height) {
@@ -429,12 +436,11 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
     _deferredGeometry.height = event->height;
 
     auto cookie = xcb_translate_coordinates(_basics.connection(), _window,
-                                            _basics.screen()->root, 0, 0); 
+                                            _basics.screen()->root, 0, 0);
     auto reply  = xcb_translate_coordinates_reply(_basics.connection(), cookie, nullptr);
     if (reply) {
         _deferredGeometry.x = reply->dst_x;
         _deferredGeometry.y = reply->dst_y;
-        //PRINT(reply->dst_x << ", " << reply->dst_y);
         std::free(reply);
     }
     else {
@@ -467,7 +473,7 @@ void Window::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {
 
 void Window::leaveNotify(xcb_leave_notify_event_t * event) {
     // XXX total guess that this is how we ensure we release
-    // the button...
+    // the button (broken grabs)...
     if (event->mode == 2) {
         if (_pressed) {
             _terminal->buttonRelease(true, ModifierSet());
@@ -477,8 +483,7 @@ void Window::leaveNotify(xcb_leave_notify_event_t * event) {
 }
 
 void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
-    ASSERT(event->window == _window, "Which window?");
-    //PRINT("Destroy notify");
+    ASSERT(event->window == _window, "Unexpected window.");
 
     _terminal->killReap();
     _open      = false;
@@ -525,7 +530,7 @@ void Window::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
 }
 
 void Window::selectionRequest(xcb_selection_request_event_t * event) {
-    ASSERT(event->owner == _window, "Which window?");
+    ASSERT(event->owner == _window, "Unexpected window.");
 
     xcb_selection_notify_event_t response;
     response.response_type = XCB_SELECTION_NOTIFY;
@@ -610,8 +615,8 @@ void Window::clearSelection() {
 
 void Window::deferral() {
     ASSERT(_deferred, "");
-    handleConfigure();
     _deferred = false;
+    handleConfigure();
 }
 
 void Window::icccmConfigure() {
@@ -992,9 +997,10 @@ void Window::handleResize() {
     int16_t rows, cols;
     sizeToRowsCols(rows, cols);
 
-    _terminal->resize(rows, cols);      // Ok to resize if not open?
+    _terminal->resize(rows, cols);      // OK to resize if not open?
 
     if (_hadDeleteRequest) {
+        // Resizes clear delete requests that are waiting for confirmation.
         _hadDeleteRequest = false;
     }
 
@@ -1005,8 +1011,8 @@ void Window::handleResize() {
     }
 
     if (_mapped) {
-        ASSERT(_pixmap, "");
-        ASSERT(_surface, "");
+        ASSERT(_pixmap, "Null pixmap.");
+        ASSERT(_surface, "Null surface.");
 
         destroySurfaceAndPixmap();
         createPixmapAndSurface();
@@ -1211,6 +1217,8 @@ void Window::terminalBell() throw () {
         if (_mapped) {
             ASSERT(_pixmap, "");
             ASSERT(_surface, "");
+
+            // Fill the window with a solid colour.
 
             xcb_rectangle_t rect = { 0, 0, _geometry.width, _geometry.height };
             xcb_poly_fill_rectangle(_basics.connection(),

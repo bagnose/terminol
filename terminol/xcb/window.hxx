@@ -45,17 +45,18 @@ private:
     xcb_window_t      _window;
     bool              _destroyed;
     xcb_gcontext_t    _gc;
-    xcb_rectangle_t   _geometry;
-    xcb_rectangle_t   _deferredGeometry;
+    xcb_rectangle_t   _geometry;            // Note x/y is wrt root window.
+    xcb_rectangle_t   _deferredGeometry;    // Note x/y is wrt root window.
     Terminal        * _terminal;
     bool              _open;
     HPos              _pointerPos;
 
-    bool              _mapped;          // Is the window mapped? If so then _pixmap and _surface are good.
-    xcb_pixmap_t      _pixmap;          // Created when mapped, destroyed when unmapped.
-    cairo_surface_t * _surface;
+    // If the window is mapped then _pixmap and _surface are be valid. Otherwise not.
+    bool              _mapped;
+    xcb_pixmap_t      _pixmap;              // Created when mapped, destroyed when unmapped.
+    cairo_surface_t * _surface;             // Ditto.
 
-    cairo_t         * _cr;              // Cairo drawing context. Created only as required.
+    cairo_t         * _cr;                  // Cairo drawing context. Created only as required.
 
     enum class Entitlement {
         PERMANENT,
