@@ -416,7 +416,7 @@ void Window::expose(xcb_expose_event_t * event) {
     if (_mapped) {
         ASSERT(_pixmap, "Null pixmap.");
         ASSERT(_surface, "Null surface.");
-        copy(event->x, event->y, event->width, event->height);
+        copyPixmapToWindow(event->x, event->y, event->width, event->height);
     }
 }
 
@@ -602,7 +602,7 @@ void Window::redraw() {
         ASSERT(_pixmap, "");
         ASSERT(_surface, "");
         draw();
-        copy(0, 0, _geometry.width, _geometry.height);
+        copyPixmapToWindow(0, 0, _geometry.width, _geometry.height);
     }
 }
 
@@ -963,7 +963,7 @@ void Window::drawBorder() {
     } cairo_restore(_cr);
 }
 
-void Window::copy(int x, int y, int w, int h) {
+void Window::copyPixmapToWindow(int x, int y, int w, int h) {
     ASSERT(_mapped, "");
     ASSERT(_pixmap, "");
     // Copy the buffer region
@@ -1018,7 +1018,7 @@ void Window::handleResize() {
         destroySurfaceAndPixmap();
         createPixmapAndSurface();
 
-        copy(0, 0, _geometry.width, _geometry.height);
+        copyPixmapToWindow(0, 0, _geometry.width, _geometry.height);
     }
 }
 
@@ -1031,7 +1031,7 @@ void Window::handleMove() {
         ASSERT(_pixmap, "");
         ASSERT(_surface, "");
         draw();
-        copy(0, 0, _geometry.width, _geometry.height);
+        copyPixmapToWindow(0, 0, _geometry.width, _geometry.height);
     }
 }
 
@@ -1230,7 +1230,7 @@ void Window::terminalBell() throw () {
             xcb_flush(_basics.connection());
 
             ::usleep(_config.visualBellDuration * 1000);
-            copy(0, 0, _geometry.width, _geometry.height);
+            copyPixmapToWindow(0, 0, _geometry.width, _geometry.height);
         }
     }
 }
@@ -1480,7 +1480,7 @@ void Window::terminalFixDamageEnd(const Region & damage,
         y1 = _geometry.height;
     }
 
-    copy(x0, y0, x1 - x0, y1 - y0);
+    copyPixmapToWindow(x0, y0, x1 - x0, y1 - y0);
 }
 
 void Window::terminalReaped(int status) throw () {
@@ -1519,7 +1519,7 @@ void Window::useFontSet(FontSet * fontSet, int delta) throw () {
         ASSERT(_surface, "");
 
         draw();
-        copy(0, 0, _geometry.width, _geometry.height);
+        copyPixmapToWindow(0, 0, _geometry.width, _geometry.height);
     }
 
     std::ostringstream ost;

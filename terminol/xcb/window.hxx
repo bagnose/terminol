@@ -143,7 +143,7 @@ protected:
     void destroySurfaceAndPixmap();
     void draw();
     void drawBorder();
-    void copy(int x, int y, int w, int h);
+    void copyPixmapToWindow(int x, int y, int w, int h);
 
     void handleConfigure();
     void handleResize();
