@@ -490,29 +490,37 @@ void Window::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) {
 }
 
 void Window::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
-    if (_open) {
-        uint32_t offset = 0;        // 32-bit quantities
+    if (!_open) { return; }
 
-        for (;;) {
-            auto cookie = xcb_get_property(_basics.connection(),
-                                           false,     // delete
-                                           _window,
-                                           XCB_ATOM_PRIMARY,
-                                           XCB_GET_PROPERTY_TYPE_ANY,
-                                           offset,
-                                           8192 / 4);
+    std::vector<uint8_t> content;
+    uint32_t             offset = 0;        // 32-bit quantities
 
-            auto reply = xcb_get_property_reply(_basics.connection(), cookie, nullptr);
-            if (!reply) { break; }
-            auto guard = scopeGuard([reply] { std::free(reply); });
+    for (;;) {
+        auto cookie = xcb_get_property(_basics.connection(),
+                                       false,     // delete
+                                       _window,
+                                       XCB_ATOM_PRIMARY,
+                                       XCB_GET_PROPERTY_TYPE_ANY,
+                                       offset,
+                                       8192 / 4);
 
-            void * value  = xcb_get_property_value(reply);
-            int    length = xcb_get_property_value_length(reply);
-            if (length == 0) { break; }
+        auto reply = xcb_get_property_reply(_basics.connection(), cookie, nullptr);
+        if (!reply) { break; }
 
-            _terminal->paste(reinterpret_cast<const uint8_t *>(value), length);
-            offset += (length + 3) / 4;
-        }
+        auto guard  = scopeGuard([reply] { std::free(reply); });
+        auto value  = static_cast<uint8_t *>(xcb_get_property_value(reply));
+        auto length = xcb_get_property_value_length(reply);
+        if (length == 0) { break; }
+
+        auto oldSize = content.size();
+        content.resize(oldSize + length);
+        std::copy(value, value + length, content.begin() + oldSize);
+
+        offset += (length + 3) / 4;
+    }
+
+    if (!content.empty()) {
+        _terminal->paste(&content.front(), content.size());
     }
 }
 
