@@ -67,5 +67,5 @@ std::ostream & operator << (std::ostream & ost, Action action) {
             return ost << "DEBUG_STATS2";
     }
 
-    FATAL("Unreachable.");
+    FATAL("Invalid action: " << static_cast<int>(action));
 }

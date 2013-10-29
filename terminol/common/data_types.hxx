@@ -10,6 +10,10 @@
 
 #include <algorithm>
 
+//
+// An RGB color.
+//
+
 struct Color {
     uint8_t r, g, b;
 
@@ -24,6 +28,8 @@ inline bool operator == (Color lhs, Color rhs) {
 inline bool operator != (Color lhs, Color rhs) {
     return !(lhs == rhs);
 }
+
+static_assert(sizeof(Color) == 3, "Color should be 3 bytes.");
 
 std::ostream & operator << (std::ostream & ost, Color   color);
 std::istream & operator >> (std::istream & ist, Color & color);
@@ -56,6 +62,8 @@ private:
     UColor(uint8_t r, uint8_t g, uint8_t b) : type(Type::DIRECT), values(r, g, b) {}
 };
 
+static_assert(sizeof(UColor) == 4, "UColor should be 4 bytes.");
+
 inline bool operator == (UColor lhs, UColor rhs) {
     if (lhs.type != rhs.type) {
         return false;
@@ -77,7 +85,7 @@ inline bool operator == (UColor lhs, UColor rhs) {
 inline bool operator != (UColor lhs, UColor rhs) { return !(lhs == rhs); }
 
 //
-//
+// Style (of a Cell).
 //
 
 struct Style {
@@ -94,6 +102,8 @@ struct Style {
         attrs(attrs_), fg(fg_), bg(bg_) {}
 };
 
+static_assert(sizeof(Style) == 9, "Style should be 9 bytes.");
+
 inline bool operator == (const Style & lhs, const Style & rhs) {
     return
         lhs.attrs == rhs.attrs &&
@@ -106,7 +116,7 @@ inline bool operator != (const Style & lhs, const Style & rhs) {
 }
 
 //
-//
+// Cell (an element in the Buffer array).
 //
 
 struct Cell {
@@ -137,10 +147,12 @@ inline bool operator == (const Cell & lhs, const Cell & rhs) {
         lhs.style == rhs.style;
 }
 
+static_assert(sizeof(Cell) == 13, "Cell should be 13 bytes.");
+
 inline bool operator != (const Cell & lhs, const Cell & rhs) { return !(lhs == rhs); }
 
 //
-//
+// A screen-relative position.
 //
 
 struct Pos {
@@ -162,7 +174,7 @@ inline std::ostream & operator << (std::ostream & ost, Pos pos) {
 }
 
 //
-//
+// A screen-relative position, with "handedness" (left/right).
 //
 
 struct HPos {
@@ -188,7 +200,7 @@ inline std::ostream & operator << (std::ostream & ost, HPos hpos) {
 }
 
 //
-//
+// A region, defined by a beginning and an end (end is non-inclusive).
 //
 
 struct Region {

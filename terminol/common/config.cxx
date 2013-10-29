@@ -5,6 +5,8 @@
 
 #include <limits>
 
+namespace {
+
 const Color COLOURS_LINUX[16] = {
   { 0x00, 0x00, 0x00 },
   { 0xA8, 0x00, 0x00 },
@@ -156,6 +158,8 @@ const Color COLOURS_SOLARIZED_LIGHT[16] = {
   { 0x58, 0x6E, 0x75 },
   { 0x00, 0x2B, 0x36 }
 };
+
+} // namespace {anonymous}
 
 //
 //

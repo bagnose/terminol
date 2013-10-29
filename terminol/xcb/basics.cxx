@@ -36,7 +36,7 @@ Basics::Basics() throw (Error) {
     _screen = screenIter.data;
 
     _visual = nullptr;
-    for (xcb_depth_iterator_t depthIter = xcb_screen_allowed_depths_iterator(_screen);
+    for (auto depthIter = xcb_screen_allowed_depths_iterator(_screen);
          depthIter.rem; xcb_depth_next(&depthIter))
     {
         for (auto visual_iter = xcb_depth_visuals_iterator(depthIter.data);

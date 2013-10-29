@@ -25,7 +25,7 @@ std::ostream & operator << (std::ostream & ost, Control control) {
             return ost << "SI";
     }
 
-    FATAL(static_cast<int>(control));
+    FATAL("Invalid control: " << static_cast<int>(control));
 }
 
 std::ostream & operator << (std::ostream & ost, Modifier modifier) {
@@ -48,7 +48,7 @@ std::ostream & operator << (std::ostream & ost, Modifier modifier) {
             return ost << "MODE_SWITCH";
     }
 
-    FATAL(static_cast<int>(modifier));
+    FATAL("Invalid modifier: " << static_cast<int>(modifier));
 }
 
 std::ostream & operator << (std::ostream & ost, Mode mode) {

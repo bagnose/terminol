@@ -115,7 +115,7 @@ void Terminal::resize(int16_t rows, int16_t cols) {
     // Special exception, resizes can occur during dispatch to support
     // font size changes.
 
-    ASSERT(rows > 0 && cols > 0, "");
+    ASSERT(rows > 0 && cols > 0, "Rows or cols not positive.");
 
     _priBuffer.resizeReflow(rows, cols);
     _altBuffer.resizeClip(rows, cols);
@@ -167,7 +167,7 @@ bool Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
 
 void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
                            bool UNUSED(within), HPos hpos) {
-    ASSERT(_press == Press::NONE, "");
+    ASSERT(_press == Press::NONE, "Received button press but already got one.");
 
     if (_modes.get(Mode::MOUSE_PRESS_RELEASE)) {
         sendMouseButton(static_cast<int>(button), modifiers, hpos.pos);
@@ -203,7 +203,7 @@ select:
     _button     = button;
     _pointerPos = hpos.pos;
 
-    ASSERT(_press != Press::NONE, "");
+    ASSERT(_press != Press::NONE, "Button press should be recorded.");
 }
 
 void Terminal::pointerMotion(ModifierSet modifiers, bool within, HPos hpos) {
@@ -253,7 +253,7 @@ void Terminal::pointerMotion(ModifierSet modifiers, bool within, HPos hpos) {
 }
 
 void Terminal::buttonRelease(bool UNUSED(broken), ModifierSet modifiers) {
-    ASSERT(_press != Press::NONE, "");
+    ASSERT(_press != Press::NONE, "Received button release but have no press.");
 
     if (_press == Press::SELECT) {
         std::string text;
@@ -299,7 +299,7 @@ report:
         }
     }
     else {
-        FATAL("Bad");
+        FATAL("Unreachable.");
     }
 
     _press = Press::NONE;
@@ -720,7 +720,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length length) {
 }
 
 void Terminal::processAttributes(const std::vector<int32_t> & args) {
-    ASSERT(!args.empty(), "");
+    ASSERT(!args.empty(), "Empty args.");
 
     for (size_t i = 0; i != args.size(); ++i) {
         auto v = args[i];
@@ -1219,18 +1219,15 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
                 _modes.unset(Mode::APPKEYPAD);
                 break;
             case 'D':   // IND - Line Feed (opposite of RI)
-                // FIXME still dubious
                 _buffer->forwardIndex();
                 break;
             case 'E':   // NEL - Next Line
-                // FIXME still dubious
                 _buffer->forwardIndex(true);
                 break;
             case 'H':   // HTS - Horizontal Tab Stop
                 _buffer->setTab();
                 break;
             case 'M':   // RI - Reverse Line Feed (opposite of IND)
-                // FIXME still dubious
                 _buffer->reverseIndex();
                 break;
             case 'N':   // SS2 - Set Single Shift 2
@@ -1727,7 +1724,7 @@ std::ostream & operator << (std::ostream & ost, Terminal::Button button) {
             return ost << "right";
     }
 
-    FATAL("Unreachable");
+    FATAL("Unreachable.");
 }
 
 std::ostream & operator << (std::ostream & ost, Terminal::ScrollDir dir) {
@@ -1738,5 +1735,5 @@ std::ostream & operator << (std::ostream & ost, Terminal::ScrollDir dir) {
             return ost << "down";
     }
 
-    FATAL("Unreachable");
+    FATAL("Unreachable.");
 }

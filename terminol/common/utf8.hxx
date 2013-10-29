@@ -26,8 +26,6 @@ typedef int32_t CodePoint;
 //
 //
 
-// FIXME this API sucks:
-
 // Given a lead character, what is the length of the sequence?
 Length    leadLength(uint8_t lead) throw (Error);
 
