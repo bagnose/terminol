@@ -87,6 +87,7 @@ Basics::Basics() throw (Error) {
         _atomWmProtocols        = lookupAtom("WM_PROTOCOLS", false);
         _atomWmDeleteWindow     = lookupAtom("WM_DELETE_WINDOW", true);
         _atomXRootPixmapId      = lookupAtom("_XROOTPMAP_ID", true);
+        _atomESetRootPmapId     = lookupAtom("ESETROOT_PMAP_ID", true);
         _atomNetWmWindowOpacity = lookupAtom("_NET_WM_WINDOW_OPACITY", true);           // FIXME need a wrapper method that throws if atom doesn't exist. getAtom() -> lookupAtom()
     }
     catch (const NotFoundError & ex) {
@@ -96,8 +97,13 @@ Basics::Basics() throw (Error) {
     try {
         _rootPixmap = getRootPixmap(_atomXRootPixmapId);
     }
-    catch (const Error & ex) {
-        _rootPixmap = XCB_PIXMAP_NONE;
+    catch (const Error &) {
+        try {
+            _rootPixmap = getRootPixmap(_atomESetRootPmapId);
+        }
+        catch (const Error &) {
+            _rootPixmap = XCB_PIXMAP_NONE;
+        }
         // XXX disable PseudoTransparency?
     }
 
