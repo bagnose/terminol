@@ -13,7 +13,6 @@
 #include <vector>
 #include <iomanip>
 
-
 // CharSub (or Character-Substitution) is a translation layer used to
 // support different character sets, e.g. US versus UK. CharSub uses a
 // table to translate ASCII characters into UTF-8 sequences. If there is
@@ -173,7 +172,7 @@ class Buffer {
         }
 
         bool isBlank() const {
-            for (const auto & c : cells) {
+            for (auto & c : cells) {
                 if (c != Cell::blank()) { return false; }
             }
             return true;
@@ -234,7 +233,7 @@ class Buffer {
                     return g1;
             }
 
-            FATAL("Unreachable");
+            FATAL("Unreachable.");
         }
 
         // Setter for the current CharSub.
@@ -248,14 +247,14 @@ class Buffer {
                     return;
             }
 
-            FATAL("Unreachable");
+            FATAL("Unreachable.");
         }
 
         Cursor(const CharSub * g0_, const CharSub * g1_) :
             pos(), style(), wrapNext(false), charSet(CharSet::G0), g0(g0_), g1(g1_)
         {
-            ASSERT(g0, "");
-            ASSERT(g1, "");
+            ASSERT(g0, "g0 is null.");
+            ASSERT(g1, "g1 is null.");
         }
     };
 
@@ -362,8 +361,8 @@ public:
             if (col < 0)          { col += getCols(); --row; }
             if (col >= getCols()) { col -= getCols(); ++row; }
 
-            ASSERT(col >= 0, "");
-            ASSERT(col < getCols(), "");
+            ASSERT(col >= 0, "Column is not positive.");
+            ASSERT(col < getCols(), "Column exceeds maximum.");
 
             HAPos centre(row, col);
 
@@ -549,24 +548,26 @@ public:
     }
 
     void clearHistory() {
-        if (!_history.empty()) {
-            for (auto tag : _tags) {
-                if (tag != I_Deduper::invalidTag()) {
-                    _deduper.remove(tag);
-                }
-            }
+        if (_history.empty()) {
+            return;
+        }
 
-            _tags.clear();
-            _history.clear();
-            _pending.clear();
+        for (auto tag : _tags) {
+            if (tag != I_Deduper::invalidTag()) {
+                _deduper.remove(tag);
+            }
+        }
 
-            if (_scrollOffset == 0) {
-                _barDamage = true;
-            }
-            else {
-                _scrollOffset = 0;
-                damageViewport(true);
-            }
+        _tags.clear();
+        _history.clear();
+        _pending.clear();
+
+        if (_scrollOffset == 0) {
+            _barDamage = true;
+        }
+        else {
+            _scrollOffset = 0;
+            damageViewport(true);
         }
     }
 
@@ -660,13 +661,16 @@ public:
 
         if (autoWrap && _cursor.wrapNext) {
             _cursor.wrapNext = false;
-            _active[_cursor.pos.row].cont = true; // continues on next line
-            ASSERT(_cursor.pos.col == _cols - 1, "col=" << _cursor.pos.col << ", _cols-1=" << _cols - 1);
-            ASSERT(_active[_cursor.pos.row].wrap == _cols, "wrap=" << _active[_cursor.pos.row].wrap << ", _cols=" << _cols);
-            _active[_cursor.pos.row].wrap = _cols;
+            auto & line = _active[_cursor.pos.row];
+            line.cont = true; // continues on next line
+            ASSERT(_cursor.pos.col == _cols - 1,
+                   "col=" << _cursor.pos.col << ", _cols-1=" << _cols - 1);
+            ASSERT(line.wrap == _cols,
+                   "wrap=" << line.wrap << ", _cols=" << _cols);
+            line.wrap = _cols;
 
             if (_cursor.pos.row == _marginEnd - 1) {
-                addLine();
+                addLine();      // invalidates line reference
                 moveCursor2(true, 0, false, 0);
             }
             else {
@@ -686,19 +690,20 @@ public:
             }
         }
 
-        auto & line = _active[_cursor.pos.row];
+        auto style = _cursor.style;
 
         if (cs->isSpecial()) {
-            auto style = _cursor.style;
             style.attrs.unset(Attr::BOLD);
             style.attrs.unset(Attr::ITALIC);
-            line.cells[_cursor.pos.col] = Cell::utf8(seq, style);
-        }
-        else {
-            auto & style = _cursor.style;
-            line.cells[_cursor.pos.col] = Cell::utf8(seq, style);
         }
 
+        auto & line = _active[_cursor.pos.row];
+        line.cells[_cursor.pos.col] = Cell::utf8(seq, style);
+
+        ASSERT(line.wrap <= getCols(),
+               "line.wrap=" << line.wrap << " getCols()=" << getCols());
+        ASSERT(_cursor.pos.col < getCols(),
+               "_cursor.pos.cos=" << _cursor.pos.col << " getCols()=" << getCols());
         line.wrap = std::max<int16_t>(line.wrap, _cursor.pos.col + 1);
         ASSERT(line.wrap <= getCols(), "");
 
@@ -767,7 +772,8 @@ public:
         damageCell();
 
         if (marginRelative) {
-            // Don't allow the cursor below the bottom margin.
+            // Convert pos to absolute and don't allow it below
+            // the bottom margin.
             pos.row = std::min(pos.row + _marginBegin, _marginEnd - 1);
         }
 
@@ -900,7 +906,7 @@ public:
             ASSERT(!_active.back().cont, "");           // XXX this needs enforcing, e.g. in insertLineAt
 
             while (!_active.empty()) {
-                auto s = _pending.size();
+                auto s = _pending.size();       // Save this value before calling bump().
 
                 bump();
 
@@ -925,7 +931,7 @@ public:
             ASSERT(!_tags.empty(), "");
             ASSERT(_pending.empty(), "");
 
-            _cols = cols;       // Must set before calling rebuildHistory()
+            _cols = cols;       // Must set before calling rebuildHistory().
             rebuildHistory();
 
             doneCursor = false;
@@ -1110,6 +1116,8 @@ public:
     }
 
     void insertCells(uint16_t n) {
+        ASSERT(n > 0, "n is not positive.");
+
         APos begin, end;
         if (normaliseSelection(begin, end)) {
             if (begin.row <= _cursor.pos.row && end.row >= _cursor.pos.row) {
@@ -1118,6 +1126,7 @@ public:
         }
 
         n = std::min<uint16_t>(n, getCols() - _cursor.pos.col);
+        ASSERT(n > 0, "n is not positive.");
 
         auto & line = _active[_cursor.pos.row];
         line.wrap = std::min<int16_t>(getCols(), line.wrap + n);
@@ -1585,7 +1594,7 @@ public:
 
         size_t i = 0;
 
-        for (const auto & l : _history) {
+        for (auto & l : _history) {
             ost << std::setw(4) << i << " "
                 << std::setw(4) << l.index - _lostTags << " "
                 << std::setw(2) << l.seqnum << " "
@@ -1598,7 +1607,7 @@ public:
             auto   blank  = Cell::blank();
             for (uint16_t o = 0; o != l.size; ++o) {
                 auto c = offset + o;
-                const auto & cell = c < cells.size() ? cells[c] : blank;
+                auto & cell = c < cells.size() ? cells[c] : blank;
                 ost << cell.seq;
             }
 
@@ -1615,7 +1624,7 @@ public:
 
         size_t i = 0;
 
-        for (const auto & l : _active) {
+        for (auto & l : _active) {
             ost << std::setw(2) << i << " "
                 << (l.cont ? '\\' : '$') << " "
                 << std::setw(3) << l.wrap << " \'";
@@ -1750,6 +1759,8 @@ protected:
         _active.insert(_active.begin() + row, n, ALine(getCols()));
 
         damageRows(row, _marginEnd);
+
+        ASSERT(!_active.back().cont, "");
     }
 
     void eraseLinesAt(int16_t row, uint16_t n) {
@@ -1760,8 +1771,8 @@ protected:
         APos begin, end;
         if (normaliseSelection(begin, end)) {
             if (begin.row < row + n && end.row >= row) {
-                // Clear the selection because it spans the erasure point or will collidate
-                // with the erasure point.
+                // Clear the selection because it spans or will collide with the
+                // erasure point.
                 clearSelection();
             }
             else if (begin.row < _marginEnd && end.row >= _marginEnd) {
@@ -1774,11 +1785,12 @@ protected:
             }
         }
 
-
         _active.erase (_active.begin() + row, _active.begin() + row + n);
         _active.insert(_active.begin() + _marginEnd - n, n, ALine(getCols()));
 
         damageRows(row, _marginEnd);
+
+        ASSERT(!_active.back().cont, "");
     }
 
     bool marginsSet() const {
@@ -1885,27 +1897,33 @@ protected:
                ", aline.wrap=" << aline.wrap <<
                ", _cols=" << _cols);
 
+        auto & cells = aline.cells;
+        auto   cont  = aline.cont;
+        auto   wrap  = aline.wrap;
+
         if (_pending.empty()) {
             // This line is not a continuation of a previous line.
             ASSERT(_tags.empty() || _tags.back() != I_Deduper::invalidTag(), "");
             ASSERT(_history.empty() || _history.back().index - _lostTags == _tags.size() - 1, "");
 
-            if (aline.cont) {
+            if (cont) {
                 // This line is continued on the next line so it can't be stored
                 // for dedupe yet.
-                _pending = std::move(aline.cells);
+                _pending = std::move(cells);
+                ASSERT(cells.empty(), "Not stolen by move constructor?");
                 _tags.push_back(I_Deduper::invalidTag());
             }
             else {
                 // This line is completely standalone. Immediately dedupe it.
-                ASSERT(static_cast<size_t>(aline.wrap) <= aline.cells.size(), "");
-                aline.cells.erase(aline.cells.begin() + aline.wrap, aline.cells.end());
-                auto tag = _deduper.store(aline.cells);
+                ASSERT(static_cast<size_t>(wrap) <= cells.size(), "");
+                cells.erase(cells.begin() + wrap, cells.end());
+                auto tag = _deduper.store(cells);
+                ASSERT(cells.empty(), "Not stolen by move constructor?");
                 ASSERT(tag != I_Deduper::invalidTag(), "");
                 _tags.push_back(tag);
             }
 
-            _history.push_back(HLine(_tags.size() + _lostTags - 1, 0, aline.wrap));
+            _history.push_back(HLine(_tags.size() + _lostTags - 1, 0, wrap));
         }
         else {
             // This line is a continuation of the previous line.
@@ -1916,11 +1934,11 @@ protected:
             ASSERT(_history.back().index - _lostTags == _tags.size() - 1, "");
             auto oldSize = _pending.size();
             ASSERT(oldSize % _cols == 0, "");
-            _pending.resize(oldSize + aline.wrap, Cell::blank());
-            std::copy(aline.cells.begin(), aline.cells.begin() + aline.wrap, _pending.begin() + oldSize);
-            _history.push_back(HLine(_tags.size() + _lostTags - 1, _history.back().seqnum + 1, aline.wrap));
+            _pending.resize(oldSize + wrap, Cell::blank());
+            std::copy(cells.begin(), cells.begin() + wrap, _pending.begin() + oldSize);
+            _history.push_back(HLine(_tags.size() + _lostTags - 1, _history.back().seqnum + 1, wrap));
 
-            if (!aline.cont) {
+            if (!cont) {
                 // This line is not itself continued.
                 // Store _pending and the tag.
                 auto tag = _deduper.store(_pending);
@@ -1933,7 +1951,7 @@ protected:
 
         ASSERT(!_history.empty() && _history.back().index - _lostTags == _tags.size() - 1, "");
 
-        _active.pop_front();
+        _active.pop_front();        // This invalidates 'aline'.
     }
 
     void unbump() {
