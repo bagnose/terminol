@@ -38,7 +38,7 @@ class Deduper : public I_Deduper {
         std::vector<Cell> cells;
         uint32_t          refs;
 
-        Payload(std::vector<Cell> & cells_) : cells(std::move(cells_)), refs(1) {}
+        explicit Payload(std::vector<Cell> & cells_) : cells(std::move(cells_)), refs(1) {}
     };
 
     std::unordered_map<Tag, Payload> _lines;

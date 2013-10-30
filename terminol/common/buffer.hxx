@@ -1872,7 +1872,7 @@ protected:
                 enforceHistoryLimit();
             }
 
-            _active.push_back(ALine(getCols()));
+            _active.emplace_back(getCols());
 
             APos begin, end;
             if (normaliseSelection(begin, end)) {
@@ -1980,7 +1980,8 @@ protected:
         std::vector<Cell> cells(_pending.begin() + offset, _pending.end());
         _pending.erase(_pending.begin() + offset, _pending.end());
 
-        _active.push_front(ALine(cells, cont, cells.size(), _cols));
+        _active.emplace_front(cells, cont, cells.size(), _cols);
+        ASSERT(cells.empty(), "Not stolen by move constructor?");
         ASSERT(_active.front().wrap <= _cols, "");
 
         _history.pop_back();
