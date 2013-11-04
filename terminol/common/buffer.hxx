@@ -165,6 +165,13 @@ class Buffer {
             cells.resize(cols, Cell::blank());
         }
 
+        void resize(int16_t cols) {
+            ASSERT(cols > 0, "cols not positive.");
+            cont = false;
+            wrap = std::min(wrap, cols);
+            cells.resize(cols, Cell::blank());
+        }
+
         void clear() {
             cont = false;
             wrap = 0;
@@ -849,7 +856,7 @@ public:
 
         if (cols != getCols()) {
             for (auto & line : _active) {
-                line.cells.resize(cols, Cell::blank());
+                line.resize(cols);
             }
         }
 
