@@ -8,6 +8,7 @@
 #include "terminol/support/sys.hxx"
 
 #include <map>
+#include <chrono>
 #include <algorithm>
 
 #include <unistd.h>
@@ -35,10 +36,21 @@ public:
         ~I_WriteHandler() {}
     };
 
+    class I_TimeoutHandler {
+    public:
+        virtual void handleTimeout() throw () = 0;
+
+    protected:
+        I_TimeoutHandler() {}
+        ~I_TimeoutHandler() {}
+    };
+
     virtual void addReadable(int fd, I_ReadHandler * handler) = 0;
     virtual void removeReadable(int fd) = 0;
     virtual void addWriteable(int fd, I_WriteHandler * handler) = 0;
     virtual void removeWriteable(int fd) = 0;
+    virtual void addTimeoutable(I_TimeoutHandler * handler, int milliseconds) = 0;
+    virtual void removeTimeoutable(I_TimeoutHandler * handler) = 0;
 
 protected:
     I_Selector() {}
@@ -50,8 +62,19 @@ protected:
 //
 
 class SelectSelector : public I_Selector {
+    typedef std::chrono::steady_clock Clock;
+
+    struct TimeEntry {
+        TimeEntry(Clock::time_point  time_, I_TimeoutHandler * handler_) :
+            time(time_), handler(handler_) {}
+
+        Clock::time_point   time;
+        I_TimeoutHandler  * handler;
+    };
+
     std::map<int, I_ReadHandler *>  _readRegs;
     std::map<int, I_WriteHandler *> _writeRegs;
+    std::vector<TimeEntry>          _timeoutRegs;
 
 public:
     SelectSelector() {}
@@ -83,26 +106,65 @@ public:
             max = std::max(max, fd);
         }
 
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(
-            ::select(max + 1, &readFds, &writeFds, nullptr, nullptr)) != -1, "");
+        int n;
 
-        for (auto iter = _readRegs.begin(); iter != _readRegs.end(); /**/) {
-            auto fd      = iter->first;
-            auto handler = iter->second;
-            ++iter;
+        if (!_timeoutRegs.empty()) {
+            auto now  = Clock::now();
+            auto next = std::max(now, _timeoutRegs.front().time);
 
-            if (FD_ISSET(fd, &readFds)) {
-                handler->handleRead(fd);
-            }
+            auto duration = std::chrono::duration_cast<std::chrono::microseconds>(next - now);
+
+            const int A_MILLION = 1000000;
+            struct timeval tv;
+            tv.tv_sec  = duration.count() / A_MILLION;
+            tv.tv_usec = duration.count() % A_MILLION;
+
+            n = TEMP_FAILURE_RETRY(::select(max + 1, &readFds, &writeFds, nullptr, &tv));
+        }
+        else {
+            n = TEMP_FAILURE_RETRY(::select(max + 1, &readFds, &writeFds, nullptr, nullptr));
+            ENFORCE_SYS(n != 0, "");
         }
 
-        for (auto iter = _writeRegs.begin(); iter != _writeRegs.end(); /**/) {
-            auto fd      = iter->first;
-            auto handler = iter->second;
-            ++iter;
+        ENFORCE_SYS(n != -1, "");
 
-            if (FD_ISSET(fd, &writeFds)) {
-                handler->handleWrite(fd);
+        if (n == 0) {
+            ASSERT(!_timeoutRegs.empty(), "");
+
+            auto now = Clock::now();
+
+            while (!_timeoutRegs.empty()) {
+                auto & reg = _timeoutRegs.back();
+
+                if (now < reg.time) {
+                    break;
+                }
+
+                auto handler = reg.handler;
+                _timeoutRegs.pop_back();    // Invalidates reg reference.
+
+                handler->handleTimeout();
+            }
+        }
+        else {
+            for (auto iter = _readRegs.begin(); iter != _readRegs.end(); /**/) {
+                auto fd      = iter->first;
+                auto handler = iter->second;
+                ++iter;
+
+                if (FD_ISSET(fd, &readFds)) {
+                    handler->handleRead(fd);
+                }
+            }
+
+            for (auto iter = _writeRegs.begin(); iter != _writeRegs.end(); /**/) {
+                auto fd      = iter->first;
+                auto handler = iter->second;
+                ++iter;
+
+                if (FD_ISSET(fd, &writeFds)) {
+                    handler->handleWrite(fd);
+                }
             }
         }
     }
@@ -130,6 +192,39 @@ public:
         ASSERT(iter != _writeRegs.end(), "");
         _writeRegs.erase(iter);
     }
+
+    void addTimeoutable(I_TimeoutHandler * handler, int milliseconds) {
+#if DEBUG
+        for (auto & reg : _timeoutRegs) {
+            ASSERT(reg.handler != handler, "Handler already registered.");
+        }
+#endif
+        Clock::time_point scheduled =
+            Clock::now() + std::chrono::duration<int,std::milli>(milliseconds);
+
+        auto iter = _timeoutRegs.begin();
+
+        while (iter != _timeoutRegs.end()) {
+            if (iter->time < scheduled) {
+                break;
+            }
+
+            ++iter;
+        }
+
+        _timeoutRegs.insert(iter, TimeEntry(scheduled, handler));
+    }
+
+    void removeTimeoutable(I_TimeoutHandler * handler) {
+        for (auto iter = _timeoutRegs.begin(); iter != _timeoutRegs.end(); ++iter) {
+            if (iter->handler == handler) {
+                _timeoutRegs.erase(iter);
+                return;
+            }
+        }
+
+        FATAL("Handler not registered.");
+    }
 };
 
 //
@@ -137,9 +232,20 @@ public:
 //
 
 class EPollSelector : public I_Selector {
+    typedef std::chrono::steady_clock Clock;
+
+    struct TimeEntry {
+        TimeEntry(Clock::time_point  time_, I_TimeoutHandler * handler_) :
+            time(time_), handler(handler_) {}
+
+        Clock::time_point   time;
+        I_TimeoutHandler  * handler;
+    };
+
     int                             _fd;
     std::map<int, I_ReadHandler *>  _readRegs;
     std::map<int, I_WriteHandler *> _writeRegs;
+    std::vector<TimeEntry>          _timeoutRegs;
 
 public:
     EPollSelector() {
@@ -157,32 +263,66 @@ public:
         const int MAX_EVENTS = 8;
         struct epoll_event event_array[MAX_EVENTS];
 
-        auto n = TEMP_FAILURE_RETRY(::epoll_wait(_fd, event_array, MAX_EVENTS, -1));
+        int n;
+
+        if (!_timeoutRegs.empty()) {
+            auto now  = Clock::now();
+            auto next = std::max(now, _timeoutRegs.front().time);
+
+            auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(next - now);
+            auto timeout  = duration.count();
+
+            n = TEMP_FAILURE_RETRY(::epoll_wait(_fd, event_array, MAX_EVENTS, timeout));
+        }
+        else {
+            n = TEMP_FAILURE_RETRY(::epoll_wait(_fd, event_array, MAX_EVENTS, -1));
+            ENFORCE_SYS(n != 0, "");
+        }
+
         ENFORCE_SYS(n != -1, "");
-        ENFORCE(n > 0, "");
 
-        for (auto i = 0; i != n; ++i) {
-            auto & event = event_array[i];
+        if (n == 0) {
+            ASSERT(!_timeoutRegs.empty(), "");
 
-            auto fd     = event.data.fd;
-            auto events = event.events;
+            auto now = Clock::now();
 
-            if (events & EPOLLERR) {
-                ERROR("Error on fd: " << fd);
+            while (!_timeoutRegs.empty()) {
+                auto & reg = _timeoutRegs.back();
+
+                if (now < reg.time) {
+                    break;
+                }
+
+                auto handler = reg.handler;
+                _timeoutRegs.pop_back();    // Invalidates reg reference.
+
+                handler->handleTimeout();
             }
+        }
+        else {
+            for (auto i = 0; i != n; ++i) {
+                auto & event = event_array[i];
 
-            if (events & (EPOLLHUP | EPOLLIN)) {
-                auto iter = _readRegs.find(fd);
-                ASSERT(iter != _readRegs.end(), "");
-                auto handler = iter->second;
-                handler->handleRead(fd);
-            }
+                auto fd     = event.data.fd;
+                auto events = event.events;
 
-            if (events & EPOLLOUT) {
-                auto iter = _writeRegs.find(fd);
-                ASSERT(iter != _writeRegs.end(), "");
-                auto handler = iter->second;
-                handler->handleWrite(fd);
+                if (events & EPOLLERR) {
+                    ERROR("Error on fd: " << fd);
+                }
+
+                if (events & (EPOLLHUP | EPOLLIN)) {
+                    auto iter = _readRegs.find(fd);
+                    ASSERT(iter != _readRegs.end(), "");
+                    auto handler = iter->second;
+                    handler->handleRead(fd);
+                }
+
+                if (events & EPOLLOUT) {
+                    auto iter = _writeRegs.find(fd);
+                    ASSERT(iter != _writeRegs.end(), "");
+                    auto handler = iter->second;
+                    handler->handleWrite(fd);
+                }
             }
         }
     }
@@ -261,6 +401,39 @@ public:
         }
 
         _writeRegs.erase(iter);
+    }
+
+    void addTimeoutable(I_TimeoutHandler * handler, int milliseconds) {
+#if DEBUG
+        for (auto & reg : _timeoutRegs) {
+            ASSERT(reg.handler != handler, "Handler already registered.");
+        }
+#endif
+        Clock::time_point scheduled =
+            Clock::now() + std::chrono::duration<int,std::milli>(milliseconds);
+
+        auto iter = _timeoutRegs.begin();
+
+        while (iter != _timeoutRegs.end()) {
+            if (iter->time < scheduled) {
+                break;
+            }
+
+            ++iter;
+        }
+
+        _timeoutRegs.insert(iter, TimeEntry(scheduled, handler));
+    }
+
+    void removeTimeoutable(I_TimeoutHandler * handler) {
+        for (auto iter = _timeoutRegs.begin(); iter != _timeoutRegs.end(); ++iter) {
+            if (iter->handler == handler) {
+                _timeoutRegs.erase(iter);
+                return;
+            }
+        }
+
+        FATAL("Handler not registered.");
     }
 };
 
