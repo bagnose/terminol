@@ -14,8 +14,6 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-#define UNIX_PATH_MAX 108           // XXX Why isn't this defined??
-
 class SocketServer : protected I_Selector::I_ReadHandler {
 public:
     class I_Observer {
@@ -57,7 +55,7 @@ public:
         ::memset(&address, 0, sizeof address);
         address.sun_family  = AF_UNIX;
         address.sun_path[0] = '\0';     // First byte nul for abstract.
-        ::snprintf(address.sun_path + 1, UNIX_PATH_MAX - 1, "%s", path.c_str());
+        ::snprintf(address.sun_path + 1, sizeof address.sun_path - 1, "%s", path.c_str());
 
         if (TEMP_FAILURE_RETRY(::bind(_fd, reinterpret_cast<struct sockaddr *>(&address),
                                       sizeof(address))) == -1) {
@@ -114,10 +112,10 @@ protected:
         }
         else {
             uint8_t buf[BUFSIZ];
-            auto rval = TEMP_FAILURE_RETRY(::read(fd, buf, sizeof buf));
+            auto rval = TEMP_FAILURE_RETRY(::recv(fd, buf, sizeof buf, 0));
 
             if (rval == -1) {
-                FATAL("Bad read");
+                FATAL("Bad read.");
             }
             else if (rval == 0) {
                 _observer.serverDisconnected(fd);
@@ -175,7 +173,7 @@ public:
         ::memset(&address, 0, sizeof address);
         address.sun_family  = AF_UNIX;
         address.sun_path[0] = '\0';     // First byte nul for abstract.
-        ::snprintf(address.sun_path + 1, UNIX_PATH_MAX - 1, "%s", path.c_str());
+        ::snprintf(address.sun_path + 1, sizeof address.sun_path - 1, "%s", path.c_str());
 
         if (TEMP_FAILURE_RETRY(::connect(_fd, reinterpret_cast<struct sockaddr *>(&address),
                                          sizeof(address))) == -1) {
@@ -213,7 +211,7 @@ protected:
     void handleWrite(int fd) throw () override {
         ASSERT(fd == _fd, "");
         ASSERT(!_queue.empty(), "");
-        auto rval = TEMP_FAILURE_RETRY(::write(fd, &_queue.front(), _queue.size()));
+        auto rval = TEMP_FAILURE_RETRY(::send(fd, &_queue.front(), _queue.size(), MSG_NOSIGNAL));
 
         _queue.erase(_queue.begin(), _queue.begin() + rval);
 
