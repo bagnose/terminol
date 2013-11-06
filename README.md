@@ -16,46 +16,47 @@ A simple Linux/X11 VT220 terminal emulator featuring:
 
 # Quickstart #
 
-Build terminol (this requires pcre, xkbcommon, xcb, pango, cairo and a C++11 compiler).
+Obtain the terminol source code, either by downloading and unpacking a package file,
+or by cloning the repository:
 
-    ./configure ./build-dir debug gnu
-    cd build-dir
+    git clone https://github.com/bagnose/terminol.git
+    cd terminol
+
+Build terminol (this requires pcre, xkbcommon, xcb, pango, cairo and a C++11 compiler):
+
+    # Establish a debug/GCC build directory (run 'configure' without any arguments
+    # to see other options):
+    ./configure ../terminol-debug-gnu debug gnu
+    cd ../terminol-debug-gnu
     make
 
 Create a configuration file (see doc/sample-config).
 At the bare minimum you need to specify the font:
 
-    mkdir ~/.config/terminol
+    mkdir -p ~/.config/terminol
     cat << EOF > ~/.config/terminol/config
     set font-name "Meslo LG M"
     set font-size 14
     EOF
 
-Launch terminol
+Launch terminol:
 
     # Launch a standalone window:
     ./dist/bin/terminol
     
-    # or launch the server/daemon
+    # or launch the server/daemon:
     ./dist/bin/terminols
     
     # and start windows with:
     ./dist/bin/terminolc
 
-Install terminol
+Install terminol:
 
+    # This will copy the terminol binaries into ${INSTALLDIR}/bin:
     make INSTALLDIR=/usr/local install
 
-# TODO #
+# Upcoming Features #
 
  - highlighting and actions for user defined (regex) patterns
 
  - reverse search
-
-# FAQ #
-
- * Why another terminal emulator?
-
- * How do I write a config file?
-
-   See the annotated doc/sample-config
