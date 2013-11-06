@@ -669,7 +669,13 @@ public:
         if (autoWrap && _cursor.wrapNext) {
             _cursor.wrapNext = false;
             auto & line = _active[_cursor.pos.row];
-            line.cont = true; // continues on next line
+
+            // Don't set 'cont' to true if this line will remain the last line,
+            // otherwise we violate our invariant.
+            if (_cursor.pos.row == _marginEnd - 1 || _cursor.pos.row < getRows() - 1) {
+                line.cont = true; // continues on next line
+            }
+
             ASSERT(_cursor.pos.col == _cols - 1,
                    "col=" << _cursor.pos.col << ", _cols-1=" << _cols - 1);
             ASSERT(line.wrap == _cols,
@@ -681,6 +687,7 @@ public:
                 moveCursor2(true, 0, false, 0);
             }
             else {
+                // If we are on the last line then the column will just be reset.
                 moveCursor2(true, 1, false, 0);
             }
         }
