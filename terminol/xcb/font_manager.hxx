@@ -1,4 +1,5 @@
 // vi:noai:sw=4
+// Copyright © 2013 David Bryant
 
 #ifndef XCB__FONT_MANAGER__HXX
 #define XCB__FONT_MANAGER__HXX

@@ -1,4 +1,5 @@
 // vi:noai:sw=4
+// Copyright © 2013 David Bryant
 
 #ifndef COMMON__TIME__HXX
 #define COMMON__TIME__HXX

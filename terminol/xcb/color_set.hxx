@@ -1,4 +1,5 @@
 // vi:noai:sw=4
+// Copyright © 2013 David Bryant
 
 #ifndef XCB__COLOR_SET__H
 #define XCB__COLOR_SET__H

@@ -1,6 +1,9 @@
 #!/bin/bash
-
-# configure BUILDDIR MODE COMPILER
+#
+# Copyright © 2013 David Bryant
+#
+# Usage:
+#   configure BUILDDIR MODE COMPILER
 
 if [ $# -ne 3 ]; then
     cat << EOF > /dev/stderr

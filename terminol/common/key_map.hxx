@@ -1,4 +1,5 @@
 // vi:noai:sw=4
+// Copyright © 2013 David Bryant
 
 #ifndef XCB__KEY_MAP__HXX
 #define XCB__KEY_MAP__HXX

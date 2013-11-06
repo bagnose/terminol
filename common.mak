@@ -1,3 +1,5 @@
+# Copyright © 2013 David Bryant
+
 INSTALLDIR      ?= ~/local/terminol
 VERBOSE         ?= false
 VERSION         ?= $(shell git --git-dir=src/.git log -1 --format='%cd.%h' --date=short | tr -d -)

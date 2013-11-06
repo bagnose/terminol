@@ -1,4 +1,5 @@
 // vi:noai:sw=4
+// Copyright © 2013 David Bryant
 
 #ifndef COMMON__ENUMS__HXX
 #define COMMON__ENUMS__HXX

@@ -1,4 +1,5 @@
 // vi:noai:sw=4
+// Copyright © 2013 David Bryant
 
 #include "terminol/xcb/basics.hxx"
 #include "terminol/xcb/common.hxx"

@@ -1,4 +1,5 @@
 // vi:noai:sw=4
+// Copyright © 2013 David Bryant
 
 #ifndef SUPPORT__PATTERN__HXX
 #define SUPPORT__PATTERN__HXX
