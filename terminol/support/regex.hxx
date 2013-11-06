@@ -23,9 +23,9 @@ public:
         std::string message;
     };
 
-    Regex(const std::string & pattern) throw (Error) {
-        const char * err;
-        int          errOffset;
+    explicit Regex(const std::string & pattern) throw (Error) {
+        const char * err       = nullptr;
+        int          errOffset = 0;
 
         _pcre = pcre_compile(pattern.c_str(),
                              PCRE_UTF8,
@@ -33,7 +33,7 @@ public:
                              &errOffset,
                              NULL);     // tableptr
 
-        if (_pcre == NULL) {
+        if (!_pcre) {
             throw Error("PCRE commpilation of \"" + pattern + "\" "
                         "failed at offset " + stringify(errOffset) +
                         ", error: " + stringify(err));
@@ -47,7 +47,7 @@ public:
     // First element is "whole match", subsequent are "captures" (things in parentheses).
     std::vector<std::string> match(const std::string & text) {
         const int offsetsSize = 3 * 10;        // Multiple of 3
-        int offsets[offsetsSize];
+        int       offsets[offsetsSize];
 
 
         auto rval = pcre_exec(_pcre,
