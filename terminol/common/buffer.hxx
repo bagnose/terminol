@@ -156,8 +156,8 @@ class Buffer {
         bool              cont;     // does this line continue on the next line?
         int16_t           wrap;     // wrappable index, <= cells.size()
 
-        explicit ALine(int16_t cols) :
-            cells(cols, Cell::blank()), cont(false), wrap(0) {}
+        explicit ALine(int16_t cols, const Style & style = Style()) :
+            cells(cols, Cell::blank(style)), cont(false), wrap(0) {}
 
         ALine(std::vector<Cell> & cells_, bool cont_, int16_t wrap_, int16_t cols) :
             cells(std::move(cells_)), cont(cont_), wrap(wrap_)
@@ -173,10 +173,10 @@ class Buffer {
             cells.resize(cols, Cell::blank());
         }
 
-        void clear() {
+        void clear(const Style & style) {
             cont = false;
             wrap = 0;
-            std::fill(cells.begin(), cells.end(), Cell::blank());
+            std::fill(cells.begin(), cells.end(), Cell::blank(style));
         }
 
         bool isBlank() const {
@@ -1154,7 +1154,7 @@ public:
                            line.cells.end());
         std::fill(line.cells.begin() + _cursor.pos.col,
                   line.cells.begin() + _cursor.pos.col + n,
-                  Cell::blank());
+                  Cell::blank(_cursor.style));
 
         damageColumns(_cursor.pos.col, getCols());
 
@@ -1183,7 +1183,7 @@ public:
                   line.cells.begin() + _cursor.pos.col);
         std::fill(line.cells.end() - n,
                   line.cells.end(),
-                  Cell::blank());
+                  Cell::blank(_cursor.style));
 
         damageColumns(_cursor.pos.col, getCols());
 
@@ -1206,9 +1206,9 @@ public:
 
         auto & line = _active[_cursor.pos.row];
 
-        for (uint16_t i = 0; i != n; ++i) {
-            line.cells[_cursor.pos.col + i] = Cell::ascii(SPACE, _cursor.style);
-        }
+        std::fill(line.cells.begin() + _cursor.pos.col,
+                  line.cells.begin() + _cursor.pos.col + n,
+                  Cell::blank(_cursor.style));
 
         damageColumns(_cursor.pos.col, _cursor.pos.col + n);
     }
@@ -1222,7 +1222,7 @@ public:
         line.cont = false;
         line.wrap = 0;
         _cursor.wrapNext = false;
-        std::fill(line.cells.begin(), line.cells.end(), Cell::blank());
+        std::fill(line.cells.begin(), line.cells.end(), Cell::blank(_cursor.style));
         damageColumns(0, getCols());
 
         ASSERT(!line.cont || line.wrap == _cols,
@@ -1242,7 +1242,7 @@ public:
         _cursor.wrapNext = false;
         std::fill(line.cells.begin(),
                   line.cells.begin() + _cursor.pos.col + 1,
-                  Cell::blank());
+                  Cell::blank(_cursor.style));
         damageColumns(0, _cursor.pos.col + 1);
 
         ASSERT(!line.cont || line.wrap == _cols,
@@ -1263,7 +1263,9 @@ public:
         _cursor.wrapNext = false;
         line.wrap = std::min(line.wrap, _cursor.pos.col);
         ASSERT(line.wrap <= getCols(), "");
-        std::fill(line.cells.begin() + _cursor.pos.col, line.cells.end(), Cell::blank());
+        std::fill(line.cells.begin() + _cursor.pos.col,
+                  line.cells.end(),
+                  Cell::blank(_cursor.style));
         damageColumns(_cursor.pos.col, line.cells.size());
 
         ASSERT(!line.cont || line.wrap == _cols,
@@ -1277,7 +1279,7 @@ public:
     void clear() {
         clearSelection();
 
-        for (auto & l : _active) { l.clear(); }
+        for (auto & l : _active) { l.clear(_cursor.style); }
         damageActive();
         _cursor.wrapNext = false;
     }
@@ -1288,7 +1290,7 @@ public:
 
         clearLineLeft();
         for (auto i = _active.begin(); i != _active.begin() + _cursor.pos.row; ++i) {
-            i->clear();
+            i->clear(_cursor.style);
         }
     }
 
@@ -1298,7 +1300,7 @@ public:
 
         clearLineRight();
         for (auto i = _active.begin() + _cursor.pos.row + 1; i != _active.end(); ++i) {
-            i->clear();
+            i->clear(_cursor.style);
         }
     }
 
@@ -1801,7 +1803,7 @@ protected:
         }
 
         _active.erase (_active.begin() + _marginEnd - n, _active.begin() + _marginEnd);
-        _active.insert(_active.begin() + row, n, ALine(getCols()));
+        _active.insert(_active.begin() + row, n, ALine(getCols(), _cursor.style));
 
         damageRows(row, _marginEnd);
 
@@ -1831,7 +1833,7 @@ protected:
         }
 
         _active.erase (_active.begin() + row, _active.begin() + row + n);
-        _active.insert(_active.begin() + _marginEnd - n, n, ALine(getCols()));
+        _active.insert(_active.begin() + _marginEnd - n, n, ALine(getCols(), _cursor.style));
 
         damageRows(row, _marginEnd);
 
@@ -1917,7 +1919,7 @@ protected:
                 enforceHistoryLimit();
             }
 
-            _active.emplace_back(getCols());
+            _active.emplace_back(getCols(), _cursor.style);
 
             APos begin, end;
             if (normaliseSelection(begin, end)) {
