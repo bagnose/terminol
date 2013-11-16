@@ -293,12 +293,8 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length length) {
             return;
         }
         else if (c == 0x1B /* ESC */) {
-            switch (_state) {
-                case State::OSC_STRING:
-                    processOsc(_escSeq);
-                    break;
-                default:
-                    break;
+            if (_state == State::OSC_STRING) {
+                processOsc(_escSeq);
             }
 
             _state = State::ESCAPE;
