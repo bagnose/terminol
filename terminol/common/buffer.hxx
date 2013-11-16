@@ -1362,8 +1362,8 @@ public:
             auto cB = d.begin;
             auto cE = d.end;
 
-            if (cB != cE) {
-                if (first) {
+            if (UNLIKELY(cB != cE)) {
+                if (UNLIKELY(first)) {
                     rowBegin = rowNum;
                     rowEnd   = rowNum + 1;
                     colBegin = cB;
@@ -1429,7 +1429,7 @@ public:
                 auto   swap     = XOR(reverse, attrs.get(Attr::INVERSE));
                 auto   bg1      = bg0; // About to be overridden.
 
-                if (selected) {
+                if (UNLIKELY(selected)) {
                     if (_config.customSelectBgColor) {
                         bg1 = UColor::stock(UColor::Name::SELECT_BG);
                     }
@@ -1475,7 +1475,7 @@ public:
             uint32_t                  offset;
             int16_t                   wrap;
 
-            if (static_cast<uint32_t>(r) < _scrollOffset) {
+            if (UNLIKELY(static_cast<uint32_t>(r) < _scrollOffset)) {
                 auto & hline = _history[_history.size() - _scrollOffset + r];
                 auto   tag   = _tags[hline.index - _lostTags];
 
@@ -1511,7 +1511,7 @@ public:
                 auto   swap     = XOR(reverse, attrs1.get(Attr::INVERSE));
                 auto   fg1      = fg0; // About to be overridden.
 
-                if (selected) {
+                if (UNLIKELY(selected)) {
                     if (_config.customSelectFgColor) {
                         fg1 = UColor::stock(UColor::Name::SELECT_FG);
                     }
@@ -1526,7 +1526,7 @@ public:
                     fg1 = swap ? cell.style.bg : cell.style.fg;
                 }
 
-                if (fg0 != fg1 || attrs0 != attrs1) {
+                if (UNLIKELY(fg0 != fg1 || attrs0 != attrs1)) {
                     if (c1 != c0) {
                         // flush run
                         auto size = run.size();
