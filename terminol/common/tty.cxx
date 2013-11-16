@@ -109,7 +109,12 @@ void Tty::write(const uint8_t * data, size_t size) {
         return;
     }
 
-    ASSERT(_fd != -1, "");
+    if (_fd == -1) {
+        // This can happen if we read EOF but the user inputs data before
+        // we get the SIGCHLD.
+        return;
+    }
+
     ASSERT(size != 0, "");
 
     while (size != 0) {
@@ -320,6 +325,13 @@ int Tty::waitReap() {
 // I_Selector::I_ReadHandler implementation:
 
 void Tty::handleRead(int fd) throw () {
+    if (_fd == -1) {
+        // I've not seen this, but perhaps it is possible. Leaving it here
+        // out of paranoia.
+        return;
+    }
+
+    ASSERT(_fd != -1, "");
     ASSERT(_fd == fd, "");
 
     Timer   timer(1000 / _config.framesPerSecond);
