@@ -917,8 +917,8 @@ public:
             uint32_t cursorTagIndex = 0;
             uint32_t cursorOffset   = 0;
 
-            _active.back().cont = false;            // JUST MAKE SURE it isn't on for now.
-            ASSERT(!_active.back().cont, "");           // XXX this needs enforcing, e.g. in insertLineAt
+            //_active.back().cont = false;            // JUST MAKE SURE it isn't on for now.
+            ASSERT(!_active.back().cont, "");
 
             while (!_active.empty()) {
                 auto s = _pending.size();       // Save this value before calling bump().
