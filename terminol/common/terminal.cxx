@@ -954,7 +954,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                     _buffer->setBg(UColor::indexed(v - 512));
                 }
                 else {
-                    WARNING("Unhandled attribute: " << v);
+                    //WARNING("Unhandled attribute: " << v);
                 }
                 break;
         }
@@ -1247,7 +1247,7 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
                 resetAll();
                 break;
             default:
-                WARNING("Unhandled: " << esc);
+                //WARNING("Unhandled: " << esc);
                 break;
         }
     }
@@ -1270,7 +1270,7 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
                         _buffer->testPattern();
                         break;
                     default:
-                        WARNING("Unhandled: " << esc);
+                        //WARNING("Unhandled: " << esc);
                         break;
                 }
                 break;
@@ -1343,12 +1343,12 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
                 }
                 break;
             default:
-                WARNING("Unhandled: " << esc);
+                //WARNING("Unhandled: " << esc);
                 break;
         }
     }
     else {
-        WARNING("Unhandled: " << esc);
+        //WARNING("Unhandled: " << esc);
     }
 }
 
@@ -1575,7 +1575,7 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) throw () {
                             break;
                         }
                         default:
-                            WARNING("Unhandled: " << esc);
+                            //WARNING("Unhandled: " << esc);
                             break;
                     }
                 }
@@ -1630,7 +1630,7 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) throw () {
                 break;
 default_:
             default:
-                WARNING("Unhandled: " << esc);
+                //WARNING("Unhandled: " << esc);
                 break;
         }
     }
@@ -1659,8 +1659,8 @@ default_:
     }
 }
 
-void Terminal::machineDcsEsc(const DcsEsc & esc) throw () {
-    PRINT("Unhandled: " << esc);
+void Terminal::machineDcsEsc(const DcsEsc & UNUSED(esc)) throw () {
+    //WARNING("Unhandled: " << esc);
 }
 
 void Terminal::machineOscEsc(const OscEsc & esc) throw () {
@@ -1694,7 +1694,7 @@ void Terminal::machineOscEsc(const OscEsc & esc) throw () {
                     break;
                 default:
                     // TODO consult http://rtfm.etla.org/xterm/ctlseq.html AND man 7 urxvt.
-                    WARNING("Unhandled: " << esc);
+                    //WARNING("Unhandled: " << esc);
                     break;
             }
         }
