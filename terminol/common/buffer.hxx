@@ -1133,6 +1133,9 @@ public:
     void insertCells(uint16_t n) {
         ASSERT(n > 0, "n is not positive.");
 
+        testClearSelection(APos(_cursor.pos, 0),
+                           APos(Pos(_cursor.pos.row, getCols()), 0));
+
         APos begin, end;
         if (normaliseSelection(begin, end)) {
             if (begin.row <= _cursor.pos.row && end.row >= _cursor.pos.row) {
@@ -1164,12 +1167,10 @@ public:
     }
 
     void eraseCells(uint16_t n) {
-        APos begin, end;
-        if (normaliseSelection(begin, end)) {
-            if (begin.row <= _cursor.pos.row && end.row >= _cursor.pos.row) {
-                clearSelection();
-            }
-        }
+        ASSERT(n > 0, "n is not positive.");
+
+        testClearSelection(APos(_cursor.pos, 0),
+                           APos(Pos(_cursor.pos.row, getCols()), 0));
 
         n = std::min<uint16_t>(n, getCols() - _cursor.pos.col);
 
@@ -1195,6 +1196,11 @@ public:
     }
 
     void blankCells(uint16_t n) {
+        ASSERT(n > 0, "n is not positive.");
+
+        testClearSelection(APos(_cursor.pos, 0),
+                           APos(Pos(_cursor.pos.row, _cursor.pos.col + n), 0));
+
         _cursor.wrapNext = false;
         n = std::min<uint16_t>(n, getCols() - _cursor.pos.col);
 
@@ -1208,6 +1214,9 @@ public:
     }
 
     void clearLine() {
+        testClearSelection(APos(Pos(_cursor.pos.row, 0), 0),
+                           APos(Pos(_cursor.pos.row, getCols()), 0));
+
         auto & line = _active[_cursor.pos.row];
 
         line.cont = false;
@@ -1225,6 +1234,9 @@ public:
     }
 
     void clearLineLeft() {
+        testClearSelection(APos(Pos(_cursor.pos.row, _cursor.pos.col + 1), 0),
+                           APos(Pos(_cursor.pos.row, 0), 0));
+
         auto & line = _active[_cursor.pos.row];
 
         _cursor.wrapNext = false;
@@ -1242,6 +1254,9 @@ public:
     }
 
     void clearLineRight() {
+        testClearSelection(APos(_cursor.pos, 0),
+                           APos(Pos(_cursor.pos.row, getCols()), 0));
+
         auto & line = _active[_cursor.pos.row];
 
         line.cont = false;
@@ -1260,25 +1275,31 @@ public:
     }
 
     void clear() {
+        clearSelection();
+
         for (auto & l : _active) { l.clear(); }
         damageActive();
         _cursor.wrapNext = false;
     }
 
     void clearAbove() {
+        testClearSelection(APos(),
+                           APos(Pos(_cursor.pos.row, _cursor.pos.col + 1), 0));
+
         clearLineLeft();
         for (auto i = _active.begin(); i != _active.begin() + _cursor.pos.row; ++i) {
             i->clear();
         }
-        clearSelection();
     }
 
     void clearBelow() {
+        testClearSelection(APos(_cursor.pos, 0),
+                           APos(Pos(getRows() - 1, getCols()), 0));
+
         clearLineRight();
         for (auto i = _active.begin() + _cursor.pos.row + 1; i != _active.end(); ++i) {
             i->clear();
         }
-        clearSelection();
     }
 
     void insertLines(uint16_t n) {
@@ -1714,6 +1735,15 @@ protected:
         }
         else {
             return false;
+        }
+    }
+
+    void testClearSelection(APos begin, APos end) {
+        APos selBegin, selEnd;
+        if (normaliseSelection(selBegin, selBegin)) {
+            if (selBegin < end && begin < selEnd ) {
+                clearSelection();
+            }
         }
     }
 
