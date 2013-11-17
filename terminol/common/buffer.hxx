@@ -1136,13 +1136,6 @@ public:
         testClearSelection(APos(_cursor.pos, 0),
                            APos(Pos(_cursor.pos.row, getCols()), 0));
 
-        APos begin, end;
-        if (normaliseSelection(begin, end)) {
-            if (begin.row <= _cursor.pos.row && end.row >= _cursor.pos.row) {
-                clearSelection();
-            }
-        }
-
         n = std::min<uint16_t>(n, getCols() - _cursor.pos.col);
         ASSERT(n > 0, "n is not positive.");
 
