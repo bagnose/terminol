@@ -142,6 +142,8 @@ private:
         seq(seq_) {}
 };
 
+static_assert(sizeof(Cell) == 13, "Incorrect size of Cell.");
+
 inline bool operator == (const Cell & lhs, const Cell & rhs) {
     return
         lhs.seq   == rhs.seq &&
