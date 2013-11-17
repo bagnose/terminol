@@ -500,7 +500,13 @@ public:
 
     void clearSelection() {
         damageSelection();
-        _selectDelim = _selectMark = HAPos();
+
+        // Retain the selection marker, if it is within the history.
+        if (static_cast<int32_t>(_history.size()) + _selectMark.apos.row < 0) {
+            _selectMark = HAPos();
+        }
+
+        _selectDelim = _selectMark;
     }
 
     bool getSelectedText(std::string & text) const {
