@@ -21,10 +21,10 @@ namespace xkb {
 namespace {
 
 struct Map {
-    xkb_keysym_t  sym;
-    int           num;
-    uint8_t       escape;
-    uint8_t       code;
+    xkb_keysym_t sym;
+    int          num;
+    uint8_t      escape;
+    uint8_t      code;
 };
 
 const Map MAP_NORMAL[] = {
@@ -169,7 +169,7 @@ bool applyKeyMap(const Map * mode,
                  xkb_keysym_t sym,
                  ModifierSet modifiers,
                  std::vector<uint8_t> & str) {
-    for (const Map * map = mode; map->sym; ++map) {
+    for (auto map = mode; map->sym; ++map) {
         if (sym == map->sym) {
             functionKeyResponse(map->escape, map->num, modifiers, map->code, str);
             return true;
@@ -379,7 +379,7 @@ bool composeInput(xkb_keysym_t keySym, ModifierSet modifiers,
             break;
 
         default:
-            bool convertUtf8 = true;
+            auto convertUtf8 = true;
 
             // Handle special keys with alternate mappings.
             if (applyKeyMap(appCursor ? MAP_APPLICATION : MAP_NORMAL,
@@ -411,7 +411,7 @@ bool composeInput(xkb_keysym_t keySym, ModifierSet modifiers,
             }
             else {
                 char buffer[16];
-                int ret = xkb_keysym_to_utf8(keySym, buffer, sizeof(buffer));
+                auto ret = xkb_keysym_to_utf8(keySym, buffer, sizeof(buffer));
 
                 if (ret == -1) {
                     ERROR("Buffer to small to encode UTF-8 character.");
