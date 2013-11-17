@@ -2045,6 +2045,13 @@ protected:
             _tags.pop_front();
             ++_lostTags;
         }
+
+        APos begin, end;
+        if (normaliseSelection(begin, end)) {
+            if (static_cast<int32_t>(_history.size()) + begin.row < 0) {
+                clearSelection();
+            }
+        }
     }
 };
 
