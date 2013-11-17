@@ -64,6 +64,9 @@ void normalise(xkb_keysym_t & keySym) {
         case XKB_KEY_KP_Enter:
             keySym = XKB_KEY_Return;
             break;
+        case XKB_KEY_KP_Home:
+            keySym = XKB_KEY_Home;
+            break;
         case XKB_KEY_KP_Left:
             keySym = XKB_KEY_Left;
             break;
@@ -75,6 +78,24 @@ void normalise(xkb_keysym_t & keySym) {
             break;
         case XKB_KEY_KP_Down:
             keySym = XKB_KEY_Down;
+            break;
+        case XKB_KEY_KP_Page_Up:
+            keySym = XKB_KEY_Page_Up;
+            break;
+        case XKB_KEY_KP_Page_Down:
+            keySym = XKB_KEY_Page_Down;
+            break;
+        case XKB_KEY_KP_End:
+            keySym = XKB_KEY_End;
+            break;
+        case XKB_KEY_KP_Begin:
+            keySym = XKB_KEY_Begin;
+            break;
+        case XKB_KEY_KP_Insert:
+            keySym = XKB_KEY_Insert;
+            break;
+        case XKB_KEY_KP_Delete:
+            keySym = XKB_KEY_Delete;
             break;
         case XKB_KEY_KP_Equal:
             keySym = XKB_KEY_equal;
