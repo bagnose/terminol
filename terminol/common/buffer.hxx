@@ -576,6 +576,8 @@ public:
         _history.clear();
         _pending.clear();
 
+        clearSelection();
+
         if (_scrollOffset == 0) {
             _barDamage = true;
         }
