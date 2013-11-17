@@ -1742,8 +1742,8 @@ protected:
 
     void testClearSelection(APos begin, APos end) {
         APos selBegin, selEnd;
-        if (normaliseSelection(selBegin, selBegin)) {
-            if (selBegin < end && begin < selEnd ) {
+        if (normaliseSelection(selBegin, selEnd)) {
+            if (selBegin < end && begin < selEnd) {
                 clearSelection();
             }
         }
