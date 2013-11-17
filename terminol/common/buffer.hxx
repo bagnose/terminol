@@ -704,14 +704,8 @@ public:
             insertCells(1);
         }
 
-        APos begin, end;
-        if (normaliseSelection(begin, end)) {
-            APos cpos(_cursor.pos, 0);
-
-            if (!(cpos < begin) && cpos < end) {
-                clearSelection();
-            }
-        }
+        testClearSelection(APos(_cursor.pos, 0),
+                           APos(Pos(_cursor.pos.row, _cursor.pos.col + 1), 0));
 
         auto style = _cursor.style;
 
