@@ -396,7 +396,7 @@ bool composeInput(xkb_keysym_t keySym, ModifierSet modifiers,
                     ERROR("Buffer to small to encode UTF-8 character.");
                 }
                 else if (ret == 0) {
-                    //WARNING("No conversion for key press");
+                    WARNING("No conversion for keySym: " << std::hex << keySym << std::dec);
                 }
                 else {
                     std::copy(buffer, buffer + ret, std::back_inserter(input));
