@@ -106,7 +106,7 @@ public:
             }
 
             if (str == "--version") {
-                std::cerr << "Version: " << _version;
+                std::cerr << "Terminol version " << _version;
                 exit(0);
             }
 
