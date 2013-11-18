@@ -5,8 +5,8 @@
 #   ${XDG_CONFIG_DIRS...}/terminol/config
 #   ${HOME}/.config/terminol/config
 
-set font-name                   "Meslo LG M"
-set font-size                   14
+#set font-name                   "Monospace"
+#set font-size                   12
 
 set cut-chars                   "-A-Za-z0-9,./?%&#:_=+@~"
 
