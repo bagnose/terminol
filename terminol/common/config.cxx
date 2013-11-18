@@ -204,7 +204,7 @@ Config::Config() :
     //
     serverFork(true),
     bindings(),
-    cutChars("-A-Za-z0-9,./?%&#:_=+@~"),
+    cutChars("-A-Za-z0-9./?%&#_=+@~"),
     autoHideCursor(true),
     visualBellDuration(25),
     mapOnBell(false),
