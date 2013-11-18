@@ -428,7 +428,12 @@ int main(int argc, char * argv[]) {
     cmdLine.add(new StringHandler(config.socketPath), '\0', "socket");
     cmdLine.add(new BoolHandler(config.serverFork),   '\0', "fork");
     cmdLine.add(new_MiscHandler([&](const std::string & name) {
-                                config.setColorScheme(name);
+                                try {
+                                    config.setColorScheme(name);
+                                }
+                                catch (const ParseError & ex) {
+                                    throw CmdLine::Handler::Error(ex.message);
+                                }
                                 }), '\0', "color-scheme");
 
     try {

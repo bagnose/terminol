@@ -215,14 +215,14 @@ Config::Config() :
     x11CompositedTransparency(false),
     x11TransparencyValue(0.1)
 {
-    setColorScheme("rxvt");
+    setColorScheme("rxvt");     // Assume it doesn't throw.
 
     std::ostringstream ost;
     ost << "/tmp/terminols-" << ::getenv("USER");
     socketPath = ost.str();
 }
 
-void Config::setColorScheme(const std::string & name) {
+void Config::setColorScheme(const std::string & name) throw (ParseError) {
     if (name == "rxvt") {
         std::copy(COLOURS_RXVT, COLOURS_RXVT + 16, systemColors);
 
@@ -267,11 +267,12 @@ void Config::setColorScheme(const std::string & name) {
     }
     else if (name == "solarized-light") {
         std::copy(COLOURS_SOLARIZED_LIGHT, COLOURS_SOLARIZED_LIGHT + 16, systemColors);
+
         normalFgColor = systemColors[12];
         normalBgColor = systemColors[8];
     }
     else {
-        ERROR("No such color scheme: " << name);
+        throw ParseError("No such color scheme: " + name);
     }
 
     scrollbarFgColor = { 0x7F, 0x7F, 0x7F };

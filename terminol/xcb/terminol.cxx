@@ -334,7 +334,12 @@ int main(int argc, char * argv[]) {
     cmdLine.add(new BoolHandler(config.traditionalWrapping), '\0', "traditional-wrapping");
     cmdLine.add(new StringHandler(config.termName), '\0', "term-name");
     cmdLine.add(new_MiscHandler([&](const std::string & name) {
-                                config.setColorScheme(name);
+                                try {
+                                    config.setColorScheme(name);
+                                }
+                                catch (const ParseError & ex) {
+                                    throw CmdLine::Handler::Error(ex.message);
+                                }
                                 }), '\0', "color-scheme");
 
     try {
