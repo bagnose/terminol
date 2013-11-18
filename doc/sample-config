@@ -10,7 +10,7 @@ set font-size                   14
 
 set cut-chars                   "-A-Za-z0-9,./?%&#:_=+@~"
 
-set color-scheme solarized-dark
+#set color-scheme rxvt
 # all options:
 #   linux
 #   rxvt

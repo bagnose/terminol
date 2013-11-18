@@ -215,7 +215,7 @@ Config::Config() :
     x11CompositedTransparency(false),
     x11TransparencyValue(0.1)
 {
-    setColorScheme("solarized-dark");
+    setColorScheme("rxvt");
 
     std::ostringstream ost;
     ost << "/tmp/terminols-" << ::getenv("USER");
@@ -223,14 +223,14 @@ Config::Config() :
 }
 
 void Config::setColorScheme(const std::string & name) {
-    if (name == "linux") {
-        std::copy(COLOURS_LINUX, COLOURS_LINUX + 16, systemColors);
+    if (name == "rxvt") {
+        std::copy(COLOURS_RXVT, COLOURS_RXVT + 16, systemColors);
 
         normalFgColor = systemColors[7];
         normalBgColor = systemColors[0];
     }
-    else if (name == "rxvt") {
-        std::copy(COLOURS_RXVT, COLOURS_RXVT + 16, systemColors);
+    else if (name == "linux") {
+        std::copy(COLOURS_LINUX, COLOURS_LINUX + 16, systemColors);
 
         normalFgColor = systemColors[7];
         normalBgColor = systemColors[0];
