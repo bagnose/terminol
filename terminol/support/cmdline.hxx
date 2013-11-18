@@ -146,10 +146,20 @@ public:
                                 throw Error("No value provided.");
                             }
                             value = argv[i];
-                            handler->handle(negated, value);
+                            try {
+                                handler->handle(negated, value);
+                            }
+                            catch (const Handler::Error & ex) {
+                                throw Error(ex.message);
+                            }
                         }
                         else {
-                            handler->handle(negated, value);
+                            try {
+                                handler->handle(negated, value);
+                            }
+                            catch (const Handler::Error & ex) {
+                                throw Error(ex.message);
+                            }
                         }
                     }
                     else {
@@ -158,7 +168,12 @@ public:
                         value = str.substr(j);
                         auto handler = lookupLong(opt);
                         if (handler->wantsValue()) {
-                            handler->handle(negated, value);
+                            try {
+                                handler->handle(negated, value);
+                            }
+                            catch (const Handler::Error & ex) {
+                                throw Error(ex.message);
+                            }
                         }
                         else {
                             throw Error("No value required for option.");
@@ -176,7 +191,12 @@ public:
                             // TODO
                         }
                         else {
-                            handler->handle(negated, value);
+                            try {
+                                handler->handle(negated, value);
+                            }
+                            catch (const Handler::Error & ex) {
+                                throw Error(ex.message);
+                            }
                         }
                     }
                 }
