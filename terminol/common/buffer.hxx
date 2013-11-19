@@ -906,21 +906,24 @@ public:
 
         clearSelection();
 
+        ASSERT(!_active.back().cont, "");
+
         // Remove blank lines from the back, stopping if we hit the cursor.
         while (getRows() > rows &&
                _cursor.pos.row < getRows() - 1 &&
                _active.back().isBlank())
         {
             _active.pop_back();
+
+            // By popping lines off the back it is possible that the last remaining
+            // line has 'cont' set. Just clobber it if so.
+            _active.back().cont = false;
         }
 
         if (cols != getCols()) {
             bool     doneCursor     = false;
             uint32_t cursorTagIndex = 0;
             uint32_t cursorOffset   = 0;
-
-            //_active.back().cont = false;            // JUST MAKE SURE it isn't on for now.
-            ASSERT(!_active.back().cont, "");
 
             while (!_active.empty()) {
                 auto s = _pending.size();       // Save this value before calling bump().
@@ -1802,7 +1805,10 @@ protected:
 
         damageRows(row, _marginEnd);
 
-        ASSERT(!_active.back().cont, "");
+        // We mustn't leave a line with 'cont' set when the continuation line
+        // is gone. This can also cause _active.back().cont to be true, violating
+        // our invariant, if _marginEnd == getRows().
+        _active[_marginEnd - 1].cont = false;
     }
 
     void eraseLinesAt(int16_t row, uint16_t n) {
