@@ -114,7 +114,7 @@ int main(int argc, char * argv[]) {
     }
 
     for (;;) {
-        switch (randomInt(0, 8)) {
+        switch (randomInt(0, 9)) {
             case 0:
                 writeRandomControl(std::cout);
                 break;
@@ -138,6 +138,10 @@ int main(int argc, char * argv[]) {
                 break;
             case 7:
                 writeRandomBytes(std::cout);
+                break;
+            case 8:
+                // resize
+                std::cout << ESC << ']' << "667" << '\a';
                 break;
             default:
                 FATAL("Out of range.");

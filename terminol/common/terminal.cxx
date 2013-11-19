@@ -1690,6 +1690,12 @@ void Terminal::machineOscEsc(const OscEsc & esc) throw () {
                 case 666: // terminol extension (fix the damage)
                     fixDamage(Trigger::TTY);
                     break;
+                case 667: { // terminol extension (random resize)
+                    int cols = 1 + (random() % 120);
+                    int rows = 1 + (random() % 40);
+                    _observer.terminalResizeBuffer(rows, cols);
+                    break;
+                }
                 default:
                     // TODO consult http://rtfm.etla.org/xterm/ctlseq.html AND man 7 urxvt.
                     //WARNING("Unhandled: " << esc);
