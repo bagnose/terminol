@@ -159,7 +159,7 @@ protected:
 
     // Terminal::I_Observer implementation:
 
-    void terminalGetDisplay(std::string & display) throw () override;
+    const std::string & terminalGetDisplayName() const throw () override;
     void terminalCopy(const std::string & text, Terminal::Selection selection) throw () override;
     void terminalPaste(Terminal::Selection selection) throw () override;
     void terminalResizeLocalFont(int delta) throw () override;

@@ -29,7 +29,7 @@ public:
 
     class I_Observer {
     public:
-        virtual void terminalGetDisplay(std::string & display) throw () = 0;
+        virtual const std::string & terminalGetDisplayName() const throw () = 0;
         virtual void terminalCopy(const std::string & text, Selection selection) throw () = 0;
         virtual void terminalPaste(Selection selection) throw () = 0;
         virtual void terminalResizeLocalFont(int delta) throw () = 0;

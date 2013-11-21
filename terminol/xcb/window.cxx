@@ -1133,8 +1133,8 @@ void Window::cursorVisibility(bool visible) {
 
 // Terminal::I_Observer implementation:
 
-void Window::terminalGetDisplay(std::string & display) throw () {
-    display = _basics.display();
+const std::string & Window::terminalGetDisplayName() const throw () {
+    return _basics.displayName();
 }
 
 void Window::terminalCopy(const std::string & text, Terminal::Selection selection) throw () {

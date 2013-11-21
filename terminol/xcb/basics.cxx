@@ -21,7 +21,7 @@ Basics::Basics() throw (Error) {
     }
 
     auto d = ::getenv("DISPLAY");
-    _display = d ? d : ":0";
+    _displayName = d ? d : ":0";
 
     _connection = xcb_connect(nullptr, &_screenNum);
     if (xcb_connection_has_error(_connection)) {
