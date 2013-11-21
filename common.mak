@@ -5,7 +5,7 @@ VERBOSE         ?= false
 VERSION         ?= $(shell git --git-dir=src/.git log -1 --format='%cd.%h' --date=short | tr -d -)
 BROWSER         ?= chromium
 
-ALL_MODULES     := pangocairo pango cairo fontconfig xcb-keysyms xcb-icccm xcb-ewmh xcb-util xkbcommon libpcre
+ALL_MODULES     := pangocairo pango cairo fontconfig xcb-keysyms xcb-icccm xcb-ewmh xcb-util xkbcommon libpcre x11-xcb
 
 ifeq ($(shell pkg-config $(ALL_MODULES) && echo installed),)
   $(error Missing packages from: $(ALL_MODULES))

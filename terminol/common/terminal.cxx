@@ -1545,10 +1545,8 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) throw () {
                         }
                         case 7: {
                             // Ps = 7   Request Display Name
-                            std::string display;
-                            _observer.terminalGetDisplay(display);
                             std::ostringstream ost;
-                            ost << display << LF;
+                            ost << _observer.terminalGetDisplayName() << LF;
                             const auto & str = ost.str();
                             write(reinterpret_cast<const uint8_t *>(str.data()), str.size());
                             break;

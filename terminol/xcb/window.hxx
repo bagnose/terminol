@@ -18,7 +18,7 @@
 #include <cairo-xcb.h>
 #include <cairo-ft.h>
 
-class Window :
+class Shell :
     protected Terminal::I_Observer,
     protected FontManager::I_Client,
     protected Uncopyable
@@ -27,9 +27,9 @@ public:
     class I_Observer {
     public:
         virtual void windowSync() throw () = 0;
-        virtual void windowDefer(Window * window) throw () = 0;
-        virtual void windowSelected(Window * window) throw () = 0;
-        virtual void windowReaped(Window * window, int status) throw () = 0;
+        virtual void windowDefer(Shell * window) throw () = 0;
+        virtual void windowSelected(Shell * window) throw () = 0;
+        virtual void windowReaped(Shell * window, int status) throw () = 0;
 
     protected:
         I_Observer() {}
@@ -90,16 +90,16 @@ public:
         std::string message;
     };
 
-    Window(I_Observer         & observer,
-           const Config       & config,
-           I_Selector         & selector,
-           I_Deduper          & deduper,
-           Basics             & basics,
-           const ColorSet     & colorSet,
-           FontManager        & fontManager,
-           const Tty::Command & command = Tty::Command()) throw (Error);
+    Shell(I_Observer         & observer,
+          const Config       & config,
+          I_Selector         & selector,
+          I_Deduper          & deduper,
+          Basics             & basics,
+          const ColorSet     & colorSet,
+          FontManager        & fontManager,
+          const Tty::Command & command = Tty::Command()) throw (Error);
 
-    virtual ~Window();
+    virtual ~Shell();
 
     xcb_window_t getWindowId() { return _window; }
 
@@ -159,7 +159,7 @@ protected:
 
     // Terminal::I_Observer implementation:
 
-    void terminalGetDisplay(std::string & display) throw () override;
+    const std::string & terminalGetDisplayName() const throw () override;
     void terminalCopy(const std::string & text, Terminal::Selection selection) throw () override;
     void terminalPaste(Terminal::Selection selection) throw () override;
     void terminalResizeLocalFont(int delta) throw () override;
@@ -199,7 +199,7 @@ protected:
     void useFontSet(FontSet * fontSet, int delta) throw () override;
 
 private:
-    XColor getColor(const UColor & ucolor) const {
+    DColor getColor(const UColor & ucolor) const {
         switch (ucolor.type) {
             case UColor::Type::STOCK:
                 switch (ucolor.name) {
@@ -223,7 +223,7 @@ private:
             case UColor::Type::DIRECT:
                 auto v = ucolor.values;
                 auto d = 255.0;
-                return XColor(v.r / d, v.g / d, v.b / d);
+                return DColor(v.r / d, v.g / d, v.b / d);
         }
 
         FATAL("Unreachable");

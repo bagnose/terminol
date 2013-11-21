@@ -5,6 +5,7 @@
 #include "terminol/xcb/common.hxx"
 #include "terminol/support/debug.hxx"
 
+#include <X11/Xlib-xcb.h>
 #include <xkbcommon/xkbcommon-keysyms.h>
 
 #include <sstream>
@@ -21,13 +22,16 @@ Basics::Basics() throw (Error) {
     }
 
     auto d = ::getenv("DISPLAY");
-    _display = d ? d : ":0";
+    _displayName = d ? d : ":0";
 
-    _connection = xcb_connect(nullptr, &_screenNum);
-    if (xcb_connection_has_error(_connection)) {
+    _display = XOpenDisplay(nullptr);
+
+    if (!_display) {
         throw Error("Failed to connect to display.");
     }
-    auto connectionGuard = scopeGuard([&] { xcb_disconnect(_connection); });
+    auto connectionGuard = scopeGuard([&] { XCloseDisplay(_display); });
+
+    _connection = XGetXCBConnection(_display);
 
     auto setup      = xcb_get_setup(_connection);
     auto screenIter = xcb_setup_roots_iterator(setup);
@@ -121,7 +125,8 @@ Basics::~Basics() {
     xcb_free_cursor(_connection, _invisibleCursor);
     xcb_free_cursor(_connection, _normalCursor);
     xcb_key_symbols_free(_keySymbols);
-    xcb_disconnect(_connection);
+
+    XCloseDisplay(_display);
 }
 
 // The following function was stolen and modified from awesome/keyresolv.c

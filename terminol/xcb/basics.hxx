@@ -9,6 +9,7 @@
 
 #include <string>
 
+#include <X11/Xlib.h>
 #include <xcb/xcb.h>
 #include <xcb/xcb_ewmh.h>
 #include <xcb/xcb_keysyms.h>
@@ -21,7 +22,8 @@ struct NotFoundError {      // FIXME Move to common location.
 class Basics : protected Uncopyable {
     std::string             _hostname;
 
-    std::string             _display;
+    std::string             _displayName;
+    Display               * _display;
     xcb_connection_t      * _connection;
     int                     _screenNum;
     xcb_screen_t          * _screen;
@@ -65,7 +67,8 @@ public:
 
     const std::string     & hostname()       const { return _hostname;        }
 
-    const std::string     & display()        const { return _display;         }
+    const std::string     & displayName()    const { return _displayName;     }
+    Display               * display()              { return _display;         }
     xcb_connection_t      * connection()           { return _connection;      }
     int                     fd()                   { return xcb_get_file_descriptor(_connection); }
     int                     screenNum()            { return _screenNum;       }

@@ -27,7 +27,7 @@
 
 class EventLoop :
     protected I_Selector::I_ReadHandler,
-    protected Window::I_Observer,
+    protected Shell::I_Observer,
     protected I_Creator,
     protected Uncopyable
 {
@@ -40,9 +40,9 @@ class EventLoop :
     Server                             _server;
     ColorSet                           _colorSet;
     FontManager                        _fontManager;
-    std::map<xcb_window_t, Window *>   _windows;
-    std::set<Window *>                 _deferrals;
-    std::vector<Window *>              _exits;
+    std::map<xcb_window_t, Shell *>    _windows;
+    std::set<Shell *>                  _deferrals;
+    std::vector<Shell *>               _exits;
     bool                               _finished;
 
     static EventLoop                  * _singleton;
@@ -324,7 +324,7 @@ protected:
         }
     }
 
-    // Window::I_Observer implementation:
+    // Shell::I_Observer implementation:
 
     void windowSync() throw () override {
         xcb_aux_sync(_basics.connection());
@@ -347,11 +347,11 @@ protected:
         }
     }
 
-    void windowDefer(Window * window) throw () override {
+    void windowDefer(Shell * window) throw () override {
         _deferrals.insert(window);
     }
 
-    void windowSelected(Window * window) throw () override {
+    void windowSelected(Shell * window) throw () override {
         for (auto & p : _windows) {
             auto w = p.second;
             if (w != window) {
@@ -360,7 +360,7 @@ protected:
         }
     }
 
-    void windowReaped(Window * window, int UNUSED(status)) throw () override {
+    void windowReaped(Shell * window, int UNUSED(status)) throw () override {
         ASSERT(std::find(_exits.begin(), _exits.end(), window) == _exits.end(), "");
         _exits.push_back(window);
     }
@@ -369,12 +369,12 @@ protected:
 
     void create() throw () override {
         try {
-            auto window = new Window(*this, _config, _selector, _deduper,
+            auto window = new Shell(*this, _config, _selector, _deduper,
                                      _basics, _colorSet, _fontManager, _command);
             auto id = window->getWindowId();
             _windows.insert(std::make_pair(id, window));
         }
-        catch (const Window::Error & ex) {
+        catch (const Shell::Error & ex) {
             PRINT("Failed to create window: " << ex.message);
         }
     }

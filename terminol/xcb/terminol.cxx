@@ -27,7 +27,7 @@
 
 class EventLoop :
     protected I_Selector::I_ReadHandler,
-    protected Window::I_Observer,
+    protected Shell::I_Observer,
     protected Uncopyable
 {
     const Config     & _config;
@@ -37,7 +37,7 @@ class EventLoop :
     Basics             _basics;
     ColorSet           _colorSet;
     FontManager        _fontManager;
-    Window             _window;
+    Shell              _window;
     bool               _deferral;
     bool               _windowOpen;
 
@@ -51,7 +51,7 @@ public:
 
     EventLoop(const Config       & config,
               const Tty::Command & command)
-        throw (Basics::Error, Window::Error, Error) :
+        throw (Basics::Error, Shell::Error, Error) :
         _config(config),
         _selector(),
         _pipe(),
@@ -279,16 +279,16 @@ protected:
         }
     }
 
-    void windowDefer(Window * window) throw () override {
+    void windowDefer(Shell * window) throw () override {
         ASSERT(window == &_window, "");
         _deferral = true;
     }
 
-    void windowSelected(Window * UNUSED(window)) throw () override {
+    void windowSelected(Shell * UNUSED(window)) throw () override {
         // Nothing to do.
     }
 
-    void windowReaped(Window * window, int UNUSED(status)) throw () override {
+    void windowReaped(Shell * window, int UNUSED(status)) throw () override {
         ASSERT(window == &_window, "");
         _windowOpen = false;
     }
@@ -349,7 +349,7 @@ int main(int argc, char * argv[]) {
     catch (const EventLoop::Error & ex) {
         FATAL(ex.message);
     }
-    catch (const Window::Error & ex) {
+    catch (const Shell::Error & ex) {
         FATAL(ex.message);
     }
     catch (const Basics::Error & ex) {
