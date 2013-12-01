@@ -27,7 +27,7 @@
 
 class EventLoop :
     protected I_Selector::I_ReadHandler,
-    protected Window::I_Observer,
+    protected Widget::I_Observer,
     protected I_Creator,
     protected Uncopyable
 {
@@ -40,9 +40,9 @@ class EventLoop :
     Server                             _server;
     ColorSet                           _colorSet;
     FontManager                        _fontManager;
-    std::map<xcb_window_t, Window *>   _windows;
-    std::set<Window *>                 _deferrals;
-    std::vector<Window *>              _exits;
+    std::map<xcb_window_t, Widget *>   _widgets;
+    std::set<Widget *>                 _deferrals;
+    std::vector<Widget *>              _exits;
     bool                               _finished;
 
     static EventLoop                  * _singleton;
@@ -65,7 +65,7 @@ public:
         _server(*this, _selector, config),
         _colorSet(config, _basics),
         _fontManager(config, _basics),
-        _windows(),
+        _widgets(),
         _deferrals(),
         _exits(),
         _finished(false)
@@ -91,7 +91,7 @@ public:
     }
 
     virtual ~EventLoop() {
-        for (auto p : _windows) {
+        for (auto p : _widgets) {
             auto window = p.second;
             delete window;
         }
@@ -129,9 +129,9 @@ protected:
             if (!_exits.empty()) {
                 // Purge the exited windows.
                 for (auto window : _exits) {
-                    auto iter = _windows.find(window->getWindowId());
-                    ASSERT(iter != _windows.end(), "");
-                    _windows.erase(iter);
+                    auto iter = _widgets.find(window->getWindowId());
+                    ASSERT(iter != _widgets.end(), "");
+                    _widgets.erase(iter);
                     delete window;
                 }
                 _exits.clear();
@@ -171,7 +171,7 @@ protected:
         ENFORCE_SYS(TEMP_FAILURE_RETRY(::read(_pipe.readFd(),
                                               static_cast<void *>(buf), size)) != -1, "");
 
-        for (auto & p : _windows) {
+        for (auto & p : _widgets) {
             auto w = p.second;
             w->tryReap();
         }
@@ -181,110 +181,110 @@ protected:
         switch (responseType) {
             case XCB_KEY_PRESS: {
                 auto e = reinterpret_cast<xcb_key_press_event_t *>(event);
-                auto i = _windows.find(e->event);
-                if (i != _windows.end()) { i->second->keyPress(e); }
+                auto i = _widgets.find(e->event);
+                if (i != _widgets.end()) { i->second->keyPress(e); }
                 break;
             }
             case XCB_KEY_RELEASE: {
                 auto e = reinterpret_cast<xcb_key_release_event_t *>(event);
-                auto i = _windows.find(e->event);
-                if (i != _windows.end()) { i->second->keyRelease(e); }
+                auto i = _widgets.find(e->event);
+                if (i != _widgets.end()) { i->second->keyRelease(e); }
                 break;
             }
             case XCB_BUTTON_PRESS: {
                 auto e = reinterpret_cast<xcb_button_press_event_t *>(event);
-                auto i = _windows.find(e->event);
-                if (i != _windows.end()) { i->second->buttonPress(e); }
+                auto i = _widgets.find(e->event);
+                if (i != _widgets.end()) { i->second->buttonPress(e); }
                 break;
             }
             case XCB_BUTTON_RELEASE: {
                 auto e = reinterpret_cast<xcb_button_release_event_t *>(event);
-                auto i = _windows.find(e->event);
-                if (i != _windows.end()) { i->second->buttonRelease(e); }
+                auto i = _widgets.find(e->event);
+                if (i != _widgets.end()) { i->second->buttonRelease(e); }
                 break;
             }
             case XCB_MOTION_NOTIFY: {
                 auto e = reinterpret_cast<xcb_motion_notify_event_t *>(event);
-                auto i = _windows.find(e->event);
-                if (i != _windows.end()) { i->second->motionNotify(e); }
+                auto i = _widgets.find(e->event);
+                if (i != _widgets.end()) { i->second->motionNotify(e); }
                 break;
             }
             case XCB_EXPOSE: {
                 auto e = reinterpret_cast<xcb_expose_event_t *>(event);
-                auto i = _windows.find(e->window);
-                if (i != _windows.end()) { i->second->expose(e); }
+                auto i = _widgets.find(e->window);
+                if (i != _widgets.end()) { i->second->expose(e); }
                 break;
             }
             case XCB_ENTER_NOTIFY: {
                 auto e = reinterpret_cast<xcb_enter_notify_event_t *>(event);
-                auto i = _windows.find(e->event);
-                if (i != _windows.end()) { i->second->enterNotify(e); }
+                auto i = _widgets.find(e->event);
+                if (i != _widgets.end()) { i->second->enterNotify(e); }
                 break;
             }
             case XCB_LEAVE_NOTIFY: {
                 auto e = reinterpret_cast<xcb_leave_notify_event_t *>(event);
-                auto i = _windows.find(e->event);
-                if (i != _windows.end()) { i->second->leaveNotify(e); }
+                auto i = _widgets.find(e->event);
+                if (i != _widgets.end()) { i->second->leaveNotify(e); }
                 break;
             }
             case XCB_FOCUS_IN: {
                 auto e = reinterpret_cast<xcb_focus_in_event_t *>(event);
-                auto i = _windows.find(e->event);
-                if (i != _windows.end()) { i->second->focusIn(e); }
+                auto i = _widgets.find(e->event);
+                if (i != _widgets.end()) { i->second->focusIn(e); }
                 break;
             }
             case XCB_FOCUS_OUT: {
                 auto e = reinterpret_cast<xcb_focus_in_event_t *>(event);
-                auto i = _windows.find(e->event);
-                if (i != _windows.end()) { i->second->focusOut(e); }
+                auto i = _widgets.find(e->event);
+                if (i != _widgets.end()) { i->second->focusOut(e); }
                 break;
             }
             case XCB_MAP_NOTIFY: {
                 auto e = reinterpret_cast<xcb_map_notify_event_t *>(event);
-                auto i = _windows.find(e->event);
-                if (i != _windows.end()) { i->second->mapNotify(e); }
+                auto i = _widgets.find(e->event);
+                if (i != _widgets.end()) { i->second->mapNotify(e); }
                 break;
             }
             case XCB_UNMAP_NOTIFY: {
                 auto e = reinterpret_cast<xcb_unmap_notify_event_t *>(event);
-                auto i = _windows.find(e->event);
-                if (i != _windows.end()) { i->second->unmapNotify(e); }
+                auto i = _widgets.find(e->event);
+                if (i != _widgets.end()) { i->second->unmapNotify(e); }
                 break;
             }
             case XCB_CONFIGURE_NOTIFY: {
                 auto e = reinterpret_cast<xcb_configure_notify_event_t *>(event);
-                auto i = _windows.find(e->event);
-                if (i != _windows.end()) { i->second->configureNotify(e); }
+                auto i = _widgets.find(e->event);
+                if (i != _widgets.end()) { i->second->configureNotify(e); }
                 break;
             }
             case XCB_DESTROY_NOTIFY: {
                 auto e = reinterpret_cast<xcb_destroy_notify_event_t *>(event);
-                auto i = _windows.find(e->window);
-                if (i != _windows.end()) { i->second->destroyNotify(e); }
+                auto i = _widgets.find(e->window);
+                if (i != _widgets.end()) { i->second->destroyNotify(e); }
                 break;
             }
             case XCB_SELECTION_CLEAR: {
                 auto e = reinterpret_cast<xcb_selection_clear_event_t *>(event);
-                auto i = _windows.find(e->owner);
-                if (i != _windows.end()) { i->second->selectionClear(e); }
+                auto i = _widgets.find(e->owner);
+                if (i != _widgets.end()) { i->second->selectionClear(e); }
                 break;
             }
             case XCB_SELECTION_NOTIFY: {
                 auto e = reinterpret_cast<xcb_selection_notify_event_t *>(event);
-                auto i = _windows.find(e->requestor);
-                if (i != _windows.end()) { i->second->selectionNotify(e); }
+                auto i = _widgets.find(e->requestor);
+                if (i != _widgets.end()) { i->second->selectionNotify(e); }
                 break;
             }
             case XCB_SELECTION_REQUEST: {
                 auto e = reinterpret_cast<xcb_selection_request_event_t *>(event);
-                auto i = _windows.find(e->owner);
-                if (i != _windows.end()) { i->second->selectionRequest(e); }
+                auto i = _widgets.find(e->owner);
+                if (i != _widgets.end()) { i->second->selectionRequest(e); }
                 break;
             }
             case XCB_CLIENT_MESSAGE: {
                 auto e = reinterpret_cast<xcb_client_message_event_t *>(event);
-                auto i = _windows.find(e->window);
-                if (i != _windows.end()) { i->second->clientMessage(e); }
+                auto i = _widgets.find(e->window);
+                if (i != _widgets.end()) { i->second->clientMessage(e); }
                 break;
             }
             case XCB_REPARENT_NOTIFY:
@@ -297,7 +297,7 @@ protected:
                         e->atom == _basics.atomXRootPixmapId())
                     {
                         _basics.updateRootPixmap();
-                        for (auto & pair : _windows) {
+                        for (auto & pair : _widgets) {
                             auto window = pair.second;
                             window->redraw();
                         }
@@ -324,9 +324,9 @@ protected:
         }
     }
 
-    // Window::I_Observer implementation:
+    // Widget::I_Observer implementation:
 
-    void windowSync() throw () override {
+    void widgetSync() throw () override {
         xcb_aux_sync(_basics.connection());
 
         for (;;) {
@@ -347,34 +347,34 @@ protected:
         }
     }
 
-    void windowDefer(Window * window) throw () override {
-        _deferrals.insert(window);
+    void widgetDefer(Widget * widget) throw () override {
+        _deferrals.insert(widget);
     }
 
-    void windowSelected(Window * window) throw () override {
-        for (auto & p : _windows) {
+    void widgetSelected(Widget * widget) throw () override {
+        for (auto & p : _widgets) {
             auto w = p.second;
-            if (w != window) {
+            if (w != widget) {
                 w->clearSelection();
             }
         }
     }
 
-    void windowReaped(Window * window, int UNUSED(status)) throw () override {
-        ASSERT(std::find(_exits.begin(), _exits.end(), window) == _exits.end(), "");
-        _exits.push_back(window);
+    void widgetReaped(Widget * widget, int UNUSED(status)) throw () override {
+        ASSERT(std::find(_exits.begin(), _exits.end(), widget) == _exits.end(), "");
+        _exits.push_back(widget);
     }
 
     // I_Creator implementation:
 
     void create() throw () override {
         try {
-            auto window = new Window(*this, _config, _selector, _deduper,
+            auto window = new Widget(*this, _config, _selector, _deduper,
                                      _basics, _colorSet, _fontManager, _command);
             auto id = window->getWindowId();
-            _windows.insert(std::make_pair(id, window));
+            _widgets.insert(std::make_pair(id, window));
         }
-        catch (const Window::Error & ex) {
+        catch (const Widget::Error & ex) {
             PRINT("Failed to create window: " << ex.message);
         }
     }

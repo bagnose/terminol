@@ -14,7 +14,7 @@
 
 #include <unistd.h>
 
-Window::Window(I_Observer         & observer,
+Widget::Widget(I_Observer         & observer,
                const Config       & config,
                I_Selector         & selector,
                I_Deduper          & deduper,
@@ -198,7 +198,7 @@ Window::Window(I_Observer         & observer,
     fontGuard.dismiss();
 }
 
-Window::~Window() {
+Widget::~Widget() {
     if (_mapped) {
         ASSERT(_pixmap, "Null pixmap.");
         ASSERT(_surface, "Null surface.");
@@ -238,7 +238,7 @@ Window::~Window() {
 
 // Events:
 
-void Window::keyPress(xcb_key_press_event_t * event) {
+void Widget::keyPress(xcb_key_press_event_t * event) {
     ASSERT(event->event == _window, "Unexpected window.");
 
     if (_config.autoHideCursor) {
@@ -268,11 +268,11 @@ void Window::keyPress(xcb_key_press_event_t * event) {
     }
 }
 
-void Window::keyRelease(xcb_key_release_event_t * UNUSED(event)) {
+void Widget::keyRelease(xcb_key_release_event_t * UNUSED(event)) {
     // XXX Drop this override?
 }
 
-void Window::buttonPress(xcb_button_press_event_t * event) {
+void Widget::buttonPress(xcb_button_press_event_t * event) {
     ASSERT(event->event == _window, "Unexpected window.");
 
     if (_config.autoHideCursor) {
@@ -332,7 +332,7 @@ void Window::buttonPress(xcb_button_press_event_t * event) {
     }
 }
 
-void Window::buttonRelease(xcb_button_release_event_t * event) {
+void Widget::buttonRelease(xcb_button_release_event_t * event) {
     ASSERT(event->event == _window, "Unexpected window.");
 
     if (_config.autoHideCursor) {
@@ -351,7 +351,7 @@ void Window::buttonRelease(xcb_button_release_event_t * event) {
     }
 }
 
-void Window::motionNotify(xcb_motion_notify_event_t * event) {
+void Widget::motionNotify(xcb_motion_notify_event_t * event) {
     ASSERT(event->event == _window, "Unexpected window.");
 
     if (_config.autoHideCursor) {
@@ -393,21 +393,21 @@ void Window::motionNotify(xcb_motion_notify_event_t * event) {
 
 }
 
-void Window::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
+void Widget::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
     ASSERT(!_mapped, "Received map notification, but already mapped.");
 
     _mapped = true;
     createPixmapAndSurface();
 }
 
-void Window::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
+void Widget::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     ASSERT(_mapped, "Received unmap notification, but not mapped.");
 
     _mapped = false;
     destroySurfaceAndPixmap();
 }
 
-void Window::expose(xcb_expose_event_t * event) {
+void Widget::expose(xcb_expose_event_t * event) {
     // If there is a deferral then our pixmap won't be valid.
     if (_deferred) { return; }
 
@@ -421,7 +421,7 @@ void Window::expose(xcb_expose_event_t * event) {
     }
 }
 
-void Window::configureNotify(xcb_configure_notify_event_t * event) {
+void Widget::configureNotify(xcb_configure_notify_event_t * event) {
     ASSERT(event->window == _window, "Unexpected window.");
 
     // Note, once we've had a deferral we don't apply the
@@ -451,7 +451,7 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
 
     if (_deferralsAllowed) {
         if (!_deferred) {
-            _observer.windowDefer(this);
+            _observer.widgetDefer(this);
             _deferred = true;
         }
     }
@@ -460,20 +460,20 @@ void Window::configureNotify(xcb_configure_notify_event_t * event) {
     }
 }
 
-void Window::focusIn(xcb_focus_in_event_t * UNUSED(event)) {
+void Widget::focusIn(xcb_focus_in_event_t * UNUSED(event)) {
     _terminal->focusChange(true);
 }
 
-void Window::focusOut(xcb_focus_out_event_t * UNUSED(event)) {
+void Widget::focusOut(xcb_focus_out_event_t * UNUSED(event)) {
     _terminal->focusChange(false);
 
 }
 
-void Window::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {
+void Widget::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {
     // XXX Drop this override?
 }
 
-void Window::leaveNotify(xcb_leave_notify_event_t * event) {
+void Widget::leaveNotify(xcb_leave_notify_event_t * event) {
     // XXX total guess that this is how we ensure we release
     // the button (broken grabs)...
     if (event->mode == 2) {
@@ -484,7 +484,7 @@ void Window::leaveNotify(xcb_leave_notify_event_t * event) {
     }
 }
 
-void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
+void Widget::destroyNotify(xcb_destroy_notify_event_t * event) {
     ASSERT(event->window == _window, "Unexpected window.");
 
     _terminal->killReap();
@@ -492,11 +492,11 @@ void Window::destroyNotify(xcb_destroy_notify_event_t * event) {
     _destroyed = true;
 }
 
-void Window::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) {
+void Widget::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) {
     _terminal->clearSelection();
 }
 
-void Window::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
+void Widget::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
     if (!_open) { return; }
 
     std::vector<uint8_t> content;
@@ -531,7 +531,7 @@ void Window::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
     }
 }
 
-void Window::selectionRequest(xcb_selection_request_event_t * event) {
+void Widget::selectionRequest(xcb_selection_request_event_t * event) {
     ASSERT(event->owner == _window, "Unexpected window.");
 
     xcb_selection_notify_event_t response;
@@ -590,7 +590,7 @@ void Window::selectionRequest(xcb_selection_request_event_t * event) {
     xcb_flush(_basics.connection());        // Required?
 }
 
-void Window::clientMessage(xcb_client_message_event_t * event) {
+void Widget::clientMessage(xcb_client_message_event_t * event) {
     if (event->type == _basics.atomWmProtocols()) {
         if (event->data.data32[0] == _basics.atomWmDeleteWindow()) {
             handleDelete();
@@ -598,7 +598,7 @@ void Window::clientMessage(xcb_client_message_event_t * event) {
     }
 }
 
-void Window::redraw() {
+void Widget::redraw() {
     if (_mapped) {
         ASSERT(_pixmap, "");
         ASSERT(_surface, "");
@@ -607,21 +607,21 @@ void Window::redraw() {
     }
 }
 
-void Window::tryReap() {
+void Widget::tryReap() {
     _terminal->tryReap();
 }
 
-void Window::clearSelection() {
+void Widget::clearSelection() {
     _terminal->clearSelection();
 }
 
-void Window::deferral() {
+void Widget::deferral() {
     ASSERT(_deferred, "");
     _deferred = false;
     handleConfigure();
 }
 
-void Window::icccmConfigure() {
+void Widget::icccmConfigure() {
     //
     // machine
     //
@@ -695,7 +695,7 @@ void Window::icccmConfigure() {
                                1, &wmDeleteWindow);
 }
 
-void Window::pos2XY(Pos pos, int & x, int & y) const {
+void Widget::pos2XY(Pos pos, int & x, int & y) const {
     ASSERT(pos.row <= _terminal->getRows(), "pos.row=" << pos.row << ", getRows()=" << _terminal->getRows());
     ASSERT(pos.col <= _terminal->getCols(), "pos.col=" << pos.col << ", getCols()=" << _terminal->getCols());
 
@@ -705,7 +705,7 @@ void Window::pos2XY(Pos pos, int & x, int & y) const {
     y = border_thickness + pos.row * _fontSet->getHeight();
 }
 
-bool Window::xy2Pos(int x, int y, HPos & hpos) const {
+bool Widget::xy2Pos(int x, int y, HPos & hpos) const {
     auto within = true;
 
     auto border_thickness = _config.borderThickness;
@@ -753,7 +753,7 @@ bool Window::xy2Pos(int x, int y, HPos & hpos) const {
     return within;
 }
 
-void Window::setTitle(const std::string & title, bool prependGeometry) {
+void Widget::setTitle(const std::string & title, bool prependGeometry) {
     std::ostringstream ost;
     if (prependGeometry) {
         ost << "[" << _terminal->getCols() << 'x' << _terminal->getRows() << "] ";
@@ -779,7 +779,7 @@ void Window::setTitle(const std::string & title, bool prependGeometry) {
     xcb_flush(_basics.connection());
 }
 
-void Window::setIcon(const std::string & icon) {
+void Widget::setIcon(const std::string & icon) {
     ASSERT(_terminal, "Null terminal.");
 
 #if 1
@@ -797,7 +797,7 @@ void Window::setIcon(const std::string & icon) {
 #endif
 }
 
-void Window::createPixmapAndSurface() {
+void Widget::createPixmapAndSurface() {
     _pixmap = xcb_generate_id(_basics.connection());
     // Note, we create the pixmap against the root window rather than
     // _window to avoid dealing with the case where _window may have been
@@ -822,7 +822,7 @@ void Window::createPixmapAndSurface() {
     renderPixmap();
 }
 
-void Window::destroySurfaceAndPixmap() {
+void Widget::destroySurfaceAndPixmap() {
     cairo_surface_finish(_surface);
     cairo_surface_destroy(_surface);
     _surface = nullptr;
@@ -832,7 +832,7 @@ void Window::destroySurfaceAndPixmap() {
     _pixmap = 0;
 }
 
-void Window::renderPixmap() {
+void Widget::renderPixmap() {
     ASSERT(_mapped, "");
     ASSERT(_pixmap, "");
     ASSERT(_surface, "");
@@ -858,7 +858,7 @@ void Window::renderPixmap() {
             "Bad cairo surface status.");
 }
 
-void Window::drawBorder() {
+void Widget::drawBorder() {
     auto border_thickness = _config.borderThickness;
     auto scrollbar_width  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
@@ -959,7 +959,7 @@ void Window::drawBorder() {
     } cairo_restore(_cr);
 }
 
-void Window::copyPixmapToWindow(int x, int y, int w, int h) {
+void Widget::copyPixmapToWindow(int x, int y, int w, int h) {
     ASSERT(_mapped, "");
     ASSERT(_pixmap, "");
     // Copy the buffer region and flush.
@@ -973,7 +973,7 @@ void Window::copyPixmapToWindow(int x, int y, int w, int h) {
     xcb_flush(_basics.connection());
 }
 
-void Window::handleConfigure() {
+void Widget::handleConfigure() {
     if (_deferredGeometry.width != _geometry.width ||
         _deferredGeometry.height != _geometry.height)
     {
@@ -986,7 +986,7 @@ void Window::handleConfigure() {
     }
 }
 
-void Window::handleResize() {
+void Widget::handleResize() {
     _geometry = _deferredGeometry;
 
     int16_t rows, cols;
@@ -1036,7 +1036,7 @@ void Window::handleResize() {
 
 }
 
-void Window::handleMove() {
+void Widget::handleMove() {
     ASSERT(_config.x11PseudoTransparency, "");
 
     _geometry = _deferredGeometry;
@@ -1049,7 +1049,7 @@ void Window::handleMove() {
     }
 }
 
-void Window::resizeToAccommodate(int16_t rows, int16_t cols, bool sync) {
+void Widget::resizeToAccommodate(int16_t rows, int16_t cols, bool sync) {
     auto border_thickness = _config.borderThickness;
     auto scrollbar_width  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
@@ -1068,14 +1068,14 @@ void Window::resizeToAccommodate(int16_t rows, int16_t cols, bool sync) {
             if (sync) {
                 xcb_flush(_basics.connection());
                 _deferralsAllowed = false;
-                _observer.windowSync();
+                _observer.widgetSync();
                 _deferralsAllowed = true;
             }
         }
     }
 }
 
-void Window::sizeToRowsCols(int16_t & rows, int16_t & cols) const {
+void Widget::sizeToRowsCols(int16_t & rows, int16_t & cols) const {
     auto border_thickness = _config.borderThickness;
     auto scrollbar_width  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
@@ -1098,7 +1098,7 @@ void Window::sizeToRowsCols(int16_t & rows, int16_t & cols) const {
     ASSERT(rows > 0 && cols > 0, "Rows or cols not positive.");
 }
 
-void Window::handleDelete() {
+void Widget::handleDelete() {
     if (_terminal->hasSubprocess()) {
         if (_hadDeleteRequest) {
             xcb_destroy_window(_basics.connection(), _window);
@@ -1114,7 +1114,7 @@ void Window::handleDelete() {
     }
 }
 
-void Window::cursorVisibility(bool visible) {
+void Widget::cursorVisibility(bool visible) {
     ASSERT(_config.autoHideCursor, "");
 
     if (_cursorVisible != visible) {
@@ -1133,12 +1133,12 @@ void Window::cursorVisibility(bool visible) {
 
 // Terminal::I_Observer implementation:
 
-const std::string & Window::terminalGetDisplayName() const throw () {
+const std::string & Widget::terminalGetDisplayName() const throw () {
     return _basics.displayName();
 }
 
-void Window::terminalCopy(const std::string & text, Terminal::Selection selection) throw () {
-    _observer.windowSelected(this);
+void Widget::terminalCopy(const std::string & text, Terminal::Selection selection) throw () {
+    _observer.widgetSelected(this);
 
     xcb_atom_t atom = XCB_ATOM_NONE;
 
@@ -1157,7 +1157,7 @@ void Window::terminalCopy(const std::string & text, Terminal::Selection selectio
     xcb_flush(_basics.connection());
 }
 
-void Window::terminalPaste(Terminal::Selection selection) throw () {
+void Widget::terminalPaste(Terminal::Selection selection) throw () {
     xcb_atom_t atom = XCB_ATOM_NONE;
 
     switch (selection) {
@@ -1179,22 +1179,22 @@ void Window::terminalPaste(Terminal::Selection selection) throw () {
     xcb_flush(_basics.connection());
 }
 
-void Window::terminalResizeLocalFont(int delta) throw () {
+void Widget::terminalResizeLocalFont(int delta) throw () {
     _fontManager.localDelta(this, delta);
 }
 
-void Window::terminalResizeGlobalFont(int delta) throw () {
+void Widget::terminalResizeGlobalFont(int delta) throw () {
     _fontManager.globalDelta(delta);
 }
 
-void Window::terminalResetTitleAndIcon() throw () {
+void Widget::terminalResetTitleAndIcon() throw () {
     _title = _config.title;
     _icon  = _config.icon;
     setTitle(_title, true);
     setIcon(_icon);
 }
 
-void Window::terminalSetWindowTitle(const std::string & str, bool transient) throw () {
+void Widget::terminalSetWindowTitle(const std::string & str, bool transient) throw () {
     if (transient) {
         _entitlement = Entitlement::TRANSIENT;
         setTitle(str, false);
@@ -1206,12 +1206,12 @@ void Window::terminalSetWindowTitle(const std::string & str, bool transient) thr
     }
 }
 
-void Window::terminalSetIconName(const std::string & str) throw () {
+void Widget::terminalSetIconName(const std::string & str) throw () {
     _icon = str;
     setIcon(_icon);
 }
 
-void Window::terminalBell() throw () {
+void Widget::terminalBell() throw () {
     if (_config.mapOnBell) {
         if (!_mapped) {
             xcb_map_window(_basics.connection(), _window);
@@ -1255,12 +1255,12 @@ void Window::terminalBell() throw () {
     }
 }
 
-void Window::terminalResizeBuffer(int16_t rows, int16_t cols) throw () {
+void Widget::terminalResizeBuffer(int16_t rows, int16_t cols) throw () {
     ASSERT(rows > 0 && cols > 0, "Rows or cols not positive.");
     resizeToAccommodate(rows, cols, true);
 }
 
-bool Window::terminalFixDamageBegin() throw () {
+bool Widget::terminalFixDamageBegin() throw () {
     // There is no point fixing damage if the pixmap isn't already "current".
     // It's possible for the pixmap to be valid (because the window was mapped)
     // but not current (because we haven't received an expose event yet).
@@ -1276,7 +1276,7 @@ bool Window::terminalFixDamageBegin() throw () {
     }
 }
 
-void Window::terminalDrawBg(Pos     pos,
+void Widget::terminalDrawBg(Pos     pos,
                             int16_t count,
                             UColor  color) throw () {
     int x, y;
@@ -1313,7 +1313,7 @@ void Window::terminalDrawBg(Pos     pos,
     } cairo_restore(_cr);
 }
 
-void Window::terminalDrawFg(Pos             pos,
+void Widget::terminalDrawFg(Pos             pos,
                             int16_t         count,
                             UColor          color,
                             AttrSet         attrs,
@@ -1357,7 +1357,7 @@ void Window::terminalDrawFg(Pos             pos,
     } cairo_restore(_cr);
 }
 
-void Window::terminalDrawCursor(Pos             pos,
+void Widget::terminalDrawCursor(Pos             pos,
                                 UColor          fg_,
                                 UColor          bg_,
                                 AttrSet         attrs,
@@ -1418,7 +1418,7 @@ void Window::terminalDrawCursor(Pos             pos,
     } cairo_restore(_cr);
 }
 
-void Window::terminalDrawScrollbar(size_t  totalRows,
+void Widget::terminalDrawScrollbar(size_t  totalRows,
                                    size_t  historyOffset,
                                    int16_t visibleRows) throw () {
     ASSERT(_cr, "");
@@ -1479,7 +1479,7 @@ void Window::terminalDrawScrollbar(size_t  totalRows,
     } cairo_restore(_cr);
 }
 
-void Window::terminalFixDamageEnd(const Region & damage,
+void Widget::terminalFixDamageEnd(const Region & damage,
                                   bool           scrollBar) throw () {
     ASSERT(_cr, "");
 
@@ -1503,14 +1503,14 @@ void Window::terminalFixDamageEnd(const Region & damage,
     copyPixmapToWindow(x0, y0, x1 - x0, y1 - y0);
 }
 
-void Window::terminalReaped(int status) throw () {
+void Widget::terminalReaped(int status) throw () {
     _open = false;
-    _observer.windowReaped(this, status);
+    _observer.widgetReaped(this, status);
 }
 
 // FontManager::I_Client implementation:
 
-void Window::useFontSet(FontSet * fontSet, int delta) throw () {
+void Widget::useFontSet(FontSet * fontSet, int delta) throw () {
     _fontSet = fontSet;
 
     // Pass 'true' for sync so that the window has handled the configure

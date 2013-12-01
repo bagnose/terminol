@@ -27,7 +27,7 @@
 
 class EventLoop :
     protected I_Selector::I_ReadHandler,
-    protected Window::I_Observer,
+    protected Widget::I_Observer,
     protected Uncopyable
 {
     const Config     & _config;
@@ -37,9 +37,9 @@ class EventLoop :
     Basics             _basics;
     ColorSet           _colorSet;
     FontManager        _fontManager;
-    Window             _window;
+    Widget             _widget;
     bool               _deferral;
-    bool               _windowOpen;
+    bool               _exited;
 
     static EventLoop * _singleton;
 
@@ -51,7 +51,7 @@ public:
 
     EventLoop(const Config       & config,
               const Tty::Command & command)
-        throw (Basics::Error, Window::Error, Error) :
+        throw (Basics::Error, Widget::Error, Error) :
         _config(config),
         _selector(),
         _pipe(),
@@ -59,7 +59,7 @@ public:
         _basics(),
         _colorSet(config, _basics),
         _fontManager(config, _basics),
-        _window(*this,
+        _widget(*this,
                 config,
                 _selector,
                 _deduper,
@@ -68,7 +68,7 @@ public:
                 _fontManager,
                 command),
         _deferral(false),
-        _windowOpen(true)
+        _exited(false)
     {
         ASSERT(!_singleton, "");
         _singleton = this;
@@ -105,13 +105,13 @@ protected:
         _selector.addReadable(_basics.fd(), this);
         _selector.addReadable(_pipe.readFd(), this);
 
-        while (_windowOpen) {
+        while (!_exited) {
             _selector.animate();
 
             // Poll for X11 events that may not have shown up on the descriptor.
             xevent();
 
-            if (_deferral) { _window.deferral(); _deferral = false; }
+            if (_deferral) { _widget.deferral(); _deferral = false; }
         }
 
         _selector.removeReadable(_pipe.readFd());
@@ -145,81 +145,81 @@ protected:
         ENFORCE_SYS(TEMP_FAILURE_RETRY(::read(_pipe.readFd(),
                                               static_cast<void *>(buf), size)) != -1, "");
 
-        _window.tryReap();
+        _widget.tryReap();
     }
 
     void dispatch(uint8_t responseType, xcb_generic_event_t * event) {
         switch (responseType) {
             case XCB_KEY_PRESS:
-                _window.keyPress(
+                _widget.keyPress(
                         reinterpret_cast<xcb_key_press_event_t *>(event));
                 break;
             case XCB_KEY_RELEASE:
-                _window.keyRelease(
+                _widget.keyRelease(
                         reinterpret_cast<xcb_key_release_event_t *>(event));
                 break;
             case XCB_BUTTON_PRESS:
-                _window.buttonPress(
+                _widget.buttonPress(
                         reinterpret_cast<xcb_button_press_event_t *>(event));
                 break;
             case XCB_BUTTON_RELEASE:
-                _window.buttonRelease(
+                _widget.buttonRelease(
                         reinterpret_cast<xcb_button_release_event_t *>(event));
                 break;
             case XCB_MOTION_NOTIFY:
-                _window.motionNotify(
+                _widget.motionNotify(
                         reinterpret_cast<xcb_motion_notify_event_t *>(event));
                 break;
             case XCB_EXPOSE:
-                _window.expose(
+                _widget.expose(
                         reinterpret_cast<xcb_expose_event_t *>(event));
                 break;
             case XCB_ENTER_NOTIFY:
-                _window.enterNotify(
+                _widget.enterNotify(
                         reinterpret_cast<xcb_enter_notify_event_t *>(event));
                 break;
             case XCB_LEAVE_NOTIFY:
-                _window.leaveNotify(
+                _widget.leaveNotify(
                         reinterpret_cast<xcb_leave_notify_event_t *>(event));
                 break;
             case XCB_FOCUS_IN:
-                _window.focusIn(
+                _widget.focusIn(
                         reinterpret_cast<xcb_focus_in_event_t *>(event));
                 break;
             case XCB_FOCUS_OUT:
-                _window.focusOut(
+                _widget.focusOut(
                         reinterpret_cast<xcb_focus_out_event_t *>(event));
                 break;
             case XCB_MAP_NOTIFY:
-                _window.mapNotify(
+                _widget.mapNotify(
                         reinterpret_cast<xcb_map_notify_event_t *>(event));
                 break;
             case XCB_UNMAP_NOTIFY:
-                _window.unmapNotify(
+                _widget.unmapNotify(
                         reinterpret_cast<xcb_unmap_notify_event_t *>(event));
                 break;
             case XCB_CONFIGURE_NOTIFY:
-                _window.configureNotify(
+                _widget.configureNotify(
                         reinterpret_cast<xcb_configure_notify_event_t *>(event));
                 break;
             case XCB_DESTROY_NOTIFY:
-                _window.destroyNotify(
+                _widget.destroyNotify(
                         reinterpret_cast<xcb_destroy_notify_event_t *>(event));
                 break;
             case XCB_SELECTION_CLEAR:
-                _window.selectionClear(
+                _widget.selectionClear(
                         reinterpret_cast<xcb_selection_clear_event_t *>(event));
                 break;
             case XCB_SELECTION_NOTIFY:
-                _window.selectionNotify(
+                _widget.selectionNotify(
                         reinterpret_cast<xcb_selection_notify_event_t *>(event));
                 break;
             case XCB_SELECTION_REQUEST:
-                _window.selectionRequest(
+                _widget.selectionRequest(
                         reinterpret_cast<xcb_selection_request_event_t *>(event));
                 break;
             case XCB_CLIENT_MESSAGE:
-                _window.clientMessage(
+                _widget.clientMessage(
                         reinterpret_cast<xcb_client_message_event_t *>(event));
                 break;
             case XCB_REPARENT_NOTIFY:
@@ -232,7 +232,7 @@ protected:
                         e->atom == _basics.atomXRootPixmapId())
                     {
                         _basics.updateRootPixmap();
-                        _window.redraw();
+                        _widget.redraw();
                     }
                 }
                 break;
@@ -256,9 +256,9 @@ protected:
         }
     }
 
-    // Window::I_Observer implementation:
+    // Widget::I_Observer implementation:
 
-    void windowSync() throw () override {
+    void widgetSync() throw () override {
         xcb_aux_sync(_basics.connection());
 
         for (;;) {
@@ -279,18 +279,18 @@ protected:
         }
     }
 
-    void windowDefer(Window * window) throw () override {
-        ASSERT(window == &_window, "");
+    void widgetDefer(Widget * widget) throw () override {
+        ASSERT(widget == &_widget, "");
         _deferral = true;
     }
 
-    void windowSelected(Window * UNUSED(window)) throw () override {
+    void widgetSelected(Widget * UNUSED(widget)) throw () override {
         // Nothing to do.
     }
 
-    void windowReaped(Window * window, int UNUSED(status)) throw () override {
-        ASSERT(window == &_window, "");
-        _windowOpen = false;
+    void widgetReaped(Widget * widget, int UNUSED(status)) throw () override {
+        ASSERT(widget == &_widget, "");
+        _exited = true;
     }
 };
 
@@ -349,7 +349,7 @@ int main(int argc, char * argv[]) {
     catch (const EventLoop::Error & ex) {
         FATAL(ex.message);
     }
-    catch (const Window::Error & ex) {
+    catch (const Widget::Error & ex) {
         FATAL(ex.message);
     }
     catch (const Basics::Error & ex) {

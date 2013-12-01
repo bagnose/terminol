@@ -18,7 +18,7 @@
 #include <cairo-xcb.h>
 #include <cairo-ft.h>
 
-class Window :
+class Widget :
     protected Terminal::I_Observer,
     protected FontManager::I_Client,
     protected Uncopyable
@@ -26,10 +26,10 @@ class Window :
 public:
     class I_Observer {
     public:
-        virtual void windowSync() throw () = 0;
-        virtual void windowDefer(Window * window) throw () = 0;
-        virtual void windowSelected(Window * window) throw () = 0;
-        virtual void windowReaped(Window * window, int status) throw () = 0;
+        virtual void widgetSync() throw () = 0;
+        virtual void widgetDefer(Widget * widget) throw () = 0;
+        virtual void widgetSelected(Widget * widget) throw () = 0;
+        virtual void widgetReaped(Widget * widget, int status) throw () = 0;
 
     protected:
         I_Observer() {}
@@ -90,7 +90,7 @@ public:
         std::string message;
     };
 
-    Window(I_Observer         & observer,
+    Widget(I_Observer         & observer,
            const Config       & config,
            I_Selector         & selector,
            I_Deduper          & deduper,
@@ -99,7 +99,7 @@ public:
            FontManager        & fontManager,
            const Tty::Command & command = Tty::Command()) throw (Error);
 
-    virtual ~Window();
+    virtual ~Widget();
 
     xcb_window_t getWindowId() { return _window; }
 
@@ -199,7 +199,7 @@ protected:
     void useFontSet(FontSet * fontSet, int delta) throw () override;
 
 private:
-    XColor getColor(const UColor & ucolor) const {
+    DColor getColor(const UColor & ucolor) const {
         switch (ucolor.type) {
             case UColor::Type::STOCK:
                 switch (ucolor.name) {
@@ -223,7 +223,7 @@ private:
             case UColor::Type::DIRECT:
                 auto v = ucolor.values;
                 auto d = 255.0;
-                return XColor(v.r / d, v.g / d, v.b / d);
+                return DColor(v.r / d, v.g / d, v.b / d);
         }
 
         FATAL("Unreachable");
