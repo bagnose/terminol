@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 // Copyright © 2013 David Bryant
 
-#include "terminol/xcb/window.hxx"
+#include "terminol/xcb/widget.hxx"
 #include "terminol/xcb/color_set.hxx"
 #include "terminol/xcb/font_manager.hxx"
 #include "terminol/xcb/basics.hxx"

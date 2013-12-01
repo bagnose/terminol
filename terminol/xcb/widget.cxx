@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 // Copyright © 2013 David Bryant
 
-#include "terminol/xcb/window.hxx"
+#include "terminol/xcb/widget.hxx"
 #include "terminol/xcb/common.hxx"
 #include "terminol/support/conv.hxx"
 #include "terminol/support/pattern.hxx"

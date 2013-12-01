@@ -270,7 +270,7 @@ $(eval $(call EXE,PRIV,terminol/common/spinner,spinner.cxx,,terminol/common term
 # XCB
 #
 
-$(eval $(call LIB,terminol/xcb,basics.cxx color_set.cxx font_manager.cxx font_set.cxx window.cxx,$(XCB_CFLAGS)))
+$(eval $(call LIB,terminol/xcb,basics.cxx color_set.cxx font_manager.cxx font_set.cxx widget.cxx,$(XCB_CFLAGS)))
 
 $(eval $(call EXE,DIST,terminol/xcb/terminol,terminol.cxx,$(XCB_CFLAGS),terminol/xcb terminol/common terminol/support,$(XCB_LDFLAGS) -lutil))
 

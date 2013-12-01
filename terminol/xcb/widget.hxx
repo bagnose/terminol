@@ -1,8 +1,8 @@
 // vi:noai:sw=4
 // Copyright © 2013 David Bryant
 
-#ifndef XCB__WINDOW__HXX
-#define XCB__WINDOW__HXX
+#ifndef XCB__WIDGET__HXX
+#define XCB__WIDGET__HXX
 
 #include "terminol/xcb/basics.hxx"
 #include "terminol/xcb/color_set.hxx"
@@ -230,4 +230,4 @@ private:
     }
 };
 
-#endif // XCB__WINDOW__HXX
+#endif // XCB__WIDGET__HXX
