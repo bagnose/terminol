@@ -1396,7 +1396,7 @@ public:
 
                 cellsPtr = tag == I_Deduper::invalidTag() ? &_pending : &_deduper.lookup(tag);
                 offset   = hline.seqnum * getCols();
-                wrap     = cellsPtr->size() - offset;
+                wrap     = std::min<uint32_t>(getCols(), cellsPtr->size() - offset);
             }
             else {
                 auto & aline = _active[r - _scrollOffset];
@@ -1478,7 +1478,7 @@ public:
 
                 cellsPtr = tag == I_Deduper::invalidTag() ? &_pending : &_deduper.lookup(tag);
                 offset   = hline.seqnum * getCols();
-                wrap     = cellsPtr->size() - offset;
+                wrap     = std::min<uint32_t>(getCols(), cellsPtr->size() - offset);
             }
             else {
                 auto & aline = _active[r - _scrollOffset];
