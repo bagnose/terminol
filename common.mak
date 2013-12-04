@@ -118,7 +118,7 @@ obj/%.o: src/%.cxx
 ifeq ($(VERBOSE),false)
 	@echo ' [CXX] $@'
 endif
-	$(V)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(WFLAGS) -c $< -o $@ -MMD -MF $(patsubst %.o,%.dep,$@) $($(<)_CXXFLAGS)
+	$(V)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(WFLAGS) -c $< -o $@ -MMD -MP -MF $(patsubst %.o,%.dep,$@) $($(<)_CXXFLAGS)
 
 # Create a static library.
 # $(1) directory
