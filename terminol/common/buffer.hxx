@@ -1696,6 +1696,8 @@ protected:
     void rebuildHistory() {
         _history.clear();
 
+        bool failure = false;
+
         uint32_t index = 0;
 
         for (auto tag : _tags) {
@@ -1709,12 +1711,28 @@ protected:
                 //PRINT("offset=" << offset << ", seqnum=" << seqnum << ", size=" << size);
                 _history.push_back(HLine(index + _lostTags, seqnum, size));
 
-                ENFORCE(seqnum != static_cast<uint16_t>(-1), "Very long line: overflow");
+                if (UNLIKELY(seqnum == static_cast<uint16_t>(-1))) {
+                    ERROR("Ridiculously long line cannot be fully wrapped on rebuildHistory().");
+                    failure = true;
+                    break;
+                }
+
                 ++seqnum;
                 offset += _cols;
             } while (offset < cells.size());
 
             ++index;
+        }
+
+        if (failure) {
+            // Clear the history.
+            for (auto tag : _tags) {
+                if (tag != I_Deduper::invalidTag()) {
+                    _deduper.remove(tag);
+                }
+            }
+            _tags.clear();
+            _history.clear();
         }
     }
 
@@ -1982,9 +2000,15 @@ protected:
             ASSERT(_history.back().index - _lostTags == _tags.size() - 1, "");
             auto oldSize = _pending.size();
             ASSERT(oldSize % _cols == 0, "");
-            _pending.resize(oldSize + wrap, Cell::blank());
-            std::copy(cells.begin(), cells.begin() + wrap, _pending.begin() + oldSize);
-            _history.push_back(HLine(_tags.size() + _lostTags - 1, _history.back().seqnum + 1, wrap));
+
+            if (UNLIKELY(_history.back().seqnum == static_cast<uint16_t>(-1))) {
+                ERROR("Ridiculously long line cannot be fully wrapped on bump().");
+            }
+            else {
+                _pending.resize(oldSize + wrap, Cell::blank());
+                std::copy(cells.begin(), cells.begin() + wrap, _pending.begin() + oldSize);
+                _history.push_back(HLine(_tags.size() + _lostTags - 1, _history.back().seqnum + 1, wrap));
+            }
 
             if (!cont) {
                 // This line is not itself continued.
