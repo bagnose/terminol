@@ -671,16 +671,9 @@ void Window::icccmConfigure() {
                                         _fontSet->getWidth(),
                                         _fontSet->getHeight());
     xcb_icccm_size_hints_set_win_gravity(&sizeHints, XCB_GRAVITY_NORTH_WEST);
-#if 0
-    xcb_icccm_set_wm_size_hints(_basics.connection(),
-                                _window,
-                                XCB_ATOM_WM_NORMAL_HINTS,
-                                &sizeHints);
-#else
     xcb_icccm_set_wm_normal_hints(_basics.connection(),
                                   _window,
                                   &sizeHints);
-#endif
 
     //
     // wm?
@@ -1021,6 +1014,26 @@ void Window::handleResize() {
 
         copyPixmapToWindow(0, 0, _geometry.width, _geometry.height);
     }
+
+    auto border_thickness = _config.borderThickness;
+    auto scrollbar_width  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
+
+    auto base_width  = 2 * border_thickness + scrollbar_width;
+    auto base_height = 2 * border_thickness;
+
+    xcb_size_hints_t sizeHints;
+    sizeHints.flags = 0;
+    xcb_icccm_size_hints_set_base_size(&sizeHints,
+                                       base_width,
+                                       base_height);
+    xcb_icccm_size_hints_set_resize_inc(&sizeHints,
+                                        _fontSet->getWidth(),
+                                        _fontSet->getHeight());
+    xcb_icccm_size_hints_set_win_gravity(&sizeHints, XCB_GRAVITY_NORTH_WEST);
+    xcb_icccm_set_wm_normal_hints(_basics.connection(),
+                                  _window,
+                                  &sizeHints);
+
 }
 
 void Window::handleMove() {
@@ -1499,15 +1512,6 @@ void Window::terminalReaped(int status) throw () {
 
 void Window::useFontSet(FontSet * fontSet, int delta) throw () {
     _fontSet = fontSet;
-
-    xcb_size_hints_t sizeHints;
-    sizeHints.flags = 0;
-    xcb_icccm_size_hints_set_resize_inc(&sizeHints,
-                                        _fontSet->getWidth(),
-                                        _fontSet->getHeight());
-    xcb_icccm_set_wm_normal_hints(_basics.connection(),
-                                  _window,
-                                  &sizeHints);
 
     // Pass 'true' for sync so that the window has handled the configure
     // event when this function returns.
