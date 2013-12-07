@@ -163,6 +163,8 @@ protected:
     void     processAttributes(const std::vector<int32_t> & args);
     void     processModes(uint8_t priv, bool set, const std::vector<int32_t> & args);
 
+    static const CharSub * lookupCharSub(uint8_t code);
+
     // VtStateMachine::I_Observer implementation:
 
     void     machineNormal(utf8::Seq seq, utf8::Length length) throw () override;

@@ -1166,6 +1166,37 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
     }
 }
 
+const CharSub * Terminal::lookupCharSub(uint8_t code) {
+    switch (code) {
+        case '0': // set specg1
+            return &CS_SPECIAL;
+        case '1': // set altg1
+            NYI("Alternate Character rom");
+            return nullptr;
+        case '2': // set alt specg1
+            NYI("Alternate Special Character rom");
+            return nullptr;
+        case 'A': // set ukg0
+            return &CS_UK;
+        case 'B': // set usg0
+            return &CS_US;
+        case '<': // Multinational character set
+            NYI("Multinational character set");
+            return nullptr;
+        case '5': // Finnish
+            NYI("Finnish 1");
+            return nullptr;
+        case 'C': // Finnish
+            NYI("Finnish 2");
+            return nullptr;
+        case 'K': // German
+            NYI("German");
+            return nullptr;
+        default:
+            WARNING("Unknown character set: " << Char(code));
+            return nullptr;
+    }
+}
 // VtStateMachine::I_Observer implementation:
 
 void Terminal::machineNormal(utf8::Seq seq, utf8::Length UNUSED(length)) throw () {
@@ -1275,71 +1306,13 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
                 }
                 break;
             case '(':
-                switch (esc.code) {
-                    case '0': // set specg0
-                        _buffer->setCharSub(CharSet::G0, &CS_SPECIAL);
-                        break;
-                    case '1': // set altg0
-                        NYI("Alternate Character rom");
-                        break;
-                    case '2': // set alt specg0
-                        NYI("Alternate Special Character rom");
-                        break;
-                    case 'A': // set ukg0
-                        _buffer->setCharSub(CharSet::G0, &CS_UK);
-                        break;
-                    case 'B': // set usg0
-                        _buffer->setCharSub(CharSet::G0, &CS_US);
-                        break;
-                    case '<': // Multinational character set
-                        NYI("Multinational character set");
-                        break;
-                    case '5': // Finnish
-                        NYI("Finnish 1");
-                        break;
-                    case 'C': // Finnish
-                        NYI("Finnish 2");
-                        break;
-                    case 'K': // German
-                        NYI("German");
-                        break;
-                    default:
-                        WARNING("Unknown character set: " << esc.code);
-                        break;
+                if (const CharSub * charSub = lookupCharSub(esc.code)) {
+                    _buffer->setCharSub(CharSet::G0, charSub);
                 }
                 break;
             case ')':
-                switch (esc.code) {
-                    case '0': // set specg1
-                        _buffer->setCharSub(CharSet::G1, &CS_SPECIAL);
-                        break;
-                    case '1': // set altg1
-                        NYI("Alternate Character rom");
-                        break;
-                    case '2': // set alt specg1
-                        NYI("Alternate Special Character rom");
-                        break;
-                    case 'A': // set ukg0
-                        _buffer->setCharSub(CharSet::G1, &CS_UK);
-                        break;
-                    case 'B': // set usg0
-                        _buffer->setCharSub(CharSet::G1, &CS_US);
-                        break;
-                    case '<': // Multinational character set
-                        NYI("Multinational character set");
-                        break;
-                    case '5': // Finnish
-                        NYI("Finnish 1");
-                        break;
-                    case 'C': // Finnish
-                        NYI("Finnish 2");
-                        break;
-                    case 'K': // German
-                        NYI("German");
-                        break;
-                    default:
-                        WARNING("Unknown character set: " << esc.code);
-                        break;
+                if (const CharSub * charSub = lookupCharSub(esc.code)) {
+                    _buffer->setCharSub(CharSet::G1, charSub);
                 }
                 break;
             default:
