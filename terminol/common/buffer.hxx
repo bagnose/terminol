@@ -539,549 +539,56 @@ public:
         }
     }
 
-    void clearHistory() {
-        if (_history.empty()) {
-            return;
-        }
+    void clearHistory();
 
-        for (auto tag : _tags) {
-            if (tag != I_Deduper::invalidTag()) {
-                _deduper.remove(tag);
-            }
-        }
+    bool scrollUpHistory(uint16_t rows);
 
-        _tags.clear();
-        _history.clear();
-        _pending.clear();
+    bool scrollDownHistory(uint16_t rows);
 
-        clearSelection();
+    bool scrollTopHistory();
 
-        if (_scrollOffset == 0) {
-            _barDamage = true;
-        }
-        else {
-            _scrollOffset = 0;
-            damageViewport(true);
-        }
-    }
-
-    bool scrollUpHistory(uint16_t rows) {
-        auto oldScrollOffset = _scrollOffset;
-
-        if (_scrollOffset + rows > getHistoricalRows()) {
-            _scrollOffset = getHistoricalRows();
-        }
-        else {
-            _scrollOffset += rows;
-        }
-
-        if (_scrollOffset != oldScrollOffset) {
-            damageViewport(true);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    bool scrollDownHistory(uint16_t rows) {
-        auto oldScrollOffset = _scrollOffset;
-
-        if (rows > _scrollOffset) {
-            _scrollOffset = 0;
-        }
-        else {
-            _scrollOffset -= rows;
-        }
-
-        if (_scrollOffset != oldScrollOffset) {
-            damageViewport(true);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    bool scrollTopHistory() {
-        if (_scrollOffset != getHistoricalRows()) {
-            _scrollOffset = getHistoricalRows();
-            damageViewport(true);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
-
-    bool scrollBottomHistory() {
-        if (_scrollOffset != 0) {
-            _scrollOffset = 0;
-            damageViewport(true);
-            return true;
-        }
-        else {
-            return false;
-        }
-    }
+    bool scrollBottomHistory();
 
     Pos getCursorPos() const { return _cursor.pos; }
 
-    void migrateFrom(Buffer & other, bool clear_) {
-        other.clearSelection();
-        _cursor          = other._cursor;
-        _cursor.wrapNext = false;
-        if (clear_) {
-            clear();
-            _barDamage = true;
-        }
-        else {
-            damageViewport(true);
-        }
-    }
+    void migrateFrom(Buffer & other, bool clear_);
 
-    void resetDamage() {
-        for (auto & d : _damage) {
-            d.reset();
-        }
-        _barDamage = false;
-    }
+    void resetDamage();
 
-    void write(utf8::Seq seq, bool autoWrap, bool insert) {
-        damageCell();
+    void write(utf8::Seq seq, bool autoWrap, bool insert);
 
-        auto cs = getCharSub(_cursor.charSet);
-        cs->translate(seq);
+    void backspace(bool autoWrap);
 
-        if (autoWrap && _cursor.wrapNext) {
-            _cursor.wrapNext = false;
-            auto & line = _active[_cursor.pos.row];
+    void forwardIndex(bool resetCol = false);
 
-            // Don't set 'cont' to true if this line will remain the last line,
-            // otherwise we violate our invariant.
-            if (_cursor.pos.row == _marginEnd - 1 || _cursor.pos.row < getRows() - 1) {
-                line.cont = true; // continues on next line
-            }
+    void reverseIndex();
 
-            ASSERT(_cursor.pos.col == _cols - 1,
-                   "col=" << _cursor.pos.col << ", _cols-1=" << _cols - 1);
-            ASSERT(line.wrap == _cols,
-                   "wrap=" << line.wrap << ", _cols=" << _cols);
-            line.wrap = _cols;
+    void setTab();
 
-            if (_cursor.pos.row == _marginEnd - 1) {
-                addLine();      // invalidates line reference
-                moveCursor2(true, 0, false, 0);
-            }
-            else {
-                // If we are on the last line then the column will just be reset.
-                moveCursor2(true, 1, false, 0);
-            }
-        }
-        else if (insert) {
-            insertCells(1);
-        }
+    void unsetTab();
 
-        testClearSelection(APos(_cursor.pos, 0),
-                           APos(Pos(_cursor.pos.row, _cursor.pos.col + 1), 0));
+    void clearTabs();
 
-        auto style = _cursor.style;
-
-        if (cs->isSpecial()) {
-            style.attrs.unset(Attr::BOLD);
-            style.attrs.unset(Attr::ITALIC);
-        }
-
-        auto & line = _active[_cursor.pos.row];
-        line.cells[_cursor.pos.col] = Cell::utf8(seq, style);
-
-        ASSERT(line.wrap <= getCols(),
-               "line.wrap=" << line.wrap << " getCols()=" << getCols());
-        ASSERT(_cursor.pos.col < getCols(),
-               "_cursor.pos.cos=" << _cursor.pos.col << " getCols()=" << getCols());
-        line.wrap = std::max<int16_t>(line.wrap, _cursor.pos.col + 1);
-        ASSERT(line.wrap <= getCols(), "");
-
-        if (_cursor.pos.col == getCols() - 1) {
-            _cursor.wrapNext = true;
-        }
-        else {
-            ++_cursor.pos.col;
-        }
-
-        damageCell();
-    }
-
-    void backspace(bool autoWrap) {
-        if (_cursor.wrapNext && !_config.traditionalWrapping) {
-            _cursor.wrapNext = false;
-        }
-        else {
-            if (_cursor.pos.col == 0) {
-                if (!_config.traditionalWrapping && autoWrap) {
-                    if (_cursor.pos.row > _marginBegin) {
-                        moveCursor2(true, -1, false, getCols() - 1);
-                    }
-                }
-            }
-            else {
-                moveCursor2(true, 0, true, -1);
-            }
-        }
-    }
-
-    void forwardIndex(bool resetCol = false) {
-        if (_cursor.pos.row == _marginEnd - 1) {
-            addLine();
-            moveCursor2(true, 0, !resetCol, 0);
-        }
-        else {
-            moveCursor2(true, 1, !resetCol, 0);
-        }
-    }
-
-    void reverseIndex() {
-        if (_cursor.pos.row == _marginBegin) {
-            _cursor.wrapNext = false;
-            insertLinesAt(_marginBegin, 1);
-        }
-        else {
-            moveCursor2(true, -1, true, 0);
-        }
-    }
-
-    void setTab() {
-        _tabs[_cursor.pos.col] = true;
-    }
-
-    void unsetTab() {
-        _tabs[_cursor.pos.col] = false;
-    }
-
-    void clearTabs() {
-        std::fill(_tabs.begin(), _tabs.end(), false);
-    }
-
-    void moveCursor(Pos pos, bool marginRelative = false) {
-        _cursor.wrapNext = false;
-        damageCell();
-
-        if (marginRelative) {
-            // Convert pos to absolute and don't allow it below
-            // the bottom margin.
-            pos.row = std::min(pos.row + _marginBegin, _marginEnd - 1);
-        }
-
-        _cursor.pos = pos;
-
-        _cursor.pos.row = clamp<int16_t>(_cursor.pos.row, 0, getRows() - 1);
-        _cursor.pos.col = clamp<int16_t>(_cursor.pos.col, 0, getCols() - 1);
-
-        damageCell();
-    }
+    void moveCursor(Pos pos, bool marginRelative = false);
 
     void moveCursor2(bool rowRelative, int16_t row,
-                     bool colRelative, int16_t col) {
-        _cursor.wrapNext = false;
-        damageCell();
+                     bool colRelative, int16_t col);
 
-        if (rowRelative) {
-            if (row > 0) {
-                // If the cursor isn't already below the bottom margin then don't
-                // allow it to go below.
-                if (_cursor.pos.row < _marginEnd) {
-                    _cursor.pos.row = std::min<int16_t>(_cursor.pos.row + row, _marginEnd - 1);
-                }
-                else {
-                    _cursor.pos.row += row;
-                }
-            }
-            else if (row < 0) {
-                // If the cursor isn't already above the bottom margin then don't
-                // allow it to go above.
-                if (_cursor.pos.row >= _marginBegin) {
-                    _cursor.pos.row = std::max<int16_t>(_cursor.pos.row + row, _marginBegin);
-                }
-                else {
-                    _cursor.pos.row += row;
-                }
-            }
-            else {
-                // nothing to do
-            }
-        }
-        else {
-            _cursor.pos.row = row;
-        }
+    void saveCursor();
 
-        _cursor.pos.col = colRelative ? _cursor.pos.col + col : col;
+    void restoreCursor();
 
-        _cursor.pos.row = clamp<int16_t>(_cursor.pos.row, 0, getRows() - 1);
-        _cursor.pos.col = clamp<int16_t>(_cursor.pos.col, 0, getCols() - 1);
+    void resizeClip(int16_t rows, int16_t cols);
 
-        damageCell();
-    }
+    void resizeReflow(int16_t rows, int16_t cols);
 
-    void saveCursor() {
-        _savedCursor.cursor          = _cursor;
-        _savedCursor.cursor.wrapNext = false;      // XXX ??
-        _savedCursor.charSub         = getCharSub(_cursor.charSet);
-    }
+    void tabForward(uint16_t count);
 
-    void restoreCursor() {
-        damageCell();
+    void tabBackward(uint16_t count);
 
-        _cursor = _savedCursor.cursor;
-        if (_savedCursor.charSub) {
-            _charSubs[static_cast<int>(_cursor.charSet)] = _savedCursor.charSub;
-        }
+    void reset();
 
-        ASSERT(_cursor.pos.row < getRows(), "");
-        ASSERT(_cursor.pos.col < getCols(), "");
-
-        damageCell();
-    }
-
-    void resizeClip(int16_t rows, int16_t cols) {
-        ASSERT(rows > 0 && cols > 0, "");
-        ASSERT(_cursor.pos.row >= 0 && _cursor.pos.row < getRows(), "");
-        ASSERT(_cursor.pos.col >= 0 && _cursor.pos.col < getCols(), "");
-
-        clearSelection();
-
-        if (cols != getCols()) {
-            for (auto & line : _active) {
-                line.resize(cols);
-            }
-        }
-
-        if (rows > getRows()) {
-            _active.resize(rows, ALine(cols));
-        }
-        else if (rows < getRows()) {
-            _active.erase(_active.begin() + rows, _active.end());
-        }
-
-        _cols = cols;
-
-        ASSERT(getRows() == rows && getCols() == cols, "");
-
-        _active.shrink_to_fit();
-
-        resetMargins();
-
-        _tabs.resize(cols);
-        resetTabs();
-
-        _cursor.pos.row = std::min<int16_t>(_cursor.pos.row, rows - 1);
-        _cursor.pos.col = std::min<int16_t>(_cursor.pos.col, cols - 1);
-        _cursor.wrapNext = false;
-
-        _savedCursor.cursor.pos.row = std::min<int16_t>(_savedCursor.cursor.pos.row, rows - 1);
-        _savedCursor.cursor.pos.col = std::min<int16_t>(_savedCursor.cursor.pos.col, cols - 1);
-
-        _damage.resize(rows);
-        damageViewport(false);
-    }
-
-    void resizeReflow(int16_t rows, int16_t cols) {
-        ASSERT(rows > 0 && cols > 0, "");
-        ASSERT(_cursor.pos.row >= 0 && _cursor.pos.row < getRows(), "");
-        ASSERT(_cursor.pos.col >= 0 && _cursor.pos.col < getCols(), "");
-
-        clearSelection();
-
-        ASSERT(!_active.back().cont, "");
-
-        // Remove blank lines from the back, stopping if we hit the cursor.
-        while (getRows() > rows &&
-               _cursor.pos.row < getRows() - 1 &&
-               _active.back().isBlank())
-        {
-            _active.pop_back();
-
-            // By popping lines off the back it is possible that the last remaining
-            // line has 'cont' set. Just clobber it if so.
-            _active.back().cont = false;
-        }
-
-        if (cols != getCols()) {
-            bool     doneCursor     = false;
-            uint32_t cursorTagIndex = 0;
-            uint32_t cursorOffset   = 0;
-
-            while (!_active.empty()) {
-                auto s = _pending.size();       // Save this value before calling bump().
-
-                bump();
-
-                if (!doneCursor) {
-                    if (_cursor.pos.row == 0) {
-                        cursorTagIndex = _tags.size() - 1;
-                        cursorOffset   = s + _cursor.pos.col;
-                        doneCursor     = true;
-                    }
-                    else {
-                        --_cursor.pos.row;
-                    }
-                }
-            }
-
-            if (_cursor.wrapNext) {
-                ++cursorOffset;
-                _cursor.wrapNext = false;
-            }
-
-            ASSERT(doneCursor, "");
-            ASSERT(!_tags.empty(), "");
-            ASSERT(_pending.empty(), "");
-
-            _cols = cols;       // Must set before calling rebuildHistory().
-            rebuildHistory();
-
-            doneCursor = false;
-
-            // Pull rows out of history first.
-            while (getRows() < rows && !_history.empty()) {
-                if (doneCursor) {
-                    ++_cursor.pos.row;
-                }
-                else if (_tags.size() - 1 == cursorTagIndex) {
-                    auto & hline = _history.back();
-                    uint32_t offset = hline.seqnum * cols;
-                    if (cursorOffset == offset + cols) {
-                        _cursor.pos.row  = 0;
-                        _cursor.pos.col  = cursorOffset - offset;
-                        _cursor.wrapNext = true;
-                        doneCursor       = true;
-                    }
-                    else if (cursorOffset < offset + cols) {
-                        _cursor.pos.row = 0;
-                        _cursor.pos.col = cursorOffset - offset;
-                        doneCursor      = true;
-
-                        if (_cursor.pos.col < 0) {
-                            // This can happen due to libreadline stepping on our toes.
-                            _cursor.pos.col = 0;
-                        }
-                    }
-                }
-                unbump();
-            }
-
-            ASSERT(_cursor.pos.col >= 0, "");
-
-            if (!doneCursor) {
-                _cursor.pos.row = 0;
-                _cursor.pos.col = 0;
-            }
-
-            // Add blank lines to get the rest.
-            if (getRows() < rows) {
-                _active.resize(rows, ALine(cols));
-            }
-
-            ASSERT(_active.size() == static_cast<size_t>(rows), "");
-            ASSERT(_active.front().cells.size() == static_cast<size_t>(cols), "");
-        }
-        else {
-            if (getRows() < rows) {
-                // Pull rows out of history first.
-                while (getRows() < rows && !_history.empty()) {
-                    ++_cursor.pos.row;
-                    unbump();
-                }
-
-                // Add blank lines to get the rest.
-                if (getRows() < rows) {
-                    _active.resize(rows, ALine(cols));
-                }
-            }
-            else if (getRows() > rows) {
-                // Push excess rows into history.
-                while (getRows() > rows) {
-                    if (_cursor.pos.row > 0) { --_cursor.pos.row; }
-                    bump();
-                }
-            }
-        }
-
-        ASSERT(getRows() == rows && getCols() == cols, "rows=" << getRows() << ", cols=" << getCols());
-        ASSERT(_cursor.pos.row >= 0, "");
-        ASSERT(_cursor.pos.col >= 0, "");
-
-        _active.shrink_to_fit();
-
-        _scrollOffset = std::min<uint32_t>(_scrollOffset, _history.size());
-
-        resetMargins();
-
-        _tabs.resize(cols);
-        resetTabs();
-
-        _cursor.pos.row = std::min<int16_t>(_cursor.pos.row, rows - 1);
-        _cursor.pos.col = std::min<int16_t>(_cursor.pos.col, cols - 1);
-
-        _savedCursor.cursor.pos.row = std::min<int16_t>(_savedCursor.cursor.pos.row, rows - 1);
-        _savedCursor.cursor.pos.col = std::min<int16_t>(_savedCursor.cursor.pos.col, cols - 1);
-
-        _damage.resize(rows);
-        damageViewport(true);
-    }
-
-    void tabForward(uint16_t count) {
-        auto col = _cursor.pos.col;
-
-        while (count != 0) {
-            ++col;
-
-            if (col == getCols()) {
-                --col;
-                break;
-            }
-
-            if (_tabs[col]) {
-                --count;
-            }
-        }
-
-        moveCursor2(true, 0, false, col);
-    }
-
-    void tabBackward(uint16_t count) {
-        auto col = _cursor.pos.col;
-
-        while (count != 0) {
-            if (col == 0) {
-                break;
-            }
-
-            --col;
-
-            if (_tabs[col]) {
-                --count;
-            }
-        }
-
-        moveCursor2(true, 0, false, col);
-    }
-
-    void reset() {
-        clear();
-        resetMargins();
-        resetTabs();
-        resetCursor();
-    }
-
-    void setMargins(int16_t begin, int16_t end) {
-        if (end > begin) {
-            _marginBegin = clamp<int16_t>(begin, 0, getRows() - 1);
-            _marginEnd   = clamp<int16_t>(end,   begin + 1, getRows());
-        }
-        else {
-            resetMargins();
-        }
-    }
+    void setMargins(int16_t begin, int16_t end);
 
     void resetMargins() {
         _marginBegin = 0;
@@ -1101,271 +608,50 @@ public:
         resetStyle();
     }
 
-    void resetStyle() {
-        _cursor.style = Style();
-    }
+    void resetStyle() { _cursor.style = Style(); }
 
-    void setAttr(Attr attr) {
-        _cursor.style.attrs.set(attr);
-    }
+    void setAttr(Attr attr) { _cursor.style.attrs.set(attr); }
 
-    void unsetAttr(Attr attr) {
-        _cursor.style.attrs.unset(attr);
-    }
+    void unsetAttr(Attr attr) { _cursor.style.attrs.unset(attr); }
 
-    void setFg(const UColor & color) {
-        _cursor.style.fg = color;
-    }
+    void setFg(const UColor & color) { _cursor.style.fg = color; }
 
-    void setBg(const UColor & color) {
-        _cursor.style.bg = color;
-    }
+    void setBg(const UColor & color) { _cursor.style.bg = color; }
 
-    void insertCells(uint16_t n) {
-        ASSERT(n > 0, "n is not positive.");
+    void insertCells(uint16_t n);
 
-        testClearSelection(APos(_cursor.pos, 0),
-                           APos(Pos(_cursor.pos.row, getCols()), 0));
+    void eraseCells(uint16_t n);
 
-        n = std::min<uint16_t>(n, getCols() - _cursor.pos.col);
-        ASSERT(n > 0, "n is not positive.");
+    void blankCells(uint16_t n);
 
-        auto & line = _active[_cursor.pos.row];
-        line.wrap = std::min<int16_t>(getCols(), line.wrap + n);
-        ASSERT(line.wrap <= getCols(), "");
-        std::copy_backward(line.cells.begin() + _cursor.pos.col,
-                           line.cells.end() - n,
-                           line.cells.end());
-        std::fill(line.cells.begin() + _cursor.pos.col,
-                  line.cells.begin() + _cursor.pos.col + n,
-                  Cell::blank(_cursor.style));
+    void clearLine();
 
-        damageColumns(_cursor.pos.col, getCols());
+    void clearLineLeft();
 
-        ASSERT(!line.cont || line.wrap == _cols,
-               "line.cont=" << std::boolalpha << line.cont <<
-               ", line.wrap=" << line.wrap <<
-               ", _cols=" << _cols);
+    void clearLineRight();
 
-        _cursor.wrapNext = false;
-    }
+    void clear();
 
-    void eraseCells(uint16_t n) {
-        ASSERT(n > 0, "n is not positive.");
+    void clearAbove();
 
-        testClearSelection(APos(_cursor.pos, 0),
-                           APos(Pos(_cursor.pos.row, getCols()), 0));
+    void clearBelow();
 
-        n = std::min<uint16_t>(n, getCols() - _cursor.pos.col);
+    void insertLines(uint16_t n);
 
-        auto & line = _active[_cursor.pos.row];
-        line.cont = false;
-        line.wrap = std::max<int16_t>(0, line.wrap - n);
-        ASSERT(line.wrap <= getCols(), "");
-        std::copy(line.cells.begin() + _cursor.pos.col + n,
-                  line.cells.end(),
-                  line.cells.begin() + _cursor.pos.col);
-        std::fill(line.cells.end() - n,
-                  line.cells.end(),
-                  Cell::blank(_cursor.style));
+    void eraseLines(uint16_t n);
 
-        damageColumns(_cursor.pos.col, getCols());
+    void scrollUpMargins(uint16_t n);
 
-        ASSERT(!line.cont || line.wrap == _cols,
-               "line.cont=" << std::boolalpha << line.cont <<
-               ", line.wrap=" << line.wrap <<
-               ", _cols=" << _cols);
+    void scrollDownMargins(uint16_t n);
 
-        _cursor.wrapNext = false;
-    }
+    void damageViewport(bool scrollbar);
 
-    void blankCells(uint16_t n) {
-        ASSERT(n > 0, "n is not positive.");
+    void damageActive();
 
-        testClearSelection(APos(_cursor.pos, 0),
-                           APos(Pos(_cursor.pos.row, _cursor.pos.col + n), 0));
-
-        _cursor.wrapNext = false;
-        n = std::min<uint16_t>(n, getCols() - _cursor.pos.col);
-
-        auto & line = _active[_cursor.pos.row];
-
-        std::fill(line.cells.begin() + _cursor.pos.col,
-                  line.cells.begin() + _cursor.pos.col + n,
-                  Cell::blank(_cursor.style));
-
-        damageColumns(_cursor.pos.col, _cursor.pos.col + n);
-    }
-
-    void clearLine() {
-        testClearSelection(APos(Pos(_cursor.pos.row, 0), 0),
-                           APos(Pos(_cursor.pos.row, getCols()), 0));
-
-        auto & line = _active[_cursor.pos.row];
-
-        line.cont = false;
-        line.wrap = 0;
-        _cursor.wrapNext = false;
-        std::fill(line.cells.begin(), line.cells.end(), Cell::blank(_cursor.style));
-        damageColumns(0, getCols());
-
-        ASSERT(!line.cont || line.wrap == _cols,
-               "line.cont=" << std::boolalpha << line.cont <<
-               ", line.wrap=" << line.wrap <<
-               ", _cols=" << _cols);
-
-        _cursor.wrapNext = false;
-    }
-
-    void clearLineLeft() {
-        testClearSelection(APos(Pos(_cursor.pos.row, _cursor.pos.col + 1), 0),
-                           APos(Pos(_cursor.pos.row, 0), 0));
-
-        auto & line = _active[_cursor.pos.row];
-
-        _cursor.wrapNext = false;
-        std::fill(line.cells.begin(),
-                  line.cells.begin() + _cursor.pos.col + 1,
-                  Cell::blank(_cursor.style));
-        damageColumns(0, _cursor.pos.col + 1);
-
-        ASSERT(!line.cont || line.wrap == _cols,
-               "line.cont=" << std::boolalpha << line.cont <<
-               ", line.wrap=" << line.wrap <<
-               ", _cols=" << _cols);
-
-        _cursor.wrapNext = false;
-    }
-
-    void clearLineRight() {
-        testClearSelection(APos(_cursor.pos, 0),
-                           APos(Pos(_cursor.pos.row, getCols()), 0));
-
-        auto & line = _active[_cursor.pos.row];
-
-        line.cont = false;
-        _cursor.wrapNext = false;
-        line.wrap = std::min(line.wrap, _cursor.pos.col);
-        ASSERT(line.wrap <= getCols(), "");
-        std::fill(line.cells.begin() + _cursor.pos.col,
-                  line.cells.end(),
-                  Cell::blank(_cursor.style));
-        damageColumns(_cursor.pos.col, line.cells.size());
-
-        ASSERT(!line.cont || line.wrap == _cols,
-               "line.cont=" << std::boolalpha << line.cont <<
-               ", line.wrap=" << line.wrap <<
-               ", _cols=" << _cols);
-
-        _cursor.wrapNext = false;
-    }
-
-    void clear() {
-        clearSelection();
-
-        for (auto & l : _active) { l.clear(_cursor.style); }
-        damageActive();
-        _cursor.wrapNext = false;
-    }
-
-    void clearAbove() {
-        testClearSelection(APos(),
-                           APos(Pos(_cursor.pos.row, _cursor.pos.col + 1), 0));
-
-        clearLineLeft();
-        for (auto i = _active.begin(); i != _active.begin() + _cursor.pos.row; ++i) {
-            i->clear(_cursor.style);
-        }
-    }
-
-    void clearBelow() {
-        testClearSelection(APos(_cursor.pos, 0),
-                           APos(Pos(getRows() - 1, getCols()), 0));
-
-        clearLineRight();
-        for (auto i = _active.begin() + _cursor.pos.row + 1; i != _active.end(); ++i) {
-            i->clear(_cursor.style);
-        }
-    }
-
-    void insertLines(uint16_t n) {
-        if (_cursor.pos.row >= _marginBegin && _cursor.pos.row < _marginEnd) {
-            _cursor.wrapNext = false;
-            n = std::min<uint16_t>(n, _marginEnd - _cursor.pos.row);
-            insertLinesAt(_cursor.pos.row, n);
-        }
-    }
-
-    void eraseLines(uint16_t n) {
-        if (_cursor.pos.row >= _marginBegin && _cursor.pos.row < _marginEnd) {
-            _cursor.wrapNext = false;
-            n = std::min<uint16_t>(n, _marginEnd - _cursor.pos.row);
-            eraseLinesAt(_cursor.pos.row, n);
-        }
-    }
-
-    void scrollUpMargins(uint16_t n) {
-        _cursor.wrapNext = false;
-        n = std::min<uint16_t>(n, _marginEnd - _marginBegin);
-        eraseLinesAt(_marginBegin, n);
-    }
-
-    void scrollDownMargins(uint16_t n) {
-        _cursor.wrapNext = false;
-        n = std::min<uint16_t>(n, _marginEnd - _marginBegin);
-        insertLinesAt(_marginBegin, n);
-    }
-
-    void damageViewport(bool scrollbar) {
-        for (auto & d : _damage) {
-            d.damageSet(0, getCols());
-        }
-
-        if (scrollbar) {
-            _barDamage = true;
-        }
-    }
-
-    void damageActive() {
-        damageRows(0, getRows());
-    }
-
-    void testPattern() {
-        for (auto & r : _active) {
-            for (auto & c : r.cells) {
-                c = Cell::ascii('E', _cursor.style);
-            }
-        }
-        damageActive();
-    }
+    void testPattern();
 
     void accumulateDamage(int16_t & rowBegin, int16_t & rowEnd,
-                          int16_t & colBegin, int16_t & colEnd) const {
-        bool first = true;
-        int16_t rowNum = 0;
-
-        for (auto & d : _damage) {
-            auto cB = d.begin;
-            auto cE = d.end;
-
-            if (UNLIKELY(cB != cE)) {
-                if (UNLIKELY(first)) {
-                    rowBegin = rowNum;
-                    rowEnd   = rowNum + 1;
-                    colBegin = cB;
-                    colEnd   = cE;
-                    first    = false;
-                }
-                else {
-                    rowEnd   = rowNum + 1;
-                    colBegin = std::min(colBegin, cB);
-                    colEnd   = std::max(colEnd,   cE);
-                }
-            }
-
-            ++rowNum;
-        }
-    }
+                          int16_t & colBegin, int16_t & colEnd) const;
 
     template <class Func> void dispatchBg(bool reverse, Func func) const {
         APos selBegin, selEnd;
@@ -1578,501 +864,50 @@ public:
         }
     }
 
-    void useCharSet(CharSet charSet) {
-        _cursor.charSet = charSet;
-    }
+    void useCharSet(CharSet charSet);
 
-    void setCharSub(CharSet charSet, const CharSub * charSub) {
-        _charSubs[static_cast<int>(charSet)] = charSub;
-    }
+    void setCharSub(CharSet charSet, const CharSub * charSub);
 
-    const CharSub * getCharSub(CharSet charSet) const {
-        return _charSubs[static_cast<int>(charSet)];
-    }
+    const CharSub * getCharSub(CharSet charSet) const;
 
-    void dumpTags(std::ostream & ost) const {
-        ost << "BEGIN LOCAL TAGS" << std::endl;
+    void dumpTags(std::ostream & ost) const;
 
-        size_t i = 0;
+    void dumpHistory(std::ostream & ost) const;
 
-        for (auto t : _tags) {
-            ost << std::setw(6) << i << " "
-                << std::setw(sizeof(I_Deduper::Tag) * 2) << std::setfill('0')
-                << std::hex << std::uppercase << t << ": "
-                << std::setfill(' ') << std::dec << " \'";
+    void dumpActive(std::ostream & ost) const;
 
-            auto & cells = t != I_Deduper::invalidTag() ? _deduper.lookup(t) : _pending;
-
-            for (auto & c : cells) {
-                ost << c.seq;
-            }
-
-            ost << "\'" << std::endl;
-
-            ++i;
-        }
-
-        ost << "END LOCAL TAGS" << std::endl << std::endl;
-    }
-
-    void dumpHistory(std::ostream & ost) const {
-        ost << "BEGIN HISTORY" << std::endl;
-
-        size_t i = 0;
-
-        for (auto & l : _history) {
-            ost << std::setw(4) << i << " "
-                << std::setw(4) << l.index - _lostTags << " "
-                << std::setw(2) << l.seqnum << " "
-                << std::setw(3) << l.size << " \'";
-
-            auto   tag   = _tags[l.index - _lostTags];
-            auto & cells = tag != I_Deduper::invalidTag() ? _deduper.lookup(tag) : _pending;
-
-            size_t offset = l.seqnum * getCols();
-            auto   blank  = Cell::blank();
-            for (uint16_t o = 0; o != l.size; ++o) {
-                auto c = offset + o;
-                auto & cell = c < cells.size() ? cells[c] : blank;
-                ost << cell.seq;
-            }
-
-            ost << "\'" << std::endl;
-
-            ++i;
-        }
-
-        ost << "END HISTORY" << std::endl << std::endl;
-    }
-
-    void dumpActive(std::ostream & ost) const {
-        ost << "BEGIN ACTIVE" << std::endl;
-
-        size_t i = 0;
-
-        for (auto & l : _active) {
-            ost << std::setw(2) << i << " "
-                << (l.cont ? '\\' : '$') << " "
-                << std::setw(3) << l.wrap << " \'";
-
-            uint16_t col = 0;
-
-            ost << SGR::UNDERLINE;
-            for (; col != l.wrap; ++col) { ost << l.cells[col].seq; }
-            ost << SGR::RESET_UNDERLINE;
-
-            for (; col != getCols(); ++col) { ost << l.cells[col].seq; }
-
-            ost << "\'" << std::endl;
-
-            ++i;
-        }
-
-        ost << "END ACTIVE" << std::endl << std::endl;
-    }
-
-    void dumpSelection(std::ostream & ost) const {
-        ost << "BEGIN SELECTION" << std::endl;
-
-        std::string text;
-        if (getSelectedText(text)) {
-            ost << text << std::endl;
-        }
-
-        ost << "END SELECTION" << std::endl << std::endl;
-    }
+    void dumpSelection(std::ostream & ost) const;
 
 protected:
-    void rebuildHistory() {
-        _history.clear();
+    void rebuildHistory();
 
-        bool failure = false;
+    static bool isCellSelected(APos apos, APos begin, APos end, int16_t wrap);
 
-        uint32_t index = 0;
+    void testClearSelection(APos begin, APos end);
 
-        for (auto tag : _tags) {
-            auto & cells = tag != I_Deduper::invalidTag() ? _deduper.lookup(tag) : _pending;
+    bool normaliseSelection(APos & begin, APos & end) const;
 
-            uint16_t seqnum = 0;
-            size_t   offset = 0;
+    void insertLinesAt(int16_t row, uint16_t n);
 
-            do {
-                auto size = std::min<int16_t>(_cols, cells.size() - offset);
-                //PRINT("offset=" << offset << ", seqnum=" << seqnum << ", size=" << size);
-                _history.push_back(HLine(index + _lostTags, seqnum, size));
+    void eraseLinesAt(int16_t row, uint16_t n);
 
-                if (UNLIKELY(seqnum == static_cast<uint16_t>(-1))) {
-                    ERROR("Ridiculously long line cannot be fully wrapped on rebuildHistory().");
-                    failure = true;
-                    break;
-                }
+    bool marginsSet() const;
 
-                ++seqnum;
-                offset += _cols;
-            } while (offset < cells.size());
+    void damageCell();
 
-            ++index;
-        }
+    void damageColumns(int16_t begin, int16_t end);
 
-        if (failure) {
-            // Clear the history.
-            for (auto tag : _tags) {
-                if (tag != I_Deduper::invalidTag()) {
-                    _deduper.remove(tag);
-                }
-            }
-            _tags.clear();
-            _history.clear();
-        }
-    }
+    void damageRows(int16_t begin, int16_t end);
 
-    static bool isCellSelected(APos apos, APos begin, APos end, int16_t wrap) {
-        if (apos.row >= begin.row && apos.row <= end.row) {
-            // apos is within the selected row range
-            if (apos.row == begin.row && (apos.col < begin.col || begin.col >= wrap)) {
-                return false;
-            }
-            else if (apos.row == end.row && apos.col >= end.col) {
-                // apos is right of the selection end
-                return end.col > wrap &&
-                    (apos.row > begin.row || (apos.row == begin.row && wrap > begin.col));
-            }
-            else {
-                return true;
-            }
-        }
-        else {
-            return false;
-        }
-    }
+    void damageSelection();
 
-    void testClearSelection(APos begin, APos end) {
-        APos selBegin, selEnd;
-        if (normaliseSelection(selBegin, selEnd)) {
-            if (selBegin < end && begin < selEnd) {
-                clearSelection();
-            }
-        }
-    }
+    void addLine();
 
-    bool normaliseSelection(APos & begin, APos & end) const {
-        auto b = _selectMark;
-        auto e = _selectDelim;
+    void bump();
 
-        if (b == e) {
-            return false;
-        }
+    void unbump();
 
-        if (e < b) { std::swap(b, e); }
-
-        if (b.hand == Hand::LEFT || b.apos.col >= _cols - 1) {
-            begin = b.apos;
-        }
-        else {
-            begin = APos(b.apos.row, b.apos.col + 1);
-        }
-
-        if (e.hand == Hand::RIGHT || e.apos.col == 0) {
-            end = e.apos;
-        }
-        else {
-            end = APos(e.apos.row, e.apos.col - 1);
-        }
-
-        if (end.col < _cols) {
-            ++end.col;
-        }
-
-        return begin.row != end.row || begin.col != end.col;
-    }
-
-    void insertLinesAt(int16_t row, uint16_t n) {
-        ASSERT(row >= _marginBegin && row < _marginEnd, "");
-        ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n <<
-               ", margin-end=" << _marginEnd);
-
-        APos begin, end;
-        if (normaliseSelection(begin, end)) {
-            if (begin.row < row && end.row >= row) {
-                // Clear the selection because it spans the insertion point.
-                clearSelection();
-            }
-            else if (begin.row < _marginEnd - n && end.row >= _marginEnd - n) {
-                // Clear the selection because it spans or will collide with the
-                // erasure point.
-                clearSelection();
-            }
-            else {
-                _selectMark.apos.row  += n;
-                _selectDelim.apos.row += n;
-            }
-        }
-
-        _active.erase (_active.begin() + _marginEnd - n, _active.begin() + _marginEnd);
-        _active.insert(_active.begin() + row, n, ALine(getCols(), _cursor.style));
-
-        damageRows(row, _marginEnd);
-
-        // We mustn't leave a line with 'cont' set when the continuation line
-        // is gone. This can also cause _active.back().cont to be true, violating
-        // our invariant, if _marginEnd == getRows().
-        _active[_marginEnd - 1].cont = false;
-    }
-
-    void eraseLinesAt(int16_t row, uint16_t n) {
-        ASSERT(row >= _marginBegin && row < _marginEnd, "");
-        ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n <<
-               ", margin-end=" << _marginEnd);
-
-        APos begin, end;
-        if (normaliseSelection(begin, end)) {
-            if (begin.row < row + n && end.row >= row) {
-                // Clear the selection because it spans or will collide with the
-                // erasure point.
-                clearSelection();
-            }
-            else if (begin.row < _marginEnd && end.row >= _marginEnd) {
-                // Clear the selection because it spans the insertion point.
-                clearSelection();
-            }
-            else {
-                _selectMark.apos.row  -= n;
-                _selectDelim.apos.row -= n;
-            }
-        }
-
-        _active.erase (_active.begin() + row, _active.begin() + row + n);
-        _active.insert(_active.begin() + _marginEnd - n, n, ALine(getCols(), _cursor.style));
-
-        damageRows(row, _marginEnd);
-
-        ASSERT(!_active.back().cont, "");
-    }
-
-    bool marginsSet() const {
-        return _marginBegin != 0 || _marginEnd != getRows();
-    }
-
-    void damageCell() {
-        auto damageRow = _scrollOffset + static_cast<uint32_t>(_cursor.pos.row);
-
-        if (damageRow < static_cast<uint32_t>(getRows())) {
-            _damage[damageRow].damageAdd(_cursor.pos.col, _cursor.pos.col + 1);
-        }
-    }
-
-    void damageColumns(int16_t begin, int16_t end) {
-        ASSERT(begin <= end, "");
-        ASSERT(begin >= 0, "");
-        ASSERT(end   <= getCols(), "");
-
-        auto damageRow = _scrollOffset + static_cast<uint32_t>(_cursor.pos.row);
-
-        if (damageRow < static_cast<uint32_t>(getRows())) {
-            _damage[damageRow].damageAdd(begin, end);
-        }
-    }
-
-    void damageRows(int16_t begin, int16_t end) {
-        ASSERT(begin <= end, "");
-
-        for (auto i = begin; i != end; ++i) {
-            auto damageRow = _scrollOffset + static_cast<uint32_t>(i);
-
-            if (damageRow < static_cast<uint32_t>(getRows())) {
-                _damage[i].damageSet(0, getCols());
-            }
-            else {
-                break;
-            }
-        }
-    }
-
-    void damageSelection() {
-        APos begin, end;
-
-        if (normaliseSelection(begin, end)) {
-            // Convert to viewport relative.
-            auto row0 = begin.row   + static_cast<int32_t>(_scrollOffset);
-            auto row1 = end.row + 1 + static_cast<int32_t>(_scrollOffset);
-
-            // Clamp to viewport.
-            auto row2 = std::max<int32_t>(row0, 0);
-            auto row3 = std::min<int32_t>(row1, getRows());
-
-            if (row2 < row3) {
-                for (auto i = row2; i != row3; ++i) {
-                    _damage[i].damageSet(0, getCols());
-                }
-            }
-        }
-    }
-
-    void addLine() {
-        if (marginsSet()) {
-            eraseLinesAt(_marginBegin, 1);
-        }
-        else {
-            if (_historyLimit == 0) {
-                _active.pop_front();
-            }
-            else {
-                bump();
-
-                if (!_config.scrollWithHistory) {
-                    if (_scrollOffset != 0 && _scrollOffset != _history.size()) {
-                        ++_scrollOffset;
-                    }
-                }
-
-                enforceHistoryLimit();
-            }
-
-            _active.emplace_back(getCols(), _cursor.style);
-
-            APos begin, end;
-            if (normaliseSelection(begin, end)) {
-                if (begin.row == -static_cast<int32_t>(_history.size())) {
-                    clearSelection();
-                }
-                else {
-                    --_selectMark.apos.row;
-                    --_selectDelim.apos.row;
-                }
-            }
-
-            damageViewport(true);
-        }
-    }
-
-    void bump() {
-        auto & aline = _active.front();
-
-        ASSERT(!aline.cont || aline.wrap == _cols,
-               "aline.cont=" << std::boolalpha << aline.cont <<
-               ", aline.wrap=" << aline.wrap <<
-               ", _cols=" << _cols);
-
-        auto & cells = aline.cells;
-        auto   cont  = aline.cont;
-        auto   wrap  = aline.wrap;
-
-        if (_pending.empty()) {
-            // This line is not a continuation of a previous line.
-            ASSERT(_tags.empty() || _tags.back() != I_Deduper::invalidTag(), "");
-            ASSERT(_history.empty() || _history.back().index - _lostTags == _tags.size() - 1, "");
-
-            if (cont) {
-                // This line is continued on the next line so it can't be stored
-                // for dedupe yet.
-                _pending = std::move(cells);
-                ASSERT(cells.empty(), "Not stolen by move constructor?");
-                _tags.push_back(I_Deduper::invalidTag());
-            }
-            else {
-                // This line is completely standalone. Immediately dedupe it.
-                ASSERT(static_cast<size_t>(wrap) <= cells.size(), "");
-                cells.erase(cells.begin() + wrap, cells.end());
-                auto tag = _deduper.store(cells);
-                ASSERT(cells.empty(), "Not stolen by move constructor?");
-                ASSERT(tag != I_Deduper::invalidTag(), "");
-                _tags.push_back(tag);
-            }
-
-            _history.push_back(HLine(_tags.size() + _lostTags - 1, 0, wrap));
-        }
-        else {
-            // This line is a continuation of the previous line.
-            // Copy its contents into _pending.
-            ASSERT(!_tags.empty(), "");
-            ASSERT(_tags.back() == I_Deduper::invalidTag(), "");
-            ASSERT(!_history.empty(), "");
-            ASSERT(_history.back().index - _lostTags == _tags.size() - 1, "");
-            auto oldSize = _pending.size();
-            ASSERT(oldSize % _cols == 0, "");
-
-            if (UNLIKELY(_history.back().seqnum == static_cast<uint16_t>(-1))) {
-                ERROR("Ridiculously long line cannot be fully wrapped on bump().");
-            }
-            else {
-                _pending.resize(oldSize + wrap, Cell::blank());
-                std::copy(cells.begin(), cells.begin() + wrap, _pending.begin() + oldSize);
-                _history.push_back(HLine(_tags.size() + _lostTags - 1, _history.back().seqnum + 1, wrap));
-            }
-
-            if (!cont) {
-                // This line is not itself continued.
-                // Store _pending and the tag.
-                auto tag = _deduper.store(_pending);
-                ASSERT(tag != I_Deduper::invalidTag(), "");
-                ASSERT(_pending.empty(), "_pending cleared by I_Deduper::store()");
-                ASSERT(_tags.back() == I_Deduper::invalidTag(), "");
-                _tags.back() = tag;
-            }
-        }
-
-        ASSERT(!_history.empty() && _history.back().index - _lostTags == _tags.size() - 1, "");
-
-        _active.pop_front();        // This invalidates 'aline'.
-    }
-
-    void unbump() {
-        ASSERT(!_tags.empty(), "");
-        ASSERT(!_history.empty(), "");
-
-        auto & hline = _history.back();
-        ASSERT(hline.index - _lostTags == _tags.size() - 1, "");
-
-        bool cont;
-
-        if (_pending.empty()) {
-            cont = false;
-            auto tag = _tags.back();
-            ASSERT(tag != I_Deduper::invalidTag(), "");
-            _pending     = _deduper.lookupRemove(tag);
-            _tags.back() = I_Deduper::invalidTag();
-        }
-        else {
-            cont = true;
-            ASSERT(_tags.back() == I_Deduper::invalidTag(), "");
-        }
-
-        size_t offset = hline.seqnum * _cols;
-        ASSERT(offset <= _pending.size(), "");
-        std::vector<Cell> cells(_pending.begin() + offset, _pending.end());
-        _pending.erase(_pending.begin() + offset, _pending.end());
-
-        _active.emplace_front(cells, cont, cells.size(), _cols);
-        ASSERT(cells.empty(), "Not stolen by move constructor?");
-        ASSERT(_active.front().wrap <= _cols, "");
-
-        _history.pop_back();
-
-        if (_history.empty() || _history.back().index - _lostTags != _tags.size() - 1) {
-            _tags.pop_back();
-            ASSERT(_pending.empty(), "");
-        }
-    }
-
-    void enforceHistoryLimit() {
-        while (_tags.size() > _historyLimit) {
-            while (!_history.empty() && _history.front().index == _lostTags) {
-                if (_scrollOffset == _history.size()) { --_scrollOffset; }
-                _history.pop_front();
-            }
-
-            _deduper.remove(_tags.front());
-            _tags.pop_front();
-            ++_lostTags;
-        }
-
-        APos begin, end;
-        if (normaliseSelection(begin, end)) {
-            if (static_cast<int32_t>(_history.size()) + begin.row < 0) {
-                clearSelection();
-            }
-        }
-    }
+    void enforceHistoryLimit();
 };
 
 #endif // COMMON__BUFFER__HXX
