@@ -18,6 +18,7 @@
 class Terminal :
     protected VtStateMachine::I_Observer,
     protected Tty::I_Observer,
+    protected Buffer::I_Renderer,
     protected Uncopyable
 {
     static const CharSub CS_US;
@@ -179,6 +180,25 @@ protected:
     void     ttyData(const uint8_t * data, size_t size) throw () override;
     void     ttySync() throw () override;
     void     ttyReaped(int status) throw () override;
+
+    // Buffer::I_Renderer implementation:
+
+    void     bufferDrawBg(Pos     pos,
+                          int16_t count,
+                          UColor  color) throw ();
+    void     bufferDrawFg(Pos             pos,
+                          int16_t         count,
+                          UColor          color,
+                          AttrSet         attrs,
+                          const uint8_t * str,
+                          size_t          size) throw ();
+    void     bufferDrawCursor(Pos             pos,
+                              UColor          fg,
+                              UColor          bg,
+                              AttrSet         attrs,
+                              const uint8_t * str,
+                              size_t          size,
+                              bool            wrapNext) throw ();
 };
 
 std::ostream & operator << (std::ostream & ost, Terminal::Button button);

@@ -548,22 +548,7 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
 
     if (trigger == Trigger::FOCUS) {
         if (_modes.get(Mode::SHOW_CURSOR)) {
-            _buffer->dispatchCursor(_modes.get(Mode::REVERSE),
-                                    [&]
-                                    (Pos             pos,
-                                     UColor          fg,
-                                     UColor          bg,
-                                     AttrSet         attrs,
-                                     const uint8_t * str,
-                                     size_t          size,
-                                     bool            wrapNext)
-                                    {
-                                    damage.accommodateCell(pos);
-                                    _observer.terminalDrawCursor(pos, fg, bg, attrs,
-                                                                 str, size, wrapNext,
-                                                                 _focused);
-                                    }
-                          );
+            _buffer->dispatchCursor(_modes.get(Mode::REVERSE), *this);
         }
 
         scrollbar = false;
@@ -574,39 +559,10 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
         }
         _buffer->accumulateDamage(damage.begin.row, damage.end.row,
                                   damage.begin.col, damage.end.col);
-        _buffer->dispatchBg(_modes.get(Mode::REVERSE),
-                            [&]
-                            (Pos     pos,
-                             int16_t count,
-                             UColor  color)
-                            { _observer.terminalDrawBg(pos, count, color); }
-                           );
-        _buffer->dispatchFg(_modes.get(Mode::REVERSE),
-                            [&]
-                            (Pos             pos,
-                             int16_t         count,
-                             UColor          color,
-                             AttrSet         attrs,
-                             const uint8_t * str,
-                             size_t          size)
-                            { _observer.terminalDrawFg(pos, count, color, attrs, str, size); }
-                           );
+        _buffer->dispatchBg(_modes.get(Mode::REVERSE), *this);
+        _buffer->dispatchFg(_modes.get(Mode::REVERSE), *this);
         if (_modes.get(Mode::SHOW_CURSOR /* && CURSOR IS DAMAGED FIXME */)) {
-            _buffer->dispatchCursor(_modes.get(Mode::REVERSE),
-                                    [&]
-                                    (Pos             pos,
-                                     UColor          fg,
-                                     UColor          bg,
-                                     AttrSet         attrs,
-                                     const uint8_t * str,
-                                     size_t          size,
-                                     bool            wrapNext)
-                                    {
-                                    _observer.terminalDrawCursor(pos, fg, bg, attrs,
-                                                                 str, size, wrapNext,
-                                                                 _focused);
-                                    }
-                                   );
+            _buffer->dispatchCursor(_modes.get(Mode::REVERSE), *this);
         }
 
         if (_config.scrollbarVisible) {
@@ -1709,6 +1665,33 @@ void Terminal::ttySync() throw () {
 
 void Terminal::ttyReaped(int status) throw () {
     _observer.terminalReaped(status);
+}
+
+// Buffer::I_Renderer implementation
+
+void Terminal::bufferDrawBg(Pos     pos,
+                            int16_t count,
+                            UColor  color) throw () {
+    _observer.terminalDrawBg(pos, count, color);
+}
+
+void Terminal::bufferDrawFg(Pos             pos,
+                            int16_t         count,
+                            UColor          color,
+                            AttrSet         attrs,
+                            const uint8_t * str,
+                            size_t          size) throw () {
+    _observer.terminalDrawFg(pos, count, color, attrs, str, size);
+}
+
+void Terminal::bufferDrawCursor(Pos             pos,
+                                UColor          fg,
+                                UColor          bg,
+                                AttrSet         attrs,
+                                const uint8_t * str,
+                                size_t          size,
+                                bool            wrapNext) throw () {
+    _observer.terminalDrawCursor(pos, fg, bg, attrs, str, size, wrapNext, _focused);
 }
 
 std::ostream & operator << (std::ostream & ost, Terminal::Button button) {

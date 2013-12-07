@@ -258,6 +258,30 @@ class Buffer {
     const CharSub *              _charSubs[4];
 
 public:
+    class I_Renderer {
+    public:
+        virtual void bufferDrawBg(Pos     pos,
+                                  int16_t count,
+                                  UColor  color) throw () = 0;
+        virtual void bufferDrawFg(Pos             pos,
+                                  int16_t         count,
+                                  UColor          color,
+                                  AttrSet         attrs,
+                                  const uint8_t * str,       // nul-terminated
+                                  size_t          size) throw () = 0;
+        virtual void bufferDrawCursor(Pos             pos,
+                                      UColor          fg,
+                                      UColor          bg,
+                                      AttrSet         attrs,
+                                      const uint8_t * str,    // nul-terminated, count 1
+                                      size_t          size,
+                                      bool            wrapNext) throw () = 0;
+
+    protected:
+        ~I_Renderer() {}
+    };
+
+
     Buffer(const Config  & config,
            I_Deduper     & deduper,
            int16_t         rows,
@@ -653,7 +677,7 @@ public:
     void accumulateDamage(int16_t & rowBegin, int16_t & rowEnd,
                           int16_t & colBegin, int16_t & colEnd) const;
 
-    template <class Func> void dispatchBg(bool reverse, Func func) const {
+    void dispatchBg(bool reverse, I_Renderer & renderer) const {
         APos selBegin, selEnd;
         bool selValid = normaliseSelection(selBegin, selEnd);
 
@@ -718,7 +742,7 @@ public:
 
                 if (bg0 != bg1) {
                     if (c1 != c0) {
-                        func(Pos(r, c0), c1 - c0, bg0);
+                        renderer.bufferDrawBg(Pos(r, c0), c1 - c0, bg0);
                     }
 
                     c0  = c1;
@@ -728,12 +752,12 @@ public:
 
             // There may be an unterminated run to flush.
             if (c1 != c0) {
-                func(Pos(r, c0), c1 - c0, bg0);
+                renderer.bufferDrawBg(Pos(r, c0), c1 - c0, bg0);
             }
         }
     }
 
-    template <class Func> void dispatchFg(bool reverse, Func func) const {
+    void dispatchFg(bool reverse, I_Renderer & renderer) const {
         APos selBegin, selEnd;
         bool selValid = normaliseSelection(selBegin, selEnd);
 
@@ -803,7 +827,7 @@ public:
                         // flush run
                         auto size = run.size();
                         run.push_back(NUL);
-                        func(Pos(r, c0), c1 - c0, fg0, attrs0, &run.front(), size);
+                        renderer.bufferDrawFg(Pos(r, c0), c1 - c0, fg0, attrs0, &run.front(), size);
                         run.clear();
                     }
 
@@ -821,13 +845,13 @@ public:
                 // flush run
                 auto size = run.size();
                 run.push_back(NUL);
-                func(Pos(r, c0), c1 - c0, fg0, attrs0, &run.front(), size);
+                renderer.bufferDrawFg(Pos(r, c0), c1 - c0, fg0, attrs0, &run.front(), size);
                 run.clear();
             }
         }
     }
 
-    template <class Func> void dispatchCursor(bool reverse, Func func) const {
+    void dispatchCursor(bool reverse, I_Renderer & renderer) const {
         APos selBegin, selEnd;
         bool selValid = normaliseSelection(selBegin, selEnd);
 
@@ -860,7 +884,7 @@ public:
 
             auto size = run.size();
             run.push_back(NUL);
-            func(Pos(r1, c1), fg, bg, attrs, &run.front(), size, _cursor.wrapNext);
+            renderer.bufferDrawCursor(Pos(r1, c1), fg, bg, attrs, &run.front(), size, _cursor.wrapNext);
         }
     }
 
