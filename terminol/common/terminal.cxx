@@ -1179,7 +1179,7 @@ void Terminal::machineControl(uint8_t control) throw () {
             _observer.terminalBell();
             break;
         case HT:
-            _buffer->tabCursor(TabDir::FORWARD, 1);
+            _buffer->tabForward(1);
             break;
         case BS:
             _buffer->backspace(_modes.get(Mode::AUTO_WRAP));
@@ -1384,8 +1384,8 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) throw () {
                 _buffer->moveCursor(Pos(nthArg(esc.args, 0, 1) - 1, nthArg(esc.args, 1, 1) - 1),
                                     _modes.get(Mode::ORIGIN));
                 break;
-            case 'I': // CHT - Cursor Forward Tabulation *
-                _buffer->tabCursor(TabDir::FORWARD, nthArgNonZero(esc.args, 0, 1));
+            case 'I': // CHT - Cursor Forward Tabulation
+                _buffer->tabForward(nthArgNonZero(esc.args, 0, 1));
                 break;
             case 'J': // ED - Erase Data
                 // Clear screen.
@@ -1453,7 +1453,7 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) throw () {
                 break;
             }
             case 'Z': // CBT - Cursor Backward Tabulation
-                _buffer->tabCursor(TabDir::BACKWARD, nthArgNonZero(esc.args, 0, 1));
+                _buffer->tabBackward(nthArgNonZero(esc.args, 0, 1));
                 break;
             case '`': // HPA
                 _buffer->moveCursor2(true, 0, false, nthArgNonZero(esc.args, 0, 1) - 1);

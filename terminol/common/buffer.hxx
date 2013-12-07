@@ -52,9 +52,6 @@ public:
 // two active CharSubs.
 enum class CharSet { G0, G1 };
 
-// TabDir (or Tab-Direction).
-enum class TabDir { FORWARD, BACKWARD };
-
 // Buffer is the in-memory representation of the on-screen terminal data.
 // Conceptually, the Buffer is just a grid of Cells, where a Cell is a description
 // of a grid element, including the UTF-8 character at that location and its
@@ -1044,37 +1041,38 @@ public:
         damageViewport(true);
     }
 
-    void tabCursor(TabDir dir, uint16_t count) {
+    void tabForward(uint16_t count) {
         auto col = _cursor.pos.col;
 
-        switch (dir) {
-            case TabDir::FORWARD:
-                while (count != 0) {
-                    ++col;
+        while (count != 0) {
+            ++col;
 
-                    if (col == getCols()) {
-                        --col;
-                        break;
-                    }
-
-                    if (_tabs[col]) {
-                        --count;
-                    }
-                }
+            if (col == getCols()) {
+                --col;
                 break;
-            case TabDir::BACKWARD:
-                while (count != 0) {
-                    if (col == 0) {
-                        break;
-                    }
+            }
 
-                    --col;
+            if (_tabs[col]) {
+                --count;
+            }
+        }
 
-                    if (_tabs[col]) {
-                        --count;
-                    }
-                }
+        moveCursor2(true, 0, false, col);
+    }
+
+    void tabBackward(uint16_t count) {
+        auto col = _cursor.pos.col;
+
+        while (count != 0) {
+            if (col == 0) {
                 break;
+            }
+
+            --col;
+
+            if (_tabs[col]) {
+                --count;
+            }
         }
 
         moveCursor2(true, 0, false, col);
