@@ -89,9 +89,9 @@ Terminal::Terminal(I_Observer         & observer,
                _config.unlimitedScrollBack ?
                std::numeric_limits<int32_t>::max() :
                _config.scrollBackHistory,
-               &CS_US, &CS_SPECIAL),
+               &CS_US, &CS_SPECIAL, &CS_US, &CS_US),
     _altBuffer(_config, deduper, rows, cols, 0,
-               &CS_US, &CS_SPECIAL),
+               &CS_US, &CS_SPECIAL, &CS_US, &CS_US),
     _buffer(&_priBuffer),
     //
     _modes(),
@@ -1266,16 +1266,22 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
                 _buffer->reverseIndex();
                 break;
             case 'N':   // SS2 - Set Single Shift 2
-                NYI("SS2");
+                NYI("SS2");     // Use G2 for next char only
                 break;
             case 'O':   // SS3 - Set Single Shift 3
-                NYI("SS3");
+                NYI("SS3");     // Use G3 for next char only
                 break;
             case 'Z':   // DECID - Identify Terminal
                 write(reinterpret_cast<const uint8_t *>("\x1B[?6c"), 5);
                 break;
             case 'c':   // RIS - Reset to initial state
                 resetAll();
+                break;
+            case 'n':   // Designate G2
+                _buffer->useCharSet(CharSet::G2);
+                break;
+            case 'o':   // Designate G3
+                _buffer->useCharSet(CharSet::G3);
                 break;
             default:
                 //WARNING("Unhandled: " << esc);
@@ -1313,6 +1319,16 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
             case ')':
                 if (const CharSub * charSub = lookupCharSub(esc.code)) {
                     _buffer->setCharSub(CharSet::G1, charSub);
+                }
+                break;
+            case '*':
+                if (const CharSub * charSub = lookupCharSub(esc.code)) {
+                    _buffer->setCharSub(CharSet::G2, charSub);
+                }
+                break;
+            case '+':
+                if (const CharSub * charSub = lookupCharSub(esc.code)) {
+                    _buffer->setCharSub(CharSet::G3, charSub);
                 }
                 break;
             default:

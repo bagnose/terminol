@@ -50,7 +50,7 @@ public:
 
 // CharSet (or Character-Set) enumerates the CharSub registers. Terminol supports
 // two active CharSubs.
-enum class CharSet { G0, G1 };
+enum class CharSet { G0, G1, G2, G3 };
 
 // Buffer is the in-memory representation of the on-screen terminal data.
 // Conceptually, the Buffer is just a grid of Cells, where a Cell is a description
@@ -221,46 +221,19 @@ class Buffer {
 
     // Cursor encompasses the state associated with a VT cursor.
     struct Cursor {
-        Pos             pos;            // Current cursor position.
-        Style           style;          // Current cursor style.
-        bool            wrapNext;       // Flag indicating whether the next char wraps.
+        Pos     pos;            // Current cursor position.
+        Style   style;          // Current cursor style.
+        bool    wrapNext;       // Flag indicating whether the next char wraps.
+        CharSet charSet;        // Which CharSet is in use?
 
-        CharSet         charSet;        // Which CharSet is in use?
-        const CharSub * g0;             // CharSub associated with G0.
-        const CharSub * g1;             // CharSub associated with G1.
+        Cursor() : pos(), style(), wrapNext(false), charSet(CharSet::G0) {}
+    };
 
-        // Getter for the current CharSub.
-        const CharSub * getCharSub() const {
-            switch (charSet) {
-                case CharSet::G0:
-                    return g0;
-                case CharSet::G1:
-                    return g1;
-            }
+    struct SavedCursor {
+        Cursor          cursor;
+        const CharSub * charSub;
 
-            FATAL("Unreachable.");
-        }
-
-        // Setter for the current CharSub.
-        void setCharSub(CharSet charSet_, const CharSub * charSub) {
-            switch (charSet_) {
-                case CharSet::G0:
-                    g0 = charSub;
-                    return;
-                case CharSet::G1:
-                    g1 = charSub;
-                    return;
-            }
-
-            FATAL("Unreachable.");
-        }
-
-        Cursor(const CharSub * g0_, const CharSub * g1_) :
-            pos(), style(), wrapNext(false), charSet(CharSet::G0), g0(g0_), g1(g1_)
-        {
-            ASSERT(g0, "g0 is null.");
-            ASSERT(g1, "g1 is null.");
-        }
+        SavedCursor() : cursor(), charSub(nullptr) {}
     };
 
     const Config               & _config;
@@ -281,7 +254,8 @@ class Buffer {
     HAPos                        _selectMark;       // Start of user selection.
     HAPos                        _selectDelim;      // End of user selection.
     Cursor                       _cursor;           // Current cursor.
-    Cursor                       _savedCursor;      // Saved cursor.
+    SavedCursor                  _savedCursor;      // Saved cursor.
+    const CharSub *              _charSubs[4];
 
 public:
     Buffer(const Config  & config,
@@ -290,7 +264,9 @@ public:
            int16_t         cols,
            uint32_t        historyLimit,
            const CharSub * g0,
-           const CharSub * g1) :
+           const CharSub * g1,
+           const CharSub * g3,
+           const CharSub * g4) :
         _config(config),
         _deduper(deduper),
         _tags(),
@@ -306,9 +282,14 @@ public:
         _barDamage(true),
         _selectMark(),
         _selectDelim(),
-        _cursor(g0, g1),
-        _savedCursor(g0, g1)
+        _cursor(),
+        _savedCursor()
     {
+        _charSubs[0] = g0;
+        _charSubs[1] = g1;
+        _charSubs[2] = g3;
+        _charSubs[3] = g4;
+
         resetMargins();
         resetTabs();
     }
@@ -669,7 +650,7 @@ public:
     void write(utf8::Seq seq, bool autoWrap, bool insert) {
         damageCell();
 
-        auto cs = _cursor.getCharSub();
+        auto cs = getCharSub(_cursor.charSet);
         cs->translate(seq);
 
         if (autoWrap && _cursor.wrapNext) {
@@ -842,15 +823,22 @@ public:
     }
 
     void saveCursor() {
-        _savedCursor = _cursor;
-        _savedCursor.wrapNext = false;      // XXX ??
+        _savedCursor.cursor          = _cursor;
+        _savedCursor.cursor.wrapNext = false;      // XXX ??
+        _savedCursor.charSub         = getCharSub(_cursor.charSet);
     }
 
     void restoreCursor() {
         damageCell();
-        _cursor = _savedCursor;
+
+        _cursor = _savedCursor.cursor;
+        if (_savedCursor.charSub) {
+            _charSubs[static_cast<int>(_cursor.charSet)] = _savedCursor.charSub;
+        }
+
         ASSERT(_cursor.pos.row < getRows(), "");
         ASSERT(_cursor.pos.col < getCols(), "");
+
         damageCell();
     }
 
@@ -889,8 +877,8 @@ public:
         _cursor.pos.col = std::min<int16_t>(_cursor.pos.col, cols - 1);
         _cursor.wrapNext = false;
 
-        _savedCursor.pos.row = std::min<int16_t>(_savedCursor.pos.row, rows - 1);
-        _savedCursor.pos.col = std::min<int16_t>(_savedCursor.pos.col, cols - 1);
+        _savedCursor.cursor.pos.row = std::min<int16_t>(_savedCursor.cursor.pos.row, rows - 1);
+        _savedCursor.cursor.pos.col = std::min<int16_t>(_savedCursor.cursor.pos.col, cols - 1);
 
         _damage.resize(rows);
         damageViewport(false);
@@ -1034,8 +1022,8 @@ public:
         _cursor.pos.row = std::min<int16_t>(_cursor.pos.row, rows - 1);
         _cursor.pos.col = std::min<int16_t>(_cursor.pos.col, cols - 1);
 
-        _savedCursor.pos.row = std::min<int16_t>(_savedCursor.pos.row, rows - 1);
-        _savedCursor.pos.col = std::min<int16_t>(_savedCursor.pos.col, cols - 1);
+        _savedCursor.cursor.pos.row = std::min<int16_t>(_savedCursor.cursor.pos.row, rows - 1);
+        _savedCursor.cursor.pos.col = std::min<int16_t>(_savedCursor.cursor.pos.col, cols - 1);
 
         _damage.resize(rows);
         damageViewport(true);
@@ -1595,7 +1583,11 @@ public:
     }
 
     void setCharSub(CharSet charSet, const CharSub * charSub) {
-        _cursor.setCharSub(charSet, charSub);
+        _charSubs[static_cast<int>(charSet)] = charSub;
+    }
+
+    const CharSub * getCharSub(CharSet charSet) const {
+        return _charSubs[static_cast<int>(charSet)];
     }
 
     void dumpTags(std::ostream & ost) const {
