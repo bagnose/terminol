@@ -5,23 +5,25 @@ VERBOSE         ?= false
 VERSION         ?= $(shell git --git-dir=src/.git log -1 --format='%cd.%h' --date=short | tr -d -)
 BROWSER         ?= chromium
 
-ALL_MODULES     := pangocairo pango cairo fontconfig xcb-keysyms xcb-icccm xcb-ewmh xcb-util xkbcommon libpcre
+SUPPORT_MODULES := libpcre
+COMMON_MODULES  := xkbcommon
+GFX_MODULES     := pangocairo pango cairo
+XCB_MODULES     := cairo-xcb xcb-keysyms xcb-icccm xcb-ewmh xcb-util
+
+ALL_MODULES     := $(SUPPORT_MODULES) $(COMMON_MODULES) $(GFX_MODULES) $(XCB_MODULES)
 
 ifeq ($(shell pkg-config $(ALL_MODULES) && echo installed),)
   $(error Missing packages from: $(ALL_MODULES))
 endif
 
-SUPPORT_MODULES := libpcre
 SUPPORT_CFLAGS  := $(shell pkg-config --cflags $(SUPPORT_MODULES))
 SUPPORT_LDFLAGS := $(shell pkg-config --libs   $(SUPPORT_MODULES))
 
-COMMON_MODULES  := xkbcommon
-COMMON_CFLAGS   := $(shell pkg-config --cflags $(COMMON_MODULES))
-COMMON_LDFLAGS  := $(shell pkg-config --libs   $(COMMON_MODULES))
+COMMON_CFLAGS   := $(shell pkg-config --cflags $(SUPPORT_MODULES) $(COMMON_MODULES))
+COMMON_LDFLAGS  := $(shell pkg-config --libs   $(SUPPORT_MODULES) $(COMMON_MODULES))
 
-XCB_MODULES     := $(ALL_MODULES)
-XCB_CFLAGS      := $(shell pkg-config --cflags $(XCB_MODULES))
-XCB_LDFLAGS     := $(shell pkg-config --libs   $(XCB_MODULES))
+XCB_CFLAGS      := $(shell pkg-config --cflags $(SUPPORT_MODULES) $(COMMON_MODULES) $(GFX_MODULES) $(XCB_MODULES))
+XCB_LDFLAGS     := $(shell pkg-config --libs   $(SUPPORT_MODULES) $(COMMON_MODULES) $(GFX_MODULES) $(XCB_MODULES))
 
 CPPFLAGS        := -DVERSION=\"$(VERSION)\" -iquotesrc
 CXXFLAGS        := -fpic -fno-rtti -pedantic -std=c++11
@@ -230,41 +232,41 @@ endef
 # SUPPORT
 #
 
-$(eval $(call LIB,terminol/support,conv.cxx debug.cxx escape.cxx pattern.cxx sys.cxx time.cxx,))
+$(eval $(call LIB,terminol/support,conv.cxx debug.cxx escape.cxx pattern.cxx sys.cxx time.cxx,$(SUPPORT_CFLAGS)))
 
-$(eval $(call EXE,TEST,terminol/support/test-support,test_support.cxx,,terminol/support,))
+$(eval $(call EXE,TEST,terminol/support/test-support,test_support.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 
-$(eval $(call EXE,TEST,terminol/support/test-net,test_net.cxx,,terminol/support,))
+$(eval $(call EXE,TEST,terminol/support/test-net,test_net.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 
-$(eval $(call EXE,TEST,terminol/support/test-cmdline,test_cmdline.cxx,,terminol/support,))
+$(eval $(call EXE,TEST,terminol/support/test-cmdline,test_cmdline.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 
-$(eval $(call EXE,TEST,terminol/support/test-regex,test_regex.cxx,,terminol/support,$(SUPPORT_LDFLAGS)))
+$(eval $(call EXE,TEST,terminol/support/test-regex,test_regex.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 
 #
 # COMMON
 #
 
-$(eval $(call LIB,terminol/common,ascii.cxx bindings.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,))
+$(eval $(call LIB,terminol/common,ascii.cxx bindings.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,$(COMMON_CFLAGS)))
 
-$(eval $(call EXE,TEST,terminol/common/test-utf8,test_utf8.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,TEST,terminol/common/test-utf8,test_utf8.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,TEST,terminol/common/test-data_types,test_data_types.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,TEST,terminol/common/test-data_types,test_data_types.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/abuse,abuse.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,PRIV,terminol/common/abuse,abuse.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/wedge,wedge.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,PRIV,terminol/common/wedge,wedge.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/counter,counter.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,PRIV,terminol/common/counter,counter.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/sequencer,sequencer.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,PRIV,terminol/common/sequencer,sequencer.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/styles,styles.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,PRIV,terminol/common/styles,styles.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/droppings,droppings.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,PRIV,terminol/common/droppings,droppings.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/positioner,positioner.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,PRIV,terminol/common/positioner,positioner.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/spinner,spinner.cxx,,terminol/common terminol/support,))
+$(eval $(call EXE,PRIV,terminol/common/spinner,spinner.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
 
 #
 # XCB
