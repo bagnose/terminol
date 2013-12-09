@@ -23,7 +23,7 @@ Basics::Basics() throw (Error) {
     auto d = ::getenv("DISPLAY");
     _displayName = d ? d : ":0";
 
-    _connection = xcb_connect(nullptr, &_screenNum);
+    _connection = xcb_connect(_displayName.c_str(), &_screenNum);
     if (xcb_connection_has_error(_connection)) {
         throw Error("Failed to connect to display.");
     }

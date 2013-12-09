@@ -35,7 +35,6 @@ std::string stringifyEventType(uint8_t responseType) {
             return "key-press";
         case XCB_KEY_RELEASE:
             return "key-release";
-            break;
         case XCB_BUTTON_PRESS:
             return "button-press";
         case XCB_BUTTON_RELEASE:

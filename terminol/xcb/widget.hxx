@@ -16,7 +16,6 @@
 #include <xcb/xcb.h>
 #include <xcb/xcb_keysyms.h>
 #include <cairo-xcb.h>
-#include <cairo-ft.h>
 
 class Widget :
     protected Terminal::I_Observer,

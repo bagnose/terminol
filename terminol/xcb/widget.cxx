@@ -252,7 +252,7 @@ void Widget::keyPress(xcb_key_press_event_t * event) {
     ModifierSet  modifiers;
 
     if (_basics.getKeySym(event->detail, event->state, keySym, modifiers)) {
-        if (_terminal->keyPress(keySym, modifiers)) {
+        if (_terminal->keyPress(static_cast<xkb_keysym_t>(keySym), modifiers)) {
             if (_hadDeleteRequest) {
                 // Key presses clear delete requests that are
                 // waiting for confirmation.
@@ -543,7 +543,7 @@ void Widget::selectionRequest(xcb_selection_request_event_t * event) {
     response.property      = XCB_ATOM_NONE;        // reject by default
 
     if (event->target == _basics.atomTargets()) {
-        xcb_atom_t atomUtf8String = _basics.atomUtf8String();
+        auto atomUtf8String = _basics.atomUtf8String();
         auto cookie = xcb_change_property_checked(_basics.connection(),
                                                   XCB_PROP_MODE_REPLACE,
                                                   event->requestor,
@@ -909,8 +909,8 @@ void Widget::drawBorder() {
                       _pixmap,
                       _gc,
                       x + x1, y + y2,       // src
-                      x1, y2,
-                      x2 - x1, y3 - y2);
+                      x1, y2,               // dst
+                      x2 - x1, y3 - y2);    // w/h
 
         xcb_flush(_basics.connection());
     }
