@@ -5,6 +5,7 @@
 #include "terminol/support/escape.hxx"
 
 #include <algorithm>
+#include <iostream>
 #include <iomanip>
 
 namespace {
@@ -24,7 +25,7 @@ template <class A> typename A::Type hash(const void * buffer,
 
 } // namespace {anonymous}
 
-Deduper::Deduper() : _lines(), _totalRefs(0) {}
+Deduper::Deduper() : _entries(), _totalRefs(0) {}
 
 Deduper::~Deduper() {}
 
@@ -33,15 +34,15 @@ auto Deduper::store(std::vector<Cell> & cells) -> Tag {
     ASSERT(tag != invalidTag(), "");
 
 again:
-    auto iter = _lines.find(tag);
+    auto iter = _entries.find(tag);
 
-    if (iter == _lines.end()) {
-        _lines.insert(std::make_pair(tag, Payload(cells)));
+    if (iter == _entries.end()) {
+        _entries.insert(std::make_pair(tag, Entry(cells)));
     }
     else {
-        auto & payload = iter->second;
+        auto & entry = iter->second;
 
-        if (cells != payload.cells) {
+        if (cells != entry.cells) {
 #if 0
             std::cerr << "Hash collision:" << std::endl;
 
@@ -52,13 +53,13 @@ again:
             std::cerr << "\'" << std::endl;
 
             std::cerr << "  \'";
-            for (auto & c : payload.cells) {
+            for (auto & c : entry.cells) {
                 std::cerr << c.seq;
             }
             std::cerr << "\'" << std::endl;
 #endif
 
-            ENFORCE(static_cast<Tag>(_lines.size()) != invalidTag(), "No dedupe room left.");
+            ENFORCE(static_cast<Tag>(_entries.size()) != invalidTag(), "No dedupe room left.");
 
             ++tag;
             if (tag == invalidTag()) { ++tag; }
@@ -66,7 +67,7 @@ again:
         }
 
         cells.clear();
-        ++payload.refs;
+        ++entry.refs;
     }
 
     ++_totalRefs;
@@ -77,19 +78,19 @@ again:
 }
 
 const std::vector<Cell> & Deduper::lookup(Tag tag) const {
-    auto iter = _lines.find(tag);
-    ASSERT(iter != _lines.end(), "");
+    auto iter = _entries.find(tag);
+    ASSERT(iter != _entries.end(), "");
     return iter->second.cells;
 }
 
 void Deduper::remove(Tag tag) {
     ASSERT(tag != invalidTag(), "");
-    auto iter = _lines.find(tag);
-    ASSERT(iter != _lines.end(), "");
-    auto & payload = iter->second;
+    auto iter = _entries.find(tag);
+    ASSERT(iter != _entries.end(), "");
+    auto & entry = iter->second;
 
-    if (--payload.refs == 0) {
-        _lines.erase(iter);
+    if (--entry.refs == 0) {
+        _entries.erase(iter);
     }
 
     --_totalRefs;
@@ -97,39 +98,39 @@ void Deduper::remove(Tag tag) {
 
 std::vector<Cell> Deduper::lookupRemove(Tag tag) {
     ASSERT(tag != invalidTag(), "");
-    auto iter = _lines.find(tag);
-    ASSERT(iter != _lines.end(), "");
-    auto & payload = iter->second;
+    auto iter = _entries.find(tag);
+    ASSERT(iter != _entries.end(), "");
+    auto & entry = iter->second;
 
     --_totalRefs;
 
-    if (--payload.refs == 0) {
-        auto rval = std::move(payload.cells);
-        ASSERT(payload.cells.empty(), "");
-        _lines.erase(iter);
+    if (--entry.refs == 0) {
+        auto rval = std::move(entry.cells);
+        ASSERT(entry.cells.empty(), "");
+        _entries.erase(iter);
         return rval;
     }
     else {
-        return payload.cells;
+        return entry.cells;
     }
 }
 
-void Deduper::getStats(uint32_t & uniqueLines, uint32_t & totalLines) const {
-    uniqueLines = _lines.size();
+void Deduper::getLineStats(uint32_t & uniqueLines, uint32_t & totalLines) const {
+    uniqueLines = _entries.size();
     totalLines  = _totalRefs;
 }
 
-void Deduper::getStats2(size_t & bytes1, size_t & bytes2) const {
-    bytes1 = 0;
-    bytes2 = 0;
+void Deduper::getByteStats(size_t & uniqueBytes, size_t & totalBytes) const {
+    uniqueBytes = 0;
+    totalBytes = 0;
 
-    for (auto & l : _lines) {
+    for (auto & l : _entries) {
         auto & payload = l.second;
 
         size_t size = payload.cells.size() * sizeof(Cell);
 
-        bytes1 += size;
-        bytes2 += payload.refs * size;
+        uniqueBytes += size;
+        totalBytes  += payload.refs * size;
     }
 }
 
@@ -138,7 +139,7 @@ void Deduper::dump(std::ostream & ost) const {
 
     size_t i = 0;
 
-    for (auto & l : _lines) {
+    for (auto & l : _entries) {
         auto   tag     = l.first;
         auto & payload = l.second;
 

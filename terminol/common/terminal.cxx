@@ -495,12 +495,12 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                 _buffer->dumpSelection(std::cerr);
                 return true;
             case Action::DEBUG_STATS: {
-                size_t bytes1, bytes2;
-                _deduper.getStats2(bytes1, bytes2);
+                size_t uniqueBytes, totalBytes;
+                _deduper.getByteStats(uniqueBytes, totalBytes);
 
                 std::ostringstream ost;
-                ost << "line-data="   << humanSize(bytes1) << " "
-                    << "(non-dedupe=" << humanSize(bytes2) << ")";
+                ost << "line-data="   << humanSize(uniqueBytes) << " "
+                    << "(non-dedupe=" << humanSize(totalBytes) << ")";
                 _observer.terminalSetWindowTitle(ost.str(), true);
                 return true;
             }
@@ -508,7 +508,7 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                 uint32_t localLines = _priBuffer.getHistoricalRows();
                 uint32_t uniqueLines;
                 uint32_t globalLines;
-                _deduper.getStats(uniqueLines, globalLines);
+                _deduper.getLineStats(uniqueLines, globalLines);
                 double   dedupe =
                     uniqueLines == 0 ? 0.0 :
                     static_cast<double>(globalLines) / uniqueLines;
