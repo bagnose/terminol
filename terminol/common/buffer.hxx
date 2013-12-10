@@ -674,6 +674,8 @@ public:
 
     void testPattern();
 
+    void damageCell();
+
     void accumulateDamage(int16_t & rowBegin, int16_t & rowEnd,
                           int16_t & colBegin, int16_t & colEnd) const;
 
@@ -709,8 +711,6 @@ protected:
     void eraseLinesAt(int16_t row, uint16_t n);
 
     bool marginsSet() const;
-
-    void damageCell();
 
     void damageColumns(int16_t begin, int16_t end);
 
