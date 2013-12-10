@@ -515,8 +515,7 @@ public:
 
     void damageCell();
 
-    void accumulateDamage(int16_t & rowBegin, int16_t & rowEnd,
-                          int16_t & colBegin, int16_t & colEnd) const;
+    void accumulateDamage(Region & damage) const;
 
     void dispatchBg(bool reverse, I_Renderer & renderer) const;
     void dispatchFg(bool reverse, I_Renderer & renderer) const;

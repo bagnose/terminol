@@ -550,8 +550,7 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
     if (trigger == Trigger::FOCUS) {
         if (_modes.get(Mode::SHOW_CURSOR)) {
             _buffer->damageCell();
-            _buffer->accumulateDamage(damage.begin.row, damage.end.row,
-                                      damage.begin.col, damage.end.col);
+            _buffer->accumulateDamage(damage);
             _buffer->dispatchCursor(_modes.get(Mode::REVERSE), *this);
         }
 
@@ -561,8 +560,7 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
         if (trigger == Trigger::CLIENT) {
             _buffer->damageViewport(true);
         }
-        _buffer->accumulateDamage(damage.begin.row, damage.end.row,
-                                  damage.begin.col, damage.end.col);
+        _buffer->accumulateDamage(damage);
         _buffer->dispatchBg(_modes.get(Mode::REVERSE), *this);
         _buffer->dispatchFg(_modes.get(Mode::REVERSE), *this);
         if (_modes.get(Mode::SHOW_CURSOR /* && CURSOR IS DAMAGED FIXME */)) {

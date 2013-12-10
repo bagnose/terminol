@@ -1155,8 +1155,7 @@ void Buffer::testPattern() {
     damageActive();
 }
 
-void Buffer::accumulateDamage(int16_t & rowBegin, int16_t & rowEnd,
-                              int16_t & colBegin, int16_t & colEnd) const {
+void Buffer::accumulateDamage(Region & damage) const {
     bool first = true;
     int16_t rowNum = 0;
 
@@ -1166,16 +1165,16 @@ void Buffer::accumulateDamage(int16_t & rowBegin, int16_t & rowEnd,
 
         if (UNLIKELY(cB != cE)) {
             if (UNLIKELY(first)) {
-                rowBegin = rowNum;
-                rowEnd   = rowNum + 1;
-                colBegin = cB;
-                colEnd   = cE;
+                damage.begin.row = rowNum;
+                damage.end.row   = rowNum + 1;
+                damage.begin.col = cB;
+                damage.end.col   = cE;
                 first    = false;
             }
             else {
-                rowEnd   = rowNum + 1;
-                colBegin = std::min(colBegin, cB);
-                colEnd   = std::max(colEnd,   cE);
+                damage.end.row   = rowNum + 1;
+                damage.begin.col = std::min(damage.begin.col, cB);
+                damage.end.col   = std::max(damage.end.col, cE);
             }
         }
 
