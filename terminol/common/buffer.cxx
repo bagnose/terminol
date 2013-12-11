@@ -795,7 +795,7 @@ void Buffer::dispatchBg(bool reverse, I_Renderer & renderer) const {
     APos selBegin, selEnd;
     bool selValid = normaliseSelection(selBegin, selEnd);
 
-    for (int16_t r = 0; r != static_cast<int16_t>(_active.size()); ++r) {
+    for (int16_t r = 0; r != getRows(); ++r) {
         auto & d = _damage[r];
         if (d.begin == d.end) { continue; }
 
@@ -803,7 +803,7 @@ void Buffer::dispatchBg(bool reverse, I_Renderer & renderer) const {
         uint32_t                  offset;
         int16_t                   wrap;
 
-        if (static_cast<uint32_t>(r) < _scrollOffset) {
+        if (UNLIKELY(static_cast<uint32_t>(r) < _scrollOffset)) {
             auto & hline = _history[_history.size() - _scrollOffset + r];
             auto   tag   = _tags[hline.index - _lostTags];
 
@@ -854,7 +854,7 @@ void Buffer::dispatchBg(bool reverse, I_Renderer & renderer) const {
                 bg1 = swap ? cell.style.fg : cell.style.bg;
             }
 
-            if (bg0 != bg1) {
+            if (UNLIKELY(bg0 != bg1)) {
                 if (c1 != c0) {
                     renderer.bufferDrawBg(Pos(r, c0), c1 - c0, bg0);
                 }
@@ -877,7 +877,7 @@ void Buffer::dispatchFg(bool reverse, I_Renderer & renderer) const {
 
     std::vector<uint8_t> run;         // Buffer for accumulating character runs.
 
-    for (int16_t r = 0; r != static_cast<int16_t>(_active.size()); ++r) {
+    for (int16_t r = 0; r != getRows(); ++r) {
         auto & d = _damage[r];
         if (d.begin == d.end) { continue; }
 
