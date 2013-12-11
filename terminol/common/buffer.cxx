@@ -1047,17 +1047,16 @@ void Buffer::dumpHistory(std::ostream & ost) const {
     for (auto & l : _history) {
         ost << std::setw(4) << i << " "
             << std::setw(4) << l.index - _lostTags << " "
-            << std::setw(2) << l.seqnum << " "
-            << std::setw(3) << l.size << " \'";
+            << std::setw(2) << l.seqnum << " \'";
 
         auto   tag   = _tags[l.index - _lostTags];
         auto & cells = tag != I_Deduper::invalidTag() ? _deduper.lookup(tag) : _pending;
 
         size_t offset = l.seqnum * getCols();
-        auto   blank  = Cell::blank();
-        for (uint16_t o = 0; o != l.size; ++o) {
+        for (uint16_t o = 0; o != getCols(); ++o) {
             auto c = offset + o;
-            auto & cell = c < cells.size() ? cells[c] : blank;
+            if (c == cells.size()) { break; }       // Line doesn't extend to the end.
+            auto & cell = cells[c];
             ost << cell.seq;
         }
 
@@ -1109,8 +1108,6 @@ void Buffer::dumpSelection(std::ostream & ost) const {
 void Buffer::rebuildHistory() {
     _history.clear();
 
-    bool failure = false;
-
     uint32_t index = 0;
 
     for (auto tag : _tags) {
@@ -1120,32 +1117,12 @@ void Buffer::rebuildHistory() {
         size_t   offset = 0;
 
         do {
-            auto size = std::min<int16_t>(_cols, cells.size() - offset);
-            //PRINT("offset=" << offset << ", seqnum=" << seqnum << ", size=" << size);
-            _history.push_back(HLine(index + _lostTags, seqnum, size));
-
-            if (UNLIKELY(seqnum == static_cast<uint16_t>(-1))) {
-                ERROR("Ridiculously long line cannot be fully wrapped on rebuildHistory().");
-                failure = true;
-                break;
-            }
-
+            _history.push_back(HLine(index + _lostTags, seqnum));
             ++seqnum;
             offset += _cols;
         } while (offset < cells.size());
 
         ++index;
-    }
-
-    if (failure) {
-        // Clear the history.
-        for (auto tag : _tags) {
-            if (tag != I_Deduper::invalidTag()) {
-                _deduper.remove(tag);
-            }
-        }
-        _tags.clear();
-        _history.clear();
     }
 }
 
@@ -1402,7 +1379,7 @@ void Buffer::bump() {
             _tags.push_back(tag);
         }
 
-        _history.push_back(HLine(_tags.size() + _lostTags - 1, 0, wrap));
+        _history.push_back(HLine(_tags.size() + _lostTags - 1, 0));
     }
     else {
         // This line is a continuation of the previous line.
@@ -1414,14 +1391,9 @@ void Buffer::bump() {
         auto oldSize = _pending.size();
         ASSERT(oldSize % _cols == 0, "");
 
-        if (UNLIKELY(_history.back().seqnum == static_cast<uint16_t>(-1))) {
-            ERROR("Ridiculously long line cannot be fully wrapped on bump().");
-        }
-        else {
-            _pending.resize(oldSize + wrap, Cell::blank());
-            std::copy(cells.begin(), cells.begin() + wrap, _pending.begin() + oldSize);
-            _history.push_back(HLine(_tags.size() + _lostTags - 1, _history.back().seqnum + 1, wrap));
-        }
+        _pending.resize(oldSize + wrap, Cell::blank());
+        std::copy(cells.begin(), cells.begin() + wrap, _pending.begin() + oldSize);
+        _history.push_back(HLine(_tags.size() + _lostTags - 1, _history.back().seqnum + 1));
 
         if (!cont) {
             // This line is not itself continued.

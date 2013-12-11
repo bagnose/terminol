@@ -156,11 +156,9 @@ class Buffer {
     // It can also be thought of as representing a segment of an unwrapped line.
     struct HLine {
         uint32_t index;             // index into _tags (adjusted by _lostTags)
-        uint16_t seqnum;            // continuation number, 0 -> first line
-        uint16_t size;
+        uint32_t seqnum;            // continuation number, 0 -> 1st line, 1 -> 2nd line
 
-        HLine(uint32_t index_, uint16_t seqnum_, uint16_t size_) :
-            index(index_), seqnum(seqnum_), size(size_) {}
+        HLine(uint32_t index_, uint32_t seqnum_) : index(index_), seqnum(seqnum_) {}
     };
 
     // ALine (or Active-Line) represents a line of text in the active region.
@@ -416,7 +414,7 @@ public:
             auto   tag   = _tags[hline.index - _lostTags];
             auto & cells = tag == I_Deduper::invalidTag() ? _pending : _deduper.lookup(tag);
 
-            auto   left  = static_cast<uint32_t>(hline.seqnum) * getCols() + hapos.apos.col;
+            auto   left  = hline.seqnum * getCols() + hapos.apos.col;
             auto   right = left;
 
             if (level == 1) {
