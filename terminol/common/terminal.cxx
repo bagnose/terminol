@@ -89,9 +89,9 @@ Terminal::Terminal(I_Observer         & observer,
                _config.unlimitedScrollBack ?
                std::numeric_limits<int32_t>::max() :
                _config.scrollBackHistory,
-               &CS_US, &CS_SPECIAL, &CS_US, &CS_US),
+               CharSubArray(&CS_US, &CS_SPECIAL, &CS_US, &CS_US)),
     _altBuffer(_config, deduper, rows, cols, 0,
-               &CS_US, &CS_SPECIAL, &CS_US, &CS_US),
+               CharSubArray(&CS_US, &CS_SPECIAL, &CS_US, &CS_US)),
     _buffer(&_priBuffer),
     //
     _modes(),

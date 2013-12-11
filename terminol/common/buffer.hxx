@@ -52,6 +52,23 @@ public:
 // two active CharSubs.
 enum class CharSet { G0, G1, G2, G3 };
 
+struct CharSubArray {
+    CharSubArray(const CharSub * g0,
+                 const CharSub * g1,
+                 const CharSub * g2,
+                 const CharSub * g3) : charSubs { g0, g1, g2, g3 } {}
+
+    const CharSub * charSubs[4];
+
+    void set(CharSet set_, const CharSub * sub) {
+        charSubs[static_cast<int>(set_)] = sub;
+    }
+
+    const CharSub * get(CharSet set_) const {
+        return charSubs[static_cast<int>(set_)];
+    }
+};
+
 // Buffer is the in-memory representation of the on-screen terminal data.
 // Conceptually, the Buffer is just a grid of Cells, where a Cell is a description
 // of a grid element, including the UTF-8 character at that location and its
@@ -258,7 +275,7 @@ class Buffer {
     HAPos                        _selectDelim;      // End of user selection.
     Cursor                       _cursor;           // Current cursor.
     SavedCursor                  _savedCursor;      // Saved cursor.
-    const CharSub *              _charSubs[4];
+    CharSubArray                 _charSubs;
 
 public:
     class I_Renderer {
@@ -285,15 +302,12 @@ public:
     };
 
 
-    Buffer(const Config  & config,
-           I_Deduper     & deduper,
-           int16_t         rows,
-           int16_t         cols,
-           uint32_t        historyLimit,
-           const CharSub * g0,
-           const CharSub * g1,
-           const CharSub * g3,
-           const CharSub * g4) :
+    Buffer(const Config       & config,
+           I_Deduper          & deduper,
+           int16_t              rows,
+           int16_t              cols,
+           uint32_t             historyLimit,
+           const CharSubArray & charSubs) :
         _config(config),
         _deduper(deduper),
         _tags(),
@@ -310,13 +324,9 @@ public:
         _selectMark(),
         _selectDelim(),
         _cursor(),
-        _savedCursor()
+        _savedCursor(),
+        _charSubs(charSubs)
     {
-        _charSubs[0] = g0;
-        _charSubs[1] = g1;
-        _charSubs[2] = g3;
-        _charSubs[3] = g4;
-
         resetMargins();
         resetTabs();
     }

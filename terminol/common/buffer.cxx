@@ -295,7 +295,7 @@ void Buffer::restoreCursor() {
 
     _cursor = _savedCursor.cursor;
     if (_savedCursor.charSub) {
-        _charSubs[static_cast<int>(_cursor.charSet)] = _savedCursor.charSub;
+        _charSubs.set(_cursor.charSet, _savedCursor.charSub);
     }
 
     ASSERT(_cursor.pos.row < getRows(), "");
@@ -1007,11 +1007,11 @@ void Buffer::useCharSet(CharSet charSet) {
 }
 
 void Buffer::setCharSub(CharSet charSet, const CharSub * charSub) {
-    _charSubs[static_cast<int>(charSet)] = charSub;
+    _charSubs.set(charSet, charSub);
 }
 
 const CharSub * Buffer::getCharSub(CharSet charSet) const {
-    return _charSubs[static_cast<int>(charSet)];
+    return _charSubs.get(charSet);
 }
 
 void Buffer::dumpTags(std::ostream & ost) const {
