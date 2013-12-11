@@ -44,9 +44,8 @@ Length    encode(CodePoint codePoint, uint8_t * sequence) throw (Error);
 //
 
 struct Seq {
-    Seq(uint8_t b0 = '\0', uint8_t b1 = '\0', uint8_t b2 = '\0', uint8_t b3 = '\0') {
-        bytes[0] = b0; bytes[1] = b1; bytes[2] = b2; bytes[3] = b3;
-    }
+    Seq(uint8_t b0 = '\0', uint8_t b1 = '\0', uint8_t b2 = '\0', uint8_t b3 = '\0') :
+        bytes { b0, b1, b2, b3 } {}
 
     void clear() {
         bytes[0] = bytes[1] = bytes[2] = bytes[3] = '\0';
