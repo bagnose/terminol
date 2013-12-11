@@ -204,7 +204,10 @@ class Buffer {
         void damageAdd(int16_t begin_, int16_t end_) {
             ASSERT(begin_ <= end_, "");
 
-            if (begin == end) {
+            if (begin_ == end_) {
+                // Do nothing.
+            }
+            else if (begin == end) {
                 damageSet(begin_, end_);
             }
             else {
