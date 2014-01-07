@@ -170,11 +170,13 @@ bool Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
 }
 
 void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
-                           bool UNUSED(within), HPos hpos) {
+                           bool UNUSED(within), Pos pos, Hand hand) {
     ASSERT(_press == Press::NONE, "Received button press but already got one.");
 
+    Pos adjPos(pos.row, pos.col + (hand == Hand::RIGHT ? 1 : 0));
+
     if (_modes.get(Mode::MOUSE_PRESS_RELEASE)) {
-        sendMouseButton(static_cast<int>(button), modifiers, hpos.pos);
+        sendMouseButton(static_cast<int>(button), modifiers, pos);
         if (_modes.get(Mode::MOUSE_SELECT)) {
             goto select;
         }
@@ -186,10 +188,10 @@ void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
 select:
         if (button == Button::LEFT) {
             if (count == 1) {
-                _buffer->markSelection(hpos);
+                _buffer->markSelection(adjPos);
             }
             else {
-                _buffer->expandSelection(hpos, count);
+                _buffer->expandSelection(pos, count);
             }
 
             fixDamage(Trigger::OTHER);
@@ -198,25 +200,23 @@ select:
             _observer.terminalPaste(Terminal::Selection::PRIMARY);
         }
         else if (button == Button::RIGHT) {
-            _buffer->delimitSelection(hpos, true);
+            _buffer->delimitSelection(adjPos, true);
             fixDamage(Trigger::OTHER);
         }
         _press = Press::SELECT;
     }
 
     _button     = button;
-    _pointerPos = hpos.pos;
+    _pointerPos = pos;
 
     ASSERT(_press != Press::NONE, "Button press should be recorded.");
 }
 
-void Terminal::pointerMotion(ModifierSet modifiers, bool within, HPos hpos) {
+void Terminal::pointerMotion(ModifierSet modifiers, bool within, Pos pos, Hand hand) {
     if ((_press == Press::REPORT && _modes.get(Mode::MOUSE_DRAG)) ||
         (_press == Press::NONE   && _modes.get(Mode::MOUSE_MOTION)))
     {
         if (within) {
-            auto pos = hpos.pos;
-
             int num = static_cast<int>(_button) + 32;
 
             if (modifiers.get(Modifier::SHIFT))   { num +=  1; }
@@ -248,12 +248,13 @@ void Terminal::pointerMotion(ModifierSet modifiers, bool within, HPos hpos) {
     }
     else if (_press == Press::SELECT) {
         if (_button == Button::LEFT || _button == Button::RIGHT) {
-            _buffer->delimitSelection(hpos, false);
+            Pos adjPos(pos.row, pos.col + (hand == Hand::RIGHT ? 1 : 0));
+            _buffer->delimitSelection(adjPos, false);
             fixDamage(Trigger::OTHER);
         }
     }
 
-    _pointerPos = hpos.pos;
+    _pointerPos = pos;
 }
 
 void Terminal::buttonRelease(bool UNUSED(broken), ModifierSet modifiers) {

@@ -1156,34 +1156,16 @@ void Buffer::testClearSelection(APos begin, APos end) {
 }
 
 bool Buffer::normaliseSelection(APos & begin, APos & end) const {
-    auto b = _selectMark;
-    auto e = _selectDelim;
+    begin = _selectMark;
+    end   = _selectDelim;
 
-    if (b == e) {
+    if (begin == end) {
         return false;
     }
-
-    if (e < b) { std::swap(b, e); }
-
-    if (b.hand == Hand::LEFT || b.apos.col >= _cols - 1) {
-        begin = b.apos;
-    }
     else {
-        begin = APos(b.apos.row, b.apos.col + 1);
+        if (end < begin) { std::swap(begin, end); }
+        return true;
     }
-
-    if (e.hand == Hand::RIGHT || e.apos.col == 0) {
-        end = e.apos;
-    }
-    else {
-        end = APos(e.apos.row, e.apos.col - 1);
-    }
-
-    if (end.col < _cols) {
-        ++end.col;
-    }
-
-    return begin.row != end.row || begin.col != end.col;
 }
 
 void Buffer::insertLinesAt(int16_t row, uint16_t n) {
@@ -1203,8 +1185,8 @@ void Buffer::insertLinesAt(int16_t row, uint16_t n) {
             clearSelection();
         }
         else {
-            _selectMark.apos.row  += n;
-            _selectDelim.apos.row += n;
+            _selectMark.row  += n;
+            _selectDelim.row += n;
         }
     }
 
@@ -1236,8 +1218,8 @@ void Buffer::eraseLinesAt(int16_t row, uint16_t n) {
             clearSelection();
         }
         else {
-            _selectMark.apos.row  -= n;
-            _selectDelim.apos.row -= n;
+            _selectMark.row  -= n;
+            _selectDelim.row -= n;
         }
     }
 
@@ -1336,8 +1318,8 @@ void Buffer::addLine() {
                 clearSelection();
             }
             else {
-                --_selectMark.apos.row;
-                --_selectDelim.apos.row;
+                --_selectMark.row;
+                --_selectDelim.row;
             }
         }
 

@@ -127,8 +127,8 @@ public:
 
     bool     keyPress(xkb_keysym_t keySym, ModifierSet modifiers);
     void     buttonPress(Button button, int count, ModifierSet modifiers,
-                         bool within, HPos hpos);
-    void     pointerMotion(ModifierSet modifiers, bool within, HPos hpos);
+                         bool within, Pos pos, Hand hand);
+    void     pointerMotion(ModifierSet modifiers, bool within, Pos pos, Hand hand);
     void     buttonRelease(bool broken, ModifierSet modifiers);
     void     scrollWheel(ScrollDir dir, ModifierSet modifiers, bool within, Pos pos);
 

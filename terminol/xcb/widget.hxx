@@ -49,7 +49,7 @@ private:
     xcb_rectangle_t   _deferredGeometry;    // Note x/y is wrt root window.
     Terminal        * _terminal;
     bool              _open;
-    HPos              _pointerPos;
+    Pos               _pointerPos;
 
     // If the window is mapped then _pixmap and _surface are be valid. Otherwise not.
     bool              _mapped;
@@ -134,7 +134,7 @@ protected:
     void icccmConfigure();
 
     void pos2XY(Pos pos, int & x, int & y) const;
-    bool xy2Pos(int x, int y, HPos & pos) const;
+    bool xy2Pos(int x, int y, Pos & pos, Hand & hand) const;
 
     void setTitle(const std::string & title, bool prependGeometry);
     void setIcon(const std::string & icon);

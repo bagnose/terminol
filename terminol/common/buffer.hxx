@@ -124,34 +124,6 @@ class Buffer {
             (lhs.row == rhs.row && lhs.col < rhs.col);
     }
 
-    // HAPos (Handed-Absolute-Position) where handed means left or right side of cell.
-    // The significance of left versus right is used to determine the resultant
-    // selection from user mouse gestures.
-    struct HAPos {
-        APos apos;
-        Hand hand;
-
-        HAPos() : apos(), hand(Hand::LEFT) {}
-        HAPos(HPos hpos, uint32_t offset) : apos(hpos.pos, offset), hand(hpos.hand) {}
-        HAPos(int32_t row_, int16_t col_, Hand hand_ = Hand::LEFT) :
-            apos(row_, col_), hand(hand_) {}
-    };
-
-    friend bool operator == (const HAPos & lhs, const HAPos & rhs) {
-        return lhs.apos == rhs.apos && lhs.hand == rhs.hand;
-    }
-
-    friend bool operator != (const HAPos & lhs, const HAPos & rhs) {
-        return !(lhs == rhs);
-    }
-
-    friend bool operator <  (const HAPos & lhs, const HAPos & rhs) {
-        return
-            (lhs.apos.row <  rhs.apos.row) ||
-            (lhs.apos.row == rhs.apos.row && lhs.apos.col <  rhs.apos.col) ||
-            (lhs.apos.row == rhs.apos.row && lhs.apos.col == rhs.apos.col && lhs.hand < rhs.hand);
-    }
-
     // HLine (or Historical-Line) represents a line of text in the historical region.
     // It can also be thought of as representing a segment of an unwrapped line.
     struct HLine {
@@ -269,8 +241,8 @@ class Buffer {
     int16_t                      _marginBegin;      // Index of first row in margin (inclusive).
     int16_t                      _marginEnd;        // Index of last row in  margin (exclusive).
     bool                         _barDamage;        // Has the scrollbar been invalidated?
-    HAPos                        _selectMark;       // Start of user selection.
-    HAPos                        _selectDelim;      // End of user selection.
+    APos                         _selectMark;       // Start of user selection.
+    APos                         _selectDelim;      // End of user selection.
     Cursor                       _cursor;           // Current cursor.
     SavedCursor                  _savedCursor;      // Saved cursor.
     CharSubArray                 _charSubs;
@@ -353,15 +325,15 @@ public:
     // Is the bar damaged (does it need redrawing)?
     bool     getBarDamage() const { return _barDamage; }
 
-    void markSelection(HPos hpos) {
+    void markSelection(Pos pos) {
         damageSelection();
-        _selectMark = _selectDelim = HAPos(hpos, _scrollOffset);
+        _selectMark = _selectDelim = APos(pos, _scrollOffset);
     }
 
-    void delimitSelection(HPos hpos, bool initial) {
+    void delimitSelection(Pos pos, bool initial) {
         damageSelection();
 
-        HAPos hapos(hpos, _scrollOffset);
+        APos apos(pos, _scrollOffset);
 
         if (initial) {
             // Work out whether hpos is closer to the mark or the delimiter
@@ -371,11 +343,11 @@ public:
                 std::swap(_selectMark, _selectDelim);
             }
 
-            auto deltaRow = _selectDelim.apos.row - _selectMark.apos.row;
-            auto deltaCol = _selectDelim.apos.col - _selectMark.apos.col;
+            auto deltaRow = _selectDelim.row - _selectMark.row;
+            auto deltaCol = _selectDelim.col - _selectMark.col;
 
-            auto row = _selectMark.apos.row + deltaRow / 2;
-            auto col = _selectMark.apos.col + deltaCol / 2;
+            auto row = _selectMark.row + deltaRow / 2;
+            auto col = _selectMark.col + deltaCol / 2;
 
             if (deltaRow % 2) { col += getCols() / 2; }
 
@@ -385,18 +357,18 @@ public:
             ASSERT(col >= 0, "Column is not positive.");
             ASSERT(col < getCols(), "Column exceeds maximum.");
 
-            HAPos centre(row, col);
+            APos centre(row, col);
 
-            if (hapos < centre) {
+            if (apos < centre) {
                 std::swap(_selectMark, _selectDelim);
             }
         }
 
-        _selectDelim = hapos;
+        _selectDelim = apos;
         damageSelection();
     }
 
-    void expandSelection(HPos hpos, int level) {
+    void expandSelection(Pos pos, int level) {
         level = level % 4;
 
         damageSelection();
@@ -405,64 +377,61 @@ public:
             std::swap(_selectMark, _selectDelim);
         }
 
-        HAPos hapos(hpos, _scrollOffset);
+        APos apos(pos, _scrollOffset);
 
-        if (hapos.apos.row < 0) {
+        if (apos.row < 0) {
             // Historical
 
-            auto & hline = _history[_history.size() + hapos.apos.row];
+            auto & hline = _history[_history.size() + apos.row];
             auto   tag   = _tags[hline.index - _lostTags];
             auto & cells = tag == I_Deduper::invalidTag() ? _pending : _deduper.lookup(tag);
 
-            auto   left  = hline.seqnum * getCols() + hapos.apos.col;
-            auto   right = left;
+            auto   left  = hline.seqnum * getCols() + apos.col;
+            auto   right = left + 1;
 
             if (level == 1) {
-                _selectMark = _selectDelim = hapos;
+                _selectMark = _selectDelim = apos;
             }
             else if (level == 3 || cells[left].seq.lead() == ' ') {
-                _selectMark  = HAPos(hapos.apos.row - hline.seqnum, 0, Hand::LEFT);
-                _selectDelim = HAPos(hapos.apos.row + (cells.size() / getCols()) - hline.seqnum,
-                                     getCols() - 1, Hand::RIGHT);
+                _selectMark  = APos(apos.row - hline.seqnum, 0);
+                _selectDelim = APos(apos.row + (cells.size() / getCols()) - hline.seqnum, getCols());
             }
             else {
                 Regex regex("[" + _config.cutChars + "]");
 
-                _selectMark      = hapos;
-                _selectMark.hand = Hand::LEFT;
+                _selectMark = apos;
 
                 while (left != 0) {
                     auto seq = cells[left - 1].seq;
                     std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
-                    if (regex.match(s).empty()) { break; }
 
+                    if (regex.match(s).empty()) { break; }
                     --left;
 
-                    if (_selectMark.apos.col == 0) {
-                        --_selectMark.apos.row;
-                        _selectMark.apos.col = getCols() - 1;
+                    if (_selectMark.col == 0) {
+                        --_selectMark.row;
+                        _selectMark.col = getCols() - 1;
                     }
                     else {
-                        --_selectMark.apos.col;
+                        --_selectMark.col;
                     }
                 }
 
-                _selectDelim      = hapos;
-                _selectDelim.hand = Hand::RIGHT;
+                _selectDelim = APos(apos.row, apos.col + 1);
 
-                while (right != cells.size() - 1) {
-                    auto seq = cells[right + 1].seq;
+                while (right != cells.size()) {
+                    auto seq = cells[right].seq;
                     std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
-                    if (regex.match(s).empty()) { break; }
 
+                    if (regex.match(s).empty()) { break; }
                     ++right;
 
-                    if (_selectDelim.apos.col == getCols() - 1) {
-                        _selectDelim.apos.col = 0;
-                        ++_selectDelim.apos.row;
+                    if (_selectDelim.col == getCols()) {
+                        _selectDelim.col = 0;
+                        ++_selectDelim.row;
                     }
                     else {
-                        ++_selectDelim.apos.col;
+                        ++_selectDelim.col;
                     }
                 }
             }
@@ -470,40 +439,40 @@ public:
         else {
             // Active
 
-            int16_t row  = hapos.apos.row;
-            int16_t col  = hapos.apos.col;
+            int16_t row  = apos.row;
+            int16_t col  = apos.col;
 
             auto & aline = _active[row];
             auto & cells = aline.cells;
 
             if (level == 1) {
-                _selectMark = _selectDelim = hapos;
+                _selectMark = _selectDelim = apos;
             }
             else if (level == 3 || cells[col].seq.lead() == ' ') {
-                _selectMark  = HAPos(hapos.apos.row, 0, Hand::LEFT);
-                _selectDelim = HAPos(hapos.apos.row, getCols() - 1, Hand::RIGHT);
+                _selectMark  = APos(apos.row, 0);
+                _selectDelim = APos(apos.row, getCols());
             }
             else {
                 Regex regex("[" + _config.cutChars + "]");
 
-                _selectMark      = hapos;
-                _selectMark.hand = Hand::LEFT;
+                _selectMark = apos;
 
-                while (_selectMark.apos.col != 0) {
-                    auto seq = cells[_selectMark.apos.col - 1].seq;
+                while (_selectMark.col != 0) {
+                    auto seq = cells[_selectMark.col - 1].seq;
                     std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
+
                     if (regex.match(s).empty()) { break; }
-                    --_selectMark.apos.col;
+                    --_selectMark.col;
                 }
 
-                _selectDelim      = hapos;
-                _selectDelim.hand = Hand::RIGHT;
+                _selectDelim = APos(apos.row, apos.col + 1);
 
-                while (_selectDelim.apos.col != static_cast<int16_t>(cells.size() - 1)) {
-                    auto seq = cells[_selectDelim.apos.col + 1].seq;
+                while (_selectDelim.col != static_cast<int16_t>(cells.size())) {
+                    auto seq = cells[_selectDelim.col].seq;
                     std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
+
                     if (regex.match(s).empty()) { break; }
-                    ++_selectDelim.apos.col;
+                    ++_selectDelim.col;
                 }
             }
         }
@@ -515,8 +484,8 @@ public:
         damageSelection();
 
         // Retain the selection marker, if it is within the history.
-        if (static_cast<int32_t>(_history.size()) + _selectMark.apos.row < 0) {
-            _selectMark = HAPos();
+        if (static_cast<int32_t>(_history.size()) + _selectMark.row < 0) {
+            _selectMark = APos();
         }
 
         _selectDelim = _selectMark;

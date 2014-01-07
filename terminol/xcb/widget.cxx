@@ -35,7 +35,7 @@ Widget::Widget(I_Observer         & observer,
     _deferredGeometry({0, 0, 0, 0}),
     _terminal(nullptr),
     _open(false),
-    _pointerPos(HPos::invalid()),
+    _pointerPos(Pos::invalid()),
     _mapped(false),
     _pixmap(0),
     _surface(nullptr),
@@ -285,15 +285,16 @@ void Widget::buttonPress(xcb_button_press_event_t * event) {
 
     auto modifiers = _basics.convertState(event->state);
 
-    HPos hpos;
-    auto within = xy2Pos(event->event_x, event->event_y, hpos);
+    Pos  pos;
+    Hand hand;
+    auto within = xy2Pos(event->event_x, event->event_y, pos, hand);
 
     switch (event->detail) {
         case XCB_BUTTON_INDEX_4:
-            _terminal->scrollWheel(Terminal::ScrollDir::UP, modifiers, within, hpos.pos);
+            _terminal->scrollWheel(Terminal::ScrollDir::UP, modifiers, within, pos);
             return;
         case XCB_BUTTON_INDEX_5:
-            _terminal->scrollWheel(Terminal::ScrollDir::DOWN, modifiers, within, hpos.pos);
+            _terminal->scrollWheel(Terminal::ScrollDir::DOWN, modifiers, within, pos);
             return;
     }
 
@@ -319,15 +320,15 @@ void Widget::buttonPress(xcb_button_press_event_t * event) {
     switch (event->detail) {
         case XCB_BUTTON_INDEX_1:
             _terminal->buttonPress(Terminal::Button::LEFT, _pressCount,
-                                   modifiers, within, hpos);
+                                   modifiers, within, pos, hand);
             return;
         case XCB_BUTTON_INDEX_2:
             _terminal->buttonPress(Terminal::Button::MIDDLE, _pressCount,
-                                   modifiers, within, hpos);
+                                   modifiers, within, pos, hand);
             return;
         case XCB_BUTTON_INDEX_3:
             _terminal->buttonPress(Terminal::Button::RIGHT, _pressCount,
-                                   modifiers, within, hpos);
+                                   modifiers, within, pos, hand);
             return;
     }
 }
@@ -382,14 +383,15 @@ void Widget::motionNotify(xcb_motion_notify_event_t * event) {
         mask = event->state;
     }
 
-    HPos hpos;
-    auto within = xy2Pos(x, y, hpos);
+    Pos  pos;
+    Hand hand;
+    auto within = xy2Pos(x, y, pos, hand);
 
-    if (_pointerPos != hpos) {
+    //if (_pointerPos != pos) {
         auto modifiers = _basics.convertState(mask);
-        _pointerPos = hpos;
-        _terminal->pointerMotion(modifiers, within, hpos);
-    }
+        _pointerPos = pos;
+        _terminal->pointerMotion(modifiers, within, pos, hand);
+    //}
 
 }
 
@@ -705,48 +707,48 @@ void Widget::pos2XY(Pos pos, int & x, int & y) const {
     y = border_thickness + pos.row * _fontSet->getHeight();
 }
 
-bool Widget::xy2Pos(int x, int y, HPos & hpos) const {
+bool Widget::xy2Pos(int x, int y, Pos & pos, Hand & hand) const {
     auto within = true;
 
     auto border_thickness = _config.borderThickness;
+    auto fontWidth        = _fontSet->getWidth();
+    auto halfFontWidth    = fontWidth / 2;
+    auto fontHeight       = _fontSet->getHeight();
 
     // x / cols:
 
     if (x < border_thickness) {
-        hpos.pos.col = 0;
-        hpos.hand = Hand::LEFT;
-        within = false;
+        pos.col = 0;
+        within  = false;
     }
-    else if (x < border_thickness + _fontSet->getWidth() * _terminal->getCols()) {
+    else if (x < border_thickness + fontWidth * _terminal->getCols()) {
         auto xx = x - border_thickness;
-        hpos.pos.col = xx / _fontSet->getWidth();
-        auto remainder = xx - hpos.pos.col * _fontSet->getWidth();
-        hpos.hand = remainder < _fontSet->getWidth() / 2 ? Hand::LEFT : Hand::RIGHT;
-        ASSERT(hpos.pos.col < _terminal->getCols(),
-               "col is: " << hpos.pos.col << ", getCols() is: " <<
+        pos.col = xx / fontWidth;
+        hand    = xx % fontWidth > halfFontWidth ? Hand::RIGHT : Hand::LEFT;
+        ASSERT(pos.col <= _terminal->getCols(),
+               "col is: " << pos.col << ", getCols() is: " <<
                _terminal->getCols());
     }
     else {
-        hpos.pos.col = _terminal->getCols();
-        hpos.hand = Hand::LEFT;
+        pos.col = _terminal->getCols();
         within = false;
     }
 
     // y / rows:
 
     if (y < border_thickness) {
-        hpos.pos.row = 0;
+        pos.row = 0;
         within = false;
     }
-    else if (y < border_thickness + _fontSet->getHeight() * _terminal->getRows()) {
+    else if (y < border_thickness + fontHeight * _terminal->getRows()) {
         auto yy = y - border_thickness;
-        hpos.pos.row = yy / _fontSet->getHeight();
-        ASSERT(hpos.pos.row < _terminal->getRows(),
-               "row is: " << hpos.pos.row << ", getRows() is: " <<
+        pos.row = yy / fontHeight;
+        ASSERT(pos.row < _terminal->getRows(),
+               "row is: " << pos.row << ", getRows() is: " <<
                _terminal->getRows());
     }
     else {
-        hpos.pos.row = _terminal->getRows() - 1;
+        pos.row = _terminal->getRows() - 1;
         within = false;
     }
 

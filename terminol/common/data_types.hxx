@@ -178,6 +178,8 @@ struct Pos {
 
     Pos() : row(0), col(0) {}
     Pos(int16_t row_, int16_t col_) : row(row_), col(col_) {}
+
+    static Pos invalid() { return Pos(-1, -1); }
 };
 
 inline bool operator == (Pos lhs, Pos rhs) {
@@ -188,32 +190,6 @@ inline bool operator != (Pos lhs, Pos rhs) { return !(lhs == rhs); }
 
 inline std::ostream & operator << (std::ostream & ost, Pos pos) {
     return ost << pos.row << 'x' << pos.col;
-}
-
-//
-// A screen-relative position, with "handedness" (left/right).
-//
-
-struct HPos {
-    Pos  pos;
-    Hand hand;
-
-    HPos() : pos(), hand(Hand::LEFT) {}
-    HPos(int16_t row, int16_t col, Hand hand_) : pos(row, col), hand(hand_) {}
-
-    static HPos invalid() {
-        return HPos(-1, -1, Hand::LEFT);
-    }
-};
-
-inline bool operator == (HPos lhs, HPos rhs) {
-    return lhs.pos == rhs.pos && lhs.hand == rhs.hand;
-}
-
-inline bool operator != (HPos lhs, HPos rhs) { return !(lhs == rhs); }
-
-inline std::ostream & operator << (std::ostream & ost, HPos hpos) {
-    return ost << hpos.pos.row << 'x' << hpos.pos.col << '-' << hpos.hand;
 }
 
 //
