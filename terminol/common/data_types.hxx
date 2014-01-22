@@ -166,8 +166,6 @@ inline bool operator == (const Cell & lhs, const Cell & rhs) {
         lhs.style == rhs.style;
 }
 
-static_assert(sizeof(Cell) == 13, "Cell should be 13 bytes.");
-
 inline bool operator != (const Cell & lhs, const Cell & rhs) { return !(lhs == rhs); }
 
 //
