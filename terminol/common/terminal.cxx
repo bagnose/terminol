@@ -577,6 +577,9 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
                                                 _buffer->getRows());
             }
         }
+        else {
+            scrollbar = false;
+        }
 
         _buffer->resetDamage();
     }
