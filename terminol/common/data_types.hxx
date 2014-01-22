@@ -45,22 +45,38 @@ struct UColor {
         TEXT_FG, TEXT_BG, SELECT_FG, SELECT_BG, CURSOR_FILL, CURSOR_TEXT
     };
 
-    Type type;
+    Type type;              // 1 byte
 
     union {
-        Name    name;
-        uint8_t index;
-        Color   values;
+        Name    name;       // 1 byte
+        uint8_t index;      // 1 byte
+        Color   values;     // 3 bytes
+
+        uint8_t _init[3];
     };
 
-    static UColor stock(Name name) { return UColor(name); }
-    static UColor indexed(uint8_t index) { return UColor(index); }
-    static UColor direct(uint8_t r, uint8_t g, uint8_t b) { return UColor(r, g, b); }
+    static UColor stock(Name name) {
+        UColor ucolor(Type::STOCK);
+        ucolor.name = name;
+        return ucolor;
+    }
+
+    static UColor indexed(uint8_t index) {
+        UColor ucolor(Type::INDEXED);
+        ucolor.index = index;
+        return ucolor;
+    }
+
+    static UColor direct(uint8_t r, uint8_t g, uint8_t b) {
+        UColor ucolor(Type::DIRECT);
+        ucolor.values.r = r;
+        ucolor.values.g = g;
+        ucolor.values.b = b;
+        return ucolor;
+    }
 
 private:
-    explicit UColor(Name name_) : type(Type::STOCK), name(name_) {}
-    explicit UColor(uint8_t index_) : type(Type::INDEXED), index(index_) {}
-    UColor(uint8_t r, uint8_t g, uint8_t b) : type(Type::DIRECT), values(r, g, b) {}
+    explicit UColor(Type type_) : type(type_), _init {0, 0, 0 } {}
 };
 
 static_assert(sizeof(UColor) == 4, "UColor should be 4 bytes.");
