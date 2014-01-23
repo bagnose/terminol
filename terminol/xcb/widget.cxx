@@ -462,13 +462,22 @@ void Widget::configureNotify(xcb_configure_notify_event_t * event) {
     }
 }
 
-void Widget::focusIn(xcb_focus_in_event_t * UNUSED(event)) {
-    _terminal->focusChange(true);
+void Widget::focusIn(xcb_focus_in_event_t * event) {
+    if (event->detail != XCB_NOTIFY_DETAIL_INFERIOR &&
+        event->detail != XCB_NOTIFY_DETAIL_POINTER &&
+        event->mode   != XCB_NOTIFY_MODE_GRAB)
+    {
+        _terminal->focusChange(true);
+    }
 }
 
-void Widget::focusOut(xcb_focus_out_event_t * UNUSED(event)) {
-    _terminal->focusChange(false);
-
+void Widget::focusOut(xcb_focus_out_event_t * event) {
+    if (event->detail != XCB_NOTIFY_DETAIL_INFERIOR &&
+        event->detail != XCB_NOTIFY_DETAIL_POINTER &&
+        event->mode   != XCB_NOTIFY_MODE_GRAB)
+    {
+        _terminal->focusChange(false);
+    }
 }
 
 void Widget::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {
