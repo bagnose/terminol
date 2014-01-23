@@ -969,8 +969,8 @@ void Buffer::dispatchCursor(bool reverse, I_Renderer & renderer) const {
     APos selBegin, selEnd;
     bool selValid = normaliseSelection(selBegin, selEnd);
 
-    int32_t r0 = _cursor.pos.row + getScrollOffset();
-    if (r0 >= 0 && r0 < getRows()) {
+    auto r0 = _scrollOffset + static_cast<uint32_t>(_cursor.pos.row);
+    if (r0 < static_cast<uint32_t>(getRows())) {
         auto   r1       = static_cast<int16_t>(r0);
         auto   c1       = _cursor.pos.col;
         auto & aline    = _active[r1];
