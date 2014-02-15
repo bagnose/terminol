@@ -98,6 +98,12 @@ done:
 }
 
 void Tty::resize(uint16_t rows, uint16_t cols) {
+    if (_fd == -1) {
+        // I've not seen this, but perhaps it is possible. Leaving it here
+        // out of paranoia.
+        return;
+    }
+
     ASSERT(_fd != -1, "PTY already closed.");
     ASSERT(_pid != 0, "Child already reaped.");
     const struct winsize winsize = { rows, cols, 0, 0 };
