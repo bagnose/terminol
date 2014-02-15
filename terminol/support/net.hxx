@@ -55,8 +55,12 @@ public:
         struct sockaddr_un address;
         ::memset(&address, 0, sizeof address);
         address.sun_family  = AF_UNIX;
+#ifdef __linux__
         address.sun_path[0] = '\0';     // First byte nul for abstract.
         ::snprintf(address.sun_path + 1, sizeof address.sun_path - 1, "%s", path.c_str());
+#else
+        ::snprintf(address.sun_path, sizeof address.sun_path, "%s", path.c_str());
+#endif
 
         if (TEMP_FAILURE_RETRY(::bind(_fd, reinterpret_cast<struct sockaddr *>(&address),
                                       sizeof(address))) == -1) {
@@ -173,8 +177,12 @@ public:
         struct sockaddr_un address;
         ::memset(&address, 0, sizeof address);
         address.sun_family  = AF_UNIX;
+#ifdef __linux__
         address.sun_path[0] = '\0';     // First byte nul for abstract.
         ::snprintf(address.sun_path + 1, sizeof address.sun_path - 1, "%s", path.c_str());
+#else
+        ::snprintf(address.sun_path, sizeof address.sun_path, "%s", path.c_str());
+#endif
 
         if (TEMP_FAILURE_RETRY(::connect(_fd, reinterpret_cast<struct sockaddr *>(&address),
                                          sizeof(address))) == -1) {

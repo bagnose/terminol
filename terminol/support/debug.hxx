@@ -6,11 +6,17 @@
 
 #include <iostream>
 #include <cstring>
+#include <cerrno>
 
 #define LIKELY(x)   __builtin_expect(!!(x), 1)
 #define UNLIKELY(x) __builtin_expect(!!(x), 0)
 
 #define UNUSED(x) UNUSED_ ## x __attribute__((unused))
+
+// BSD doesn't have EINTR
+#ifndef __linux__
+#define TEMP_FAILURE_RETRY(a) (a)
+#endif
 
 #define PRINT(output) \
     do { \

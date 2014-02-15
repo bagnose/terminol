@@ -6,12 +6,19 @@
 #include "terminol/support/sys.hxx"
 
 #include <unistd.h>
-#include <pty.h>
 #include <pwd.h>
+#include <signal.h>
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/fcntl.h>
+
+#ifdef __linux__
+#include <pty.h>
+#else
+#include <termios.h>
+#include <libutil.h>
+#endif
 
 #include <fstream>
 
@@ -361,7 +368,9 @@ void Tty::handleRead(int fd) throw () {
             }
         }
         else if (rval == 0) {
-            FATAL("Zero length read.");
+            // The other end of the PTY is gone.
+            close();
+            goto done;
         }
         else {
             _observer.ttyData(buf, rval);

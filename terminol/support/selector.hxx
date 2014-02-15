@@ -13,8 +13,6 @@
 
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/select.h>
-#include <sys/epoll.h>
 
 class I_Selector {
 public:
@@ -56,6 +54,10 @@ protected:
     I_Selector() {}
     ~I_Selector() {}
 };
+
+#ifndef __linux__
+
+#include <sys/select.h>
 
 //
 //
@@ -226,6 +228,12 @@ public:
         FATAL("Handler not registered.");
     }
 };
+
+typedef SelectSelector Selector;
+
+#else // __linux__
+
+#include <sys/epoll.h>
 
 //
 //
@@ -437,11 +445,8 @@ public:
     }
 };
 
-//
-//
-//
-
-//typedef SelectSelector Selector;
 typedef EPollSelector Selector;
+
+#endif // __linux__
 
 #endif // SUPPORT__SELECTOR__HXX

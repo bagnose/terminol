@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <cmath>
 
 #define STATIC_ARRAY_SIZE(a) (sizeof a / sizeof a[0])
 

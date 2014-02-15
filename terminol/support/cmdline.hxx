@@ -6,6 +6,7 @@
 
 #include <string>
 #include <map>
+#include <cstdlib>
 
 // Option, value
 
@@ -102,12 +103,12 @@ public:
 
             if (str == "--help") {
                 std::cerr << _help;
-                exit(0);
+                std::exit(0);
             }
 
             if (str == "--version") {
                 std::cerr << "Terminol version " << _version;
-                exit(0);
+                std::exit(0);
             }
 
             if (str == _delimiter) {

@@ -7,6 +7,7 @@
 #include <xcb/xcb.h>
 
 #include <iostream>
+#include <cstdlib>
 
 #define xcb_request_failed(connection, cookie, err_msg) _xcb_request_failed(connection, cookie, err_msg, __LINE__)
 namespace {

@@ -15,7 +15,11 @@
 #include <limits.h>
 
 Basics::Basics() throw (Error) {
+#ifdef __linux__
     char h[HOST_NAME_MAX + 1];
+#else
+    char h[255 + 1];
+#endif
     if (::gethostname(h, sizeof h) == 0) {
         _hostname = h;
     }

@@ -4,6 +4,9 @@
 #ifndef SUPPORT__PIPE__HXX
 #define SUPPORT__PIPE__HXX
 
+#include "terminol/support/sys.hxx"
+#include "terminol/support/debug.hxx"
+
 #include <fcntl.h>
 #include <unistd.h>
 
@@ -12,7 +15,17 @@ class Pipe {
 
 public:
     Pipe() {
-        ENFORCE_SYS(::pipe2(_fds, O_NONBLOCK | O_CLOEXEC) != -1, "");   // pipe2() doesn't raise EINTR.
+#ifdef __linux__
+        // pipe2() doesn't raise EINTR.
+        ENFORCE_SYS(::pipe2(_fds, O_NONBLOCK | O_CLOEXEC) != -1, "");
+#else
+        // pipe() doesn't raise EINTR.
+        ENFORCE_SYS(::pipe(_fds) != -1, "");
+        fdCloseExec(_fds[0]);
+        fdCloseExec(_fds[1]);
+        fdNonBlock(_fds[0]);
+        fdNonBlock(_fds[1]);
+#endif
     }
 
     ~Pipe() {
