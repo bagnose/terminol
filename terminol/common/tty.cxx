@@ -214,7 +214,7 @@ void Tty::openPty(uint16_t            rows,
         fdNonBlock(master);
 
         // Stash the master descriptor.
-        _fd  = master;
+        _fd = master;
 
         _selector.addReadable(_fd, this);
     }
