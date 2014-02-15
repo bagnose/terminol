@@ -122,20 +122,23 @@ protected:
             // Poll for X11 events that may not have shown up on the descriptor.
             xevent();
 
-            // Perform the deferrals.
-            for (auto window : _deferrals) { window->deferral(); }
-            _deferrals.clear();
-
             if (!_exits.empty()) {
                 // Purge the exited windows.
-                for (auto window : _exits) {
-                    auto iter = _widgets.find(window->getWindowId());
-                    ASSERT(iter != _widgets.end(), "");
-                    _widgets.erase(iter);
-                    delete window;
+                for (auto widget : _exits) {
+                    auto iter1 = _deferrals.find(widget);
+                    if (iter1 != _deferrals.end()) { _deferrals.erase(iter1); }
+
+                    auto iter2 = _widgets.find(widget->getWindowId());
+                    ASSERT(iter2 != _widgets.end(), "");
+                    _widgets.erase(iter2);
+                    delete widget;
                 }
                 _exits.clear();
             }
+
+            // Perform the deferrals.
+            for (auto widget : _deferrals) { widget->deferral(); }
+            _deferrals.clear();
         }
 
         _selector.removeReadable(_pipe.readFd());

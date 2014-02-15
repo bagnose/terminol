@@ -105,12 +105,13 @@ protected:
         _selector.addReadable(_basics.fd(), this);
         _selector.addReadable(_pipe.readFd(), this);
 
-        while (!_exited) {
+        for (;;) {
             _selector.animate();
 
             // Poll for X11 events that may not have shown up on the descriptor.
             xevent();
 
+            if (_exited)   { break; }
             if (_deferral) { _widget.deferral(); _deferral = false; }
         }
 
