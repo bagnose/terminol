@@ -215,7 +215,12 @@ Config::Config() :
     x11CompositedTransparency(false),
     x11TransparencyValue(0.1)
 {
-    setColorScheme("rxvt");     // Assume it doesn't throw.
+    try {
+        setColorScheme("rxvt");
+    }
+    catch (const ParseError &) {
+        FATAL("");
+    }
 
     std::ostringstream ost;
     ost << "/tmp/terminols-" << ::getenv("USER");
