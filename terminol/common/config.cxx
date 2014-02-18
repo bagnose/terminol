@@ -222,8 +222,11 @@ Config::Config() :
         FATAL("");
     }
 
+    auto user = static_cast<const char *>(::getenv("USER"));
+    if (!user) { user = "unknown-user"; }
+
     std::ostringstream ost;
-    ost << "/tmp/terminols-" << ::getenv("USER");
+    ost << "/tmp/terminols-" << user;
     socketPath = ost.str();
 }
 
