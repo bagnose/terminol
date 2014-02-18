@@ -1042,6 +1042,8 @@ void Buffer::dumpTags(std::ostream & ost) const {
 void Buffer::dumpHistory(std::ostream & ost) const {
     ost << "BEGIN HISTORY" << std::endl;
 
+    auto flags = ost.flags();
+
     size_t i = 0;
 
     for (auto & l : _history) {
@@ -1064,6 +1066,8 @@ void Buffer::dumpHistory(std::ostream & ost) const {
 
         ++i;
     }
+
+    ost.flags(flags);
 
     ost << "END HISTORY" << std::endl << std::endl;
 }

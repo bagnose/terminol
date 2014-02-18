@@ -136,6 +136,8 @@ void Deduper::getByteStats(size_t & uniqueBytes, size_t & totalBytes) const {
 void Deduper::dump(std::ostream & ost) const {
     ost << "BEGIN GLOBAL TAGS" << std::endl;
 
+    auto flags = ost.flags();
+
     size_t i = 0;
 
     for (auto & l : _entries) {
@@ -155,6 +157,8 @@ void Deduper::dump(std::ostream & ost) const {
 
         ++i;
     }
+
+    ost.flags(flags);
 
     ost << "END GLOBAL TAGS" << std::endl << std::endl;
 }
