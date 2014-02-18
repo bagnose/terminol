@@ -277,8 +277,8 @@ void Tty::execShell(const std::string & windowId,
     if (command.empty()) {
         auto shell = static_cast<const char *>(::getenv("SHELL"));
         if (!shell) {
-            WARNING("Could not determine shell, falling back to: " << shell);
             shell = "/bin/sh";
+            WARNING("Could not determine shell, falling back to: " << shell);
         }
         args.push_back(shell);
         args.push_back("-i");
