@@ -2,7 +2,6 @@
 // Copyright © 2013 David Bryant
 
 #include "terminol/common/ascii.hxx"
-#include "terminol/support/escape.hxx"
 #include "terminol/support/debug.hxx"
 #include "terminol/support/conv.hxx"
 

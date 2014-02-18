@@ -7,7 +7,6 @@
 #include "terminol/support/pattern.hxx"
 
 #include <xcb/xcb_icccm.h>
-#include <xcb/xcb_aux.h>
 #include <pango/pangocairo.h>
 
 #include <limits>

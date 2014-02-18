@@ -11,7 +11,6 @@
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <sys/types.h>
-#include <sys/fcntl.h>
 
 #ifdef __linux__
 #include <pty.h>

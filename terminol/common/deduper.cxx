@@ -2,7 +2,6 @@
 // Copyright © 2013 David Bryant
 
 #include "terminol/common/deduper.hxx"
-#include "terminol/support/escape.hxx"
 
 #include <algorithm>
 #include <iostream>
