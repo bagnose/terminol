@@ -1109,18 +1109,14 @@ void Widget::sizeToRowsCols(int16_t & rows, int16_t & cols) const {
 }
 
 void Widget::handleDelete() {
-    if (_terminal->hasSubprocess()) {
-        if (_hadDeleteRequest) {
-            xcb_destroy_window(_basics.connection(), _window);
-        }
-        else {
-            _hadDeleteRequest = true;
-            _entitlement      = Entitlement::TRANSIENT;
-            setTitle("Process is running, once more to confirm...", false);
-        }
+    if (_terminal->hasSubprocess() && !_hadDeleteRequest) {
+        _hadDeleteRequest = true;
+        _entitlement      = Entitlement::TRANSIENT;
+        setTitle("Process is running, once more to confirm...", false);
     }
     else {
         xcb_destroy_window(_basics.connection(), _window);
+        xcb_flush(_basics.connection());
     }
 }
 
