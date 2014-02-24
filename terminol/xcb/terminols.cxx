@@ -53,8 +53,8 @@ public:
         std::string message;
     };
 
-    explicit EventLoop(const Config       & config,
-                       const Tty::Command & command)
+    EventLoop(const Config       & config,
+              const Tty::Command & command)
         throw (Basics::Error, Server::Error, Error) :
         _config(config),
         _command(command),
