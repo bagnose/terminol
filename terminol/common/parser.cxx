@@ -187,6 +187,7 @@ Parser::Parser(Config & config) : _config(config) {
 
     registerSimpleHandler("visual-bell-color", _config.visualBellColor);
 
+    registerSimpleHandler("audible-bell-volume", _config.audibleBellVolume);
     registerSimpleHandler("visual-bell-duration", _config.visualBellDuration);
     registerSimpleHandler("map-on-bell", _config.mapOnBell);
     registerSimpleHandler("urgent-on-bell", _config.urgentOnBell);

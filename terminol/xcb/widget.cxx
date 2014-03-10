@@ -1232,7 +1232,7 @@ void Widget::terminalBell() throw () {
     }
 
     if (_config.audibleBell) {
-        xcb_bell(_basics.connection(), 100);
+        xcb_bell(_basics.connection(), _config.audibleBellVolume);
     }
 
     if (_config.visualBell) {

@@ -68,13 +68,14 @@ struct Config {
 
     bool        autoHideCursor;
 
-    Color       visualBellColor;
-    uint32_t    visualBellDuration;
-
     bool        mapOnBell;
     bool        urgentOnBell;
     bool        audibleBell;
     bool        visualBell;
+
+    int         audibleBellVolume;
+    Color       visualBellColor;
+    uint32_t    visualBellDuration;
 
     bool        x11PseudoTransparency;
     bool        x11CompositedTransparency;

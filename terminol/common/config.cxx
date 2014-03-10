@@ -206,11 +206,12 @@ Config::Config() :
     bindings(),
     cutChars("-A-Za-z0-9./?%&#_=+@~"),
     autoHideCursor(true),
-    visualBellDuration(25),
     mapOnBell(false),
     urgentOnBell(false),
     audibleBell(false),
     visualBell(false),
+    audibleBellVolume(100),
+    visualBellDuration(25),
     x11PseudoTransparency(false),
     x11CompositedTransparency(false),
     x11TransparencyValue(0.1)

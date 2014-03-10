@@ -91,6 +91,7 @@
 # Use this for compatibility with 'vttest':
 #set traditional-wrapping true
 
+#set audible-bell-volume         100
 #set visual-bell-color           #7f7f7f
 #set visual-bell-duration        25
 
