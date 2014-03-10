@@ -2,6 +2,163 @@
 // Copyright © 2013 David Bryant
 
 #include "terminol/common/buffer.hxx"
+#include "terminol/support/regex.hxx"
+#include "terminol/support/escape.hxx"
+
+Buffer::ParaIter::ParaIter(const Buffer & buffer, APos apos) :
+    _buffer(buffer), _pos(apos), _cells(nullptr), _offset(0), _valid(false)
+{
+    init();
+}
+
+void Buffer::ParaIter::moveForward() {
+    ASSERT(_valid, "Invalid.");
+
+    if (_pos.row < 0) {
+        // Historical.
+        ++_offset;
+        ++_pos.col;
+
+        if (_pos.col == _buffer.getCols()) {
+            // Wrap.
+            ++_pos.row;
+            _pos.col = 0;
+
+            if (_pos.row == 0) {
+                // We have entered into the active region.
+                ASSERT(_offset == _cells->size(), "");
+
+                if (_cells == &_buffer._pending) {
+                    init();
+                    ASSERT(_valid, "Invalid.");
+                }
+                else {
+                    _valid = false;
+                }
+            }
+            else {
+                // We are still in the historical region.
+                if (_offset == _cells->size()) {
+                    _valid = false;
+                }
+            }
+        }
+        else {
+            if (_offset == _cells->size()) {
+                _valid = false;
+            }
+        }
+    }
+    else {
+        // Active.
+        auto & aline = _buffer._active[_pos.row];
+        ++_offset;
+        ++_pos.col;
+
+        if (_pos.col == _buffer.getCols()) {
+            ++_pos.row;
+            _pos.col = 0;
+
+            if (aline.cont) {
+                init();
+                ASSERT(_valid, "");
+            }
+            else {
+                _valid = false;
+            }
+        }
+        else {
+            _valid = _pos.col < aline.wrap;
+        }
+    }
+}
+
+void Buffer::ParaIter::moveBackward() {
+    ASSERT(_valid, "Invalid.");
+
+    if (_pos.row < 0) {
+        // Historical.
+        if (_offset == 0) {
+            // There is nothing to our left.
+            _valid = false;
+        }
+        else {
+            // Left cell is valid.
+            if (_pos.col == 0) {
+                --_pos.row;
+                _pos.col = _buffer.getCols();
+            }
+            --_offset;
+            --_pos.col;
+        }
+    }
+    else {
+        // Active.
+        ASSERT(static_cast<uint32_t>(_pos.col) == _offset, "");
+
+        if (_pos.col == 0) {
+            // There will be something to our left if we are a continuation.
+            --_pos.row;
+            _pos.col = _buffer.getCols() - 1;
+
+            if (_pos.row >= 0) {
+                // Still active.
+                auto & aline = _buffer._active[_pos.row];
+                if (aline.cont) {
+                    // We were on a continuation of the previous active line.
+                    init();
+                    ASSERT(_valid, "Invalid.");
+                }
+                else {
+                    _valid = false;
+                }
+            }
+            else {
+                if (!_buffer._pending.empty()) {
+                    // We were on a continuation of pending.
+                    init();
+                    ASSERT(_valid, "Invalid.");
+                }
+                else {
+                    _valid = false;
+                }
+            }
+        }
+        else {
+            --_offset;
+            --_pos.col;
+        }
+    }
+}
+
+void Buffer::ParaIter::init() {
+    if (_pos.row < 0) {
+        // Historical.
+        auto & hline  = _buffer._history[_buffer._history.size() + _pos.row];
+        auto   offset = (static_cast<uint32_t>(hline.seqnum) * _buffer.getCols() + _pos.col);
+        auto   tag    = _buffer._tags[hline.index - _buffer._lostTags];
+        auto & cells  = (tag == I_Deduper::invalidTag() ?
+                         _buffer._pending :
+                         _buffer._deduper.lookup(tag));
+
+        _cells  = &cells;
+        _offset = offset;
+        _valid  = _offset < _cells->size();
+    }
+    else {
+        // Active.
+        auto & aline = _buffer._active[_pos.row];
+        auto & cells = aline.cells;
+
+        _cells  = &cells;
+        _offset = _pos.col;
+        _valid  = _pos.col < aline.wrap;
+    }
+}
+
+//
+//
+//
 
 void Buffer::markSelection(Pos pos) {
     damageSelection();
@@ -57,102 +214,58 @@ void Buffer::expandSelection(Pos pos, int level) {
 
     APos apos(pos, _scrollOffset);
 
-    if (apos.row < 0) {
-        // Historical
+    ParaIter iter(*this, apos);
 
-        auto & hline = _history[_history.size() + apos.row];
-        auto   tag   = _tags[hline.index - _lostTags];
-        auto & cells = tag == I_Deduper::invalidTag() ? _pending : _deduper.lookup(tag);
+    if (level == 1) {
+        _selectMark = _selectDelim = apos;
+    }
+    else if (level == 3    ||
+             !iter.valid() ||
+             iter.getCell().seq.lead() == ' ') {
+        ParaIter selectIter(*this, APos(apos.row, 0));
 
-        auto   left  = hline.seqnum * getCols() + apos.col;
-        auto   right = left + 1;
+        if (selectIter.valid()) {
+            auto delimIter = selectIter;
 
-        if (level == 1) {
-            _selectMark = _selectDelim = apos;
-        }
-        else if (level == 3 || cells[left].seq.lead() == ' ') {
-            _selectMark  = APos(apos.row - hline.seqnum, 0);
-            _selectDelim = APos(apos.row + (cells.size() / getCols()) - hline.seqnum, getCols());
+            do {
+                _selectMark = selectIter.getPos();
+                selectIter.moveBackward();
+            } while (selectIter.valid());
+
+            do {
+                _selectDelim = delimIter.getPos();
+                delimIter.moveForward();
+            } while (delimIter.valid());
+
+            _selectDelim.col = getCols();
         }
         else {
-            Regex regex("[" + _config.cutChars + "]");
-
-            _selectMark = apos;
-
-            while (left != 0) {
-                auto seq = cells[left - 1].seq;
-                std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
-
-                if (regex.matchString(s).empty()) { break; }
-                --left;
-
-                if (_selectMark.col == 0) {
-                    --_selectMark.row;
-                    _selectMark.col = getCols() - 1;
-                }
-                else {
-                    --_selectMark.col;
-                }
-            }
-
-            _selectDelim = APos(apos.row, apos.col + 1);
-
-            while (right != cells.size()) {
-                auto seq = cells[right].seq;
-                std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
-
-                if (regex.matchString(s).empty()) { break; }
-                ++right;
-
-                if (_selectDelim.col == getCols()) {
-                    _selectDelim.col = 0;
-                    ++_selectDelim.row;
-                }
-                else {
-                    ++_selectDelim.col;
-                }
-            }
+            // Must be an empty line.
         }
     }
     else {
-        // Active
+        Regex regex("[" + _config.cutChars + "]");
 
-        int16_t row  = apos.row;
-        int16_t col  = apos.col;
+        auto selectIter = iter;
+        auto delimIter  = iter;
 
-        auto & aline = _active[row];
-        auto & cells = aline.cells;
+        do {
+            auto & seq  = selectIter.getCell().seq;
+            auto   text = reinterpret_cast<const char *>(&seq.bytes[0]);
+            auto   size = static_cast<size_t>(utf8::leadLength(seq.lead()));
+            if (!regex.matchTest(text, size)) { break; }
+            _selectMark = selectIter.getPos();
+            selectIter.moveBackward();
+        } while (selectIter.valid());
 
-        if (level == 1) {
-            _selectMark = _selectDelim = apos;
-        }
-        else if (level == 3 || cells[col].seq.lead() == ' ') {
-            _selectMark  = APos(apos.row, 0);
-            _selectDelim = APos(apos.row, getCols());
-        }
-        else {
-            Regex regex("[" + _config.cutChars + "]");
-
-            _selectMark = apos;
-
-            while (_selectMark.col != 0) {
-                auto seq = cells[_selectMark.col - 1].seq;
-                std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
-
-                if (regex.matchString(s).empty()) { break; }
-                --_selectMark.col;
-            }
-
-            _selectDelim = APos(apos.row, apos.col + 1);
-
-            while (_selectDelim.col != static_cast<int16_t>(cells.size())) {
-                auto seq = cells[_selectDelim.col].seq;
-                std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
-
-                if (regex.matchString(s).empty()) { break; }
-                ++_selectDelim.col;
-            }
-        }
+        do {
+            auto & seq  = delimIter.getCell().seq;
+            auto   text = reinterpret_cast<const char *>(&seq.bytes[0]);
+            auto   size = static_cast<size_t>(utf8::leadLength(seq.lead()));
+            if (!regex.matchTest(text, size)) { break; }
+            delimIter.moveForward();
+            _selectDelim = delimIter.getPos();
+        } while (delimIter.valid());
     }
 
     damageSelection();

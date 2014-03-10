@@ -7,8 +7,6 @@
 #include "terminol/common/data_types.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/deduper_interface.hxx"
-#include "terminol/support/escape.hxx"
-#include "terminol/support/regex.hxx"
 
 #include <deque>
 #include <vector>
@@ -130,6 +128,10 @@ class Buffer {
             (lhs.row == rhs.row && lhs.col < rhs.col);
     }
 
+    friend std::ostream & operator << (std::ostream & ost, const APos & pos) {
+        return ost << pos.row << 'x' << pos.col;
+    }
+
     // HLine (or Historical-Line) represents a line of text in the historical region.
     // It can also be thought of as representing a segment of an unwrapped line.
     struct HLine {
@@ -231,6 +233,41 @@ class Buffer {
 
         SavedCursor() : cursor(), charSub(nullptr) {}
     };
+
+    //
+    //
+    //
+
+    class ParaIter {
+        const Buffer            & _buffer;
+        APos                      _pos;
+        const std::vector<Cell> * _cells;
+        uint32_t                  _offset;
+        bool                      _valid;
+
+    public:
+        ParaIter(const Buffer & buffer, APos apos);
+
+        const Cell & getCell() const {
+            ASSERT(_valid, "Invalid.");
+            auto & cells = *_cells;
+            return cells[_offset];
+        }
+
+        const APos & getPos() const { return _pos; }
+
+        bool valid() const { return _valid; }
+
+        void moveForward();
+        void moveBackward();
+
+    protected:
+        void init();
+    };
+
+    //
+    //
+    //
 
     const Config               & _config;
     I_Deduper                  & _deduper;
@@ -472,6 +509,83 @@ public:
     void dumpSelection(std::ostream & ost) const;
 
 protected:
+    class BufferIter {
+        const Buffer & _buffer;
+        int32_t        _row;
+        bool           _valid;
+
+    public:
+        BufferIter(const Buffer & buffer, int32_t row) :
+            _buffer(buffer), _row(row), _valid(true)
+        {
+            while (!isStartOfPara()) {
+                --_row;
+
+                if (static_cast<uint32_t>(-_row - 1) == _buffer.getHistoricalRows()) {
+                    _valid = false;
+                    break;
+                }
+            }
+        }
+
+        ParaIter getParaIter() const {
+            return ParaIter(_buffer, APos(_row, 0));
+        }
+
+        bool valid() const {
+            return _valid;
+        }
+
+        void moveForward() {
+            do {
+                ++_row;
+
+                if (_row == _buffer.getRows()) {
+                    _valid = false;
+                    break;
+                }
+            } while (!isStartOfPara());
+        }
+
+        void moveBackward() {
+            do {
+                --_row;
+
+                PRINT("Move backward to: " << _row);
+
+                if (static_cast<uint32_t>(-_row - 1) == _buffer.getHistoricalRows()) {
+                    PRINT("Break");
+                    _valid = false;
+                    break;
+                }
+            } while (!isStartOfPara());
+        }
+
+    private:
+        bool isStartOfPara() {
+            auto prevRow = _row - 1;
+
+            if (static_cast<uint32_t>(-prevRow - 1) == _buffer.getHistoricalRows()) {
+                return true;
+            }
+
+            if (prevRow < 0) {
+                // Historical.
+                auto & hline = _buffer._history[_buffer._history.size() + prevRow];
+                return hline.seqnum == 0;
+            }
+            else {
+                // Active.
+                auto & aline = _buffer._active[prevRow];
+                return !aline.cont;
+            }
+        }
+    };
+
+    //
+    //
+    //
+
     void rebuildHistory();
 
     static bool isCellSelected(APos apos, APos begin, APos end, int16_t wrap);
