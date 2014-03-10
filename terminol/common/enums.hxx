@@ -5,8 +5,7 @@
 #define COMMON__ENUMS__HXX
 
 #include <iosfwd>
-
-#include <stdint.h>
+#include <cstdint>
 
 enum class Control {
     BEL,

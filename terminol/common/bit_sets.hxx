@@ -8,7 +8,7 @@
 #include "terminol/common/enums.hxx"
 
 #include <iosfwd>
-#include <stdint.h>
+#include <cstdint>
 
 template <typename T, typename I> class BitSet {
     I _bits;

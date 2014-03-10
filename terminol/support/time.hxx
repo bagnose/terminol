@@ -6,8 +6,7 @@
 
 #include <iosfwd>
 #include <chrono>
-
-#include <stdint.h>
+#include <cstdint>
 
 //
 // A timer that expires.

@@ -6,8 +6,7 @@
 
 #include "terminol/support/debug.hxx"
 
-#include <stddef.h>
-#include <stdint.h>
+#include <cstdint>
 
 namespace utf8 {
 

@@ -7,8 +7,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
-
-#include <stdint.h>
+#include <cstdint>
 
 const uint8_t NUL   = '\x00';  // '\0'
 const uint8_t SOH   = '\x01';

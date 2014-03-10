@@ -6,8 +6,7 @@
 
 #include <iostream>
 #include <vector>
-
-#include <stdint.h>
+#include <cstdint>
 
 enum class SGR {
     RESET_ALL,          // (normal)

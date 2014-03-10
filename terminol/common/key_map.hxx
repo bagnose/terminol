@@ -9,8 +9,7 @@
 #include "terminol/common/bit_sets.hxx"
 
 #include <vector>
-
-#include <stdint.h>
+#include <cstdint>
 
 #include <xkbcommon/xkbcommon.h>
 

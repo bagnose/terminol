@@ -7,7 +7,7 @@
 #include "terminol/xcb/basics.hxx"
 #include "terminol/common/config.hxx"
 
-#include <stdint.h>
+#include <cstdint>
 
 struct DColor {
     DColor() : r(0.0), g(0.0), b(0.0) {}

@@ -8,8 +8,7 @@
 #include "terminol/common/config.hxx"
 
 #include <vector>
-
-#include <stdint.h>
+#include <cstdint>
 
 //
 // Simple Escape.
