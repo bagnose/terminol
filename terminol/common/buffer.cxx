@@ -490,13 +490,6 @@ void Buffer::migrateFrom(Buffer & other, bool clear_) {
     }
 }
 
-void Buffer::resetDamage() {
-    for (auto & d : _damage) {
-        d.reset();
-    }
-    _barDamage = false;
-}
-
 void Buffer::write(utf8::Seq seq, bool autoWrap, bool insert) {
     damageCell();
 
@@ -1178,6 +1171,203 @@ void Buffer::accumulateDamage(Region & damage) const {
     }
 }
 
+void Buffer::dispatch(bool reverse, I_Renderer & renderer) {
+        dispatchBg(reverse, renderer);
+        dispatchFg(reverse, renderer);
+
+        if (_search) {
+            dispatchSearch(reverse, renderer);
+        }
+        else {
+            dispatchCursor(reverse, renderer);
+        }
+
+        resetDamage();
+}
+
+void Buffer::resetDamage() {
+    for (auto & d : _damage) {
+        d.reset();
+    }
+    _barDamage = false;
+}
+
+void Buffer::useCharSet(CharSet charSet) {
+    _cursor.charSet = charSet;
+}
+
+void Buffer::setCharSub(CharSet charSet, const CharSub * charSub) {
+    _charSubs.set(charSet, charSub);
+}
+
+const CharSub * Buffer::getCharSub(CharSet charSet) const {
+    return _charSubs.get(charSet);
+}
+
+void Buffer::beginSearch(const std::string & pattern) {
+    ASSERT(!_search, "Already searching.");
+    _search = new Search(*this, pattern);
+    _damage.back().damageAdd(0, getCols());
+
+    auto & bufferIter = _search->iter;
+    auto & allOffsets = _search->allOffsets;
+
+    Regex regex(pattern);
+
+    while (bufferIter.valid()) {
+        auto paraIter = bufferIter.getParaIter();
+
+        std::vector<uint8_t> para;
+
+        while (paraIter.valid()) {
+            auto & cell = paraIter.getCell();
+            auto   seq  = cell.seq;
+
+            std::copy(&seq.bytes[0],
+                      &seq.bytes[utf8::leadLength(seq.lead())],
+                      back_inserter(para));
+
+            paraIter.moveForward();
+        }
+
+        para.push_back('\0');
+
+        std::cout << &para.front() << std::endl;
+
+        // PCRE_NOTEMPTY, PCRE_NO_UTF8_CHECK
+        allOffsets = regex.matchAllOffsets(reinterpret_cast<const char *>(&para.front()),
+                                           para.size());
+
+        if (!allOffsets.empty()) {
+            break;
+        }
+
+        bufferIter.moveBackward();
+    }
+}
+
+const std::string & Buffer::getSearchPattern() const {
+    ASSERT(_search, "Not searching.");
+    return _search->pattern;
+}
+
+void Buffer::setSearchPattern(const std::string & pattern) {
+    ASSERT(_search, "Not searching.");
+    _search->pattern = pattern;
+    // TODO
+}
+
+void Buffer::nextSearch() {
+    ASSERT(_search, "Not searching.");
+    NYI("");
+}
+
+void Buffer::prevSearch() {
+    ASSERT(_search, "Not searching.");
+    NYI("");
+}
+
+void Buffer::endSearch() {
+    ASSERT(_search, "Not searching.");
+    delete _search;
+    _search = nullptr;
+}
+
+void Buffer::dumpTags(std::ostream & ost) const {
+    ost << "BEGIN LOCAL TAGS" << std::endl;
+
+    size_t i = 0;
+
+    for (auto t : _tags) {
+        ost << std::setw(6) << i << " "
+            << std::setw(sizeof(I_Deduper::Tag) * 2) << std::setfill('0')
+            << std::hex << std::uppercase << t << ": "
+            << std::setfill(' ') << std::dec << " \'";
+
+        auto & cells = t != I_Deduper::invalidTag() ? _deduper.lookup(t) : _pending;
+
+        for (auto & c : cells) {
+            ost << c.seq;
+        }
+
+        ost << "\'" << std::endl;
+
+        ++i;
+    }
+
+    ost << "END LOCAL TAGS" << std::endl << std::endl;
+}
+
+void Buffer::dumpHistory(std::ostream & ost) const {
+    ost << "BEGIN HISTORY" << std::endl;
+
+    auto flags = ost.flags();
+
+    size_t i = 0;
+
+    for (auto & l : _history) {
+        ost << std::setw(4) << i << " "
+            << std::setw(4) << l.index - _lostTags << " "
+            << std::setw(2) << l.seqnum << " \'";
+
+        auto   tag   = _tags[l.index - _lostTags];
+        auto & cells = tag != I_Deduper::invalidTag() ? _deduper.lookup(tag) : _pending;
+
+        size_t offset = l.seqnum * getCols();
+        for (uint16_t o = 0; o != getCols(); ++o) {
+            auto c = offset + o;
+            if (c == cells.size()) { break; }       // Line doesn't extend to the end.
+            auto & cell = cells[c];
+            ost << cell.seq;
+        }
+
+        ost << "\'" << std::endl;
+
+        ++i;
+    }
+
+    ost.flags(flags);
+
+    ost << "END HISTORY" << std::endl << std::endl;
+}
+
+void Buffer::dumpActive(std::ostream & ost) const {
+    ost << "BEGIN ACTIVE" << std::endl;
+
+    size_t i = 0;
+
+    for (auto & l : _active) {
+        ost << std::setw(2) << i << " "
+            << (l.cont ? '\\' : '$') << " "
+            << std::setw(3) << l.wrap << " \'";
+
+        uint16_t col = 0;
+
+        ost << SGR::UNDERLINE;
+        for (; col != l.wrap; ++col) { ost << l.cells[col].seq; }
+        ost << SGR::RESET_UNDERLINE;
+
+        for (; col != getCols(); ++col) { ost << l.cells[col].seq; }
+
+        ost << "\'" << std::endl;
+
+        ++i;
+    }
+
+    ost << "END ACTIVE" << std::endl << std::endl;
+}
+
+void Buffer::dumpSelection(std::ostream & ost) const {
+    ost << "BEGIN SELECTION" << std::endl;
+
+    std::string text;
+    if (getSelectedText(text)) {
+        ost << text << std::endl;
+    }
+
+    ost << "END SELECTION" << std::endl << std::endl;
+}
+
 void Buffer::dispatchBg(bool reverse, I_Renderer & renderer) const {
     APos selBegin, selEnd;
     bool selValid = normaliseSelection(selBegin, selEnd);
@@ -1389,7 +1579,7 @@ void Buffer::dispatchCursor(bool reverse, I_Renderer & renderer) const {
     }
 }
 
-void Buffer::dispatchSearch(I_Renderer & renderer) const {
+void Buffer::dispatchSearch(bool UNUSED(reverse), I_Renderer & renderer) const {
     auto row = getRows() - 1;
 
     auto str = "?" + _search->pattern;
@@ -1401,182 +1591,6 @@ void Buffer::dispatchSearch(I_Renderer & renderer) const {
                           AttrSet(),
                           reinterpret_cast<const uint8_t *>(str.data()),
                           str.size());
-}
-
-void Buffer::useCharSet(CharSet charSet) {
-    _cursor.charSet = charSet;
-}
-
-void Buffer::setCharSub(CharSet charSet, const CharSub * charSub) {
-    _charSubs.set(charSet, charSub);
-}
-
-const CharSub * Buffer::getCharSub(CharSet charSet) const {
-    return _charSubs.get(charSet);
-}
-
-void Buffer::beginSearch(const std::string & pattern) {
-    ASSERT(!_search, "Already searching.");
-    _search = new Search(*this, pattern);
-    _damage.back().damageAdd(0, getCols());
-
-    auto & bufferIter = _search->iter;
-    auto & allOffsets = _search->allOffsets;
-
-    Regex regex(pattern);
-
-    while (bufferIter.valid()) {
-        auto paraIter = bufferIter.getParaIter();
-
-        std::vector<uint8_t> para;
-
-        while (paraIter.valid()) {
-            auto & cell = paraIter.getCell();
-            auto   seq  = cell.seq;
-
-            std::copy(&seq.bytes[0],
-                      &seq.bytes[utf8::leadLength(seq.lead())],
-                      back_inserter(para));
-
-            paraIter.moveForward();
-        }
-
-        para.push_back('\0');
-
-        std::cout << &para.front() << std::endl;
-
-        // PCRE_NOTEMPTY, PCRE_NO_UTF8_CHECK
-        allOffsets = regex.matchAllOffsets(reinterpret_cast<const char *>(&para.front()),
-                                           para.size());
-
-        if (!allOffsets.empty()) {
-            break;
-        }
-
-        bufferIter.moveBackward();
-    }
-}
-
-const std::string & Buffer::getSearchPattern() const {
-    ASSERT(_search, "Not searching.");
-    return _search->pattern;
-}
-
-void Buffer::setSearchPattern(const std::string & pattern) {
-    ASSERT(_search, "Not searching.");
-    _search->pattern = pattern;
-    // TODO
-}
-
-void Buffer::nextSearch() {
-    ASSERT(_search, "Not searching.");
-    NYI("");
-}
-
-void Buffer::prevSearch() {
-    ASSERT(_search, "Not searching.");
-    NYI("");
-}
-
-void Buffer::endSearch() {
-    ASSERT(_search, "Not searching.");
-    delete _search;
-    _search = nullptr;
-}
-
-void Buffer::dumpTags(std::ostream & ost) const {
-    ost << "BEGIN LOCAL TAGS" << std::endl;
-
-    size_t i = 0;
-
-    for (auto t : _tags) {
-        ost << std::setw(6) << i << " "
-            << std::setw(sizeof(I_Deduper::Tag) * 2) << std::setfill('0')
-            << std::hex << std::uppercase << t << ": "
-            << std::setfill(' ') << std::dec << " \'";
-
-        auto & cells = t != I_Deduper::invalidTag() ? _deduper.lookup(t) : _pending;
-
-        for (auto & c : cells) {
-            ost << c.seq;
-        }
-
-        ost << "\'" << std::endl;
-
-        ++i;
-    }
-
-    ost << "END LOCAL TAGS" << std::endl << std::endl;
-}
-
-void Buffer::dumpHistory(std::ostream & ost) const {
-    ost << "BEGIN HISTORY" << std::endl;
-
-    auto flags = ost.flags();
-
-    size_t i = 0;
-
-    for (auto & l : _history) {
-        ost << std::setw(4) << i << " "
-            << std::setw(4) << l.index - _lostTags << " "
-            << std::setw(2) << l.seqnum << " \'";
-
-        auto   tag   = _tags[l.index - _lostTags];
-        auto & cells = tag != I_Deduper::invalidTag() ? _deduper.lookup(tag) : _pending;
-
-        size_t offset = l.seqnum * getCols();
-        for (uint16_t o = 0; o != getCols(); ++o) {
-            auto c = offset + o;
-            if (c == cells.size()) { break; }       // Line doesn't extend to the end.
-            auto & cell = cells[c];
-            ost << cell.seq;
-        }
-
-        ost << "\'" << std::endl;
-
-        ++i;
-    }
-
-    ost.flags(flags);
-
-    ost << "END HISTORY" << std::endl << std::endl;
-}
-
-void Buffer::dumpActive(std::ostream & ost) const {
-    ost << "BEGIN ACTIVE" << std::endl;
-
-    size_t i = 0;
-
-    for (auto & l : _active) {
-        ost << std::setw(2) << i << " "
-            << (l.cont ? '\\' : '$') << " "
-            << std::setw(3) << l.wrap << " \'";
-
-        uint16_t col = 0;
-
-        ost << SGR::UNDERLINE;
-        for (; col != l.wrap; ++col) { ost << l.cells[col].seq; }
-        ost << SGR::RESET_UNDERLINE;
-
-        for (; col != getCols(); ++col) { ost << l.cells[col].seq; }
-
-        ost << "\'" << std::endl;
-
-        ++i;
-    }
-
-    ost << "END ACTIVE" << std::endl << std::endl;
-}
-
-void Buffer::dumpSelection(std::ostream & ost) const {
-    ost << "BEGIN SELECTION" << std::endl;
-
-    std::string text;
-    if (getSelectedText(text)) {
-        ost << text << std::endl;
-    }
-
-    ost << "END SELECTION" << std::endl << std::endl;
 }
 
 void Buffer::rebuildHistory() {

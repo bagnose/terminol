@@ -561,7 +561,7 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
         if (_modes.get(Mode::SHOW_CURSOR) && !_buffer->isSearching()) {
             _buffer->damageCell();
             _buffer->accumulateDamage(damage);
-            _buffer->dispatchCursor(_modes.get(Mode::REVERSE), *this);
+            _buffer->dispatch(_modes.get(Mode::REVERSE), *this);
         }
 
         scrollbar = false;
@@ -570,18 +570,9 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
         if (trigger == Trigger::CLIENT) {
             _buffer->damageViewport(true);
         }
-        _buffer->accumulateDamage(damage);
-        _buffer->dispatchBg(_modes.get(Mode::REVERSE), *this);
-        _buffer->dispatchFg(_modes.get(Mode::REVERSE), *this);
 
-        if (_buffer->isSearching()) {
-            _buffer->dispatchSearch(*this);
-        }
-        else {
-            if (_modes.get(Mode::SHOW_CURSOR)) {
-                _buffer->dispatchCursor(_modes.get(Mode::REVERSE), *this);
-            }
-        }
+        _buffer->accumulateDamage(damage);
+        _buffer->dispatch(_modes.get(Mode::REVERSE), *this);
 
         if (_config.scrollbarVisible) {
             scrollbar = _buffer->getBarDamage();
@@ -595,8 +586,6 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
         else {
             scrollbar = false;
         }
-
-        _buffer->resetDamage();
     }
 }
 

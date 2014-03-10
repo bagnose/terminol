@@ -437,8 +437,6 @@ public:
 
     void migrateFrom(Buffer & other, bool clear_);
 
-    void resetDamage();
-
     void write(utf8::Seq seq, bool autoWrap, bool insert);
 
     void backspace(bool autoWrap);
@@ -538,11 +536,7 @@ public:
 
     void accumulateDamage(Region & damage) const;
 
-    // FIXME we shouldn't need separate public functions for each of these things.
-    void dispatchBg(bool reverse, I_Renderer & renderer) const;
-    void dispatchFg(bool reverse, I_Renderer & renderer) const;
-    void dispatchCursor(bool reverse, I_Renderer & renderer) const;
-    void dispatchSearch(I_Renderer & renderer) const;
+    void dispatch(bool reverse, I_Renderer & renderer);
 
     void useCharSet(CharSet charSet);
 
@@ -564,6 +558,12 @@ public:
     void dumpSelection(std::ostream & ost) const;
 
 protected:
+    void dispatchBg(bool reverse, I_Renderer & renderer) const;
+    void dispatchFg(bool reverse, I_Renderer & renderer) const;
+    void dispatchCursor(bool reverse, I_Renderer & renderer) const;
+    void dispatchSearch(bool reverse, I_Renderer & renderer) const;
+    void resetDamage();
+
     void rebuildHistory();
 
     static bool isCellSelected(APos apos, APos begin, APos end, int16_t wrap);
