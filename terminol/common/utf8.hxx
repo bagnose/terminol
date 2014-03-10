@@ -38,6 +38,10 @@ Length    codePointLength(CodePoint codePoint) throw (Error);
 // Encode a code point into a sequence. Assumes sequence has sufficient allocation.
 Length    encode(CodePoint codePoint, uint8_t * sequence) throw (Error);
 
+bool      isLead(uint8_t byte);
+
+bool      isCont(uint8_t byte);
+
 //
 //
 //

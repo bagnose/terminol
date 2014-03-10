@@ -165,6 +165,29 @@ Length encode(CodePoint codePoint, uint8_t * sequence) throw (Error) {
     return length;
 }
 
+
+bool isLead(uint8_t byte) {
+    if ((byte & B7) == 0) {
+        return true;
+    }
+    else if ((byte & (B7|B6|B5)) == (B7|B6)) {
+        return true;
+    }
+    else if ((byte & (B7|B6|B5|B4)) == (B7|B6|B5)) {
+        return true;
+    }
+    else if ((byte & (B7|B6|B5|B4|B3)) == (B7|B6|B5|B4)) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+bool isCont(uint8_t byte) {
+    return !isLead(byte);
+}
+
 //
 //
 //
