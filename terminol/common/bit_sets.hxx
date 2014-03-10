@@ -4,6 +4,7 @@
 #ifndef COMMON__BIT_SETS__HXX
 #define COMMON__BIT_SETS__HXX
 
+#include "terminol/support/debug.hxx"
 #include "terminol/common/enums.hxx"
 
 #include <iosfwd>
@@ -11,7 +12,11 @@
 
 template <typename T, typename I> class BitSet {
     I _bits;
-    static I bit(T t) { return 1 << static_cast<int>(t); }
+    static I bit(T t) {
+        auto shift = static_cast<unsigned int>(t);
+        ASSERT(shift < sizeof(T) * 8, "Overflow.");
+        return 1 << shift;
+    }
 
 public:
     BitSet() : _bits(0) {}
