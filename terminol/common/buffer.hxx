@@ -411,7 +411,7 @@ public:
                     auto seq = cells[left - 1].seq;
                     std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
 
-                    if (regex.match(s).empty()) { break; }
+                    if (regex.matchString(s).empty()) { break; }
                     --left;
 
                     if (_selectMark.col == 0) {
@@ -429,7 +429,7 @@ public:
                     auto seq = cells[right].seq;
                     std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
 
-                    if (regex.match(s).empty()) { break; }
+                    if (regex.matchString(s).empty()) { break; }
                     ++right;
 
                     if (_selectDelim.col == getCols()) {
@@ -467,7 +467,7 @@ public:
                     auto seq = cells[_selectMark.col - 1].seq;
                     std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
 
-                    if (regex.match(s).empty()) { break; }
+                    if (regex.matchString(s).empty()) { break; }
                     --_selectMark.col;
                 }
 
@@ -477,7 +477,7 @@ public:
                     auto seq = cells[_selectDelim.col].seq;
                     std::string s(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()));
 
-                    if (regex.match(s).empty()) { break; }
+                    if (regex.matchString(s).empty()) { break; }
                     ++_selectDelim.col;
                 }
             }
