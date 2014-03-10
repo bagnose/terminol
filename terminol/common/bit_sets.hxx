@@ -9,12 +9,12 @@
 #include <iosfwd>
 #include <stdint.h>
 
-template <typename T, typename I> class GenericSet {
+template <typename T, typename I> class BitSet {
     I _bits;
     static I bit(T t) { return 1 << static_cast<int>(t); }
 
 public:
-    GenericSet() : _bits(0) {}
+    BitSet() : _bits(0) {}
 
     void clear()        { _bits  =  I(0);        }
     void set(T t)       { _bits |=  bit(t);      }
@@ -27,11 +27,11 @@ public:
         else    { unset(t); }
     }
 
-    friend inline bool operator == (GenericSet lhs, GenericSet rhs) {
+    friend inline bool operator == (BitSet lhs, BitSet rhs) {
         return lhs._bits == rhs._bits;
     }
 
-    friend inline bool operator != (GenericSet lhs, GenericSet rhs) {
+    friend inline bool operator != (BitSet lhs, BitSet rhs) {
         return !(lhs == rhs);
     }
 };
@@ -40,13 +40,13 @@ public:
 //
 //
 
-typedef GenericSet<Modifier, uint8_t> ModifierSet;
+typedef BitSet<Modifier, uint8_t> ModifierSet;
 std::ostream & operator << (std::ostream & ost, ModifierSet modifierSet);
 
-typedef GenericSet<Attr, uint8_t> AttrSet;
+typedef BitSet<Attr, uint8_t> AttrSet;
 std::ostream & operator << (std::ostream & ost, AttrSet attrSet);
 
-typedef GenericSet<Mode, uint32_t> ModeSet;
+typedef BitSet<Mode, uint32_t> ModeSet;
 std::ostream & operator << (std::ostream & ost, ModeSet modeSet);
 
 #endif // COMMON__BIT_SETS__HXX
