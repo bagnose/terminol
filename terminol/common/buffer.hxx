@@ -78,21 +78,27 @@ struct CharSubArray {
 // historical region is constant (note, historical content can become active again
 // during resizes if the number of rows increases).
 //
+// Terminology:
+// - Line: The contents of a single row.
+// - Paragraph: The concatenated contents of one or more consecutive rows
+//   where each subsequent row is a continuation of the previous.
+//
 // The data structures of the active region are essentially just a 2-dimensional
 // array - the first dimension represents the rows and the second dimension represents
 // the columns. Each element in the array is a Cell object.
+// The active region is effectively an array of Lines.
 //
-// To facility low-overhead text reflow and historical deduplication, the data
+// To facility low-overhead text reflow and deduplication, the data
 // structures of the historical region are more elaborate. Firstly, historical
-// data is stored in an "unwrapped" state, e.g. if some text is continued across
-// three lines then the concatenation of those three lines is stored in the
+// data is stored as paragraphs, e.g. if some text is continued across three
+// lines then the concatenation of those three lines is stored in the
 // historical data.
 // An additional data structure, HLine, allows historical data to be indexed
-// (by row/column) by mapping the grid into segments of these unwrapped lines.
+// (by row/column) by mapping the grid into segments of these paragraphs.
 //
-// During a reflowed-resize the HLines are invalidated but the unwrapped lines
-// are not. The HLines must be rebuilt by re-traversing the unwrapped lines.
-// Because the unwrapped lines are never invalidated (not even during resize)
+// During a reflowed-resize the HLines are invalidated but the paragraphs
+// are not. The HLines must be rebuilt by re-traversing the paragraphs.
+// Because the paragraphs are never invalidated (not even during resize)
 // they are stored in a deduplicator object to reduce memory usage for large
 // histories.
 //
@@ -228,15 +234,15 @@ class Buffer {
 
     const Config               & _config;
     I_Deduper                  & _deduper;
-    std::deque<I_Deduper::Tag>   _tags;             // The unwrapped history.
+    std::deque<I_Deduper::Tag>   _tags;             // The paragraph history.
     uint32_t                     _lostTags;         // Incremented for each _tags.pop_front().
-    std::vector<Cell>            _pending;          // Unwrapped line pending to become historical.
-    std::deque<HLine>            _history;          // Wrapped history line segments. Indexable.
-    std::deque<ALine>            _active;           // Wrapped active line segments. Indexable.
+    std::vector<Cell>            _pending;          // Paragraph pending to become historical.
+    std::deque<HLine>            _history;          // Historical paragraph segments. Indexable.
+    std::deque<ALine>            _active;           // Active paragraph segments. Indexable.
     std::vector<Damage>          _damage;           // Viewport-relative damage.
     std::vector<bool>            _tabs;             // Column-indexable, true if tab stop exists.
     uint32_t                     _scrollOffset;     // 0 -> scroll bottom
-    uint32_t                     _historyLimit;     // Maximum number of _unwrapped_ lines to keep.
+    uint32_t                     _historyLimit;     // Maximum number of historical paragraphs to keep.
     int16_t                      _cols;             // Current width of buffer.
     int16_t                      _marginBegin;      // Index of first row in margin (inclusive).
     int16_t                      _marginEnd;        // Index of last row in  margin (exclusive).
@@ -302,7 +308,7 @@ public:
     }
 
     ~Buffer() {
-        // Deregister all of our valid tags. Note, really only the last tag can
+        // Deregister all of our valid tags. Note, really only the last tags can
         // be invalid.
         for (auto tag : _tags) {
             if (tag != I_Deduper::invalidTag()) {
