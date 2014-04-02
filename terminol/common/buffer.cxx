@@ -1326,6 +1326,12 @@ void Buffer::addLine() {
                 --_selectDelim.row;
             }
         }
+        else {
+            if (_selectMark.row > -static_cast<int32_t>(_history.size())) {
+                --_selectMark.row;
+                --_selectDelim.row;
+            }
+        }
 
         damageViewport(true);
     }
