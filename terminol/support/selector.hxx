@@ -5,7 +5,6 @@
 #define SUPPORT__SELECTOR__HXX
 
 #include "terminol/support/debug.hxx"
-#include "terminol/support/sys.hxx"
 
 #include <map>
 #include <chrono>
@@ -257,8 +256,7 @@ class EPollSelector : public I_Selector {
 
 public:
     EPollSelector() {
-        _fd = ::epoll_create1(0);
-        fdCloseExec(_fd);
+        _fd = ::epoll_create1(EPOLL_CLOEXEC);
     }
 
     virtual ~EPollSelector() {

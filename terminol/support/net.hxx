@@ -6,6 +6,7 @@
 
 #include "terminol/support/selector.hxx"
 #include "terminol/support/debug.hxx"
+#include "terminol/support/sys.hxx"
 
 #include <set>
 #include <deque>
