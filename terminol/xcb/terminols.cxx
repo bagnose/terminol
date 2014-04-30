@@ -33,21 +33,22 @@ class EventLoop :
     protected I_Creator,
     protected Uncopyable
 {
-    const Config                     & _config;
-    Tty::Command                       _command;
-    Selector                           _selector;
-    Pipe                               _pipe;
-    Deduper                            _deduper;
-    Basics                             _basics;
-    Server                             _server;
-    ColorSet                           _colorSet;
-    FontManager                        _fontManager;
-    std::map<xcb_window_t, Widget *>   _widgets;
-    std::set<Widget *>                 _deferrals;
-    std::vector<Widget *>              _exits;
-    bool                               _finished;
+    const Config                 & _config;
+    Tty::Command                   _command;
+    Selector                       _selector;
+    Pipe                           _pipe;
+    Deduper                        _deduper;
+    Basics                         _basics;
+    Server                         _server;
+    ColorSet                       _colorSet;
+    FontManager                    _fontManager;
+    std::map<xcb_window_t,
+        std::unique_ptr<Widget>>   _widgets;
+    std::set<Widget *>             _deferrals;
+    std::vector<Widget *>          _exits;
+    bool                           _finished;
 
-    static EventLoop                  * _singleton;
+    static EventLoop             * _singleton;
 
 public:
     struct Error {
@@ -93,11 +94,6 @@ public:
     }
 
     virtual ~EventLoop() {
-        for (auto p : _widgets) {
-            auto window = p.second;
-            delete window;
-        }
-
         _singleton = nullptr;
     }
 
@@ -133,7 +129,6 @@ protected:
                     auto iter2 = _widgets.find(widget->getWindowId());
                     ASSERT(iter2 != _widgets.end(), "");
                     _widgets.erase(iter2);
-                    delete widget;
                 }
                 _exits.clear();
             }
@@ -177,7 +172,7 @@ protected:
                                               static_cast<void *>(buf), size)) != -1, "");
 
         for (auto & p : _widgets) {
-            auto w = p.second;
+            auto & w = p.second;
             w->tryReap();
         }
     }
@@ -303,7 +298,7 @@ protected:
                     {
                         _basics.updateRootPixmap();
                         for (auto & pair : _widgets) {
-                            auto window = pair.second;
+                            auto & window = pair.second;
                             window->redraw();
                         }
                     }
@@ -358,8 +353,8 @@ protected:
 
     void widgetSelected(Widget * widget) throw () override {
         for (auto & p : _widgets) {
-            auto w = p.second;
-            if (w != widget) {
+            auto & w = p.second;
+            if (w.get() != widget) {
                 w->clearSelection();
             }
         }
@@ -374,13 +369,14 @@ protected:
 
     void create() throw () override {
         try {
-            auto window = new Widget(*this, _config, _selector, _deduper,
-                                     _basics, _colorSet, _fontManager, _command);
-            auto id = window->getWindowId();
-            _widgets.insert(std::make_pair(id, window));
+            std::unique_ptr<Widget> widget(
+                new Widget(*this, _config, _selector, _deduper,
+                           _basics, _colorSet, _fontManager, _command));
+            auto id = widget->getWindowId();
+            _widgets.insert(std::make_pair(id, std::move(widget)));
         }
         catch (const Widget::Error & ex) {
-            PRINT("Failed to create window: " << ex.message);
+            PRINT("Failed to create widget: " << ex.message);
         }
     }
 
