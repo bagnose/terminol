@@ -269,6 +269,34 @@ class Buffer {
     //
     //
 
+    class BufferIter {
+        const Buffer & _buffer;
+        int32_t        _row;
+        bool           _valid;
+
+    public:
+        BufferIter(const Buffer & buffer, int32_t row);
+
+        ParaIter getParaIter() const {
+            ASSERT(_valid, "Invalid.");
+            return ParaIter(_buffer, APos(_row, 0));
+        }
+
+        bool valid() const {
+            return _valid;
+        }
+
+        void moveForward();
+        void moveBackward();
+
+    private:
+        bool isStartOfPara();
+    };
+
+    //
+    //
+    //
+
     const Config               & _config;
     I_Deduper                  & _deduper;
     std::deque<I_Deduper::Tag>   _tags;             // The paragraph history.
@@ -509,83 +537,6 @@ public:
     void dumpSelection(std::ostream & ost) const;
 
 protected:
-    class BufferIter {
-        const Buffer & _buffer;
-        int32_t        _row;
-        bool           _valid;
-
-    public:
-        BufferIter(const Buffer & buffer, int32_t row) :
-            _buffer(buffer), _row(row), _valid(true)
-        {
-            while (!isStartOfPara()) {
-                --_row;
-
-                if (static_cast<uint32_t>(-_row - 1) == _buffer.getHistoricalRows()) {
-                    _valid = false;
-                    break;
-                }
-            }
-        }
-
-        ParaIter getParaIter() const {
-            return ParaIter(_buffer, APos(_row, 0));
-        }
-
-        bool valid() const {
-            return _valid;
-        }
-
-        void moveForward() {
-            do {
-                ++_row;
-
-                if (_row == _buffer.getRows()) {
-                    _valid = false;
-                    break;
-                }
-            } while (!isStartOfPara());
-        }
-
-        void moveBackward() {
-            do {
-                --_row;
-
-                PRINT("Move backward to: " << _row);
-
-                if (static_cast<uint32_t>(-_row - 1) == _buffer.getHistoricalRows()) {
-                    PRINT("Break");
-                    _valid = false;
-                    break;
-                }
-            } while (!isStartOfPara());
-        }
-
-    private:
-        bool isStartOfPara() {
-            auto prevRow = _row - 1;
-
-            if (static_cast<uint32_t>(-prevRow - 1) == _buffer.getHistoricalRows()) {
-                return true;
-            }
-
-            if (prevRow < 0) {
-                // Historical.
-                auto & hline = _buffer._history[_buffer._history.size() + prevRow];
-                return hline.seqnum == 0;
-            }
-            else {
-                // Active.
-                auto & aline = _buffer._active[prevRow];
-                return !aline.cont;
-            }
-        }
-    };
-
-    //
-    //
-    //
-
     void rebuildHistory();
 
     static bool isCellSelected(APos apos, APos begin, APos end, int16_t wrap);

@@ -160,6 +160,67 @@ void Buffer::ParaIter::init() {
 //
 //
 
+Buffer::BufferIter::BufferIter(const Buffer & buffer, int32_t row) :
+    _buffer(buffer), _row(row), _valid(true)
+{
+    while (!isStartOfPara()) {
+        --_row;
+
+        if (static_cast<uint32_t>(-_row - 1) == _buffer.getHistoricalRows()) {
+            _valid = false;
+            break;
+        }
+    }
+}
+
+void Buffer::BufferIter::moveForward() {
+    do {
+        ++_row;
+
+        if (_row == _buffer.getRows()) {
+            _valid = false;
+            break;
+        }
+    } while (!isStartOfPara());
+}
+
+void Buffer::BufferIter::moveBackward() {
+    do {
+        --_row;
+
+        PRINT("Move backward to: " << _row);
+
+        if (static_cast<uint32_t>(-_row - 1) == _buffer.getHistoricalRows()) {
+            PRINT("Break");
+            _valid = false;
+            break;
+        }
+    } while (!isStartOfPara());
+}
+
+bool Buffer::BufferIter::isStartOfPara() {
+    auto prevRow = _row - 1;
+
+    if (static_cast<uint32_t>(-prevRow - 1) == _buffer.getHistoricalRows()) {
+        return true;
+    }
+
+    if (prevRow < 0) {
+        // Historical.
+        auto & hline = _buffer._history[_buffer._history.size() + prevRow];
+        return hline.seqnum == 0;
+    }
+    else {
+        // Active.
+        auto & aline = _buffer._active[prevRow];
+        return !aline.cont;
+    }
+}
+
+//
+//
+//
+
 void Buffer::markSelection(Pos pos) {
     damageSelection();
     _selectMark = _selectDelim = APos(pos, _scrollOffset);
