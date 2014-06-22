@@ -30,9 +30,9 @@ Deduper::~Deduper() {}
 
 auto Deduper::store(std::vector<Cell> & cells) -> Tag {
     auto tag = makeTag(cells);
-    ASSERT(tag != invalidTag(), "");
 
 again:
+    ASSERT(tag != invalidTag(), "");
     auto iter = _entries.find(tag);
 
     if (iter == _entries.end()) {
