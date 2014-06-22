@@ -7,11 +7,12 @@
 #include "terminol/common/data_types.hxx"
 
 #include <vector>
+#include <numeric>
 
 class I_Deduper {
 public:
     typedef uint32_t Tag;       // Note, can use smaller tag sizes to cause collisions, etc.
-    static Tag invalidTag() { return static_cast<Tag>(-1); }
+    static Tag invalidTag() { return std::numeric_limits<Tag>::max(); }
 
     virtual Tag store(std::vector<Cell> & cells) = 0;           // Clears cells.
     virtual const std::vector<Cell> & lookup(Tag tag) const = 0;
