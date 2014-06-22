@@ -18,6 +18,7 @@ public:
     virtual const std::vector<Cell> & lookup(Tag tag) const = 0;
     virtual void remove(Tag tag) = 0;
     virtual std::vector<Cell> lookupRemove(Tag tag) = 0;
+    virtual size_t lookupLength(Tag tag) const = 0;
     virtual void getLineStats(uint32_t & uniqueLines, uint32_t & totalLines) const = 0;
     virtual void getByteStats(size_t & uniqueBytes, size_t & totalBytes) const = 0;
     virtual void dump(std::ostream & ost) const = 0;

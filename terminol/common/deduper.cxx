@@ -114,6 +114,11 @@ std::vector<Cell> Deduper::lookupRemove(Tag tag) {
     }
 }
 
+size_t Deduper::lookupLength(Tag tag) const {
+    auto & cells = lookup(tag);
+    return cells.size();
+}
+
 void Deduper::getLineStats(uint32_t & uniqueLines, uint32_t & totalLines) const {
     uniqueLines = _entries.size();
     totalLines  = _totalRefs;

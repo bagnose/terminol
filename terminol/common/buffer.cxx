@@ -1507,7 +1507,9 @@ void Buffer::rebuildHistory() {
     uint32_t index = 0;
 
     for (auto tag : _tags) {
-        auto & cells = tag != I_Deduper::invalidTag() ? _deduper.lookup(tag) : _pending;
+        auto length = (tag != I_Deduper::invalidTag() ?
+                       _deduper.lookupLength(tag) :
+                       _pending.size());
 
         uint16_t seqnum = 0;
         size_t   offset = 0;
@@ -1516,7 +1518,7 @@ void Buffer::rebuildHistory() {
             _history.push_back(HLine(index + _lostTags, seqnum));
             ++seqnum;
             offset += _cols;
-        } while (offset < cells.size());
+        } while (offset < length);
 
         ++index;
     }

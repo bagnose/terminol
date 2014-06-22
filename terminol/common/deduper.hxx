@@ -34,6 +34,7 @@ public:
     const std::vector<Cell> & lookup(Tag tag) const override;
     void remove(Tag tag) override;
     std::vector<Cell> lookupRemove(Tag tag) override;
+    size_t lookupLength(Tag tag) const override;
     void getLineStats(uint32_t & uniqueLines, uint32_t & totalLines) const override;
     void getByteStats(size_t & uniqueBytes1, size_t & totalBytes) const override;
     void dump(std::ostream & ost) const override;
