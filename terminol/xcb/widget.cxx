@@ -1326,6 +1326,7 @@ void Widget::terminalDrawFg(Pos             pos,
                             const uint8_t * str,
                             size_t          size) throw () {
     ASSERT(_cr, "");
+    ASSERT(pos.col + count <= _terminal->getCols(), "");
 
     cairo_save(_cr); {
         auto layout = pango_cairo_create_layout(_cr);
