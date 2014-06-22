@@ -17,6 +17,8 @@
 #include "terminol/support/cmdline.hxx"
 
 #include <set>
+#include <map>
+#include <memory>
 
 #include <xcb/xcb.h>
 #include <xcb/xcb_event.h>

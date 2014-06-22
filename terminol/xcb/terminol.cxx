@@ -16,8 +16,6 @@
 #include "terminol/support/pattern.hxx"
 #include "terminol/support/cmdline.hxx"
 
-#include <set>
-
 #include <xcb/xcb.h>
 #include <xcb/xcb_event.h>
 #include <xcb/xcb_aux.h>
