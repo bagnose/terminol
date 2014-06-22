@@ -1522,6 +1522,8 @@ void Buffer::rebuildHistory() {
 
         ++index;
     }
+
+    _history.shrink_to_fit();
 }
 
 bool Buffer::isCellSelected(APos apos, APos begin, APos end, int16_t wrap) {
