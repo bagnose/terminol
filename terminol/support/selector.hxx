@@ -201,7 +201,7 @@ public:
         }
 #endif
         Clock::time_point scheduled =
-            Clock::now() + std::chrono::duration<int,std::milli>(milliseconds);
+            Clock::now() + std::chrono::duration<int, std::milli>(milliseconds);
 
         auto iter = _timeoutRegs.begin();
 
