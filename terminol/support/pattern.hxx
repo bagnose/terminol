@@ -18,7 +18,7 @@ public:
 // http://channel9.msdn.com/Shows/Going+Deep/C-and-Beyond-2012-Andrei-Alexandrescu-Systematic-Error-Handling-in-C
 //
 
-template <class Fun> class ScopeGuard {
+template <class Fun> class ScopeGuard : private Uncopyable {
     Fun  _f;
     bool _active;
 
@@ -27,10 +27,6 @@ public:
     ~ScopeGuard() { if (_active) _f(); }
 
     void dismiss() { _active = false; }
-
-    ScopeGuard              ()                   = delete;
-    ScopeGuard              (const ScopeGuard &) = delete;
-    ScopeGuard & operator = (const ScopeGuard &) = delete;
 
     ScopeGuard(ScopeGuard && rhs) :
         _f(std::move(rhs._f)),
