@@ -1667,7 +1667,7 @@ void Terminal::machineOscEsc(const OscEsc & esc) throw () {
     }
 }
 
-// Tty::I_Observer imlementation:
+// Tty::I_Observer implementation:
 
 void Terminal::ttyData(const uint8_t * data, size_t size) throw () {
     processRead(data, size);
