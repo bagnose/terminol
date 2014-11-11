@@ -272,10 +272,12 @@ $(eval $(call EXE,PRIV,terminol/common/spinner,spinner.cxx,$(COMMON_CFLAGS),term
 # XCB
 #
 
-$(eval $(call LIB,terminol/xcb,basics.cxx color_set.cxx font_manager.cxx font_set.cxx screen.cxx,$(XCB_CFLAGS)))
+$(eval $(call LIB,terminol/xcb,basics.cxx color_set.cxx dispatcher.cxx font_manager.cxx font_set.cxx screen.cxx widget.cxx,$(XCB_CFLAGS)))
 
 $(eval $(call EXE,DIST,terminol/xcb/terminol,terminol.cxx,$(XCB_CFLAGS),terminol/xcb terminol/common terminol/support,$(XCB_LDFLAGS) -lutil))
 
 $(eval $(call EXE,DIST,terminol/xcb/terminols,terminols.cxx,$(XCB_CFLAGS),terminol/xcb terminol/common terminol/support,$(XCB_LDFLAGS) -lutil))
 
 $(eval $(call EXE,DIST,terminol/xcb/terminolc,terminolc.cxx,$(XKB_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
+
+$(eval $(call EXE,PRIV,terminol/xcb/widget_test,widget_test.cxx,$(XKB_CFLAGS),terminol/xcb terminol/common terminol/support,$(XCB_LDFLAGS)))

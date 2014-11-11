@@ -5,6 +5,8 @@
 #include "terminol/xcb/color_set.hxx"
 #include "terminol/xcb/font_manager.hxx"
 #include "terminol/xcb/basics.hxx"
+#include "terminol/xcb/common.hxx"
+#include "terminol/xcb/dispatcher.hxx"
 #include "terminol/common/deduper.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/parser.hxx"
@@ -30,6 +32,7 @@
 class EventLoop :
     protected I_Selector::I_ReadHandler,
     protected Screen::I_Observer,
+    protected I_Dispatcher::I_Observer,
     protected I_Creator,
     protected Uncopyable
 {
@@ -42,6 +45,7 @@ class EventLoop :
     Server                         _server;
     ColorSet                       _colorSet;
     FontManager                    _fontManager;
+    Dispatcher                     _dispatcher;
     std::map<xcb_window_t,
         std::unique_ptr<Screen>>   _screens;
     std::set<Screen *>             _deferrals;
@@ -68,6 +72,7 @@ public:
         _server(*this, _selector, config),
         _colorSet(config, _basics),
         _fontManager(config, _basics),
+        _dispatcher(_selector, _basics.connection() /* XXX */),
         _screens(),
         _deferrals(),
         _exits(),
@@ -111,14 +116,15 @@ protected:
 
     void loop() throw (Error) {
         auto oldHandler = signal(SIGCHLD, &staticSignalHandler);
-        _selector.addReadable(_basics.fd(), this);
+
         _selector.addReadable(_pipe.readFd(), this);
+        _dispatcher.add(_basics.screen()->root, this);
 
         while (!_finished) {
             _selector.animate();
 
             // Poll for X11 events that may not have shown up on the descriptor.
-            xevent();
+            _dispatcher.poll();
 
             if (!_exits.empty()) {
                 // Purge the exited windows.
@@ -138,28 +144,10 @@ protected:
             _deferrals.clear();
         }
 
+        _dispatcher.remove(_basics.screen()->root);
         _selector.removeReadable(_pipe.readFd());
-        _selector.removeReadable(_basics.fd());
+
         signal(SIGCHLD, oldHandler);
-    }
-
-    void xevent() throw (Error) {
-        for (;;) {
-            auto event = ::xcb_poll_for_event(_basics.connection());
-            if (!event) { break; }
-
-            auto guard        = scopeGuard([event] { std::free(event); });
-            auto responseType = XCB_EVENT_RESPONSE_TYPE(event);
-
-            if (responseType != 0) {
-                dispatch(responseType, event);
-            }
-        }
-
-        auto error = xcb_connection_has_error(_basics.connection());
-        if (error != 0) {
-            throw Error("Lost display connection, error=" + stringify(error));
-        }
     }
 
     void death() {
@@ -172,179 +160,22 @@ protected:
                                               static_cast<void *>(buf), size)) != -1, "");
 
         for (auto & p : _screens) {
-            auto & w = p.second;
-            w->tryReap();
-        }
-    }
-
-    void dispatch(uint8_t responseType, xcb_generic_event_t * event) {
-        switch (responseType) {
-            case XCB_KEY_PRESS: {
-                auto e = reinterpret_cast<xcb_key_press_event_t *>(event);
-                auto i = _screens.find(e->event);
-                if (i != _screens.end()) { i->second->keyPress(e); }
-                break;
-            }
-            case XCB_KEY_RELEASE: {
-                auto e = reinterpret_cast<xcb_key_release_event_t *>(event);
-                auto i = _screens.find(e->event);
-                if (i != _screens.end()) { i->second->keyRelease(e); }
-                break;
-            }
-            case XCB_BUTTON_PRESS: {
-                auto e = reinterpret_cast<xcb_button_press_event_t *>(event);
-                auto i = _screens.find(e->event);
-                if (i != _screens.end()) { i->second->buttonPress(e); }
-                break;
-            }
-            case XCB_BUTTON_RELEASE: {
-                auto e = reinterpret_cast<xcb_button_release_event_t *>(event);
-                auto i = _screens.find(e->event);
-                if (i != _screens.end()) { i->second->buttonRelease(e); }
-                break;
-            }
-            case XCB_MOTION_NOTIFY: {
-                auto e = reinterpret_cast<xcb_motion_notify_event_t *>(event);
-                auto i = _screens.find(e->event);
-                if (i != _screens.end()) { i->second->motionNotify(e); }
-                break;
-            }
-            case XCB_EXPOSE: {
-                auto e = reinterpret_cast<xcb_expose_event_t *>(event);
-                auto i = _screens.find(e->window);
-                if (i != _screens.end()) { i->second->expose(e); }
-                break;
-            }
-            case XCB_ENTER_NOTIFY: {
-                auto e = reinterpret_cast<xcb_enter_notify_event_t *>(event);
-                auto i = _screens.find(e->event);
-                if (i != _screens.end()) { i->second->enterNotify(e); }
-                break;
-            }
-            case XCB_LEAVE_NOTIFY: {
-                auto e = reinterpret_cast<xcb_leave_notify_event_t *>(event);
-                auto i = _screens.find(e->event);
-                if (i != _screens.end()) { i->second->leaveNotify(e); }
-                break;
-            }
-            case XCB_FOCUS_IN: {
-                auto e = reinterpret_cast<xcb_focus_in_event_t *>(event);
-                auto i = _screens.find(e->event);
-                if (i != _screens.end()) { i->second->focusIn(e); }
-                break;
-            }
-            case XCB_FOCUS_OUT: {
-                auto e = reinterpret_cast<xcb_focus_in_event_t *>(event);
-                auto i = _screens.find(e->event);
-                if (i != _screens.end()) { i->second->focusOut(e); }
-                break;
-            }
-            case XCB_MAP_NOTIFY: {
-                auto e = reinterpret_cast<xcb_map_notify_event_t *>(event);
-                auto i = _screens.find(e->event);
-                if (i != _screens.end()) { i->second->mapNotify(e); }
-                break;
-            }
-            case XCB_UNMAP_NOTIFY: {
-                auto e = reinterpret_cast<xcb_unmap_notify_event_t *>(event);
-                auto i = _screens.find(e->event);
-                if (i != _screens.end()) { i->second->unmapNotify(e); }
-                break;
-            }
-            case XCB_CONFIGURE_NOTIFY: {
-                auto e = reinterpret_cast<xcb_configure_notify_event_t *>(event);
-                auto i = _screens.find(e->event);
-                if (i != _screens.end()) { i->second->configureNotify(e); }
-                break;
-            }
-            case XCB_DESTROY_NOTIFY: {
-                auto e = reinterpret_cast<xcb_destroy_notify_event_t *>(event);
-                auto i = _screens.find(e->window);
-                if (i != _screens.end()) { i->second->destroyNotify(e); }
-                break;
-            }
-            case XCB_SELECTION_CLEAR: {
-                auto e = reinterpret_cast<xcb_selection_clear_event_t *>(event);
-                auto i = _screens.find(e->owner);
-                if (i != _screens.end()) { i->second->selectionClear(e); }
-                break;
-            }
-            case XCB_SELECTION_NOTIFY: {
-                auto e = reinterpret_cast<xcb_selection_notify_event_t *>(event);
-                auto i = _screens.find(e->requestor);
-                if (i != _screens.end()) { i->second->selectionNotify(e); }
-                break;
-            }
-            case XCB_SELECTION_REQUEST: {
-                auto e = reinterpret_cast<xcb_selection_request_event_t *>(event);
-                auto i = _screens.find(e->owner);
-                if (i != _screens.end()) { i->second->selectionRequest(e); }
-                break;
-            }
-            case XCB_CLIENT_MESSAGE: {
-                auto e = reinterpret_cast<xcb_client_message_event_t *>(event);
-                auto i = _screens.find(e->window);
-                if (i != _screens.end()) { i->second->clientMessage(e); }
-                break;
-            }
-            case XCB_REPARENT_NOTIFY:
-                // ignored
-                break;
-            case XCB_PROPERTY_NOTIFY:
-                if (_config.x11PseudoTransparency) {
-                    auto e = reinterpret_cast<xcb_property_notify_event_t *>(event);
-                    if (e->window == _basics.screen()->root &&
-                        e->atom == _basics.atomXRootPixmapId())
-                    {
-                        _basics.updateRootPixmap();
-                        for (auto & pair : _screens) {
-                            auto & window = pair.second;
-                            window->redraw();
-                        }
-                    }
-                }
-                break;
-            default:
-                // Ignore any events we aren't interested in.
-                break;
+            auto & s = p.second;
+            s->tryReap();
         }
     }
 
     // I_Selector::I_ReadHandler implementation:
 
     void handleRead(int fd) throw () override {
-        if (fd == _basics.fd()) {
-            xevent();
-        }
-        else if (fd == _pipe.readFd()) {
-            death();
-        }
-        else {
-            FATAL("Bad fd.");
-        }
+        ASSERT(fd == _pipe.readFd(), "Bad fd.");
+        death();
     }
 
     // Screen::I_Observer implementation:
 
     void screenSync() throw () override {
-        xcb_aux_sync(_basics.connection());
-
-        for (;;) {
-            auto event        = ::xcb_wait_for_event(_basics.connection());
-            auto guard        = scopeGuard([event] { std::free(event); });
-            auto responseType = XCB_EVENT_RESPONSE_TYPE(event);
-
-            if (responseType == 0) {
-                ERROR("Zero response type");
-                break;      // Because it could be the configure...?
-            }
-            else {
-                dispatch(responseType, event);
-                if (responseType == XCB_CONFIGURE_NOTIFY) {
-                    break;
-                }
-            }
-        }
+        _dispatcher.wait(XCB_CONFIGURE_NOTIFY);      // XXX throws
     }
 
     void screenDefer(Screen * screen) throw () override {
@@ -365,12 +196,30 @@ protected:
         _exits.push_back(screen);
     }
 
+    // I_Dispatcher::I_Observer implementation:
+
+    void propertyNotify(xcb_property_notify_event_t * event) noexcept override {
+        PRINT("Property notify");
+
+        if (_config.x11PseudoTransparency) {
+            if (event->window == _basics.screen()->root &&
+                event->atom == _basics.atomXRootPixmapId())
+            {
+                _basics.updateRootPixmap();
+
+                for (auto & pair : _screens) {
+                    pair.second->redraw();
+                }
+            }
+        }
+    }
+
     // I_Creator implementation:
 
     void create() throw () override {
         try {
             std::unique_ptr<Screen> screen(
-                new Screen(*this, _config, _selector, _deduper,
+                new Screen(*this, _config, _selector, _deduper, _dispatcher,
                            _basics, _colorSet, _fontManager, _command));
             auto id = screen->getWindowId();
             _screens.insert(std::make_pair(id, std::move(screen)));

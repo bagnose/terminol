@@ -17,17 +17,18 @@ Screen::Screen(I_Observer         & observer,
                const Config       & config,
                I_Selector         & selector,
                I_Deduper          & deduper,
+               I_Dispatcher       & dispatcher,
                Basics             & basics,
                const ColorSet     & colorSet,
                FontManager        & fontManager,
                const Tty::Command & command) throw (Error) :
+    Widget(dispatcher, basics, colorSet.getBackgroundPixel(), config.initialX, config.initialY, -1, -1),
     _observer(observer),
     _config(config),
     _basics(basics),
     _colorSet(colorSet),
     _fontManager(fontManager),
     _fontSet(nullptr),
-    _window(0),
     _destroyed(false),
     _gc(0),
     _geometry({0, 0, 0, 0}),
@@ -67,63 +68,17 @@ Screen::Screen(I_Observer         & observer,
     auto border_thickness = _config.borderThickness;
     auto scrollbar_width  = _config.scrollbarVisible ? _config.scrollbarWidth : 0;
 
+    _geometry.x      = _config.initialX;
+    _geometry.y      = _config.initialY;
     _geometry.width  = 2 * border_thickness + cols * _fontSet->getWidth() + scrollbar_width;
     _geometry.height = 2 * border_thickness + rows * _fontSet->getHeight();
+    resize(_geometry);
 
     // A generic cookie for all subsequent checked XCB calls.
 
     xcb_void_cookie_t cookie;
 
     // Create the window.
-
-    uint32_t winValues[] = {
-        // XCB_CW_BACK_PIXEL
-        // Note, it is important to set XCB_CW_BACK_PIXEL to the actual
-        // background colour used by the terminal in order to prevent
-        // flicker when the window is exposed.
-        _colorSet.getBackgroundPixel(),
-        // XCB_CW_BIT_GRAVITY
-        XCB_GRAVITY_NORTH_WEST,         // What to do if window is resized.
-        // XCB_CW_WIN_GRAVITY
-        XCB_GRAVITY_NORTH_WEST,         // What to do if parent is resized.
-        // XCB_CW_BACKING_STORE
-        XCB_BACKING_STORE_NOT_USEFUL,   // XCB_BACKING_STORE_WHEN_MAPPED, XCB_BACKING_STORE_ALWAYS
-        // XCB_CW_SAVE_UNDER
-        0,                              // 1 -> useful
-        // XCB_CW_EVENT_MASK
-        XCB_EVENT_MASK_KEY_PRESS | XCB_EVENT_MASK_KEY_RELEASE |
-        XCB_EVENT_MASK_BUTTON_PRESS | XCB_EVENT_MASK_BUTTON_RELEASE |
-        XCB_EVENT_MASK_ENTER_WINDOW | XCB_EVENT_MASK_LEAVE_WINDOW |
-        XCB_EVENT_MASK_POINTER_MOTION_HINT | XCB_EVENT_MASK_POINTER_MOTION |
-        XCB_EVENT_MASK_EXPOSURE |
-        XCB_EVENT_MASK_STRUCTURE_NOTIFY |
-        XCB_EVENT_MASK_FOCUS_CHANGE,
-        // XCB_CW_CURSOR
-        _basics.normalCursor()
-    };
-
-    _window = xcb_generate_id(_basics.connection());
-    cookie  = xcb_create_window_checked(_basics.connection(),
-                                        _basics.screen()->root_depth,
-                                        _window,
-                                        _basics.screen()->root,
-                                        _config.initialX, config.initialY,
-                                        _geometry.width, _geometry.height,
-                                        0,            // border width
-                                        XCB_WINDOW_CLASS_INPUT_OUTPUT,
-                                        _basics.screen()->root_visual,
-                                        XCB_CW_BACK_PIXEL    |
-                                        XCB_CW_BIT_GRAVITY   |
-                                        XCB_CW_WIN_GRAVITY   |
-                                        XCB_CW_BACKING_STORE |
-                                        XCB_CW_SAVE_UNDER    |
-                                        XCB_CW_EVENT_MASK    |
-                                        XCB_CW_CURSOR,
-                                        winValues);
-    if (xcb_request_failed(_basics.connection(), cookie, "Failed to create window.")) {
-        throw Error("Failed to create window.");
-    }
-    auto windowGuard = scopeGuard([&] { xcb_destroy_window(_basics.connection(), _window); });
 
     // Possibly set the window's opacity.
 
@@ -133,7 +88,7 @@ Screen::Screen(I_Observer         & observer,
 
         cookie = xcb_change_property_checked(_basics.connection(),
                                              XCB_PROP_MODE_REPLACE,
-                                             _window,
+                                             getWindow(),
                                              _basics.atomNetWmWindowOpacity(),
                                              XCB_ATOM_CARDINAL,
                                              32,
@@ -156,19 +111,19 @@ Screen::Screen(I_Observer         & observer,
     _gc    = xcb_generate_id(_basics.connection());
     cookie = xcb_create_gc_checked(_basics.connection(),
                                    _gc,
-                                   _window,
+                                   getWindow(),
                                    XCB_GC_FOREGROUND | XCB_GC_GRAPHICS_EXPOSURES,
                                    gcValues);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate GC")) {
         throw Error("Failed to create GC.");
     }
-    auto gcGuard = scopeGuard([&] { xcb_free_gc(_basics.connection(), _window); });
+    auto gcGuard = scopeGuard([&] { xcb_free_gc(_basics.connection(), getWindow()); });
 
     // Create the TTY and terminal.
 
     try {
         _terminal = new Terminal(*this, _config, selector, deduper,
-                                 rows, cols, stringify(_window), command);
+                                 rows, cols, stringify(getWindow()), command);
         _open     = true;
     }
     catch (const Tty::Error & ex) {
@@ -181,7 +136,7 @@ Screen::Screen(I_Observer         & observer,
 
     // Map the window.
 
-    cookie = xcb_map_window_checked(_basics.connection(), _window);
+    cookie = xcb_map_window_checked(_basics.connection(), getWindow());
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to map window")) {
         throw Error("Failed to map window.");
     }
@@ -193,8 +148,9 @@ Screen::Screen(I_Observer         & observer,
     // Dismiss the guards.
 
     gcGuard.dismiss();
-    windowGuard.dismiss();
     fontGuard.dismiss();
+
+    map();
 }
 
 Screen::~Screen() {
@@ -222,7 +178,7 @@ Screen::~Screen() {
 
     // The window may have been destroyed exogenously.
     if (!_destroyed) {
-        cookie = xcb_destroy_window_checked(_basics.connection(), _window);
+        cookie = xcb_destroy_window_checked(_basics.connection(), getWindow());
         xcb_request_failed(_basics.connection(), cookie, "Failed to destroy window.");
     }
 
@@ -237,8 +193,8 @@ Screen::~Screen() {
 
 // Events:
 
-void Screen::keyPress(xcb_key_press_event_t * event) {
-    ASSERT(event->event == _window, "Unexpected window.");
+void Screen::keyPress(xcb_key_press_event_t * event) noexcept {
+    ASSERT(event->event == getWindow(), "Unexpected window.");
 
     if (_config.autoHideCursor) {
         // Key presses hide the cursor.
@@ -267,12 +223,12 @@ void Screen::keyPress(xcb_key_press_event_t * event) {
     }
 }
 
-void Screen::keyRelease(xcb_key_release_event_t * UNUSED(event)) {
+void Screen::keyRelease(xcb_key_release_event_t * UNUSED(event)) noexcept {
     // XXX Drop this override?
 }
 
-void Screen::buttonPress(xcb_button_press_event_t * event) {
-    ASSERT(event->event == _window, "Unexpected window.");
+void Screen::buttonPress(xcb_button_press_event_t * event) noexcept {
+    ASSERT(event->event == getWindow(), "Unexpected window.");
 
     if (_config.autoHideCursor) {
         // Button presses show the cursor.
@@ -332,8 +288,8 @@ void Screen::buttonPress(xcb_button_press_event_t * event) {
     }
 }
 
-void Screen::buttonRelease(xcb_button_release_event_t * event) {
-    ASSERT(event->event == _window, "Unexpected window.");
+void Screen::buttonRelease(xcb_button_release_event_t * event) noexcept {
+    ASSERT(event->event == getWindow(), "Unexpected window.");
 
     if (_config.autoHideCursor) {
         // Button releases show the cursor.
@@ -351,8 +307,8 @@ void Screen::buttonRelease(xcb_button_release_event_t * event) {
     }
 }
 
-void Screen::motionNotify(xcb_motion_notify_event_t * event) {
-    ASSERT(event->event == _window, "Unexpected window.");
+void Screen::motionNotify(xcb_motion_notify_event_t * event) noexcept {
+    ASSERT(event->event == getWindow(), "Unexpected window.");
 
     if (_config.autoHideCursor) {
         // Pointer motion show the cursor.
@@ -365,7 +321,7 @@ void Screen::motionNotify(xcb_motion_notify_event_t * event) {
     uint16_t mask;
 
     if (event->detail == XCB_MOTION_HINT) {
-        auto cookie = xcb_query_pointer(_basics.connection(), _window);
+        auto cookie = xcb_query_pointer(_basics.connection(), getWindow());
         auto reply  = xcb_query_pointer_reply(_basics.connection(), cookie, nullptr);
         if (!reply) {
             WARNING("Failed to query pointer.");
@@ -394,25 +350,25 @@ void Screen::motionNotify(xcb_motion_notify_event_t * event) {
 
 }
 
-void Screen::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
+void Screen::mapNotify(xcb_map_notify_event_t * UNUSED(event)) noexcept {
     ASSERT(!_mapped, "Received map notification, but already mapped.");
 
     _mapped = true;
     createPixmapAndSurface();
 }
 
-void Screen::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
+void Screen::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) noexcept {
     ASSERT(_mapped, "Received unmap notification, but not mapped.");
 
     _mapped = false;
     destroySurfaceAndPixmap();
 }
 
-void Screen::expose(xcb_expose_event_t * event) {
+void Screen::expose(xcb_expose_event_t * event) noexcept {
     // If there is a deferral then our pixmap won't be valid.
     if (_deferred) { return; }
 
-    ASSERT(event->window == _window, "Unexpected window.");
+    ASSERT(event->window == getWindow(), "Unexpected window.");
     ASSERT(_mapped, "Received expose event, but not mapped.");
 
     if (_mapped) {
@@ -422,8 +378,8 @@ void Screen::expose(xcb_expose_event_t * event) {
     }
 }
 
-void Screen::configureNotify(xcb_configure_notify_event_t * event) {
-    ASSERT(event->window == _window, "Unexpected window.");
+void Screen::configureNotify(xcb_configure_notify_event_t * event) noexcept {
+    ASSERT(event->window == getWindow(), "Unexpected window.");
 
     // Note, once we've had a deferral we don't apply the
     // optimisation: no transparency and just a move -> no-op.
@@ -438,7 +394,7 @@ void Screen::configureNotify(xcb_configure_notify_event_t * event) {
     _deferredGeometry.width  = event->width;
     _deferredGeometry.height = event->height;
 
-    auto cookie = xcb_translate_coordinates(_basics.connection(), _window,
+    auto cookie = xcb_translate_coordinates(_basics.connection(), getWindow(),
                                             _basics.screen()->root, 0, 0);
     auto reply  = xcb_translate_coordinates_reply(_basics.connection(), cookie, nullptr);
     if (reply) {
@@ -461,7 +417,7 @@ void Screen::configureNotify(xcb_configure_notify_event_t * event) {
     }
 }
 
-void Screen::focusIn(xcb_focus_in_event_t * event) {
+void Screen::focusIn(xcb_focus_in_event_t * event) noexcept {
     if (event->detail != XCB_NOTIFY_DETAIL_INFERIOR &&
         event->detail != XCB_NOTIFY_DETAIL_POINTER &&
         event->mode   != XCB_NOTIFY_MODE_GRAB)
@@ -470,7 +426,7 @@ void Screen::focusIn(xcb_focus_in_event_t * event) {
     }
 }
 
-void Screen::focusOut(xcb_focus_out_event_t * event) {
+void Screen::focusOut(xcb_focus_out_event_t * event) noexcept {
     if (event->detail != XCB_NOTIFY_DETAIL_INFERIOR &&
         event->detail != XCB_NOTIFY_DETAIL_POINTER &&
         event->mode   != XCB_NOTIFY_MODE_GRAB)
@@ -479,11 +435,11 @@ void Screen::focusOut(xcb_focus_out_event_t * event) {
     }
 }
 
-void Screen::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {
+void Screen::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) noexcept {
     // XXX Drop this override?
 }
 
-void Screen::leaveNotify(xcb_leave_notify_event_t * event) {
+void Screen::leaveNotify(xcb_leave_notify_event_t * event) noexcept {
     // XXX total guess that this is how we ensure we release
     // the button (broken grabs)...
     if (event->mode == 2) {
@@ -494,19 +450,19 @@ void Screen::leaveNotify(xcb_leave_notify_event_t * event) {
     }
 }
 
-void Screen::destroyNotify(xcb_destroy_notify_event_t * event) {
-    ASSERT(event->window == _window, "Unexpected window.");
+void Screen::destroyNotify(xcb_destroy_notify_event_t * event) noexcept {
+    ASSERT(event->window == getWindow(), "Unexpected window.");
 
     _terminal->killReap();
     _open      = false;
     _destroyed = true;
 }
 
-void Screen::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) {
+void Screen::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) noexcept {
     _terminal->clearSelection();
 }
 
-void Screen::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
+void Screen::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) noexcept {
     if (!_open) { return; }
 
     std::vector<uint8_t> content;
@@ -515,7 +471,7 @@ void Screen::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
     for (;;) {
         auto cookie = xcb_get_property(_basics.connection(),
                                        false,     // delete
-                                       _window,
+                                       getWindow(),
                                        XCB_ATOM_PRIMARY,
                                        XCB_GET_PROPERTY_TYPE_ANY,
                                        offset,
@@ -541,8 +497,8 @@ void Screen::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
     }
 }
 
-void Screen::selectionRequest(xcb_selection_request_event_t * event) {
-    ASSERT(event->owner == _window, "Unexpected window.");
+void Screen::selectionRequest(xcb_selection_request_event_t * event) noexcept {
+    ASSERT(event->owner == getWindow(), "Unexpected window.");
 
     xcb_selection_notify_event_t response;
     response.response_type = XCB_SELECTION_NOTIFY;
@@ -600,13 +556,17 @@ void Screen::selectionRequest(xcb_selection_request_event_t * event) {
     xcb_flush(_basics.connection());        // Required?
 }
 
-void Screen::clientMessage(xcb_client_message_event_t * event) {
+void Screen::clientMessage(xcb_client_message_event_t * event) noexcept {
     if (event->type == _basics.atomWmProtocols()) {
         if (event->data.data32[0] == _basics.atomWmDeleteWindow()) {
             handleDelete();
         }
     }
 }
+
+//
+//
+//
 
 void Screen::redraw() {
     if (_mapped) {
@@ -643,7 +603,7 @@ void Screen::icccmConfigure() {
     auto & hostname = _basics.hostname();
     if (!hostname.empty()) {
         xcb_icccm_set_wm_client_machine(_basics.connection(),
-                                        _window,
+                                        getWindow(),
                                         XCB_ATOM_STRING,
                                         8,
                                         hostname.size(),
@@ -657,7 +617,7 @@ void Screen::icccmConfigure() {
     std::string wm_class =
         std::string("terminol") + '\0' +
         std::string("Terminol") + '\0';
-    xcb_icccm_set_wm_class(_basics.connection(), _window,
+    xcb_icccm_set_wm_class(_basics.connection(), getWindow(),
                            wm_class.size(), wm_class.data());
 
     //
@@ -686,7 +646,7 @@ void Screen::icccmConfigure() {
                                         _fontSet->getHeight());
     xcb_icccm_size_hints_set_win_gravity(&sizeHints, XCB_GRAVITY_NORTH_WEST);
     xcb_icccm_set_wm_normal_hints(_basics.connection(),
-                                  _window,
+                                  getWindow(),
                                   &sizeHints);
 
     //
@@ -697,14 +657,14 @@ void Screen::icccmConfigure() {
     wmHints.flags = 0;
     xcb_icccm_wm_hints_set_input(&wmHints, 1 /* What value? */);
     //xcb_icccm_wm_hints_set_icon_pixmap
-    xcb_icccm_set_wm_hints(_basics.connection(), _window, &wmHints);
+    xcb_icccm_set_wm_hints(_basics.connection(), getWindow(), &wmHints);
 
     //
     // xcb_icccm_set_wm_protocols
     //
 
     xcb_atom_t wmDeleteWindow = _basics.atomWmDeleteWindow();
-    xcb_icccm_set_wm_protocols(_basics.connection(), _window,
+    xcb_icccm_set_wm_protocols(_basics.connection(), getWindow(),
                                _basics.atomWmProtocols(),
                                1, &wmDeleteWindow);
 }
@@ -778,14 +738,14 @@ void Screen::setTitle(const std::string & title, bool prependGeometry) {
 
 #if 1
     xcb_icccm_set_wm_name(_basics.connection(),
-                          _window,
+                          getWindow(),
                           XCB_ATOM_STRING,
                           8,
                           fullTitle.size(),
                           fullTitle.data());
 #else
     xcb_ewmh_set_wm_name(_basics.ewmhConnection(),
-                         _window,
+                         getWindow(),
                          fullTitle.size(),
                          fullTitle.data());
 #endif
@@ -798,14 +758,14 @@ void Screen::setIcon(const std::string & icon) {
 
 #if 1
     xcb_icccm_set_wm_icon_name(_basics.connection(),
-                               _window,
+                               getWindow(),
                                XCB_ATOM_STRING,
                                8,
                                icon.size(),
                                icon.data());
 #else
     xcb_ewmh_set_wm_icon_name(_basics.ewmhConnection(),
-                              _window,
+                              getWindow(),
                               icon.size(),
                               icon.data());
 #endif
@@ -814,7 +774,7 @@ void Screen::setIcon(const std::string & icon) {
 void Screen::createPixmapAndSurface() {
     _pixmap = xcb_generate_id(_basics.connection());
     // Note, we create the pixmap against the root window rather than
-    // _window to avoid dealing with the case where _window may have been
+    // getWindow() to avoid dealing with the case where getWindow() may have been
     // asynchronously destroyed.
     auto cookie = xcb_create_pixmap_checked(_basics.connection(),
                                             _basics.screen()->root_depth,
@@ -979,7 +939,7 @@ void Screen::copyPixmapToWindow(int x, int y, int w, int h) {
     // Copy the buffer region and flush.
     xcb_copy_area(_basics.connection(),
                   _pixmap,
-                  _window,
+                  getWindow(),
                   _gc,
                   x, y,   // src
                   x, y,   // dst
@@ -1045,7 +1005,7 @@ void Screen::handleResize() {
                                         _fontSet->getHeight());
     xcb_icccm_size_hints_set_win_gravity(&sizeHints, XCB_GRAVITY_NORTH_WEST);
     xcb_icccm_set_wm_normal_hints(_basics.connection(),
-                                  _window,
+                                  getWindow(),
                                   &sizeHints);
 
 }
@@ -1073,7 +1033,7 @@ void Screen::resizeToAccommodate(int16_t rows, int16_t cols, bool sync) {
     if (_geometry.width != width || _geometry.height != height) {
         uint32_t values[] = { width, height };
         auto cookie = xcb_configure_window(_basics.connection(),
-                                           _window,
+                                           getWindow(),
                                            XCB_CONFIG_WINDOW_WIDTH |
                                            XCB_CONFIG_WINDOW_HEIGHT,
                                            values);
@@ -1119,7 +1079,7 @@ void Screen::handleDelete() {
         setTitle("Process is running, once more to confirm...", false);
     }
     else {
-        xcb_destroy_window(_basics.connection(), _window);
+        xcb_destroy_window(_basics.connection(), getWindow());
         xcb_flush(_basics.connection());
     }
 }
@@ -1131,7 +1091,7 @@ void Screen::cursorVisibility(bool visible) {
         auto mask   = XCB_CW_CURSOR;
         auto values = visible ? _basics.normalCursor() : _basics.invisibleCursor();
         auto cookie = xcb_change_window_attributes_checked(_basics.connection(),
-                                                           _window,
+                                                           getWindow(),
                                                            mask,
                                                            &values);
         xcb_request_failed(_basics.connection(), cookie,
@@ -1163,7 +1123,7 @@ void Screen::terminalCopy(const std::string & text, Terminal::Selection selectio
             break;
     }
 
-    xcb_set_selection_owner(_basics.connection(), _window, atom, XCB_CURRENT_TIME);
+    xcb_set_selection_owner(_basics.connection(), getWindow(), atom, XCB_CURRENT_TIME);
     xcb_flush(_basics.connection());
 }
 
@@ -1180,7 +1140,7 @@ void Screen::terminalPaste(Terminal::Selection selection) throw () {
     }
 
     xcb_convert_selection(_basics.connection(),
-                          _window,
+                          getWindow(),
                           atom,
                           _basics.atomUtf8String(),
                           XCB_ATOM_PRIMARY, // property
@@ -1224,7 +1184,7 @@ void Screen::terminalSetIconName(const std::string & str) throw () {
 void Screen::terminalBell() throw () {
     if (_config.mapOnBell) {
         if (!_mapped) {
-            xcb_map_window(_basics.connection(), _window);
+            xcb_map_window(_basics.connection(), getWindow());
         }
     }
 
@@ -1232,7 +1192,7 @@ void Screen::terminalBell() throw () {
         xcb_icccm_wm_hints_t wmHints;
         wmHints.flags = 0;
         xcb_icccm_wm_hints_set_urgency(&wmHints);
-        xcb_icccm_set_wm_hints(_basics.connection(), _window, &wmHints);
+        xcb_icccm_set_wm_hints(_basics.connection(), getWindow(), &wmHints);
     }
 
     if (_config.audibleBell) {
@@ -1248,7 +1208,7 @@ void Screen::terminalBell() throw () {
 
             xcb_rectangle_t rect = { 0, 0, _geometry.width, _geometry.height };
             xcb_poly_fill_rectangle(_basics.connection(),
-                                    _window,
+                                    getWindow(),
                                     _gc,
                                     1,
                                     &rect);
