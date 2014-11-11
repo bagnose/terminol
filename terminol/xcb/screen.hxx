@@ -1,8 +1,8 @@
 // vi:noai:sw=4
 // Copyright © 2013 David Bryant
 
-#ifndef XCB__WIDGET__HXX
-#define XCB__WIDGET__HXX
+#ifndef XCB__SCREEN__HXX
+#define XCB__SCREEN__HXX
 
 #include "terminol/xcb/basics.hxx"
 #include "terminol/xcb/color_set.hxx"
@@ -17,7 +17,7 @@
 #include <xcb/xcb_keysyms.h>
 #include <cairo-xcb.h>
 
-class Widget :
+class Screen :
     protected Terminal::I_Observer,
     protected FontManager::I_Client,
     protected Uncopyable
@@ -25,10 +25,10 @@ class Widget :
 public:
     class I_Observer {
     public:
-        virtual void widgetSync() throw () = 0;
-        virtual void widgetDefer(Widget * widget) throw () = 0;
-        virtual void widgetSelected(Widget * widget) throw () = 0;
-        virtual void widgetReaped(Widget * widget, int status) throw () = 0;
+        virtual void screenSync() throw () = 0;
+        virtual void screenDefer(Screen * screen) throw () = 0;
+        virtual void screenSelected(Screen * screen) throw () = 0;
+        virtual void screenReaped(Screen * screen, int status) throw () = 0;
 
     protected:
         I_Observer() {}
@@ -89,7 +89,7 @@ public:
         std::string message;
     };
 
-    Widget(I_Observer         & observer,
+    Screen(I_Observer         & observer,
            const Config       & config,
            I_Selector         & selector,
            I_Deduper          & deduper,
@@ -98,7 +98,7 @@ public:
            FontManager        & fontManager,
            const Tty::Command & command = Tty::Command()) throw (Error);
 
-    virtual ~Widget();
+    virtual ~Screen();
 
     xcb_window_t getWindowId() { return _window; }
 
@@ -230,4 +230,4 @@ private:
     }
 };
 
-#endif // XCB__WIDGET__HXX
+#endif // XCB__SCREEN__HXX

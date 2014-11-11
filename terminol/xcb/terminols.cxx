@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 // Copyright © 2013-2014 David Bryant
 
-#include "terminol/xcb/widget.hxx"
+#include "terminol/xcb/screen.hxx"
 #include "terminol/xcb/color_set.hxx"
 #include "terminol/xcb/font_manager.hxx"
 #include "terminol/xcb/basics.hxx"
@@ -29,7 +29,7 @@
 
 class EventLoop :
     protected I_Selector::I_ReadHandler,
-    protected Widget::I_Observer,
+    protected Screen::I_Observer,
     protected I_Creator,
     protected Uncopyable
 {
@@ -43,9 +43,9 @@ class EventLoop :
     ColorSet                       _colorSet;
     FontManager                    _fontManager;
     std::map<xcb_window_t,
-        std::unique_ptr<Widget>>   _widgets;
-    std::set<Widget *>             _deferrals;
-    std::vector<Widget *>          _exits;
+        std::unique_ptr<Screen>>   _screens;
+    std::set<Screen *>             _deferrals;
+    std::vector<Screen *>          _exits;
     bool                           _finished;
 
     static EventLoop             * _singleton;
@@ -68,7 +68,7 @@ public:
         _server(*this, _selector, config),
         _colorSet(config, _basics),
         _fontManager(config, _basics),
-        _widgets(),
+        _screens(),
         _deferrals(),
         _exits(),
         _finished(false)
@@ -122,19 +122,19 @@ protected:
 
             if (!_exits.empty()) {
                 // Purge the exited windows.
-                for (auto widget : _exits) {
-                    auto iter1 = _deferrals.find(widget);
+                for (auto screen : _exits) {
+                    auto iter1 = _deferrals.find(screen);
                     if (iter1 != _deferrals.end()) { _deferrals.erase(iter1); }
 
-                    auto iter2 = _widgets.find(widget->getWindowId());
-                    ASSERT(iter2 != _widgets.end(), "");
-                    _widgets.erase(iter2);
+                    auto iter2 = _screens.find(screen->getWindowId());
+                    ASSERT(iter2 != _screens.end(), "");
+                    _screens.erase(iter2);
                 }
                 _exits.clear();
             }
 
             // Perform the deferrals.
-            for (auto widget : _deferrals) { widget->deferral(); }
+            for (auto screen : _deferrals) { screen->deferral(); }
             _deferrals.clear();
         }
 
@@ -171,7 +171,7 @@ protected:
         ENFORCE_SYS(TEMP_FAILURE_RETRY(::read(_pipe.readFd(),
                                               static_cast<void *>(buf), size)) != -1, "");
 
-        for (auto & p : _widgets) {
+        for (auto & p : _screens) {
             auto & w = p.second;
             w->tryReap();
         }
@@ -181,110 +181,110 @@ protected:
         switch (responseType) {
             case XCB_KEY_PRESS: {
                 auto e = reinterpret_cast<xcb_key_press_event_t *>(event);
-                auto i = _widgets.find(e->event);
-                if (i != _widgets.end()) { i->second->keyPress(e); }
+                auto i = _screens.find(e->event);
+                if (i != _screens.end()) { i->second->keyPress(e); }
                 break;
             }
             case XCB_KEY_RELEASE: {
                 auto e = reinterpret_cast<xcb_key_release_event_t *>(event);
-                auto i = _widgets.find(e->event);
-                if (i != _widgets.end()) { i->second->keyRelease(e); }
+                auto i = _screens.find(e->event);
+                if (i != _screens.end()) { i->second->keyRelease(e); }
                 break;
             }
             case XCB_BUTTON_PRESS: {
                 auto e = reinterpret_cast<xcb_button_press_event_t *>(event);
-                auto i = _widgets.find(e->event);
-                if (i != _widgets.end()) { i->second->buttonPress(e); }
+                auto i = _screens.find(e->event);
+                if (i != _screens.end()) { i->second->buttonPress(e); }
                 break;
             }
             case XCB_BUTTON_RELEASE: {
                 auto e = reinterpret_cast<xcb_button_release_event_t *>(event);
-                auto i = _widgets.find(e->event);
-                if (i != _widgets.end()) { i->second->buttonRelease(e); }
+                auto i = _screens.find(e->event);
+                if (i != _screens.end()) { i->second->buttonRelease(e); }
                 break;
             }
             case XCB_MOTION_NOTIFY: {
                 auto e = reinterpret_cast<xcb_motion_notify_event_t *>(event);
-                auto i = _widgets.find(e->event);
-                if (i != _widgets.end()) { i->second->motionNotify(e); }
+                auto i = _screens.find(e->event);
+                if (i != _screens.end()) { i->second->motionNotify(e); }
                 break;
             }
             case XCB_EXPOSE: {
                 auto e = reinterpret_cast<xcb_expose_event_t *>(event);
-                auto i = _widgets.find(e->window);
-                if (i != _widgets.end()) { i->second->expose(e); }
+                auto i = _screens.find(e->window);
+                if (i != _screens.end()) { i->second->expose(e); }
                 break;
             }
             case XCB_ENTER_NOTIFY: {
                 auto e = reinterpret_cast<xcb_enter_notify_event_t *>(event);
-                auto i = _widgets.find(e->event);
-                if (i != _widgets.end()) { i->second->enterNotify(e); }
+                auto i = _screens.find(e->event);
+                if (i != _screens.end()) { i->second->enterNotify(e); }
                 break;
             }
             case XCB_LEAVE_NOTIFY: {
                 auto e = reinterpret_cast<xcb_leave_notify_event_t *>(event);
-                auto i = _widgets.find(e->event);
-                if (i != _widgets.end()) { i->second->leaveNotify(e); }
+                auto i = _screens.find(e->event);
+                if (i != _screens.end()) { i->second->leaveNotify(e); }
                 break;
             }
             case XCB_FOCUS_IN: {
                 auto e = reinterpret_cast<xcb_focus_in_event_t *>(event);
-                auto i = _widgets.find(e->event);
-                if (i != _widgets.end()) { i->second->focusIn(e); }
+                auto i = _screens.find(e->event);
+                if (i != _screens.end()) { i->second->focusIn(e); }
                 break;
             }
             case XCB_FOCUS_OUT: {
                 auto e = reinterpret_cast<xcb_focus_in_event_t *>(event);
-                auto i = _widgets.find(e->event);
-                if (i != _widgets.end()) { i->second->focusOut(e); }
+                auto i = _screens.find(e->event);
+                if (i != _screens.end()) { i->second->focusOut(e); }
                 break;
             }
             case XCB_MAP_NOTIFY: {
                 auto e = reinterpret_cast<xcb_map_notify_event_t *>(event);
-                auto i = _widgets.find(e->event);
-                if (i != _widgets.end()) { i->second->mapNotify(e); }
+                auto i = _screens.find(e->event);
+                if (i != _screens.end()) { i->second->mapNotify(e); }
                 break;
             }
             case XCB_UNMAP_NOTIFY: {
                 auto e = reinterpret_cast<xcb_unmap_notify_event_t *>(event);
-                auto i = _widgets.find(e->event);
-                if (i != _widgets.end()) { i->second->unmapNotify(e); }
+                auto i = _screens.find(e->event);
+                if (i != _screens.end()) { i->second->unmapNotify(e); }
                 break;
             }
             case XCB_CONFIGURE_NOTIFY: {
                 auto e = reinterpret_cast<xcb_configure_notify_event_t *>(event);
-                auto i = _widgets.find(e->event);
-                if (i != _widgets.end()) { i->second->configureNotify(e); }
+                auto i = _screens.find(e->event);
+                if (i != _screens.end()) { i->second->configureNotify(e); }
                 break;
             }
             case XCB_DESTROY_NOTIFY: {
                 auto e = reinterpret_cast<xcb_destroy_notify_event_t *>(event);
-                auto i = _widgets.find(e->window);
-                if (i != _widgets.end()) { i->second->destroyNotify(e); }
+                auto i = _screens.find(e->window);
+                if (i != _screens.end()) { i->second->destroyNotify(e); }
                 break;
             }
             case XCB_SELECTION_CLEAR: {
                 auto e = reinterpret_cast<xcb_selection_clear_event_t *>(event);
-                auto i = _widgets.find(e->owner);
-                if (i != _widgets.end()) { i->second->selectionClear(e); }
+                auto i = _screens.find(e->owner);
+                if (i != _screens.end()) { i->second->selectionClear(e); }
                 break;
             }
             case XCB_SELECTION_NOTIFY: {
                 auto e = reinterpret_cast<xcb_selection_notify_event_t *>(event);
-                auto i = _widgets.find(e->requestor);
-                if (i != _widgets.end()) { i->second->selectionNotify(e); }
+                auto i = _screens.find(e->requestor);
+                if (i != _screens.end()) { i->second->selectionNotify(e); }
                 break;
             }
             case XCB_SELECTION_REQUEST: {
                 auto e = reinterpret_cast<xcb_selection_request_event_t *>(event);
-                auto i = _widgets.find(e->owner);
-                if (i != _widgets.end()) { i->second->selectionRequest(e); }
+                auto i = _screens.find(e->owner);
+                if (i != _screens.end()) { i->second->selectionRequest(e); }
                 break;
             }
             case XCB_CLIENT_MESSAGE: {
                 auto e = reinterpret_cast<xcb_client_message_event_t *>(event);
-                auto i = _widgets.find(e->window);
-                if (i != _widgets.end()) { i->second->clientMessage(e); }
+                auto i = _screens.find(e->window);
+                if (i != _screens.end()) { i->second->clientMessage(e); }
                 break;
             }
             case XCB_REPARENT_NOTIFY:
@@ -297,7 +297,7 @@ protected:
                         e->atom == _basics.atomXRootPixmapId())
                     {
                         _basics.updateRootPixmap();
-                        for (auto & pair : _widgets) {
+                        for (auto & pair : _screens) {
                             auto & window = pair.second;
                             window->redraw();
                         }
@@ -324,9 +324,9 @@ protected:
         }
     }
 
-    // Widget::I_Observer implementation:
+    // Screen::I_Observer implementation:
 
-    void widgetSync() throw () override {
+    void screenSync() throw () override {
         xcb_aux_sync(_basics.connection());
 
         for (;;) {
@@ -347,41 +347,41 @@ protected:
         }
     }
 
-    void widgetDefer(Widget * widget) throw () override {
-        _deferrals.insert(widget);
+    void screenDefer(Screen * screen) throw () override {
+        _deferrals.insert(screen);
     }
 
-    void widgetSelected(Widget * widget) throw () override {
-        for (auto & p : _widgets) {
-            auto & w = p.second;
-            if (w.get() != widget) {
-                w->clearSelection();
+    void screenSelected(Screen * screen) throw () override {
+        for (auto & p : _screens) {
+            auto & s = p.second;
+            if (s.get() != screen) {
+                s->clearSelection();
             }
         }
     }
 
-    void widgetReaped(Widget * widget, int UNUSED(status)) throw () override {
-        ASSERT(std::find(_exits.begin(), _exits.end(), widget) == _exits.end(), "");
-        _exits.push_back(widget);
+    void screenReaped(Screen * screen, int UNUSED(status)) throw () override {
+        ASSERT(std::find(_exits.begin(), _exits.end(), screen) == _exits.end(), "");
+        _exits.push_back(screen);
     }
 
     // I_Creator implementation:
 
     void create() throw () override {
         try {
-            std::unique_ptr<Widget> widget(
-                new Widget(*this, _config, _selector, _deduper,
+            std::unique_ptr<Screen> screen(
+                new Screen(*this, _config, _selector, _deduper,
                            _basics, _colorSet, _fontManager, _command));
-            auto id = widget->getWindowId();
-            _widgets.insert(std::make_pair(id, std::move(widget)));
+            auto id = screen->getWindowId();
+            _screens.insert(std::make_pair(id, std::move(screen)));
         }
-        catch (const Widget::Error & ex) {
-            PRINT("Failed to create widget: " << ex.message);
+        catch (const Screen::Error & ex) {
+            PRINT("Failed to create screen: " << ex.message);
         }
     }
 
     void shutdown() throw () override {
-        for (auto & pair : _widgets) {
+        for (auto & pair : _screens) {
             pair.second->killReap();
         }
 
