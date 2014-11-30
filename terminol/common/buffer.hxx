@@ -137,7 +137,7 @@ class Buffer {
     // It can also be thought of as representing a segment of an unwrapped line.
     struct HLine {
         uint32_t index;             // index into _tags (adjusted by _lostTags)
-        uint32_t seqnum;            // continuation number, 0 -> 1st line, 1 -> 2nd line
+        uint32_t seqnum;            // continuation number, 0 -> 1st line, 1 -> 2nd line, etc
 
         HLine(uint32_t index_, uint32_t seqnum_) : index(index_), seqnum(seqnum_) {}
     };
