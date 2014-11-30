@@ -9,17 +9,18 @@
 #include <iostream>
 #include <cstdlib>
 
-#define xcb_request_failed(connection, cookie, err_msg) _xcb_request_failed(connection, cookie, err_msg, __LINE__)
+#define xcb_request_failed(connection, cookie, err_msg) _xcb_request_failed(connection, cookie, err_msg, __FILE__, __LINE__)
 namespace {
 
 bool _xcb_request_failed(xcb_connection_t  * connection,
                          xcb_void_cookie_t   cookie,
                          const char        * err_msg,
+                         const char        * filename,
                          int                 line) {
     auto error = xcb_request_check(connection, cookie);
     if (error) {
         std::cerr
-            << __FILE__ << ':' << line << ' ' << err_msg
+            << filename << ':' << line << ' ' << err_msg
             << " (X Error Code: " << static_cast<int>(error->error_code) << ')'
             << std::endl;
         std::free(error);
