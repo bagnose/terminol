@@ -621,6 +621,10 @@ void Widget::tryReap() {
     _terminal->tryReap();
 }
 
+void Widget::killReap() {
+    _terminal->killReap();
+}
+
 void Widget::clearSelection() {
     _terminal->clearSelection();
 }

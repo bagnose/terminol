@@ -1,5 +1,5 @@
 // vi:noai:sw=4
-// Copyright © 2013 David Bryant
+// Copyright © 2013-2014 David Bryant
 
 #include "terminol/xcb/widget.hxx"
 #include "terminol/xcb/color_set.hxx"
@@ -381,6 +381,10 @@ protected:
     }
 
     void shutdown() throw () override {
+        for (auto & pair : _widgets) {
+            pair.second->killReap();
+        }
+
         _finished = true;
     }
 };

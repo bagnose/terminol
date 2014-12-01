@@ -127,6 +127,7 @@ public:
 
     void redraw();
     void tryReap();
+    void killReap();
     void clearSelection();
     void deferral();
 
