@@ -1,8 +1,8 @@
 // vi:noai:sw=4
-// Copyright © 2013 David Bryant
+// Copyright © 2013-2014 David Bryant
 
-#ifndef COMMON__DEDUPER__HXX
-#define COMMON__DEDUPER__HXX
+#ifndef COMMON__SIMPLE_DEDUPER__HXX
+#define COMMON__SIMPLE_DEDUPER__HXX
 
 #include "terminol/common/deduper_interface.hxx"
 
@@ -13,7 +13,7 @@
 //
 //
 
-class Deduper : public I_Deduper {
+class SimpleDeduper : public I_Deduper {
     struct Entry {
         std::vector<Cell> cells;
         uint32_t          refs;
@@ -25,8 +25,8 @@ class Deduper : public I_Deduper {
     size_t                         _totalRefs;
 
 public:
-    Deduper();
-    virtual ~Deduper();
+    SimpleDeduper();
+    virtual ~SimpleDeduper();
 
     // I_Deduper implementation:
 
@@ -45,4 +45,4 @@ protected:
     static Tag makeTag(const std::vector<Cell> & cells);
 };
 
-#endif // COMMON__DEDUPER__HXX
+#endif // COMMON__SIMPLE_DEDUPER__HXX

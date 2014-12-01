@@ -246,7 +246,7 @@ $(eval $(call EXE,TEST,terminol/support/test-regex,test_regex.cxx,$(SUPPORT_CFLA
 # COMMON
 #
 
-$(eval $(call LIB,terminol/common,ascii.cxx bindings.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,$(COMMON_CFLAGS)))
+$(eval $(call LIB,terminol/common,ascii.cxx bindings.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx simple_deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,$(COMMON_CFLAGS)))
 
 $(eval $(call EXE,TEST,terminol/common/test-utf8,test_utf8.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
 

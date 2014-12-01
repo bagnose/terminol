@@ -7,7 +7,7 @@
 #include "terminol/xcb/basics.hxx"
 #include "terminol/xcb/common.hxx"
 #include "terminol/xcb/dispatcher.hxx"
-#include "terminol/common/deduper.hxx"
+#include "terminol/common/simple_deduper.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/parser.hxx"
 #include "terminol/common/key_map.hxx"
@@ -33,7 +33,7 @@ class EventLoop :
     const Config     & _config;
     Selector           _selector;
     Pipe               _pipe;
-    Deduper            _deduper;
+    SimpleDeduper      _deduper;
     Basics             _basics;
     ColorSet           _colorSet;
     FontManager        _fontManager;

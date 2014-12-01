@@ -1,7 +1,7 @@
 // vi:noai:sw=4
 // Copyright © 2013 David Bryant
 
-#include "terminol/common/deduper.hxx"
+#include "terminol/common/simple_deduper.hxx"
 
 #include <algorithm>
 #include <iostream>
@@ -24,11 +24,11 @@ template <class A> typename A::Type hash(const void * buffer,
 
 } // namespace {anonymous}
 
-Deduper::Deduper() : _entries(), _totalRefs(0) {}
+SimpleDeduper::SimpleDeduper() : _entries(), _totalRefs(0) {}
 
-Deduper::~Deduper() {}
+SimpleDeduper::~SimpleDeduper() {}
 
-auto Deduper::store(const std::vector<Cell> & cells) -> Tag {
+auto SimpleDeduper::store(const std::vector<Cell> & cells) -> Tag {
     auto tag = makeTag(cells);
 
 again:
@@ -73,7 +73,7 @@ again:
     return tag;
 }
 
-void Deduper::lookup(Tag tag, std::vector<Cell> & cells) const {
+void SimpleDeduper::lookup(Tag tag, std::vector<Cell> & cells) const {
     auto iter = _entries.find(tag);
     ASSERT(iter != _entries.end(), "");
 
@@ -82,8 +82,8 @@ void Deduper::lookup(Tag tag, std::vector<Cell> & cells) const {
     std::copy(c.begin(), c.end(), cells.begin());
 }
 
-void Deduper::lookupSegment(Tag tag, uint32_t offset, int16_t max_size,
-                            std::vector<Cell> & cells, bool & cont, int16_t & wrap) const {
+void SimpleDeduper::lookupSegment(Tag tag, uint32_t offset, int16_t max_size,
+                                  std::vector<Cell> & cells, bool & cont, int16_t & wrap) const {
     auto iter = _entries.find(tag);
     ASSERT(iter != _entries.end(), "");
 
@@ -96,7 +96,7 @@ void Deduper::lookupSegment(Tag tag, uint32_t offset, int16_t max_size,
     cont = (offset + wrap != c.size());
 }
 
-size_t Deduper::lookupLength(Tag tag) const {
+size_t SimpleDeduper::lookupLength(Tag tag) const {
     auto iter = _entries.find(tag);
     ASSERT(iter != _entries.end(), "");
 
@@ -104,7 +104,7 @@ size_t Deduper::lookupLength(Tag tag) const {
     return c.size();
 }
 
-void Deduper::remove(Tag tag) {
+void SimpleDeduper::remove(Tag tag) {
     ASSERT(tag != invalidTag(), "");
     auto iter = _entries.find(tag);
     ASSERT(iter != _entries.end(), "");
@@ -117,12 +117,12 @@ void Deduper::remove(Tag tag) {
     --_totalRefs;
 }
 
-void Deduper::getLineStats(uint32_t & uniqueLines, uint32_t & totalLines) const {
+void SimpleDeduper::getLineStats(uint32_t & uniqueLines, uint32_t & totalLines) const {
     uniqueLines = _entries.size();
     totalLines  = _totalRefs;
 }
 
-void Deduper::getByteStats(size_t & uniqueBytes, size_t & totalBytes) const {
+void SimpleDeduper::getByteStats(size_t & uniqueBytes, size_t & totalBytes) const {
     uniqueBytes = 0;
     totalBytes = 0;
 
@@ -136,7 +136,7 @@ void Deduper::getByteStats(size_t & uniqueBytes, size_t & totalBytes) const {
     }
 }
 
-void Deduper::dump(std::ostream & ost) const {
+void SimpleDeduper::dump(std::ostream & ost) const {
     ost << "BEGIN GLOBAL TAGS" << std::endl;
 
     auto flags = ost.flags();
@@ -166,7 +166,7 @@ void Deduper::dump(std::ostream & ost) const {
     ost << "END GLOBAL TAGS" << std::endl << std::endl;
 }
 
-auto Deduper::makeTag(const std::vector<Cell> & cells) -> Tag {
+auto SimpleDeduper::makeTag(const std::vector<Cell> & cells) -> Tag {
     auto tag = hash<SDBM<Tag>>(&cells.front(), sizeof(Cell) * cells.size());
     if (tag == invalidTag()) { ++tag; }
     return tag;

@@ -7,7 +7,7 @@
 #include "terminol/xcb/basics.hxx"
 #include "terminol/xcb/common.hxx"
 #include "terminol/xcb/dispatcher.hxx"
-#include "terminol/common/deduper.hxx"
+#include "terminol/common/simple_deduper.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/parser.hxx"
 #include "terminol/common/key_map.hxx"
@@ -40,7 +40,7 @@ class EventLoop :
     Tty::Command                   _command;
     Selector                       _selector;
     Pipe                           _pipe;
-    Deduper                        _deduper;
+    SimpleDeduper                  _deduper;
     Basics                         _basics;
     Server                         _server;
     ColorSet                       _colorSet;
