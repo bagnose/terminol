@@ -240,30 +240,25 @@ class Buffer {
     //
 
     class ParaIter {
-        const Buffer            & _buffer;
-        APos                      _pos;
-        const std::vector<Cell> * _cells;
-        uint32_t                  _offset;
-        bool                      _valid;
+        const Buffer &    _buffer;
+        APos              _pos;
+        std::vector<Cell> _cells;
+        bool              _cont;
+        int16_t           _wrap;
+        bool              _valid;
 
     public:
-        ParaIter(const Buffer & buffer, APos apos);
-
-        const Cell & getCell() const {
-            ASSERT(_valid, "Invalid.");
-            auto & cells = *_cells;
-            return cells[_offset];
-        }
-
-        const APos & getPos() const { return _pos; }
+        ParaIter(const Buffer & buffer, APos pos);
 
         bool valid() const { return _valid; }
 
-        void moveForward();
-        void moveBackward();
+        const APos & getPos() const { return _pos; }
 
-    protected:
-        void init();
+        const Cell & getCell() const { return _cells[_pos.col]; }
+
+        void moveForward();
+
+        void moveBackward();
     };
 
     //
@@ -288,6 +283,7 @@ class Buffer {
         }
 
         void moveForward();
+
         void moveBackward();
 
     private:
@@ -558,6 +554,9 @@ public:
     void dumpSelection(std::ostream & ost) const;
 
 protected:
+    void getLine(int32_t row, std::vector<Cell> & cells,
+                 bool & cont, int16_t & wrap) const;
+
     void dispatchBg(bool reverse, I_Renderer & renderer) const;
     void dispatchFg(bool reverse, I_Renderer & renderer) const;
     void dispatchCursor(bool reverse, I_Renderer & renderer) const;

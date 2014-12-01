@@ -28,7 +28,7 @@ Deduper::Deduper() : _entries(), _totalRefs(0) {}
 
 Deduper::~Deduper() {}
 
-auto Deduper::store(std::vector<Cell> & cells) -> Tag {
+auto Deduper::store(const std::vector<Cell> & cells) -> Tag {
     auto tag = makeTag(cells);
 
 again:
@@ -65,21 +65,43 @@ again:
             goto again;
         }
 
-        cells.clear();
         ++entry.refs;
     }
 
     ++_totalRefs;
 
-    ASSERT(cells.empty(), "");
-
     return tag;
 }
 
-const std::vector<Cell> & Deduper::lookup(Tag tag) const {
+void Deduper::lookup(Tag tag, std::vector<Cell> & cells) const {
     auto iter = _entries.find(tag);
     ASSERT(iter != _entries.end(), "");
-    return iter->second.cells;
+
+    auto & c = iter->second.cells;
+    cells.resize(c.size(), Cell::blank());
+    std::copy(c.begin(), c.end(), cells.begin());
+}
+
+void Deduper::lookupSegment(Tag tag, uint32_t offset, int16_t max_size,
+                            std::vector<Cell> & cells, bool & cont, int16_t & wrap) const {
+    auto iter = _entries.find(tag);
+    ASSERT(iter != _entries.end(), "");
+
+    auto & c = iter->second.cells;
+    cells.resize(max_size, Cell::blank());
+    wrap = std::min<uint32_t>(max_size, c.size() - offset);
+
+    std::copy(c.begin() + offset, c.begin() + offset + wrap, cells.begin());
+    std::fill(cells.begin() + wrap, cells.end(), Cell::blank());
+    cont = (offset + wrap != c.size());
+}
+
+size_t Deduper::lookupLength(Tag tag) const {
+    auto iter = _entries.find(tag);
+    ASSERT(iter != _entries.end(), "");
+
+    auto & c = iter->second.cells;
+    return c.size();
 }
 
 void Deduper::remove(Tag tag) {
@@ -93,30 +115,6 @@ void Deduper::remove(Tag tag) {
     }
 
     --_totalRefs;
-}
-
-std::vector<Cell> Deduper::lookupRemove(Tag tag) {
-    ASSERT(tag != invalidTag(), "");
-    auto iter = _entries.find(tag);
-    ASSERT(iter != _entries.end(), "");
-    auto & entry = iter->second;
-
-    --_totalRefs;
-
-    if (--entry.refs == 0) {
-        auto rval = std::move(entry.cells);
-        ASSERT(entry.cells.empty(), "");
-        _entries.erase(iter);
-        return rval;
-    }
-    else {
-        return entry.cells;
-    }
-}
-
-size_t Deduper::lookupLength(Tag tag) const {
-    auto & cells = lookup(tag);
-    return cells.size();
 }
 
 void Deduper::getLineStats(uint32_t & uniqueLines, uint32_t & totalLines) const {

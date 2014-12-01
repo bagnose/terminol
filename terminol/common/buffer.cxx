@@ -4,157 +4,57 @@
 #include "terminol/common/buffer.hxx"
 #include "terminol/support/escape.hxx"
 
-Buffer::ParaIter::ParaIter(const Buffer & buffer, APos apos) :
-    _buffer(buffer), _pos(apos), _cells(nullptr), _offset(0), _valid(false)
+Buffer::ParaIter::ParaIter(const Buffer & buffer, APos pos) :
+    _buffer(buffer),
+    _pos(pos),
+    _cells(_buffer.getCols(), Cell::blank())
 {
-    init();
+    _buffer.getLine(_pos.row, _cells, _cont, _wrap);
+    _valid = _pos.col < _wrap;
 }
 
 void Buffer::ParaIter::moveForward() {
-    ASSERT(_valid, "Invalid.");
+    ASSERT(_valid, "Invalid");
 
-    if (_pos.row < 0) {
-        // Historical.
-        ++_offset;
-        ++_pos.col;
+    ++_pos.col;
 
-        if (_pos.col == _buffer.getCols()) {
-            // Wrap.
-            ++_pos.row;
-            _pos.col = 0;
+    if (_pos.col == _buffer.getCols()) {
+        ++_pos.row;
+        _pos.col = 0;
 
-            if (_pos.row == 0) {
-                // We have entered into the active region.
-                ASSERT(_offset == _cells->size(), "");
-
-                if (_cells == &_buffer._pending) {
-                    init();
-                    ASSERT(_valid, "Invalid.");
-                }
-                else {
-                    _valid = false;
-                }
-            }
-            else {
-                // We are still in the historical region.
-                if (_offset == _cells->size()) {
-                    _valid = false;
-                }
-            }
+        if (_cont) {
+            ASSERT(_pos.row < _buffer.getRows(), "");
+            _buffer.getLine(_pos.row, _cells, _cont, _wrap);
+            _valid = _pos.col < _wrap;
         }
         else {
-            if (_offset == _cells->size()) {
-                _valid = false;
-            }
+            _valid = false;
         }
     }
     else {
-        // Active.
-        auto & aline = _buffer._active[_pos.row];
-        ++_offset;
-        ++_pos.col;
-
-        if (_pos.col == _buffer.getCols()) {
-            ++_pos.row;
-            _pos.col = 0;
-
-            if (aline.cont) {
-                init();
-                ASSERT(_valid, "");
-            }
-            else {
-                _valid = false;
-            }
-        }
-        else {
-            _valid = _pos.col < aline.wrap;
-        }
+        _valid = _pos.col < _wrap;
     }
 }
 
 void Buffer::ParaIter::moveBackward() {
-    ASSERT(_valid, "Invalid.");
+    ASSERT(_valid, "Invalid");
 
-    if (_pos.row < 0) {
-        // Historical.
-        if (_offset == 0) {
-            // There is nothing to our left.
+    if (_pos.col == 0) {
+        --_pos.row;
+        _pos.col = _buffer.getCols() - 1;
+
+        if (_pos.row == -static_cast<int32_t>(_buffer._history.size())) {
             _valid = false;
         }
         else {
-            // Left cell is valid.
-            if (_pos.col == 0) {
-                --_pos.row;
-                _pos.col = _buffer.getCols();
-            }
-            --_offset;
-            --_pos.col;
+            _buffer.getLine(_pos.row, _cells, _cont, _wrap);
+            _valid = _wrap;
         }
     }
     else {
-        // Active.
-        ASSERT(static_cast<uint32_t>(_pos.col) == _offset, "");
-
-        if (_pos.col == 0) {
-            // There will be something to our left if we are a continuation.
-            --_pos.row;
-            _pos.col = _buffer.getCols() - 1;
-
-            if (_pos.row >= 0) {
-                // Still active.
-                auto & aline = _buffer._active[_pos.row];
-                if (aline.cont) {
-                    // We were on a continuation of the previous active line.
-                    init();
-                    ASSERT(_valid, "Invalid.");
-                }
-                else {
-                    _valid = false;
-                }
-            }
-            else {
-                if (!_buffer._pending.empty()) {
-                    // We were on a continuation of pending.
-                    init();
-                    ASSERT(_valid, "Invalid.");
-                }
-                else {
-                    _valid = false;
-                }
-            }
-        }
-        else {
-            --_offset;
-            --_pos.col;
-        }
+        --_pos.col;
     }
 }
-
-void Buffer::ParaIter::init() {
-    if (_pos.row < 0) {
-        // Historical.
-        auto & hline  = _buffer._history[_buffer._history.size() + _pos.row];
-        auto   offset = (static_cast<uint32_t>(hline.seqnum) * _buffer.getCols() + _pos.col);
-        auto   tag    = _buffer._tags[hline.index - _buffer._lostTags];
-        auto & cells  = (tag == I_Deduper::invalidTag() ?
-                         _buffer._pending :
-                         _buffer._deduper.lookup(tag));
-
-        _cells  = &cells;
-        _offset = offset;
-        _valid  = _offset < _cells->size();
-    }
-    else {
-        // Active.
-        auto & aline = _buffer._active[_pos.row];
-        auto & cells = aline.cells;
-
-        _cells  = &cells;
-        _offset = _pos.col;
-        _valid  = _pos.col < aline.wrap;
-    }
-}
-
 //
 //
 //
@@ -342,41 +242,17 @@ void Buffer::clearSelection() {
 bool Buffer::getSelectedText(std::string & text) const {
     APos begin, end;
 
+    // Declare this outside of the loop to avoid reallocation.
+    std::vector<Cell> cells(getCols(), Cell::blank());
+
     if (normaliseSelection(begin, end)) {
         for (auto i = begin; i.row <= end.row; ++i.row, i.col = 0) {
-            const std::vector<Cell> * cellsPtr;
-            uint32_t                  offset;
-            int16_t                   wrap;
-
-            if (i.row < 0) {
-                auto & hline = _history[_history.size() + i.row];
-                auto   tag   = _tags[hline.index - _lostTags];
-
-                if (tag == I_Deduper::invalidTag()) {
-                    cellsPtr = &_pending;
-                }
-                else {
-                    cellsPtr = &_deduper.lookup(tag);
-                }
-
-                offset = hline.seqnum * getCols();
-                wrap   = cellsPtr->size() - offset;
-            }
-            else {
-                auto & aline = _active[i.row];
-
-                cellsPtr = &aline.cells;
-                offset   = 0;
-                wrap     = aline.wrap;
-            }
-
-            auto & cells = *cellsPtr;
+            bool    cont;
+            int16_t wrap;
+            getLine(i.row, cells, cont, wrap);
 
             for (; i.col < getCols() && (i.row < end.row || i.col != end.col); ++i.col) {
-                if (i.col == wrap) { text.push_back('\n'); break; }
-                if (i.col + offset == cells.size()) { break; }
-
-                auto & cell = cells[i.col + offset];
+                auto & cell = cells[i.col];
                 auto   seq  = cell.seq;
                 std::copy(&seq.bytes[0],
                           &seq.bytes[utf8::leadLength(seq.lead())],
@@ -1276,18 +1152,24 @@ void Buffer::endSearch() {
 void Buffer::dumpTags(std::ostream & ost) const {
     ost << "BEGIN LOCAL TAGS" << std::endl;
 
-    size_t i = 0;
+    size_t            i = 0;
+    std::vector<Cell> cells;
 
-    for (auto t : _tags) {
+    for (auto tag : _tags) {
         ost << std::setw(6) << i << " "
             << std::setw(sizeof(I_Deduper::Tag) * 2) << std::setfill('0')
-            << std::hex << std::uppercase << t << ": "
+            << std::hex << std::uppercase << tag << ": "
             << std::setfill(' ') << std::dec << " \'";
 
-        auto & cells = t != I_Deduper::invalidTag() ? _deduper.lookup(t) : _pending;
+        if (tag == I_Deduper::invalidTag()) {
+            cells = _pending;
+        }
+        else {
+            _deduper.lookup(tag, cells);
+        }
 
-        for (auto & c : cells) {
-            ost << c.seq;
+        for (auto & cell : cells) {
+            ost << cell.seq;
         }
 
         ost << "\'" << std::endl;
@@ -1301,22 +1183,33 @@ void Buffer::dumpTags(std::ostream & ost) const {
 void Buffer::dumpHistory(std::ostream & ost) const {
     ost << "BEGIN HISTORY" << std::endl;
 
-    auto flags = ost.flags();
-
-    size_t i = 0;
+    auto              flags = ost.flags();
+    size_t            i = 0;
+    std::vector<Cell> cells;
 
     for (auto & l : _history) {
         ost << std::setw(4) << i << " "
             << std::setw(4) << l.index - _lostTags << " "
             << std::setw(2) << l.seqnum << " \'";
 
-        auto   tag   = _tags[l.index - _lostTags];
-        auto & cells = tag != I_Deduper::invalidTag() ? _deduper.lookup(tag) : _pending;
+        auto     tag    = _tags[l.index - _lostTags];
+        uint32_t offset = l.seqnum * getCols();
+        bool     cont;
+        int16_t  wrap;
 
-        size_t offset = l.seqnum * getCols();
-        for (uint16_t o = 0; o != getCols(); ++o) {
+        if (tag == I_Deduper::invalidTag()) {
+            cells = _pending;
+            cont  = true;
+            wrap  = getCols();
+        }
+        else {
+            _deduper.lookupSegment(tag, offset, getCols(), cells, cont, wrap);
+        }
+
+        ASSERT(wrap <= getCols(), "");
+
+        for (uint16_t o = 0; o != wrap; ++o) {
             auto c = offset + o;
-            if (c == cells.size()) { break; }       // Line doesn't extend to the end.
             auto & cell = cells[c];
             ost << cell.seq;
         }
@@ -1368,50 +1261,60 @@ void Buffer::dumpSelection(std::ostream & ost) const {
     ost << "END SELECTION" << std::endl << std::endl;
 }
 
-void Buffer::dispatchBg(bool reverse, I_Renderer & renderer) const {
-    APos selBegin, selEnd;
-    bool selValid = normaliseSelection(selBegin, selEnd);
+void Buffer::getLine(int32_t row, std::vector<Cell> & cells, bool & cont, int16_t & wrap) const {
+    if (row < 0) {
+        auto & hline = _history[_history.size() + row];
+        auto   tag   = _tags[hline.index - _lostTags];
 
-    for (int16_t r = 0; r != getRows(); ++r) {
-        auto & d = _damage[r];
-        if (d.begin == d.end) { continue; }
+        uint32_t offset = hline.seqnum * getCols();
 
-        const std::vector<Cell> * cellsPtr;
-        uint32_t                  offset;
-        int16_t                   wrap;
-
-        if (UNLIKELY(static_cast<uint32_t>(r) < _scrollOffset)) {
-            auto & hline = _history[_history.size() - _scrollOffset + r];
-            auto   tag   = _tags[hline.index - _lostTags];
-
-            cellsPtr = tag == I_Deduper::invalidTag() ? &_pending : &_deduper.lookup(tag);
-            offset   = hline.seqnum * getCols();
-            wrap     = std::min<uint32_t>(getCols(), cellsPtr->size() - offset);
+        if (UNLIKELY(tag == I_Deduper::invalidTag())) {
+            wrap = std::min<uint32_t>(getCols(), _pending.size() - offset);
+            std::copy(_pending.begin() + offset, _pending.begin() + offset + wrap, cells.begin());
+            std::fill(cells.begin() + wrap, cells.end(), Cell::blank());
+            cont = (offset + wrap != _pending.size());
         }
         else {
-            auto & aline = _active[r - _scrollOffset];
-
-            cellsPtr = &aline.cells;
-            offset   = 0;
-            wrap     = aline.wrap;
+            _deduper.lookupSegment(tag, offset, getCols(), cells, cont, wrap);
         }
+    }
+    else {
+        auto & aline = _active[row];
 
-        auto & cells = *cellsPtr;
-        auto   blank = Cell::blank();
-        auto   bg0   = UColor::stock(UColor::Name::TEXT_BG);
-        auto   c0    = d.begin;  // Accumulation start column.
-        auto   c1    = c0;
+        std::copy(aline.cells.begin(), aline.cells.end(), cells.begin());
+        wrap = aline.wrap;
+        cont = aline.cont;
+    }
+}
 
-        for (; c1 != d.end; ++c1) {
+void Buffer::dispatchBg(bool reverse, I_Renderer & renderer) const {
+    APos selBegin, selEnd;
+    auto selValid = normaliseSelection(selBegin, selEnd);
+
+    // Declare this outside of the loop to avoid reallocation.
+    std::vector<Cell> cells(getCols(), Cell::blank());
+
+    for (int16_t row = 0; row != getRows(); ++row) {
+        auto & damage = _damage[row];
+        if (damage.begin == damage.end) { continue; }
+
+        bool    cont;
+        int16_t wrap;
+        getLine(static_cast<int32_t>(row - _scrollOffset), cells, cont, wrap);
+
+        auto bg0  = UColor::stock(UColor::Name::TEXT_BG);
+        auto col0 = damage.begin;  // Accumulation start column.
+        auto col1 = col0;
+
+        for (; col1 != damage.end; ++col1) {
             // Once we get past the wrap point all cells should be the same, so skip
             // to the last iteration. Unlike in dispatchFg() we must iterate over
             // the wrap character to handle selection correctly.
-            if (c1 > wrap) { c1 = d.end - 1; }
+            if (col1 > wrap) { col1 = damage.end - 1; }
 
-            auto   apos     = APos(r - _scrollOffset, c1);
+            auto   apos     = APos(row - _scrollOffset, col1);
             auto   selected = selValid && isCellSelected(apos, selBegin, selEnd, wrap);
-            auto   c        = c1 + offset;
-            auto & cell     = c < cells.size() ? cells[c] : blank;
+            auto & cell     = cells[col1];
             auto & attrs    = cell.style.attrs;
             auto   swap     = XOR(reverse, attrs.get(Attr::INVERSE));
             auto   bg1      = bg0; // About to be overridden.
@@ -1432,68 +1335,52 @@ void Buffer::dispatchBg(bool reverse, I_Renderer & renderer) const {
             }
 
             if (UNLIKELY(bg0 != bg1)) {
-                if (c1 != c0) {
-                    renderer.bufferDrawBg(Pos(r, c0), c1 - c0, bg0);
+                if (col1 != col0) {
+                    // flush run
+                    renderer.bufferDrawBg(Pos(row, col0), col1 - col0, bg0);
                 }
 
-                c0  = c1;
-                bg0 = bg1;
+                col0 = col1;
+                bg0  = bg1;
             }
         }
 
         // There may be an unterminated run to flush.
-        if (c1 != c0) {
-            renderer.bufferDrawBg(Pos(r, c0), c1 - c0, bg0);
+        if (col1 != col0) {
+            renderer.bufferDrawBg(Pos(row, col0), col1 - col0, bg0);
         }
     }
 }
 
 void Buffer::dispatchFg(bool reverse, I_Renderer & renderer) const {
     APos selBegin, selEnd;
-    bool selValid = normaliseSelection(selBegin, selEnd);
+    auto selValid = normaliseSelection(selBegin, selEnd);
 
-    std::vector<uint8_t> run;         // Buffer for accumulating character runs.
+    // Declare these outside of the loop to avoid reallocation.
+    std::vector<Cell>    cells(getCols(), Cell::blank());
+    std::vector<uint8_t> run;               // Buffer for accumulating character runs.
 
-    for (int16_t r = 0; r != getRows(); ++r) {
-        auto & d = _damage[r];
-        if (d.begin == d.end) { continue; }
+    for (int16_t row = 0; row != getRows(); ++row) {
+        auto & damage = _damage[row];
+        if (damage.begin == damage.end) { continue; }
 
-        const std::vector<Cell> * cellsPtr;
-        uint32_t                  offset;
-        int16_t                   wrap;
+        bool    cont;
+        int16_t wrap;
+        getLine(static_cast<int32_t>(row - _scrollOffset), cells, cont, wrap);
 
-        if (UNLIKELY(static_cast<uint32_t>(r) < _scrollOffset)) {
-            auto & hline = _history[_history.size() - _scrollOffset + r];
-            auto   tag   = _tags[hline.index - _lostTags];
+        auto fg0    = UColor::stock(UColor::Name::TEXT_FG);
+        auto attrs0 = AttrSet();
+        auto col0   = damage.begin;   // Accumulation start column.
+        auto col1   = col0;
 
-            cellsPtr = tag == I_Deduper::invalidTag() ? &_pending : &_deduper.lookup(tag);
-            offset   = hline.seqnum * getCols();
-            wrap     = std::min<uint32_t>(getCols(), cellsPtr->size() - offset);
-        }
-        else {
-            auto & aline = _active[r - _scrollOffset];
-
-            cellsPtr = &aline.cells;
-            offset   = 0;
-            wrap     = aline.wrap;
-        }
-
-        auto & cells  = *cellsPtr;
-        auto   fg0    = UColor::stock(UColor::Name::TEXT_FG);
-        auto   attrs0 = AttrSet();
-        auto   c0     = d.begin;   // Accumulation start column.
-        auto   c1     = c0;
-
-        for (; c1 != d.end; ++c1) {
+        for (; col1 != damage.end; ++col1) {
             // Once we get past the wrap point all cells will be blank,
             // so break out of the loop now.
-            if (c1 >= wrap) { break; }
+            if (col1 >= wrap) { break; }
 
-            auto   apos     = APos(r - _scrollOffset, c1);
+            auto   apos     = APos(row - _scrollOffset, col1);
             auto   selected = selValid && isCellSelected(apos, selBegin, selEnd, wrap);
-            auto   c        = c1 + offset;
-            ASSERT(c < cells.size(), "");
-            auto & cell     = cells[c];
+            auto & cell     = cells[col1];
             auto & attrs1   = cell.style.attrs;
             auto   swap     = XOR(reverse, attrs1.get(Attr::INVERSE));
             auto   fg1      = fg0; // About to be overridden.
@@ -1514,15 +1401,16 @@ void Buffer::dispatchFg(bool reverse, I_Renderer & renderer) const {
             }
 
             if (UNLIKELY(fg0 != fg1 || attrs0 != attrs1)) {
-                if (c1 != c0) {
+                if (col1 != col0) {
                     // flush run
                     auto size = run.size();
                     run.push_back(NUL);
-                    renderer.bufferDrawFg(Pos(r, c0), c1 - c0, fg0, attrs0, &run.front(), size);
+                    renderer.bufferDrawFg(Pos(row, col0), col1 - col0,
+                                          fg0, attrs0, &run.front(), size);
                     run.clear();
                 }
 
-                c0     = c1;
+                col0   = col1;
                 fg0    = fg1;
                 attrs0 = attrs1;
             }
@@ -1532,11 +1420,11 @@ void Buffer::dispatchFg(bool reverse, I_Renderer & renderer) const {
         }
 
         // There may be an unterminated run to flush.
-        if (c1 != c0) {
+        if (col1 != col0) {
             // flush run
             auto size = run.size();
             run.push_back(NUL);
-            renderer.bufferDrawFg(Pos(r, c0), c1 - c0, fg0, attrs0, &run.front(), size);
+            renderer.bufferDrawFg(Pos(row, col0), col1 - col0, fg0, attrs0, &run.front(), size);
             run.clear();
         }
     }
@@ -1854,7 +1742,6 @@ void Buffer::bump() {
             ASSERT(static_cast<size_t>(wrap) <= cells.size(), "");
             cells.erase(cells.begin() + wrap, cells.end());
             auto tag = _deduper.store(cells);
-            ASSERT(cells.empty(), "Not stolen by move constructor?");
             ASSERT(tag != I_Deduper::invalidTag(), "");
             _tags.push_back(tag);
         }
@@ -1880,7 +1767,7 @@ void Buffer::bump() {
             // Store _pending and the tag.
             auto tag = _deduper.store(_pending);
             ASSERT(tag != I_Deduper::invalidTag(), "");
-            ASSERT(_pending.empty(), "_pending cleared by I_Deduper::store()");
+            _pending.clear();
             ASSERT(_tags.back() == I_Deduper::invalidTag(), "");
             _tags.back() = tag;
         }
@@ -1904,7 +1791,8 @@ void Buffer::unbump() {
         cont = false;
         auto tag = _tags.back();
         ASSERT(tag != I_Deduper::invalidTag(), "");
-        _pending     = _deduper.lookupRemove(tag);
+        _deduper.lookup(tag, _pending);
+        _deduper.remove(tag);
         _tags.back() = I_Deduper::invalidTag();
     }
     else {
