@@ -285,6 +285,7 @@ void Tty::execShell(const std::string & windowId,
 
     ::setenv("WINDOWID", windowId.c_str(), 1);
     ::setenv("TERM", _config.termName.c_str(), 1);
+    ::setenv("XTERM_256_COLORS", "1", 1);
 
     ::signal(SIGCHLD, SIG_DFL);
     ::signal(SIGHUP,  SIG_DFL);
