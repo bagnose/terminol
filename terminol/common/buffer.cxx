@@ -1381,6 +1381,7 @@ void Buffer::dispatchFg(bool reverse, I_Renderer & renderer) const {
             auto   apos     = APos(row - _scrollOffset, col1);
             auto   selected = selValid && isCellSelected(apos, selBegin, selEnd, wrap);
             auto & cell     = cells[col1];
+            auto   length   = utf8::leadLength(cell.seq.lead());
             auto & attrs1   = cell.style.attrs;
             auto   swap     = XOR(reverse, attrs1.get(Attr::INVERSE));
             auto   fg1      = fg0; // About to be overridden.
@@ -1400,7 +1401,14 @@ void Buffer::dispatchFg(bool reverse, I_Renderer & renderer) const {
                 fg1 = swap ? cell.style.bg : cell.style.fg;
             }
 
-            if (UNLIKELY(fg0 != fg1 || attrs0 != attrs1)) {
+            /* If the UTF-8 codepoint is more than one byte then terminate the run
+             * to prevent the alignment being upset when the resulting glyph is
+             * wider than the fixed width font.
+             * Can we do this a better way?
+             */
+            if (UNLIKELY(length != utf8::Length::L1 ||
+                         fg0    != fg1              ||
+                         attrs0 != attrs1)) {
                 if (col1 != col0) {
                     // flush run
                     auto size = run.size();
@@ -1415,7 +1423,6 @@ void Buffer::dispatchFg(bool reverse, I_Renderer & renderer) const {
                 attrs0 = attrs1;
             }
 
-            utf8::Length length = utf8::leadLength(cell.seq.lead());
             std::copy(cell.seq.bytes, cell.seq.bytes + length, std::back_inserter(run));
         }
 
