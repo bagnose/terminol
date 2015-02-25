@@ -175,7 +175,7 @@ protected:
     void     machineDcsEsc(const DcsEsc & esc) throw () override;
     void     machineOscEsc(const OscEsc & esc) throw () override;
 
-    // Tty::I_Observer imlementation:
+    // Tty::I_Observer implementation:
 
     void     ttyData(const uint8_t * data, size_t size) throw () override;
     void     ttySync() throw () override;
