@@ -273,7 +273,7 @@ void Buffer::clearHistory() {
     }
 
     for (auto tag : _tags) {
-        if (tag != I_Deduper::invalidTag()) {
+        if (LIKELY(tag != I_Deduper::invalidTag())) {
             _deduper.remove(tag);
         }
     }
