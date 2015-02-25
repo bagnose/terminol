@@ -103,7 +103,7 @@ Screen::Screen(I_Observer         & observer,
 
     // Create the GC.
 
-    uint32_t gcValues[] = {
+    const uint32_t gcValues[] = {
         _colorSet.getVisualBellPixel(),
         0 // no exposures
     };

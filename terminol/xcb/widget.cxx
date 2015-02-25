@@ -14,7 +14,7 @@ Widget::Widget(I_Dispatcher & dispatcher,
 
     // Create the window.
 
-    uint32_t winValues[] = {
+    const uint32_t winValues[] = {
         // XCB_CW_BACK_PIXEL
         // Note, it is important to set XCB_CW_BACK_PIXEL to the actual
         // background colour used by the terminal in order to prevent
@@ -40,7 +40,7 @@ Widget::Widget(I_Dispatcher & dispatcher,
         _basics.normalCursor()
     };
 
-    uint32_t winMask =
+    const uint32_t winMask =
         XCB_CW_BACK_PIXEL    |
         XCB_CW_BIT_GRAVITY   |
         XCB_CW_WIN_GRAVITY   |
