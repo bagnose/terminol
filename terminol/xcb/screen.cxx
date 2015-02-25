@@ -1252,8 +1252,8 @@ void Screen::terminalDrawBg(Pos     pos,
     int x, y;
     pos2XY(pos, x, y);
 
-    double w = count * _fontSet->getWidth();
-    double h = _fontSet->getHeight();
+    auto w = count * _fontSet->getWidth();
+    auto h = _fontSet->getHeight();
 
     if (_config.x11PseudoTransparency) {
         xcb_copy_area(_basics.connection(),
