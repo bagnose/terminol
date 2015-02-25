@@ -402,9 +402,6 @@ void Buffer::write(utf8::Seq seq, bool autoWrap, bool insert) {
         insertCells(1);
     }
 
-    testClearSelection(APos(_cursor.pos, 0),
-                       APos(Pos(_cursor.pos.row, _cursor.pos.col + 1), 0));
-
     auto style = _cursor.style;
 
     if (cs->isSpecial()) {
@@ -413,7 +410,12 @@ void Buffer::write(utf8::Seq seq, bool autoWrap, bool insert) {
     }
 
     auto & line = _active[_cursor.pos.row];
-    line.cells[_cursor.pos.col] = Cell::utf8(seq, style);
+
+    if (line.cells[_cursor.pos.col] != Cell::utf8(seq, style)) {
+        testClearSelection(APos(_cursor.pos, 0),
+                           APos(Pos(_cursor.pos.row, _cursor.pos.col + 1), 0));
+        line.cells[_cursor.pos.col] = Cell::utf8(seq, style);
+    }
 
     ASSERT(line.wrap <= getCols(),
            "line.wrap=" << line.wrap << " getCols()=" << getCols());
@@ -429,7 +431,7 @@ void Buffer::write(utf8::Seq seq, bool autoWrap, bool insert) {
         ++_cursor.pos.col;
     }
 
-    damageCell();
+    damageCell();       // For the sake of the cursor.
 }
 
 void Buffer::backspace(bool autoWrap) {
