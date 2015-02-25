@@ -38,6 +38,7 @@ public:
         virtual void selectionRequest(xcb_selection_request_event_t * UNUSED(event)) noexcept {}
         virtual void clientMessage(xcb_client_message_event_t * UNUSED(event)) noexcept {}
         virtual void propertyNotify(xcb_property_notify_event_t * UNUSED(event)) noexcept {}
+        virtual void reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) noexcept {}
 
     protected:
         I_Observer() {}

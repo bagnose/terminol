@@ -157,8 +157,9 @@ void Dispatcher::dispatch(uint8_t responseType, xcb_generic_event_t * event) {
         break;
     }
     case XCB_REPARENT_NOTIFY: {
-        //PRINT("Got reparent event");
-        //auto e = reinterpret_cast<xcb_reparent_notify_event_t *>(event);
+        auto e = reinterpret_cast<xcb_reparent_notify_event_t *>(event);
+        auto i = _observers.find(e->window);
+        if (i != _observers.end()) { i->second->reparentNotify(e); }
         //PRINT("Got reparent, window: " << e->window << ", parent: " << e->parent);
         break;
     }
