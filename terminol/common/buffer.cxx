@@ -55,6 +55,7 @@ void Buffer::ParaIter::moveBackward() {
         --_pos.col;
     }
 }
+
 //
 //
 //
