@@ -1320,7 +1320,6 @@ void Screen::terminalDrawFg(Pos             pos,
 
         cairo_move_to(_cr, x, y);
         pango_layout_set_text(layout, reinterpret_cast<const char *>(str), size);
-        pango_cairo_update_layout(_cr, layout);
         pango_cairo_show_layout(_cr, layout);
 
         ASSERT(cairo_status(_cr) == 0,
