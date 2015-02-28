@@ -76,7 +76,7 @@ struct UColor {
     }
 
 private:
-    explicit UColor(Type type_) : type(type_), _init {0, 0, 0 } {}
+    explicit UColor(Type type_) : type(type_), _init{0, 0, 0} {}
 };
 
 static_assert(sizeof(UColor) == 4, "UColor should be 4 bytes.");
