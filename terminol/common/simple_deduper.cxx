@@ -2,27 +2,11 @@
 // Copyright © 2013 David Bryant
 
 #include "terminol/common/simple_deduper.hxx"
+#include "terminol/support/hash.hxx"
 
 #include <algorithm>
 #include <iostream>
 #include <iomanip>
-
-namespace {
-
-template <class T> struct SDBM {
-    typedef T Type;
-    T operator () (T val, uint8_t next) {
-        return static_cast<T>(next) + (val << 6) + (val << 16) - val;
-    }
-};
-
-template <class A> typename A::Type hash(const void * buffer,
-                                         size_t       length) {
-    auto buf = static_cast<const uint8_t *>(buffer);
-    return std::accumulate(buf, buf + length, typename A::Type(0), A());
-}
-
-} // namespace {anonymous}
 
 SimpleDeduper::SimpleDeduper() : _entries(), _totalRefs(0) {}
 
