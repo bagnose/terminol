@@ -1313,10 +1313,12 @@ void Buffer::dispatchBg(bool reverse, I_Renderer & renderer) const {
         auto col1 = col0;
 
         for (; col1 != damage.end; ++col1) {
+#if 0
             // Once we get past the wrap point all cells should be the same, so skip
             // to the last iteration. Unlike in dispatchFg() we must iterate over
             // the wrap character to handle selection correctly.
             if (col1 > wrap) { col1 = damage.end - 1; }
+#endif
 
             auto   apos     = APos(row - _scrollOffset, col1);
             auto   selected = selValid && isCellSelected(apos, selBegin, selEnd, wrap);
@@ -1380,9 +1382,11 @@ void Buffer::dispatchFg(bool reverse, I_Renderer & renderer) const {
         auto col1   = col0;
 
         for (; col1 != damage.end; ++col1) {
+#if 0
             // Once we get past the wrap point all cells will be blank,
             // so break out of the loop now.
             if (col1 >= wrap) { break; }
+#endif
 
             auto   apos     = APos(row - _scrollOffset, col1);
             auto   selected = selValid && isCellSelected(apos, selBegin, selEnd, wrap);
