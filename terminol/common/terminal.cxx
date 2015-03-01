@@ -1379,9 +1379,13 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) throw () {
                 break;
             case 'L': // IL - Insert Lines
                 _buffer->insertLines(nthArgNonZero(esc.args, 0, 1));
+                // Note, XTerm does this, URXVT does not:
+                _buffer->moveCursor2(true, 0, false, 0);
                 break;
             case 'M': // DL - Delete Lines
                 _buffer->eraseLines(nthArgNonZero(esc.args, 0, 1));
+                // Note, XTerm does this, URXVT does not:
+                _buffer->moveCursor2(true, 0, false, 0);
                 break;
             case 'P': { // DCH - Delete Character
                 _buffer->eraseCells(nthArgNonZero(esc.args, 0, 1));
