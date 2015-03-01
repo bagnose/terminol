@@ -954,9 +954,12 @@ void Buffer::clearAbove() {
                        APos(Pos(_cursor.pos.row, _cursor.pos.col + 1), 0));
 
     clearLineLeft();
+
     for (auto i = _active.begin(); i != _active.begin() + _cursor.pos.row; ++i) {
         i->clear(_cursor.style);
     }
+
+    damageRows(0, _cursor.pos.row);
 }
 
 void Buffer::clearBelow() {
@@ -964,9 +967,12 @@ void Buffer::clearBelow() {
                        APos(Pos(getRows() - 1, getCols()), 0));
 
     clearLineRight();
+
     for (auto i = _active.begin() + _cursor.pos.row + 1; i != _active.end(); ++i) {
         i->clear(_cursor.style);
     }
+
+    damageRows(_cursor.pos.row + 1, getRows());
 }
 
 void Buffer::insertLines(uint16_t n) {
