@@ -859,7 +859,7 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
     // Dispatch:
 
     if (_config.traceTty) {
-        std::cerr << SGR::FG_GREEN << esc << SGR::RESET_ALL;
+        std::cerr << SGR::FG_WHITE << esc << SGR::RESET_ALL;
     }
     _observer.machineCsiEsc(esc);
 }
