@@ -949,8 +949,9 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     */
                     break;
                 case 3: // DECCOLM - Column Mode
-                    // How much should we reset
-                    _buffer->reset();
+                    // http://www.vt100.net/docs/vt510-rm/DECCOLM
+                    _buffer->resetMargins();
+                    _buffer->clear();
                     if (set) {
                         // resize 132 columns
                         _observer.terminalResizeBuffer(getRows(), 132);
