@@ -1707,7 +1707,7 @@ void Buffer::addLine() {
             enforceHistoryLimit();
         }
 
-        _active.emplace_back(getCols(), _cursor.style);
+        _active.emplace_back(getCols());
 
         APos begin, end;
         if (normaliseSelection(begin, end)) {
