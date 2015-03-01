@@ -773,7 +773,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                         case 2:
                             if (i + 3 < args.size()) {
                                 // 24-bit foreground support
-                                // ESC[ … 48;2;<r>;<g>;<b> … m Select RGB foreground color
+                                // ESC[ … 38;2;<r>;<g>;<b> … m Select RGB foreground color
                                 _buffer->setFg(UColor::direct(args[i + 1], args[i + 2], args[i + 3]));
                                 i += 3;
                             }
