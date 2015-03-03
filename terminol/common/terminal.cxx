@@ -1470,9 +1470,7 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) throw () {
                 break;
             case 'm': // SGR - Select Graphic Rendition
                 if (esc.args.empty()) {
-                    std::vector<int32_t> args2;
-                    args2.push_back(0);
-                    processAttributes(args2);
+                    processAttributes({0});
                 }
                 else {
                     processAttributes(esc.args);
