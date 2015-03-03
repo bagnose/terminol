@@ -43,12 +43,12 @@ void Buffer::ParaIter::moveBackward() {
         --_pos.row;
         _pos.col = _buffer.getCols() - 1;
 
-        if (_pos.row == -static_cast<int32_t>(_buffer._history.size())) {
+        if (_pos.row == -static_cast<int32_t>(_buffer._history.size() + 1)) {
             _valid = false;
         }
         else {
             _buffer.getLine(_pos.row, _cells, _cont, _wrap);
-            _valid = _wrap;
+            _valid = _cont;
         }
     }
     else {
