@@ -1,273 +1,11 @@
 // vi:noai:sw=4
-// Copyright © 2013 David Bryant
+// Copyright © 2013-2015 David Bryant
 
 #include "terminol/common/vt_state_machine.hxx"
 #include "terminol/common/ascii.hxx"
-#include "terminol/support/escape.hxx"
+#include "terminol/common/escape.hxx"
 
-namespace {
-
-    // [0x30..0x7F)
-    const char * SIMPLE_STR[] = {
-        nullptr,    // '0'              0x30
-        nullptr,    // '1'
-        nullptr,    // '2'
-        nullptr,    // '3'
-        nullptr,    // '4'
-        nullptr,    // '5'
-        nullptr,    // '6'
-        "DECSC",    // '7'
-        //
-        "DECRC",    // '8'
-        nullptr,    // '9'
-        nullptr,    // ':'
-        nullptr,    // ';'
-        nullptr,    // '<'
-        "DECKPAM",  // '='
-        "DECKPNM",  // '>'
-        nullptr,    // '?'
-        //
-        nullptr,    // '@'              0x40
-        nullptr,    // 'A'
-        nullptr,    // 'B'
-        nullptr,    // 'C'
-        "IND",      // 'D'
-        "NEL",      // 'E'
-        nullptr,    // 'F'
-        nullptr,    // 'G'
-        //
-        "HTS",      // 'H'
-        nullptr,    // 'I'
-        nullptr,    // 'J'
-        nullptr,    // 'K'
-        nullptr,    // 'L'
-        "RI",       // 'M'
-        "SS2",      // 'N'
-        "SS3",      // 'O'
-        //
-        nullptr,    // 'P'              0x50
-        nullptr,    // 'Q'
-        nullptr,    // 'R'
-        nullptr,    // 'S'
-        nullptr,    // 'T'
-        nullptr,    // 'U'
-        nullptr,    // 'V'
-        nullptr,    // 'W'
-        //
-        nullptr,    // 'X'
-        nullptr,    // 'Y'
-        "DECID",    // 'Z'
-        nullptr,    // '['
-        nullptr,    // '\'
-        nullptr,    // ']'
-        nullptr,    // '^'
-        nullptr,    // '_'
-        //
-        nullptr,    // '`'              0x60
-        nullptr,    // 'a'
-        nullptr,    // 'b'
-        "RIS",      // 'c'
-        nullptr,    // 'd'
-        nullptr,    // 'e'
-        nullptr,    // 'f'
-        nullptr,    // 'g'
-        //
-        nullptr,    // 'h'
-        nullptr,    // 'i'
-        nullptr,    // 'j'
-        nullptr,    // 'k'
-        nullptr,    // 'l'
-        nullptr,    // 'm'
-        nullptr,    // 'n'
-        nullptr,    // 'o'
-        //
-        nullptr,    // 'p'              0x70
-        nullptr,    // 'q'
-        nullptr,    // 'r'
-        nullptr,    // 's'
-        nullptr,    // 't'
-        nullptr,    // 'u'
-        nullptr,    // 'v'
-        nullptr,    // 'w'
-        //
-        nullptr,    // 'x'
-        nullptr,    // 'y'
-        nullptr,    // 'z'
-        nullptr,    // '{'
-        nullptr,    // '|'
-        nullptr,    // '}'
-        nullptr     // '~'
-    };
-
-    static_assert(STATIC_ARRAY_SIZE(SIMPLE_STR) == 0x7F - 0x30,
-                  "Incorrect size: SIMPLE_STR.");
-
-    // [0x40..0x80)
-    const char * CSI_STR[] = {
-        "ICH",      // '@'              0x40
-        "CUU",      // 'A'
-        "CUD",      // 'B'
-        "CUF",      // 'C'
-        "CUB",      // 'D'
-        "CNL",      // 'E'
-        "CPL",      // 'F'
-        "CHA",      // 'G'
-        //
-        "CUP",      // 'H'
-        "CHT",      // 'I'
-        "ED",       // 'J'
-        "EL",       // 'K'
-        "IL",       // 'L'
-        "DL",       // 'M'
-        nullptr,    // 'N'      EF
-        nullptr,    // 'O'      EA
-        //
-        "DCH",      // 'P'              0x50
-        nullptr,    // 'Q'      SEE
-        nullptr,    // 'R'      CPR
-        "SU",       // 'S'
-        "SD",       // 'T'
-        nullptr,    // 'U'      NP
-        nullptr,    // 'V'      PP
-        "CTC",      // 'W'
-        //
-        "ECH",      // 'X'
-        nullptr,    // 'Y'      CVT
-        "CBT",      // 'Z'
-        nullptr,    // '['      SRS
-        nullptr,    // '\'      PTX
-        nullptr,    // ']'      SDS
-        nullptr,    // '^'      SIMD
-        nullptr,    // '_'      5F
-        //
-        "HPA",      // '`'              0x60
-        "HPR",      // 'a'
-        "REP",      // 'b'
-        "DA",       // 'c'
-        "VPA",      // 'd'
-        "VPR",      // 'e'
-        "HVP",      // 'f'
-        "TBC",      // 'g'
-        //
-        "SM",       // 'h'
-        nullptr,    // 'i'      MC
-        nullptr,    // 'j'      HPB
-        nullptr,    // 'k'      VPB
-        "RM",       // 'l'
-        "SGR",      // 'm'
-        "DSR",      // 'n'
-        nullptr,    // 'o'      DAQ
-        //
-        nullptr,    // 'p'              0x70
-        "SCA",      // 'q'
-        "STBM",     // 'r'
-        nullptr,    // 's'      save cursor?
-        nullptr,    // 't'      window ops?
-        nullptr,    // 'u'      restore cursor
-        nullptr,    // 'v'
-        nullptr,    // 'w'
-        //
-        nullptr,    // 'x'
-        nullptr,    // 'y'
-        nullptr,    // 'z'
-        nullptr,    // '{'
-        nullptr,    // '|'
-        nullptr,    // '}'
-        nullptr,    // '~'
-        nullptr     // DEL
-    };
-
-    static_assert(STATIC_ARRAY_SIZE(CSI_STR) == 0x80 - 0x40,
-                  "Incorrect size: CSI_STR.");
-
-} // namespace {anonymous}
-
-std::ostream & operator << (std::ostream & ost, const SimpleEsc & esc) {
-    ASSERT(esc.code >= 0x30 && esc.code < 0x7F,
-           "Simple escape code out of range: " <<
-           std::hex << static_cast<int>(esc.code));
-
-    // escape initiator
-    ost << "^[";
-
-    // intermediates
-    for (auto i : esc.inters) {
-        ost << i;
-    }
-
-    // code
-    auto str = SIMPLE_STR[esc.code - 0x30];
-    if (str) {
-        ost << '(' << str << ')';
-    }
-    else {
-        ost << esc.code;
-    }
-
-    return ost;
-}
-
-std::ostream & operator << (std::ostream & ost, const CsiEsc & esc) {
-    ASSERT(esc.mode >= 0x40 && esc.mode < 0x80,
-           "CSI Escape mode out of range: " <<
-           std::hex << static_cast<int>(esc.mode));
-
-    // CSI initiator
-    ost << "^[[";
-
-    // private
-    if (esc.priv != NUL) { ost << esc.priv; }
-
-    // arguments
-    auto firstArg = true;
-    for (auto a : esc.args) {
-        if (firstArg) { firstArg = false; }
-        else          { ost << ';'; }
-        ost << a;
-    }
-
-    // intermediates
-    for (auto i : esc.inters) {
-        ost << i;
-    }
-
-    // mode
-    auto str = CSI_STR[esc.mode - 0x40];
-    if (str) {
-        ost << '(' << str << ')';
-    }
-    else {
-        ost << esc.mode;
-    }
-
-    return ost;
-}
-
-std::ostream & operator << (std::ostream & ost, const DcsEsc & esc) {
-    // DCS initiator
-    ost << "^[P";
-
-    for (auto s : esc.seq) {
-        ost << s;
-    }
-
-    return ost;
-}
-
-std::ostream & operator << (std::ostream & ost, const OscEsc & esc) {
-    // OSC initiator
-    ost << "^[]";
-
-    // arguments
-    auto firstArg = true;
-    for (auto a : esc.args) {
-        if (firstArg) { firstArg = false; }
-        else          { ost << ';'; }
-        ost << a;
-    }
-
-    return ost;
-}
+#include <unistd.h>
 
 namespace {
 
@@ -358,7 +96,11 @@ void VtStateMachine::ground(utf8::Seq seq, utf8::Length length) {
         }
         else if (inRange(c, 0x20 /* SPACE */, 0x7F /* DEL */)) {
             if (_config.traceTty) {
-                std::cerr << SGR::FG_GREEN << SGR::UNDERLINE << seq << SGR::RESET_ALL;
+                std::cerr
+                    << CsiEsc::SGR(CsiEsc::StockSGR::FG_GREEN)
+                    << CsiEsc::SGR(CsiEsc::StockSGR::UNDERLINE)
+                    << seq
+                    << CsiEsc::SGR(CsiEsc::StockSGR::RESET_ALL);
             }
             _observer.machineNormal(seq, length);
         }
@@ -367,6 +109,13 @@ void VtStateMachine::ground(utf8::Seq seq, utf8::Length length) {
         }
     }
     else {
+        if (_config.traceTty) {
+            std::cerr
+                << CsiEsc::SGR(CsiEsc::StockSGR::FG_GREEN)
+                << CsiEsc::SGR(CsiEsc::StockSGR::UNDERLINE)
+                << seq
+                << CsiEsc::SGR(CsiEsc::StockSGR::RESET_ALL);
+        }
         _observer.machineNormal(seq, length);
     }
 }
@@ -787,7 +536,10 @@ void VtStateMachine::dcsPassthrough(utf8::Seq seq, utf8::Length length) {
 
 void VtStateMachine::processControl(uint8_t c) {
     if (_config.traceTty) {
-        std::cerr << SGR::FG_YELLOW << Char(c) << SGR::RESET_ALL;
+        std::cerr
+            << CsiEsc::SGR(CsiEsc::StockSGR::FG_YELLOW)
+            << Char(c)
+            << CsiEsc::SGR(CsiEsc::StockSGR::RESET_ALL);
         if (c == LF || c == FF || c == VT) {
             std::cerr << std::endl;
         }
@@ -803,7 +555,10 @@ void VtStateMachine::processEsc(const std::vector<uint8_t> & seq) {
     esc.code = seq.back();
 
     if (_config.traceTty) {
-        std::cerr << SGR::FG_CYAN << esc << SGR::RESET_ALL;
+        std::cerr
+            << CsiEsc::SGR(CsiEsc::StockSGR::FG_CYAN)
+            << esc.str()
+            << CsiEsc::SGR(CsiEsc::StockSGR::RESET_ALL);
     }
     _observer.machineSimpleEsc(esc);
 }
@@ -859,7 +614,10 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
     // Dispatch:
 
     if (_config.traceTty) {
-        std::cerr << SGR::FG_WHITE << esc << SGR::RESET_ALL;
+        std::cerr
+            << CsiEsc::SGR(CsiEsc::StockSGR::FG_WHITE)
+            << esc.str()
+            << CsiEsc::SGR(CsiEsc::StockSGR::RESET_ALL);
     }
     _observer.machineCsiEsc(esc);
 }
@@ -878,7 +636,10 @@ void VtStateMachine::processOsc(const std::vector<uint8_t> & seq) {
     // Dispatch:
 
     if (_config.traceTty) {
-        std::cerr << SGR::FG_RED << esc << SGR::RESET_ALL;
+        std::cerr
+            << CsiEsc::SGR(CsiEsc::StockSGR::FG_RED)
+            << esc.str()
+            << CsiEsc::SGR(CsiEsc::StockSGR::RESET_ALL);
     }
     _observer.machineOscEsc(esc);
 }

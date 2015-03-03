@@ -1,64 +1,15 @@
 // vi:noai:sw=4
-// Copyright © 2013 David Bryant
+// Copyright © 2013-2015 David Bryant
 
 #ifndef COMMON__VT_STATE_MACHINE__H
 #define COMMON__VT_STATE_MACHINE__H
 
 #include "terminol/common/utf8.hxx"
 #include "terminol/common/config.hxx"
+#include "terminol/common/escape.hxx"
 
 #include <vector>
 #include <cstdint>
-
-//
-// Simple Escape.
-//
-
-struct SimpleEsc {
-    std::vector<uint8_t> inters;
-    uint8_t              code;
-};
-
-std::ostream & operator << (std::ostream & ost, const SimpleEsc & esc);
-
-//
-// Control Sequence Initiator.
-//
-
-struct CsiEsc {
-    CsiEsc() : priv('\0'), args(), inters(), mode('\0') {}
-
-    uint8_t              priv;
-    std::vector<int32_t> args;
-    std::vector<uint8_t> inters;
-    uint8_t              mode;
-};
-
-std::ostream & operator << (std::ostream & ost, const CsiEsc & esc);
-
-//
-// Device Control Sequence.
-//
-
-struct DcsEsc {
-    std::vector<uint8_t> seq;
-};
-
-std::ostream & operator << (std::ostream & ost, const DcsEsc & esc);
-
-//
-// Operating System Command.
-//
-
-struct OscEsc {
-    std::vector<std::string> args;
-};
-
-std::ostream & operator << (std::ostream & ost, const OscEsc & esc);
-
-//
-//
-//
 
 class VtStateMachine {
 public:

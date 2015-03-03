@@ -1,9 +1,9 @@
 // vi:noai:sw=4
-// Copyright © 2013 David Bryant
+// Copyright © 2013-2015 David Bryant
 
-#include "terminol/support/debug.hxx"
-#include "terminol/support/escape.hxx"
+#include "terminol/common/escape.hxx"
 #include "terminol/common/ascii.hxx"
+#include "terminol/support/debug.hxx"
 
 #include <sys/ioctl.h>
 #include <stdio.h>
@@ -18,7 +18,7 @@ int main() {
 
     uint8_t ascii = SPACE;
 
-    std::cout << SGR::BOLD;
+    std::cout << CsiEsc::SGR(CsiEsc::StockSGR::BOLD);
 
     for (uint16_t r = 0; r < rows; ++r) {
         for (uint16_t c = 0; c < cols - 3; c += 3) {

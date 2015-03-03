@@ -1,8 +1,8 @@
 // vi:noai:sw=4
-// Copyright © 2013 David Bryant
+// Copyright © 2013-2015 David Bryant
 
+#include "terminol/common/escape.hxx"
 #include "terminol/support/debug.hxx"
-#include "terminol/support/escape.hxx"
 #include "terminol/support/conv.hxx"
 
 int main(int argc, char * argv[]) {
@@ -12,8 +12,8 @@ int main(int argc, char * argv[]) {
     }
 
     try {
-        std::cout << MoveCursor(unstringify<int16_t>(argv[1]),
-                                unstringify<int16_t>(argv[2]));
+        std::cout << CsiEsc::CUP(unstringify<int>(argv[1]),
+                                 unstringify<int>(argv[2]));
         return 0;
     }
     catch (const ParseError & ex) {

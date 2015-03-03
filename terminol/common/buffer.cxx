@@ -1,8 +1,8 @@
 // vi:noai:sw=4
-// Copyright © 2013 David Bryant
+// Copyright © 2013-2015 David Bryant
 
 #include "terminol/common/buffer.hxx"
-#include "terminol/support/escape.hxx"
+#include "terminol/common/escape.hxx"
 
 Buffer::ParaIter::ParaIter(const Buffer & buffer, APos pos) :
     _buffer(buffer),
@@ -1250,9 +1250,9 @@ void Buffer::dumpActive(std::ostream & ost) const {
 
         uint16_t col = 0;
 
-        ost << SGR::UNDERLINE;
+        ost << CsiEsc::SGR(CsiEsc::StockSGR::UNDERLINE);
         for (; col != l.wrap; ++col) { ost << l.cells[col].seq; }
-        ost << SGR::RESET_UNDERLINE;
+        ost << CsiEsc::SGR(CsiEsc::StockSGR::RESET_UNDERLINE);
 
         for (; col != getCols(); ++col) { ost << l.cells[col].seq; }
 

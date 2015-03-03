@@ -1,4 +1,4 @@
-# Copyright © 2013 David Bryant
+# Copyright © 2013-2015 David Bryant
 
 INSTALLDIR      ?= ~/local/terminol
 VERBOSE         ?= false
@@ -232,7 +232,7 @@ endef
 # SUPPORT
 #
 
-$(eval $(call LIB,terminol/support,conv.cxx debug.cxx escape.cxx pattern.cxx sys.cxx time.cxx,$(SUPPORT_CFLAGS)))
+$(eval $(call LIB,terminol/support,conv.cxx debug.cxx pattern.cxx sys.cxx time.cxx,$(SUPPORT_CFLAGS)))
 
 $(eval $(call EXE,TEST,terminol/support/test-support,test_support.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 
@@ -250,7 +250,7 @@ $(eval $(call EXE,TEST,terminol/support/test-rle,test_rle.cxx,$(SUPPORT_CFLAGS),
 # COMMON
 #
 
-$(eval $(call LIB,terminol/common,ascii.cxx bindings.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx simple_deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,$(COMMON_CFLAGS)))
+$(eval $(call LIB,terminol/common,ascii.cxx bindings.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx escape.cxx simple_deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,$(COMMON_CFLAGS)))
 
 $(eval $(call EXE,TEST,terminol/common/test-utf8,test_utf8.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
 
