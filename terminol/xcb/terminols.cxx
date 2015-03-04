@@ -199,8 +199,6 @@ protected:
     // I_Dispatcher::I_Observer implementation:
 
     void propertyNotify(xcb_property_notify_event_t * event) noexcept override {
-        PRINT("Property notify");
-
         if (_config.x11PseudoTransparency) {
             if (event->window == _basics.screen()->root &&
                 event->atom == _basics.atomXRootPixmapId())
