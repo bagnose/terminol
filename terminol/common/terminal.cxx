@@ -962,7 +962,7 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     }
                     break;
                 case 4: // DECSCLM - Scroll Mode - Smooth / Jump (IGNORED)
-                    NYI("DECSCLM: " << set);
+                    //NYI("DECSCLM: " << set);
                     break;
                 case 5: // DECSCNM - Screen Mode - Reverse / Normal
                     if (_modes.get(Mode::REVERSE) != set) {
@@ -997,7 +997,7 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     // Allow column
                     break;
                 case 42: // DECNRCM - National characters (IGNORED)
-                    NYI("Ignored: "  << a << ", " << set);
+                    //NYI("Ignored: "  << a << ", " << set);
                     break;
                 case 47: {
                     Buffer * newBuffer = set ? &_altBuffer : &_priBuffer;
@@ -1106,7 +1106,7 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     _modes.setTo(Mode::BRACKETED_PASTE, set);
                     break;
                 default:
-                    WARNING("erresc: unknown private set/reset mode: " << a);
+                    //WARNING("erresc: unknown private set/reset mode: " << a);
                     break;
             }
         }
