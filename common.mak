@@ -246,6 +246,8 @@ $(eval $(call EXE,TEST,terminol/support/test-stream,test_stream.cxx,$(SUPPORT_CF
 
 $(eval $(call EXE,TEST,terminol/support/test-rle,test_rle.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 
+$(eval $(call EXE,TEST,terminol/support/test-cache,test_cache.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
+
 #
 # COMMON
 #
