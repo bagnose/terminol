@@ -253,6 +253,11 @@ bool Buffer::getSelectedText(std::string & text) const {
             getLine(i.row, cells, cont, wrap);
 
             for (; i.col < getCols() && (i.row < end.row || i.col != end.col); ++i.col) {
+                if (i.col >= wrap) {
+                    text.push_back('\n');
+                    break;
+                }
+
                 auto & cell = cells[i.col];
                 auto   seq  = cell.seq;
                 std::copy(&seq.bytes[0],
