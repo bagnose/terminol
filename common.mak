@@ -242,6 +242,8 @@ $(eval $(call EXE,TEST,terminol/support/test-cmdline,test_cmdline.cxx,$(SUPPORT_
 
 $(eval $(call EXE,TEST,terminol/support/test-regex,test_regex.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 
+$(eval $(call EXE,TEST,terminol/support/test-stream,test_stream.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
+
 #
 # COMMON
 #
