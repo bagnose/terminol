@@ -15,10 +15,12 @@
 
 class SimpleDeduper : public I_Deduper {
     struct Entry {
-        std::vector<Cell> cells;
-        uint32_t          refs;
+        uint32_t             refs;
+        uint32_t             length;
+        std::vector<uint8_t> bytes;
 
-        explicit Entry(const std::vector<Cell> & cells_) : cells(cells_), refs(1) {}
+        Entry(uint32_t length_, std::vector<uint8_t> && bytes_) :
+            refs(1), length(length_), bytes(bytes_) {}
     };
 
     std::unordered_map<Tag, Entry> _entries;
@@ -42,7 +44,7 @@ public:
     void dump(std::ostream & ost) const override;
 
 protected:
-    static Tag makeTag(const std::vector<Cell> & cells);
+    static Tag makeTag(const std::vector<uint8_t> & bytes);
 };
 
 #endif // COMMON__SIMPLE_DEDUPER__HXX
