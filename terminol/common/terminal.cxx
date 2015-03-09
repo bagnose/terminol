@@ -76,6 +76,7 @@ Terminal::Terminal(I_Observer         & observer,
                    const Config       & config,
                    I_Selector         & selector,
                    I_Deduper          & deduper,
+                   AsyncDestroyer     & destroyer,
                    int16_t              rows,
                    int16_t              cols,
                    const std::string  & windowId,
@@ -85,12 +86,12 @@ Terminal::Terminal(I_Observer         & observer,
     _config(config),
     _deduper(deduper),
     //
-    _priBuffer(_config, deduper, rows, cols,
+    _priBuffer(_config, deduper, destroyer, rows, cols,
                _config.unlimitedScrollBack ?
                std::numeric_limits<int32_t>::max() :
                _config.scrollBackHistory,
                CharSubArray(&CS_US, &CS_SPECIAL, &CS_US, &CS_US)),
-    _altBuffer(_config, deduper, rows, cols, 0,
+    _altBuffer(_config, deduper, destroyer, rows, cols, 0,
                CharSubArray(&CS_US, &CS_SPECIAL, &CS_US, &CS_US)),
     _buffer(&_priBuffer),
     //

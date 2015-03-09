@@ -17,6 +17,7 @@ Screen::Screen(I_Observer         & observer,
                const Config       & config,
                I_Selector         & selector,
                I_Deduper          & deduper,
+               AsyncDestroyer     & destroyer,
                I_Dispatcher       & dispatcher,
                Basics             & basics,
                const ColorSet     & colorSet,
@@ -122,7 +123,7 @@ Screen::Screen(I_Observer         & observer,
     // Create the TTY and terminal.
 
     try {
-        _terminal = new Terminal(*this, _config, selector, deduper,
+        _terminal = new Terminal(*this, _config, selector, deduper, destroyer,
                                  rows, cols, stringify(getWindow()), command);
         _open     = true;
     }

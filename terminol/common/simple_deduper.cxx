@@ -91,7 +91,7 @@ again:
         auto & entry = iter->second;
 
         if (bytes != entry.bytes) {
-            std::cerr << "Hash collision:" << std::endl;
+            std::cerr << "Hash collision: " << tag << std::endl;
 
             ENFORCE(static_cast<Tag>(_entries.size()) != invalidTag(), "No dedupe room left.");
 

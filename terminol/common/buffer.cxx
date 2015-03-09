@@ -114,6 +114,67 @@ bool Buffer::BufferIter::isStartOfPara() {
     }
 }
 
+Buffer::Buffer(const Config       & config,
+               I_Deduper          & deduper,
+               AsyncDestroyer     & destroyer,
+               int16_t              rows,
+               int16_t              cols,
+               uint32_t             historyLimit,
+               const CharSubArray & charSubs) :
+    _config(config),
+    _deduper(deduper),
+    _destroyer(destroyer),
+    _tags(),
+    _lostTags(0),
+    _pending(),
+    _history(),
+    _active(rows, ALine(cols)),
+    _damage(rows),
+    _tabs(cols),
+    _scrollOffset(0),
+    _historyLimit(historyLimit),
+    _cols(cols),
+    _barDamage(true),
+    _selectMark(),
+    _selectDelim(),
+    _cursor(),
+    _savedCursor(),
+    _charSubs(charSubs),
+    _search(nullptr)
+{
+    resetMargins();
+    resetTabs();
+}
+
+Buffer::~Buffer() {
+    if (_search) {
+        delete _search;
+    }
+
+    class Garbage : public AsyncDestroyer::Garbage {
+    private:
+        I_Deduper                & _deduper;
+        std::deque<I_Deduper::Tag> _tags;
+    public:
+        Garbage(I_Deduper                   & deduper,
+                std::deque<I_Deduper::Tag> && tags) :
+            _deduper(deduper), _tags(tags) {}
+
+        ~Garbage() override {
+            PRINT("Taking out the garbage!");
+            for (auto tag : _tags) {
+                // Deregister all of our valid tags. Note, really only the last tags can
+                // be invalid.
+                if (tag != I_Deduper::invalidTag()) {
+                    _deduper.remove(tag);
+                }
+            }
+        }
+    };
+
+    _destroyer.add(new Garbage(_deduper, std::move(_tags)));
+}
+
 //
 //
 //

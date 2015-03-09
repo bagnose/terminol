@@ -7,6 +7,7 @@
 #include "terminol/common/data_types.hxx"
 #include "terminol/common/config.hxx"
 #include "terminol/common/deduper_interface.hxx"
+#include "terminol/support/async_destroyer.hxx"
 #include "terminol/support/regex.hxx"
 
 #include <deque>
@@ -310,6 +311,7 @@ class Buffer {
 
     const Config               & _config;
     I_Deduper                  & _deduper;
+    AsyncDestroyer             & _destroyer;
     std::deque<I_Deduper::Tag>   _tags;             // The paragraph history.
     uint32_t                     _lostTags;         // Incremented for each _tags.pop_front().
     std::vector<Cell>            _pending;          // Paragraph pending to become historical.
@@ -357,47 +359,13 @@ public:
 
     Buffer(const Config       & config,
            I_Deduper          & deduper,
+           AsyncDestroyer     & destroyer,
            int16_t              rows,
            int16_t              cols,
            uint32_t             historyLimit,
-           const CharSubArray & charSubs) :
-        _config(config),
-        _deduper(deduper),
-        _tags(),
-        _lostTags(0),
-        _pending(),
-        _history(),
-        _active(rows, ALine(cols)),
-        _damage(rows),
-        _tabs(cols),
-        _scrollOffset(0),
-        _historyLimit(historyLimit),
-        _cols(cols),
-        _barDamage(true),
-        _selectMark(),
-        _selectDelim(),
-        _cursor(),
-        _savedCursor(),
-        _charSubs(charSubs),
-        _search(nullptr)
-    {
-        resetMargins();
-        resetTabs();
-    }
+           const CharSubArray & charSubs);
 
-    ~Buffer() {
-        if (_search) {
-            delete _search;
-        }
-
-        // Deregister all of our valid tags. Note, really only the last tags can
-        // be invalid.
-        for (auto tag : _tags) {
-            if (tag != I_Deduper::invalidTag()) {
-                _deduper.remove(tag);
-            }
-        }
-    }
+    ~Buffer();
 
     int16_t  getRows() const { return static_cast<int16_t>(_active.size()); }
     int16_t  getCols() const { return _cols; }

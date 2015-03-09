@@ -12,6 +12,7 @@
 #include "terminol/common/parser.hxx"
 #include "terminol/common/key_map.hxx"
 #include "terminol/common/server.hxx"
+#include "terminol/support/async_destroyer.hxx"
 #include "terminol/support/selector.hxx"
 #include "terminol/support/pipe.hxx"
 #include "terminol/support/debug.hxx"
@@ -41,6 +42,7 @@ class EventLoop :
     Selector                       _selector;
     Pipe                           _pipe;
     SimpleDeduper                  _deduper;
+    AsyncDestroyer                 _destroyer;      // Must be declared after anything indirectly used by it.
     Basics                         _basics;
     Server                         _server;
     ColorSet                       _colorSet;
@@ -68,6 +70,7 @@ public:
         _selector(),
         _pipe(),
         _deduper(),
+        _destroyer(),
         _basics(),
         _server(*this, _selector, config),
         _colorSet(config, _basics),
@@ -217,7 +220,7 @@ protected:
     void create() throw () override {
         try {
             std::unique_ptr<Screen> screen(
-                new Screen(*this, _config, _selector, _deduper, _dispatcher,
+                new Screen(*this, _config, _selector, _deduper, _destroyer, _dispatcher,
                            _basics, _colorSet, _fontManager, _command));
             auto id = screen->getWindowId();
             _screens.insert(std::make_pair(id, std::move(screen)));
