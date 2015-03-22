@@ -35,7 +35,7 @@ public:
     Tag store(const std::vector<Cell> & cells) override;
     void lookup(Tag tag, std::vector<Cell> & cells) const override;
     void lookupSegment(Tag tag, uint32_t offset, int16_t maxSize,
-                       std::vector<Cell> & cells, bool & cont, int16_t & wrap) const;
+                       std::vector<Cell> & cells, bool & cont, int16_t & wrap) const override;
     size_t lookupLength(Tag tag) const override;
     void remove(Tag tag) override;
 

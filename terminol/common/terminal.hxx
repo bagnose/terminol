@@ -185,20 +185,20 @@ protected:
 
     void     bufferDrawBg(Pos     pos,
                           int16_t count,
-                          UColor  color) throw ();
+                          UColor  color) throw () override;
     void     bufferDrawFg(Pos             pos,
                           int16_t         count,
                           UColor          color,
                           AttrSet         attrs,
                           const uint8_t * str,
-                          size_t          size) throw ();
+                          size_t          size) throw () override;
     void     bufferDrawCursor(Pos             pos,
                               UColor          fg,
                               UColor          bg,
                               AttrSet         attrs,
                               const uint8_t * str,
                               size_t          size,
-                              bool            wrapNext) throw ();
+                              bool            wrapNext) throw () override;
 };
 
 std::ostream & operator << (std::ostream & ost, Terminal::Button button);

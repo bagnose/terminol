@@ -242,8 +242,8 @@ class BoolHandler : public CmdLine::Handler {
 public:
     BoolHandler(bool & value) : _value(value) {}
 
-    bool isNegatable() const { return true; }
-    bool wantsValue()  const { return false; }
+    bool isNegatable() const override { return true; }
+    bool wantsValue()  const override { return false; }
 
     void handle(bool negated, const std::string & UNUSED(value)) throw () override {
         _value = !negated;
@@ -255,8 +255,8 @@ template <class V> class IStreamHandler : public CmdLine::Handler {
 public:
     IStreamHandler(V & value) : _value(value) {}
 
-    bool isNegatable() const { return false; }
-    bool wantsValue()  const { return true; }
+    bool isNegatable() const override { return false; }
+    bool wantsValue()  const override { return true; }
 
     void handle(bool UNUSED(negated), const std::string & value) throw (Error) override {
         try {
@@ -276,8 +276,8 @@ template <class F> class MiscHandler : public CmdLine::Handler {
 public:
     MiscHandler(F func) : _func(func) {}
 
-    bool isNegatable() const { return false; }
-    bool wantsValue()  const { return true; }
+    bool isNegatable() const override { return false; }
+    bool wantsValue()  const override { return true; }
 
     void handle(bool UNUSED(negated), const std::string & value) throw (Error) override {
         _func(value);
