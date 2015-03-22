@@ -5,14 +5,17 @@
 # Usage:
 #   configure BUILDDIR MODE COMPILER
 
+MODES="debug|release|coverage|analysis"
+COMPILERS="gnu|clang"
+
 if [ $# -ne 3 ]; then
     cat << EOF > /dev/stderr
 Usage: $0 BUILDIR MODE COMPILER
 
 e.g.: $0 build-dir debug gnu
 
-MODE=debug|release|coverage|analysis
-COMPILER=gnu|clang
+MODE=$MODES
+COMPILER=$COMPILERS
 EOF
     exit 1
 fi

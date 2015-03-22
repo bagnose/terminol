@@ -73,7 +73,7 @@ else ifeq ($(MODE),analysis)
   ifeq ($(COMPILER),clang)
     CXXFLAGS += --analyze
   else
-    $(error Coverage is only support by clang compiler)
+    $(error Analysis is only support by clang compiler)
   endif
 else
   $(error Unrecognised MODE: $(MODE))
@@ -97,9 +97,6 @@ info:
 	@echo 'LDFLAGS:  $(LDFLAGS)'
 
 install: all
-	install -D dist/bin/terminol  $(INSTALLDIR)/bin/terminol
-	install -D dist/bin/terminols $(INSTALLDIR)/bin/terminols
-	install -D dist/bin/terminolc $(INSTALLDIR)/bin/terminolc
 
 clean:
 	rm -rf obj priv dist
@@ -122,22 +119,28 @@ ifeq ($(VERBOSE),false)
 endif
 	$(V)$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(WFLAGS) -c $< -o $@ -MMD -MP -MF $(patsubst %.o,%.dep,$@) $($(<)_CXXFLAGS)
 
+# List of directories that we defined a rule for making (to prevent redefinitions).
+MKDIR_DIRS :=
+
 # Create a static library.
 # $(1) directory
 # $(2) sources
 # $(3) CXXFLAGS
+# $(4) static library (non-transitive) dependencies (directories)
 define LIB
-$(1)_SRC := $$(addprefix src/$(1)/,$(2))
-$(1)_OBJ := $$(addprefix obj/$(1)/,$$(patsubst %.cxx,%.o,$(2)))
-$(1)_DEP := $$(patsubst %.o,%.dep,$$($(1)_OBJ))
-$(1)_LIB := $$(addprefix obj/,lib$$(subst /,-,$(1))-s.a)
+$(1)_SRC  := $$(addprefix src/$(1)/,$(2))
+$(1)_OBJ  := $$(addprefix obj/$(1)/,$$(patsubst %.cxx,%.o,$(2)))
+$(1)_LIB  := $$(addprefix obj/,lib$$(subst /,-,$(1)).a)
+$(1)_DEP  :=
+
+$$(foreach LIB,$(4),$$(eval $(1)_DEP += $$(LIB) $$($$(LIB)_DEP)))
 
 $$(foreach SRC,$$($(1)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(3)))
 
--include $$($(1)_DEP)
+$$(foreach D,$$(patsubst %.o,%.dep,$$($(1)_OBJ)),$$(eval -include $$(D)))
 
-ifeq (,$(findstring obj/$(1),$(DIRS_DONE)))
-DIRS_DONE += obj/$(1)
+ifeq (,$(findstring obj/$(2),$(MKDIR_DIRS)))
+MKDIR_DIRS += obj/$(1)
 obj/$(1):
 ifeq ($(VERBOSE),false)
 	@echo ' [DIR] $$@'
@@ -163,49 +166,62 @@ endef
 # $(2) path
 # $(3) sources
 # $(4) CXXFLAGS
-# $(5) libraries (directories)
+# $(5) static library (non-transitive) dependencies (directories)
 # $(6) LDFLAGS
 define EXE
 ifeq (,$$(findstring $(1),DIST PRIV TEST))
   $$(error Bad EXE type $1)
 endif
 
-$(2)_SDIR := $$(patsubst %/,%,$$(dir $(2)))
-$(2)_NAME := $$(notdir $(2))
-$(2)_SRC  := $$(addprefix src/$$($(2)_SDIR)/,$(3))
-$(2)_OBJ  := $$(addprefix obj/$$($(2)_SDIR)/,$$(patsubst %.cxx,%.o,$(3)))
-$(2)_DEP  := $$(patsubst %.o,%.dep,$$($(2)_OBJ))
-$(2)_LIB  := $$(addsuffix -s.a,$$(addprefix obj/lib,$$(subst /,-,$(5))))
+$(2)_DIR     := $$(patsubst %/,%,$$(dir $(2)))
 ifeq (DIST,$(1))
-$(2)_TDIR := dist/bin
+$(2)_EXE_DIR := dist/bin
 else
-$(2)_TDIR := priv/$$($(2)_SDIR)
+$(2)_EXE_DIR := priv/$$($(2)_DIR)
 endif
-$(2)_EXE  := $$(addprefix $$($(2)_TDIR)/,$$($(2)_NAME))
+$(2)_SRC_DIR := src/$$($(2)_DIR)
+$(2)_OBJ_DIR := obj/$$($(2)_DIR)
+$(2)_SRC     := $$(addprefix $$($(2)_SRC_DIR)/,$(3))
+$(2)_OBJ     := $$(addprefix $$($(2)_OBJ_DIR)/,$$(patsubst %.cxx,%.o,$(3)))
+$(2)_EXE     := $$(addprefix $$($(2)_EXE_DIR)/,$$(notdir $(2)))
+$(2)_DEP     :=
+$(2)_DEP_LIB :=
+
+$$(foreach LIB,$(5),$$(eval $(2)_DEP += $$(LIB) $$($$(LIB)_DEP)))
+$$(foreach LIB,$$($(2)_DEP),$$(eval $(2)_DEP_LIB += $$($$(LIB)_LIB)))
 
 $$(foreach SRC,$$($(2)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(4)))
 
--include $$($(2)_DEP)
+$$(foreach D,$$(patsubst %.o,%.dep,$$($(1)_OBJ)),$$(eval -include $$(D)))
 
-ifeq (,$$(findstring $$($(2)_TDIR),$(DIRS_DONE)))
-DIRS_DONE += $$($(2)_TDIR)
-$$($(2)_TDIR):
+ifeq (,$$(findstring $$($(2)_OBJ_DIR),$(MKDIR_DIRS)))
+MKDIR_DIRS += $$($(2)_OBJ_DIR)
+$$($(2)_OBJ_DIR):
 ifeq ($(VERBOSE),false)
 	@echo ' [DIR] $$@'
 endif
 	$(V)mkdir -p $$@
 endif
 
-$$($(2)_OBJ): | obj/$$($(2)_SDIR)
+ifeq (,$$(findstring $$($(2)_EXE_DIR),$(MKDIR_DIRS)))
+MKDIR_DIRS += $$($(2)_EXE_DIR)
+$$($(2)_EXE_DIR):
+ifeq ($(VERBOSE),false)
+	@echo ' [DIR] $$@'
+endif
+	$(V)mkdir -p $$@
+endif
 
-$$($(2)_EXE): $$($(2)_OBJ) $$($(2)_LIB) | $$($(2)_TDIR)
+$$($(2)_OBJ): | $$($(2)_OBJ_DIR)
+
+$$($(2)_EXE): $$($(2)_OBJ) $$($(2)_DEP_LIB) | $$($(2)_EXE_DIR)
 ifeq ($(VERBOSE),false)
 	@echo ' [EXE] $$@'
 endif
 ifeq ($(MODE),analysis)
 	$(V)touch $$@
 else
-	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(2)_OBJ) $$($(2)_LIB) $(6)
+	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(2)_OBJ) $(6) $$($(2)_DEP_LIB)
 endif
 
 ifeq (TEST,$(1))
@@ -219,12 +235,21 @@ endif
 ifeq ($(MODE),analysis)
 	$(V)touch $$@
 else
-	$(V)$$($(2)_EXE) > $$($(2)_OUT) 2>&1 && touch $$@ || (rm -f $$@ && echo "Test failed '$$($(2)_NAME)'." && cat $$($(2)_OUT)) > /dev/stderr
+	$(V)$$($(2)_EXE) > $$($(2)_OUT) 2>&1 && touch $$@ || (rm -f $$@ && echo "Test failed '$(2)'." && cat $$($(2)_OUT)) > /dev/stderr
 endif
 
 all: $$($(2)_PASS)
 else
 all: $$($(2)_EXE)
+endif
+
+ifeq (DIST,$(1))
+install: $(2)_INSTALL
+
+.PHONY: $(2)_INSTALL
+
+$(2)_INSTALL: all
+	install -D dist/bin/$$($(2)_NAME) $(INSTALLDIR)/bin/$$($(2)_NAME)
 endif
 endef
 
@@ -232,7 +257,7 @@ endef
 # SUPPORT
 #
 
-$(eval $(call LIB,terminol/support,conv.cxx debug.cxx pattern.cxx sys.cxx time.cxx,$(SUPPORT_CFLAGS)))
+$(eval $(call LIB,terminol/support,conv.cxx debug.cxx pattern.cxx sys.cxx time.cxx,$(SUPPORT_CFLAGS),))
 
 $(eval $(call EXE,TEST,terminol/support/test-support,test_support.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 
@@ -256,40 +281,40 @@ $(eval $(call EXE,TEST,terminol/support/test-async-destroyer,test_async_destroye
 # COMMON
 #
 
-$(eval $(call LIB,terminol/common,ascii.cxx bindings.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx escape.cxx simple_deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,$(COMMON_CFLAGS)))
+$(eval $(call LIB,terminol/common,ascii.cxx bindings.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx escape.cxx simple_deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,$(COMMON_CFLAGS),terminol/support))
 
-$(eval $(call EXE,TEST,terminol/common/test-utf8,test_utf8.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
+$(eval $(call EXE,TEST,terminol/common/test-utf8,test_utf8.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,TEST,terminol/common/test-data-types,test_data_types.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
+$(eval $(call EXE,TEST,terminol/common/test-data-types,test_data_types.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/abuse,abuse.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
+$(eval $(call EXE,PRIV,terminol/common/abuse,abuse.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/wedge,wedge.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
+$(eval $(call EXE,PRIV,terminol/common/wedge,wedge.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/counter,counter.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
+$(eval $(call EXE,PRIV,terminol/common/counter,counter.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/sequencer,sequencer.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
+$(eval $(call EXE,PRIV,terminol/common/sequencer,sequencer.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/styles,styles.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
+$(eval $(call EXE,PRIV,terminol/common/styles,styles.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/droppings,droppings.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
+$(eval $(call EXE,PRIV,terminol/common/droppings,droppings.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/positioner,positioner.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
+$(eval $(call EXE,PRIV,terminol/common/positioner,positioner.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/play,play.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
+$(eval $(call EXE,PRIV,terminol/common/play,play.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/common/spinner,spinner.cxx,$(COMMON_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
+$(eval $(call EXE,PRIV,terminol/common/spinner,spinner.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
 #
 # XCB
 #
 
-$(eval $(call LIB,terminol/xcb,basics.cxx common.cxx color_set.cxx dispatcher.cxx font_manager.cxx font_set.cxx screen.cxx widget.cxx,$(XCB_CFLAGS)))
+$(eval $(call LIB,terminol/xcb,basics.cxx common.cxx color_set.cxx dispatcher.cxx font_manager.cxx font_set.cxx screen.cxx widget.cxx,$(XCB_CFLAGS),terminol/common))
 
-$(eval $(call EXE,DIST,terminol/xcb/terminol,terminol.cxx,$(XCB_CFLAGS),terminol/xcb terminol/common terminol/support,$(XCB_LDFLAGS) -lutil))
+$(eval $(call EXE,DIST,terminol/xcb/terminol,terminol.cxx,$(XCB_CFLAGS),terminol/xcb,$(XCB_LDFLAGS) -lutil))
 
-$(eval $(call EXE,DIST,terminol/xcb/terminols,terminols.cxx,$(XCB_CFLAGS),terminol/xcb terminol/common terminol/support,$(XCB_LDFLAGS) -lutil))
+$(eval $(call EXE,DIST,terminol/xcb/terminols,terminols.cxx,$(XCB_CFLAGS),terminol/xcb,$(XCB_LDFLAGS) -lutil))
 
-$(eval $(call EXE,DIST,terminol/xcb/terminolc,terminolc.cxx,$(XKB_CFLAGS),terminol/common terminol/support,$(COMMON_LDFLAGS)))
+$(eval $(call EXE,DIST,terminol/xcb/terminolc,terminolc.cxx,$(XKB_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
-$(eval $(call EXE,PRIV,terminol/xcb/widget_test,widget_test.cxx,$(XKB_CFLAGS),terminol/xcb terminol/common terminol/support,$(XCB_LDFLAGS)))
+$(eval $(call EXE,PRIV,terminol/xcb/widget-test,widget_test.cxx,$(XKB_CFLAGS),terminol/xcb,$(XCB_LDFLAGS)))
