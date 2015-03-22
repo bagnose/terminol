@@ -8,6 +8,7 @@
 
 #include <unordered_map>
 #include <vector>
+#include <mutex>
 
 //
 //
@@ -25,6 +26,7 @@ class SimpleDeduper : public I_Deduper {
 
     std::unordered_map<Tag, Entry> _entries;
     size_t                         _totalRefs;
+    mutable std::mutex             _mutex;
 
 public:
     SimpleDeduper();

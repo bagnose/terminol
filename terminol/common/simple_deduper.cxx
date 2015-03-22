@@ -69,11 +69,13 @@ void decode(const std::vector<uint8_t> & bytes, std::vector<Cell> & cells) {
 
 } // namespace {anonymous}
 
-SimpleDeduper::SimpleDeduper() : _entries(), _totalRefs(0) {}
+SimpleDeduper::SimpleDeduper() : _entries(), _totalRefs(0), _mutex() {}
 
 SimpleDeduper::~SimpleDeduper() {}
 
 auto SimpleDeduper::store(const std::vector<Cell> & cells) -> Tag {
+    std::unique_lock<std::mutex> lock(_mutex);
+
     std::vector<uint8_t> bytes;
     encode(cells, bytes);
     auto tag = makeTag(bytes);
@@ -107,6 +109,8 @@ again:
 }
 
 void SimpleDeduper::lookup(Tag tag, std::vector<Cell> & cells) const {
+    std::unique_lock<std::mutex> lock(_mutex);
+
     auto iter = _entries.find(tag);
     ASSERT(iter != _entries.end(), "");
 
@@ -116,6 +120,8 @@ void SimpleDeduper::lookup(Tag tag, std::vector<Cell> & cells) const {
 
 void SimpleDeduper::lookupSegment(Tag tag, uint32_t offset, int16_t max_size,
                                   std::vector<Cell> & cells, bool & cont, int16_t & wrap) const {
+    std::unique_lock<std::mutex> lock(_mutex);
+
     auto iter = _entries.find(tag);
     ASSERT(iter != _entries.end(), "");
 
@@ -132,12 +138,16 @@ void SimpleDeduper::lookupSegment(Tag tag, uint32_t offset, int16_t max_size,
 }
 
 size_t SimpleDeduper::lookupLength(Tag tag) const {
+    std::unique_lock<std::mutex> lock(_mutex);
+
     auto iter = _entries.find(tag);
     ASSERT(iter != _entries.end(), "");
     return iter->second.length;
 }
 
 void SimpleDeduper::remove(Tag tag) {
+    std::unique_lock<std::mutex> lock(_mutex);
+
     ASSERT(tag != invalidTag(), "");
     auto iter = _entries.find(tag);
     ASSERT(iter != _entries.end(), "");
@@ -151,11 +161,15 @@ void SimpleDeduper::remove(Tag tag) {
 }
 
 void SimpleDeduper::getLineStats(uint32_t & uniqueLines, uint32_t & totalLines) const {
+    std::unique_lock<std::mutex> lock(_mutex);
+
     uniqueLines = _entries.size();
     totalLines  = _totalRefs;
 }
 
 void SimpleDeduper::getByteStats(size_t & uniqueBytes, size_t & totalBytes) const {
+    std::unique_lock<std::mutex> lock(_mutex);
+
     uniqueBytes = 0;
     totalBytes = 0;
 
@@ -170,6 +184,8 @@ void SimpleDeduper::getByteStats(size_t & uniqueBytes, size_t & totalBytes) cons
 }
 
 void SimpleDeduper::dump(std::ostream & UNUSED(ost)) const {
+    std::unique_lock<std::mutex> lock(_mutex);
+
 #if 0
     ost << "BEGIN GLOBAL TAGS" << std::endl;
 
