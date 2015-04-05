@@ -43,7 +43,7 @@ public:
                              PCRE_UTF8,
                              &err,
                              &errOffset,
-                             NULL);     // tableptr
+                             nullptr);     // tableptr
 
         if (!_pcre) {
             throw Error("PCRE commpilation of \"" + pattern + "\" "
@@ -126,7 +126,7 @@ protected:
         std::vector<Substr> substrs;
 
         auto rval = pcre_exec(_pcre,
-                              NULL,             // study
+                              nullptr,          // study
                               text,             // subject
                               size,             // length of subject
                               offset,           // offset into subject
