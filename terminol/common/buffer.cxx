@@ -453,7 +453,6 @@ void Buffer::write(utf8::Seq seq, bool autoWrap, bool insert) {
                "col=" << _cursor.pos.col << ", _cols-1=" << _cols - 1);
         ASSERT(line.wrap == _cols,
                "wrap=" << line.wrap << ", _cols=" << _cols);
-        line.wrap = _cols;
 
         if (_cursor.pos.row == _marginEnd - 1) {
             addLine();      // invalidates line reference
