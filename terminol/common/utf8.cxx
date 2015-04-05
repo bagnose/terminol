@@ -17,7 +17,7 @@ const uint8_t B6 = 1 << 6;
 const uint8_t B7 = 1 << 7;
 
 // Just inspect the lead octect to determine the length.
-Length leadLength(uint8_t lead) throw (Error) {
+Length leadLength(uint8_t lead) {
     if ((lead & B7) == 0) {
         // 0xxxxxxx
         return Length::L1;
@@ -36,7 +36,6 @@ Length leadLength(uint8_t lead) throw (Error) {
     }
     else {
         FATAL("Cannot determine lead length: " << toBinaryString(lead));
-        throw Error();
     }
 }
 
