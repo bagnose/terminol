@@ -192,7 +192,7 @@ $$(foreach LIB,$$($(2)_DEP),$$(eval $(2)_DEP_LIB += $$($$(LIB)_LIB)))
 
 $$(foreach SRC,$$($(2)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(4)))
 
-$$(foreach D,$$(patsubst %.o,%.dep,$$($(1)_OBJ)),$$(eval -include $$(D)))
+$$(foreach D,$$(patsubst %.o,%.dep,$$($(2)_OBJ)),$$(eval -include $$(D)))
 
 ifeq (,$$(findstring $$($(2)_OBJ_DIR),$(MKDIR_DIRS)))
 MKDIR_DIRS += $$($(2)_OBJ_DIR)
