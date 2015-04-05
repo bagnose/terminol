@@ -5,8 +5,6 @@
 #include "terminol/common/ascii.hxx"
 #include "terminol/common/escape.hxx"
 
-#include <unistd.h>
-
 namespace {
 
 bool inRange(uint8_t c, uint8_t min, uint8_t max) {

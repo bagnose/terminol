@@ -2,7 +2,6 @@
 // Copyright © 2013-2015 David Bryant
 
 #include "terminol/common/escape.hxx"
-#include "terminol/support/debug.hxx"
 
 int main() {
     std::cout << CsiEsc::SGR(CsiEsc::StockSGR::RESET_ALL) << "Normal" << CsiEsc::SGR(CsiEsc::StockSGR::RESET_ALL) << std::endl;
