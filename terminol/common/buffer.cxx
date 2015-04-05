@@ -1224,6 +1224,8 @@ void Buffer::endSearch() {
 }
 
 void Buffer::dumpTags(std::ostream & ost) const {
+    std::ios::fmtflags flags = ost.flags();
+
     ost << "BEGIN LOCAL TAGS" << std::endl;
 
     size_t            i = 0;
@@ -1252,6 +1254,8 @@ void Buffer::dumpTags(std::ostream & ost) const {
     }
 
     ost << "END LOCAL TAGS" << std::endl << std::endl;
+
+    ost.flags(flags);
 }
 
 void Buffer::dumpHistory(std::ostream & ost) const {
