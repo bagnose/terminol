@@ -17,7 +17,7 @@ class I_Selector {
 public:
     class I_ReadHandler {
     public:
-        virtual void handleRead(int fd) throw () = 0;
+        virtual void handleRead(int fd) = 0;
 
     protected:
         I_ReadHandler() {}
@@ -26,7 +26,7 @@ public:
 
     class I_WriteHandler {
     public:
-        virtual void handleWrite(int fd) throw () = 0;
+        virtual void handleWrite(int fd) = 0;
 
     protected:
         I_WriteHandler() {}
@@ -35,7 +35,7 @@ public:
 
     class I_TimeoutHandler {
     public:
-        virtual void handleTimeout() throw () = 0;
+        virtual void handleTimeout() = 0;
 
     protected:
         I_TimeoutHandler() {}

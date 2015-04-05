@@ -11,8 +11,8 @@ int main(int argc, char * argv[]) {
         try {
             columns = unstringify<size_t>(argv[1]);
         }
-        catch (const ParseError & ex) {
-            FATAL("Bad columns: " << ex.message);
+        catch (const ParseError & error) {
+            FATAL("Bad columns: " << error.message);
         }
     }
 

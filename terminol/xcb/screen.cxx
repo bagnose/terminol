@@ -22,7 +22,7 @@ Screen::Screen(I_Observer         & observer,
                Basics             & basics,
                const ColorSet     & colorSet,
                FontManager        & fontManager,
-               const Tty::Command & command) throw (Error) :
+               const Tty::Command & command) throw (Widget::Error, Error) :
     Widget(dispatcher, basics, colorSet.getBackgroundPixel(), config.initialX, config.initialY, -1, -1),
     _observer(observer),
     _config(config),
@@ -127,8 +127,8 @@ Screen::Screen(I_Observer         & observer,
                                  rows, cols, stringify(getWindow()), command);
         _open     = true;
     }
-    catch (const Tty::Error & ex) {
-        throw Error("Failed to create tty: " + ex.message);
+    catch (const Tty::Error & error) {
+        throw Error("Failed to create tty: " + error.message);
     }
 
     // Update the window title.
@@ -1104,11 +1104,11 @@ void Screen::cursorVisibility(bool visible) {
 
 // Terminal::I_Observer implementation:
 
-const std::string & Screen::terminalGetDisplayName() const throw () {
+const std::string & Screen::terminalGetDisplayName() const {
     return _basics.displayName();
 }
 
-void Screen::terminalCopy(const std::string & text, Terminal::Selection selection) throw () {
+void Screen::terminalCopy(const std::string & text, Terminal::Selection selection) {
     _observer.screenSelected(this);
 
     xcb_atom_t atom = XCB_ATOM_NONE;
@@ -1128,7 +1128,7 @@ void Screen::terminalCopy(const std::string & text, Terminal::Selection selectio
     xcb_flush(_basics.connection());
 }
 
-void Screen::terminalPaste(Terminal::Selection selection) throw () {
+void Screen::terminalPaste(Terminal::Selection selection) {
     xcb_atom_t atom = XCB_ATOM_NONE;
 
     switch (selection) {
@@ -1150,22 +1150,22 @@ void Screen::terminalPaste(Terminal::Selection selection) throw () {
     xcb_flush(_basics.connection());
 }
 
-void Screen::terminalResizeLocalFont(int delta) throw () {
+void Screen::terminalResizeLocalFont(int delta) {
     _fontManager.localDelta(this, delta);
 }
 
-void Screen::terminalResizeGlobalFont(int delta) throw () {
+void Screen::terminalResizeGlobalFont(int delta) {
     _fontManager.globalDelta(delta);
 }
 
-void Screen::terminalResetTitleAndIcon() throw () {
+void Screen::terminalResetTitleAndIcon() {
     _title = _config.title;
     _icon  = _config.icon;
     setTitle(_title, true);
     setIcon(_icon);
 }
 
-void Screen::terminalSetWindowTitle(const std::string & str, bool transient) throw () {
+void Screen::terminalSetWindowTitle(const std::string & str, bool transient) {
     if (transient) {
         _entitlement = Entitlement::TRANSIENT;
         setTitle(str, false);
@@ -1177,12 +1177,12 @@ void Screen::terminalSetWindowTitle(const std::string & str, bool transient) thr
     }
 }
 
-void Screen::terminalSetIconName(const std::string & str) throw () {
+void Screen::terminalSetIconName(const std::string & str) {
     _icon = str;
     setIcon(_icon);
 }
 
-void Screen::terminalBell() throw () {
+void Screen::terminalBell() {
     if (_config.mapOnBell) {
         if (!_mapped) {
             xcb_map_window(_basics.connection(), getWindow());
@@ -1226,12 +1226,12 @@ void Screen::terminalBell() throw () {
     }
 }
 
-void Screen::terminalResizeBuffer(int16_t rows, int16_t cols) throw () {
+void Screen::terminalResizeBuffer(int16_t rows, int16_t cols) {
     ASSERT(rows > 0 && cols > 0, "Rows or cols not positive.");
     resizeToAccommodate(rows, cols, true);
 }
 
-bool Screen::terminalFixDamageBegin() throw () {
+bool Screen::terminalFixDamageBegin() {
     // There is no point fixing damage if the pixmap isn't already "current".
     // It's possible for the pixmap to be valid (because the window was mapped)
     // but not current (because we haven't received an expose event yet).
@@ -1249,7 +1249,7 @@ bool Screen::terminalFixDamageBegin() throw () {
 
 void Screen::terminalDrawBg(Pos     pos,
                             int16_t count,
-                            UColor  color) throw () {
+                            UColor  color) {
     int x, y;
     pos2XY(pos, x, y);
 
@@ -1289,7 +1289,7 @@ void Screen::terminalDrawFg(Pos             pos,
                             UColor          color,
                             AttrSet         attrs,
                             const uint8_t * str,
-                            size_t          size) throw () {
+                            size_t          size) {
     ASSERT(_cr, "");
     ASSERT(pos.col + count <= _terminal->getCols(), "");
 
@@ -1335,7 +1335,7 @@ void Screen::terminalDrawCursor(Pos             pos,
                                 const uint8_t * str,
                                 size_t          size,
                                 bool            wrapNext,
-                                bool            focused) throw () {
+                                bool            focused) {
     ASSERT(_cr, "");
 
     cairo_save(_cr); {
@@ -1391,7 +1391,7 @@ void Screen::terminalDrawCursor(Pos             pos,
 
 void Screen::terminalDrawScrollbar(size_t  totalRows,
                                    size_t  historyOffset,
-                                   int16_t visibleRows) throw () {
+                                   int16_t visibleRows) {
     ASSERT(_cr, "");
     ASSERT(_config.scrollbarVisible, "");
 
@@ -1451,7 +1451,7 @@ void Screen::terminalDrawScrollbar(size_t  totalRows,
 }
 
 void Screen::terminalFixDamageEnd(const Region & damage,
-                                  bool           scrollBar) throw () {
+                                  bool           scrollBar) {
     ASSERT(_cr, "");
 
     cairo_destroy(_cr);
@@ -1474,14 +1474,14 @@ void Screen::terminalFixDamageEnd(const Region & damage,
     copyPixmapToWindow(x0, y0, x1 - x0, y1 - y0);
 }
 
-void Screen::terminalReaped(int status) throw () {
+void Screen::terminalReaped(int status) {
     _open = false;
     _observer.screenReaped(this, status);
 }
 
 // FontManager::I_Client implementation:
 
-void Screen::useFontSet(FontSet * fontSet, int delta) throw () {
+void Screen::useFontSet(FontSet * fontSet, int delta) {
     _fontSet = fontSet;
 
     // Pass 'true' for sync so that the window has handled the configure

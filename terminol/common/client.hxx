@@ -26,8 +26,8 @@ public:
         uint8_t byte = shutdown ? 0xFF : 0;
         _socket.send(&byte, 1);
     }
-    catch (const SocketClient::Error & ex) {
-        throw Error(ex.message);
+    catch (const SocketClient::Error & error) {
+        throw Error(error.message);
     }
 
     virtual ~Client() {}
@@ -38,12 +38,12 @@ protected:
 
     // SocketClient::I_Observer implementation:
 
-    void clientDisconnected() throw () override {
+    void clientDisconnected() override {
         ERROR("Client disconnected");
         _finished = true;
     }
 
-    void clientQueueEmpty() throw () override {
+    void clientQueueEmpty() override {
         _finished = true;
     }
 };

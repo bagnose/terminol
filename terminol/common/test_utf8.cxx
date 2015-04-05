@@ -117,7 +117,7 @@ int main() {
         forwardReverse(0x038250);
         forwardReverse(0x10FFFF);
     }
-    catch (const utf8::Error & ex) {
+    catch (const utf8::Error & error) {
         FATAL("Failed");
     }
 

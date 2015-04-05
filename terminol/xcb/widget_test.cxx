@@ -24,15 +24,29 @@ protected:
 
 int main(int, char *[]) {
     Config config;
-    parseConfig(config);
 
-    Basics     basics;
-    ColorSet   color_set(config, basics);
-    Selector   selector;
-    Dispatcher dispatcher(selector, basics.connection());
-    MyWidget   widget(dispatcher, basics, color_set);
+    try {
+        parseConfig(config);
+    }
+    catch (const ParseError & error) {
+        FATAL(error.message);
+    }
 
-    for (;;) {
-        selector.animate();
+    try {
+        Basics     basics;
+        ColorSet   color_set(config, basics);
+        Selector   selector;
+        Dispatcher dispatcher(selector, basics.connection());
+        MyWidget   widget(dispatcher, basics, color_set);
+
+        for (;;) {
+            selector.animate();
+        }
+    }
+    catch (const Widget::Error & error) {
+        FATAL(error.message);
+    }
+    catch (const Basics::Error & error) {
+        FATAL(error.message);
     }
 }

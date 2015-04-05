@@ -337,20 +337,20 @@ public:
     public:
         virtual void bufferDrawBg(Pos     pos,
                                   int16_t count,
-                                  UColor  color) throw () = 0;
+                                  UColor  color) = 0;
         virtual void bufferDrawFg(Pos             pos,
                                   int16_t         count,
                                   UColor          color,
                                   AttrSet         attrs,
                                   const uint8_t * str,       // nul-terminated
-                                  size_t          size) throw () = 0;
+                                  size_t          size) = 0;
         virtual void bufferDrawCursor(Pos             pos,
                                       UColor          fg,
                                       UColor          bg,
                                       AttrSet         attrs,
                                       const uint8_t * str,    // nul-terminated, count 1
                                       size_t          size,
-                                      bool            wrapNext) throw () = 0;
+                                      bool            wrapNext) = 0;
 
     protected:
         ~I_Renderer() {}

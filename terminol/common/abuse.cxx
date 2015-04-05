@@ -107,8 +107,8 @@ int main(int argc, char * argv[]) {
             auto seed = unstringify<int>(argv[1]);
             ::srandom(seed);
         }
-        catch (const ParseError & ex) {
-            FATAL("Bad seed: " << ex.message);
+        catch (const ParseError & error) {
+            FATAL("Bad seed: " << error.message);
         }
     }
 

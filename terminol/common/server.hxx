@@ -9,8 +9,8 @@
 
 class I_Creator {
 public:
-    virtual void create() throw () = 0;
-    virtual void shutdown() throw () = 0;
+    virtual void create() = 0;
+    virtual void shutdown() = 0;
 
 protected:
     I_Creator() {}
@@ -37,8 +37,8 @@ public:
         _creator(creator),
         _socket(*this, selector, config.socketPath)
     {}
-    catch (const SocketServer::Error & ex) {
-        throw Error(ex.message);
+    catch (const SocketServer::Error & error) {
+        throw Error(error.message);
     }
 
     virtual ~Server() {}
@@ -47,11 +47,11 @@ protected:
 
     // SocketServer::I_Observer implementation:
 
-    void serverConnected(int UNUSED(id)) throw () override {
+    void serverConnected(int UNUSED(id)) override {
         //PRINT("Server connected: " << id);
     }
 
-    void serverReceived(int id, const uint8_t * data, size_t UNUSED(size)) throw () override {
+    void serverReceived(int id, const uint8_t * data, size_t UNUSED(size)) override {
         //PRINT("Server received bytes, " << id << ": " << size << "b");
 
         if (data[0] == 0xFF) {
@@ -64,7 +64,7 @@ protected:
         _socket.disconnect(id);
     }
 
-    void serverDisconnected(int UNUSED(id)) throw () override {
+    void serverDisconnected(int UNUSED(id)) override {
         //PRINT("Server disconnected: " << id);
     }
 };

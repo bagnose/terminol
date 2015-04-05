@@ -20,9 +20,9 @@ class SocketServer : protected I_Selector::I_ReadHandler {
 public:
     class I_Observer {
     public:
-        virtual void serverConnected(int id) throw () = 0;
-        virtual void serverReceived(int id, const uint8_t * data, size_t size) throw () = 0;
-        virtual void serverDisconnected(int id) throw () = 0;
+        virtual void serverConnected(int id) = 0;
+        virtual void serverReceived(int id, const uint8_t * data, size_t size) = 0;
+        virtual void serverDisconnected(int id) = 0;
 
     protected:
         ~I_Observer() {}
@@ -97,7 +97,7 @@ public:
 protected:
     // I_Selector::I_ReadHandler implementation:
 
-    void handleRead(int fd) throw () override {
+    void handleRead(int fd) override {
         if (fd == _fd) {
             struct sockaddr_un address;
             ::memset(&address, 0, sizeof address);
@@ -144,8 +144,8 @@ class SocketClient : protected I_Selector::I_WriteHandler {
 public:
     class I_Observer {
     public:
-        virtual void clientDisconnected() throw () = 0;
-        virtual void clientQueueEmpty() throw () = 0;
+        virtual void clientDisconnected() = 0;
+        virtual void clientQueueEmpty() = 0;
 
     protected:
         ~I_Observer() {}
@@ -218,7 +218,7 @@ public:
 protected:
     // I_Selector::I_Writer implementation:
 
-    void handleWrite(int fd) throw () override {
+    void handleWrite(int fd) override {
         ASSERT(fd == _fd, "");
         ASSERT(!_queue.empty(), "");
         auto rval = TEMP_FAILURE_RETRY(::send(fd, &_queue.front(), _queue.size(), MSG_NOSIGNAL));

@@ -52,8 +52,8 @@ void test2(uint8_t num, const char ascii[2]) {
         uint8_t tmpNum = hexToByte(ascii[0], ascii[1]);
         ENFORCE(tmpNum == num, "Mismatch hex --> byte: " << tmpNum << " == " << num);
     }
-    catch (const ParseError & ex) {
-        FATAL(ex.message);
+    catch (const ParseError & error) {
+        FATAL(error.message);
     }
 }
 

@@ -1171,12 +1171,12 @@ const CharSub * Terminal::lookupCharSub(uint8_t code) {
 }
 // VtStateMachine::I_Observer implementation:
 
-void Terminal::machineNormal(utf8::Seq seq, utf8::Length UNUSED(length)) throw () {
+void Terminal::machineNormal(utf8::Seq seq, utf8::Length UNUSED(length)) {
     _lastSeq = seq;
     _buffer->write(seq, _modes.get(Mode::AUTO_WRAP), _modes.get(Mode::INSERT));
 }
 
-void Terminal::machineControl(uint8_t control) throw () {
+void Terminal::machineControl(uint8_t control) {
     switch (control) {
         case BEL:
             _observer.terminalBell();
@@ -1210,7 +1210,7 @@ void Terminal::machineControl(uint8_t control) throw () {
     }
 }
 
-void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
+void Terminal::machineSimpleEsc(const SimpleEsc & esc) {
     if (esc.inters.empty()) {
         switch (esc.code) {
             case '7':   // DECSC - Save Cursor
@@ -1313,7 +1313,7 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) throw () {
     }
 }
 
-void Terminal::machineCsiEsc(const CsiEsc & esc) throw () {
+void Terminal::machineCsiEsc(const CsiEsc & esc) {
     if (esc.inters.empty()) {
         switch (esc.mode) {
             case '@': { // ICH - Insert Character
@@ -1620,11 +1620,11 @@ default_:
     }
 }
 
-void Terminal::machineDcsEsc(const DcsEsc & UNUSED(esc)) throw () {
+void Terminal::machineDcsEsc(const DcsEsc & UNUSED(esc)) {
     //WARNING("Unhandled: " << esc.str());
 }
 
-void Terminal::machineOscEsc(const OscEsc & esc) throw () {
+void Terminal::machineOscEsc(const OscEsc & esc) {
     if (!esc.args.empty()) {
         try {
             switch (unstringify<int>(esc.args[0])) {
@@ -1665,23 +1665,23 @@ void Terminal::machineOscEsc(const OscEsc & esc) throw () {
                     break;
             }
         }
-        catch (const ParseError & ex) {
-            ERROR(ex.message);
+        catch (const ParseError & error) {
+            ERROR(error.message);
         }
     }
 }
 
 // Tty::I_Observer implementation:
 
-void Terminal::ttyData(const uint8_t * data, size_t size) throw () {
+void Terminal::ttyData(const uint8_t * data, size_t size) {
     processRead(data, size);
 }
 
-void Terminal::ttySync() throw () {
+void Terminal::ttySync() {
     fixDamage(Trigger::TTY);
 }
 
-void Terminal::ttyReaped(int status) throw () {
+void Terminal::ttyReaped(int status) {
     _observer.terminalReaped(status);
 }
 
@@ -1689,7 +1689,7 @@ void Terminal::ttyReaped(int status) throw () {
 
 void Terminal::bufferDrawBg(Pos     pos,
                             int16_t count,
-                            UColor  color) throw () {
+                            UColor  color) {
     _observer.terminalDrawBg(pos, count, color);
 }
 
@@ -1698,7 +1698,7 @@ void Terminal::bufferDrawFg(Pos             pos,
                             UColor          color,
                             AttrSet         attrs,
                             const uint8_t * str,
-                            size_t          size) throw () {
+                            size_t          size) {
     _observer.terminalDrawFg(pos, count, color, attrs, str, size);
 }
 
@@ -1708,7 +1708,7 @@ void Terminal::bufferDrawCursor(Pos             pos,
                                 AttrSet         attrs,
                                 const uint8_t * str,
                                 size_t          size,
-                                bool            wrapNext) throw () {
+                                bool            wrapNext) {
     _observer.terminalDrawCursor(pos, fg, bg, attrs, str, size, wrapNext, _focused);
 }
 

@@ -150,16 +150,16 @@ public:
                             try {
                                 handler->handle(negated, value);
                             }
-                            catch (const Handler::Error & ex) {
-                                throw Error(ex.message);
+                            catch (const Handler::Error & error) {
+                                throw Error(error.message);
                             }
                         }
                         else {
                             try {
                                 handler->handle(negated, value);
                             }
-                            catch (const Handler::Error & ex) {
-                                throw Error(ex.message);
+                            catch (const Handler::Error & error) {
+                                throw Error(error.message);
                             }
                         }
                     }
@@ -172,8 +172,8 @@ public:
                             try {
                                 handler->handle(negated, value);
                             }
-                            catch (const Handler::Error & ex) {
-                                throw Error(ex.message);
+                            catch (const Handler::Error & error) {
+                                throw Error(error.message);
                             }
                         }
                         else {
@@ -195,8 +195,8 @@ public:
                             try {
                                 handler->handle(negated, value);
                             }
-                            catch (const Handler::Error & ex) {
-                                throw Error(ex.message);
+                            catch (const Handler::Error & error) {
+                                throw Error(error.message);
                             }
                         }
                     }
@@ -245,7 +245,7 @@ public:
     bool isNegatable() const override { return true; }
     bool wantsValue()  const override { return false; }
 
-    void handle(bool negated, const std::string & UNUSED(value)) throw () override {
+    void handle(bool negated, const std::string & UNUSED(value)) noexcept override {
         _value = !negated;
     }
 };
@@ -262,8 +262,8 @@ public:
         try {
             _value = unstringify<V>(value);
         }
-        catch (const ParseError & ex) {
-            throw Error(ex.message);
+        catch (const ParseError & error) {
+            throw Error(error.message);
         }
     }
 };

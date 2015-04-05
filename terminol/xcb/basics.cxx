@@ -83,7 +83,7 @@ Basics::Basics() throw (Error) {
         try {
             _atomUtf8String = lookupAtom("UTF8_STRING", false);
         }
-        catch (const NotFoundError & ex) {
+        catch (const NotFoundError & error) {
             WARNING("No atom UTF8_STRING, falling back on STRING.");
             _atomUtf8String = XCB_ATOM_STRING;
         }
@@ -94,8 +94,8 @@ Basics::Basics() throw (Error) {
         _atomESetRootPmapId     = lookupAtom("ESETROOT_PMAP_ID", true);
         _atomNetWmWindowOpacity = lookupAtom("_NET_WM_WINDOW_OPACITY", true);           // FIXME need a wrapper method that throws if atom doesn't exist. getAtom() -> lookupAtom()
     }
-    catch (const NotFoundError & ex) {
-        throw Error(ex.message);
+    catch (const NotFoundError & error) {
+        throw Error(error.message);
     }
 
     try {
@@ -228,8 +228,8 @@ void Basics::updateRootPixmap() {
     try {
         _rootPixmap = getRootPixmap(_atomXRootPixmapId);
     }
-    catch (const Error & ex) {
-        ERROR("Failed to get root pixmap: " << ex.message);
+    catch (const Error & error) {
+        ERROR("Failed to get root pixmap: " << error.message);
     }
 }
 

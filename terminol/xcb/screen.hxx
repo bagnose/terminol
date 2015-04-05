@@ -27,10 +27,10 @@ class Screen :
 public:
     class I_Observer {
     public:
-        virtual void screenSync() throw () = 0;
-        virtual void screenDefer(Screen * screen) throw () = 0;
-        virtual void screenSelected(Screen * screen) throw () = 0;
-        virtual void screenReaped(Screen * screen, int status) throw () = 0;
+        virtual void screenSync() = 0;
+        virtual void screenDefer(Screen * screen) = 0;
+        virtual void screenSelected(Screen * screen) = 0;
+        virtual void screenReaped(Screen * screen, int status) = 0;
 
     protected:
         I_Observer() {}
@@ -99,7 +99,7 @@ public:
            Basics             & basics,
            const ColorSet     & colorSet,
            FontManager        & fontManager,
-           const Tty::Command & command = Tty::Command()) throw (Error);
+           const Tty::Command & command = Tty::Command()) throw (Widget::Error, Error);
 
     virtual ~Screen();
 
@@ -141,26 +141,26 @@ protected:
 
     // Terminal::I_Observer implementation:
 
-    const std::string & terminalGetDisplayName() const throw () override;
-    void terminalCopy(const std::string & text, Terminal::Selection selection) throw () override;
-    void terminalPaste(Terminal::Selection selection) throw () override;
-    void terminalResizeLocalFont(int delta) throw () override;
-    void terminalResizeGlobalFont(int delta) throw () override;
-    void terminalResetTitleAndIcon() throw () override;
-    void terminalSetWindowTitle(const std::string & str, bool transient) throw () override;
-    void terminalSetIconName(const std::string & str) throw () override;
-    void terminalBell() throw () override;
-    void terminalResizeBuffer(int16_t rows, int16_t cols) throw () override;
-    bool terminalFixDamageBegin() throw () override;
+    const std::string & terminalGetDisplayName() const override;
+    void terminalCopy(const std::string & text, Terminal::Selection selection) override;
+    void terminalPaste(Terminal::Selection selection) override;
+    void terminalResizeLocalFont(int delta) override;
+    void terminalResizeGlobalFont(int delta) override;
+    void terminalResetTitleAndIcon() override;
+    void terminalSetWindowTitle(const std::string & str, bool transient) override;
+    void terminalSetIconName(const std::string & str) override;
+    void terminalBell() override;
+    void terminalResizeBuffer(int16_t rows, int16_t cols) override;
+    bool terminalFixDamageBegin() override;
     void terminalDrawBg(Pos     pos,
                         int16_t count,
-                        UColor color) throw () override;
+                        UColor color) override;
     void terminalDrawFg(Pos             pos,
                         int16_t         count,
                         UColor          color,
                         AttrSet         attrs,
                         const uint8_t * str,
-                        size_t          size) throw () override;
+                        size_t          size) override;
     void terminalDrawCursor(Pos             pos,
                             UColor          fg,
                             UColor          bg,
@@ -168,17 +168,17 @@ protected:
                             const uint8_t * str,
                             size_t          size,
                             bool            wrapNext,
-                            bool            focused) throw () override;
+                            bool            focused) override;
     void terminalDrawScrollbar(size_t  totalRows,
                                size_t  historyOffset,
-                               int16_t visibleRows) throw () override;
+                               int16_t visibleRows) override;
     void terminalFixDamageEnd(const Region & damage,
-                              bool           scrollbar) throw () override;
-    void terminalReaped(int exitStatus) throw () override;
+                              bool           scrollbar) override;
+    void terminalReaped(int exitStatus) override;
 
     // FontManager::I_Client implementation:
 
-    void useFontSet(FontSet * fontSet, int delta) throw () override;
+    void useFontSet(FontSet * fontSet, int delta) override;
 
     // I_Dispatcher::I_Observer overrides:
 

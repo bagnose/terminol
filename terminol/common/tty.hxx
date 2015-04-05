@@ -18,9 +18,9 @@ class Tty :
 public:
     class I_Observer {
     public:
-        virtual void ttyData(const uint8_t * data, size_t size) throw () = 0;
-        virtual void ttySync() throw () = 0;
-        virtual void ttyReaped(int status) throw () = 0;
+        virtual void ttyData(const uint8_t * data, size_t size) = 0;
+        virtual void ttySync() = 0;
+        virtual void ttyReaped(int status) = 0;
 
     protected:
         ~I_Observer() {}
@@ -77,7 +77,7 @@ protected:
 
     // I_Selector::I_ReadHandler implementation:
 
-    void handleRead(int fd) throw () override;
+    void handleRead(int fd) override;
 };
 
 #endif // COMMON__TTY__H

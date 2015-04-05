@@ -16,8 +16,8 @@ int main(int argc, char * argv[]) {
                                  unstringify<int>(argv[2]));
         return 0;
     }
-    catch (const ParseError & ex) {
-        std::cerr << ex.message << std::endl;
+    catch (const ParseError & error) {
+        std::cerr << error.message << std::endl;
         return 1;
     }
 }

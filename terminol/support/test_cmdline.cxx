@@ -36,8 +36,8 @@ int main() {
         ENFORCE(goTrue,   "");
         ENFORCE(!goFalse, "");
     }
-    catch (const CmdLine::Error & ex) {
-        std::cerr << ex.message << std::endl;
+    catch (const CmdLine::Error & error) {
+        std::cerr << error.message << std::endl;
     }
 
     try {
@@ -47,8 +47,8 @@ int main() {
         parse(&cmdLine, "dummy", "--str=foo", nullptr);
         ENFORCE(str == "foo", "");
     }
-    catch (const CmdLine::Error & ex) {
-        std::cerr << ex.message << std::endl;
+    catch (const CmdLine::Error & error) {
+        std::cerr << error.message << std::endl;
     }
 
     return 0;

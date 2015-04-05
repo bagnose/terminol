@@ -15,12 +15,12 @@ class VtStateMachine {
 public:
     class I_Observer {
     public:
-        virtual void machineNormal(utf8::Seq seq, utf8::Length length) throw () = 0;
-        virtual void machineControl(uint8_t control) throw () = 0;
-        virtual void machineSimpleEsc(const SimpleEsc & esc) throw () = 0;
-        virtual void machineCsiEsc(const CsiEsc & esc) throw () = 0;
-        virtual void machineDcsEsc(const DcsEsc & esc) throw () = 0;
-        virtual void machineOscEsc(const OscEsc & esc) throw () = 0;
+        virtual void machineNormal(utf8::Seq seq, utf8::Length length) = 0;
+        virtual void machineControl(uint8_t control) = 0;
+        virtual void machineSimpleEsc(const SimpleEsc & esc) = 0;
+        virtual void machineCsiEsc(const CsiEsc & esc) = 0;
+        virtual void machineDcsEsc(const DcsEsc & esc) = 0;
+        virtual void machineOscEsc(const OscEsc & esc) = 0;
 
     protected:
         ~I_Observer() {}

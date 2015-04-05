@@ -101,7 +101,7 @@ protected:
 
     // I_Selector::I_ReadHandler overrides:
 
-    void handleRead(int fd) throw () override;
+    void handleRead(int fd) override;
 
 private:
     typedef std::unordered_map<xcb_window_t, I_Observer *> Observers;

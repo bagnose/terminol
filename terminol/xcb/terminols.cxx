@@ -63,8 +63,7 @@ public:
     };
 
     EventLoop(const Config       & config,
-              const Tty::Command & command)
-        throw (Basics::Error, Server::Error, Error) :
+              const Tty::Command & command) :
         _config(config),
         _command(command),
         _selector(),
@@ -117,7 +116,7 @@ protected:
         TEMP_FAILURE_RETRY(::write(_pipe.writeFd(), &c, 1));
     }
 
-    void loop() throw (Error) {
+    void loop() {
         auto oldHandler = signal(SIGCHLD, &staticSignalHandler);
 
         _selector.addReadable(_pipe.readFd(), this);
@@ -170,22 +169,22 @@ protected:
 
     // I_Selector::I_ReadHandler implementation:
 
-    void handleRead(int fd) throw () override {
+    void handleRead(int fd) override {
         ASSERT(fd == _pipe.readFd(), "Bad fd.");
         death();
     }
 
     // Screen::I_Observer implementation:
 
-    void screenSync() throw () override {
-        _dispatcher.wait(XCB_CONFIGURE_NOTIFY);      // XXX throws
+    void screenSync() override {
+        _dispatcher.wait(XCB_CONFIGURE_NOTIFY);
     }
 
-    void screenDefer(Screen * screen) throw () override {
+    void screenDefer(Screen * screen) override {
         _deferrals.insert(screen);
     }
 
-    void screenSelected(Screen * screen) throw () override {
+    void screenSelected(Screen * screen) override {
         for (auto & p : _screens) {
             auto & s = p.second;
             if (s.get() != screen) {
@@ -194,7 +193,7 @@ protected:
         }
     }
 
-    void screenReaped(Screen * screen, int UNUSED(status)) throw () override {
+    void screenReaped(Screen * screen, int UNUSED(status)) override {
         ASSERT(std::find(_exits.begin(), _exits.end(), screen) == _exits.end(), "");
         _exits.push_back(screen);
     }
@@ -217,7 +216,7 @@ protected:
 
     // I_Creator implementation:
 
-    void create() throw () override {
+    void create() override {
         try {
             std::unique_ptr<Screen> screen(
                 new Screen(*this, _config, _selector, _deduper, _destroyer, _dispatcher,
@@ -225,12 +224,12 @@ protected:
             auto id = screen->getWindowId();
             _screens.insert(std::make_pair(id, std::move(screen)));
         }
-        catch (const Screen::Error & ex) {
-            PRINT("Failed to create screen: " << ex.message);
+        catch (const Screen::Error & error) {
+            PRINT("Failed to create screen: " << error.message);
         }
     }
 
-    void shutdown() throw () override {
+    void shutdown() override {
         for (auto & pair : _screens) {
             pair.second->killReap();
         }
@@ -271,7 +270,13 @@ std::string makeHelp(const std::string & progName) {
 
 int main(int argc, char * argv[]) {
     Config config;
-    parseConfig(config);
+
+    try {
+        parseConfig(config);
+    }
+    catch (const ParseError & error) {
+        FATAL(error.message);
+    }
 
     CmdLine cmdLine(makeHelp(argv[0]), VERSION, "--execute");
     cmdLine.add(new StringHandler(config.fontName),   '\0', "font-name");
@@ -286,8 +291,8 @@ int main(int argc, char * argv[]) {
                                 try {
                                     config.setColorScheme(name);
                                 }
-                                catch (const ParseError & ex) {
-                                    throw CmdLine::Handler::Error(ex.message);
+                                catch (const ParseError & error) {
+                                    throw CmdLine::Handler::Error(error.message);
                                 }
                                 }), '\0', "color-scheme");
 
@@ -295,17 +300,20 @@ int main(int argc, char * argv[]) {
         auto command = cmdLine.parse(argc, const_cast<const char **>(argv));
         EventLoop eventLoop(config, command);
     }
-    catch (const EventLoop::Error & ex) {
-        FATAL(ex.message);
+    catch (const EventLoop::Error & error) {
+        FATAL(error.message);
     }
-    catch (const Basics::Error & ex) {
-        FATAL(ex.message);
+    catch (const Dispatcher::Error & error) {
+        FATAL(error.message);
     }
-    catch (const Server::Error & ex) {
-        FATAL(ex.message);
+    catch (const Basics::Error & error) {
+        FATAL(error.message);
     }
-    catch (const CmdLine::Error & ex) {
-        FATAL(ex.message);
+    catch (const Server::Error & error) {
+        FATAL(error.message);
+    }
+    catch (const CmdLine::Error & error) {
+        FATAL(error.message);
     }
 
     return 0;

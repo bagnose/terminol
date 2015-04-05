@@ -16,7 +16,7 @@ class FontManager : protected Uncopyable {
 public:
     class I_Client {
     public:
-        virtual void useFontSet(FontSet * fontSet, int delta) throw () = 0;
+        virtual void useFontSet(FontSet * fontSet, int delta) = 0;
 
     protected:
         I_Client() {}

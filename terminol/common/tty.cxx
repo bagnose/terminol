@@ -173,8 +173,8 @@ bool Tty::hasSubprocess() const {
         auto pid = unstringify<pid_t>(nthToken(line, 8));
         return pid != _pid;
     }
-    catch (const ParseError & ex) {
-        ERROR(ex.message);
+    catch (const ParseError & error) {
+        ERROR(error.message);
         return false;
     }
 }
@@ -358,7 +358,7 @@ int Tty::waitReap() {
 
 // I_Selector::I_ReadHandler implementation:
 
-void Tty::handleRead(int fd) throw () {
+void Tty::handleRead(int fd) {
     if (_fd == -1) {
         // I've not seen this, but perhaps it is possible. Leaving it here
         // out of paranoia.

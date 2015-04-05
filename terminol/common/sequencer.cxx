@@ -12,8 +12,8 @@ int main(int argc, char * argv[]) {
         try {
             count = unstringify<int>(argv[1]);
         }
-        catch (const ParseError & ex) {
-            std::cerr << ex.message << std::endl;
+        catch (const ParseError & error) {
+            std::cerr << error.message << std::endl;
             return 1;
         }
     }

@@ -26,7 +26,13 @@ std::string makeHelp(const std::string & progName) {
 
 int main(int argc, char * argv[]) {
     Config config;
-    parseConfig(config);
+
+    try {
+        parseConfig(config);
+    }
+    catch (const ParseError & error) {
+        FATAL(error.message);
+    }
 
     bool shutdown = false;
 
@@ -39,8 +45,8 @@ int main(int argc, char * argv[]) {
     try {
         cmdLine.parse(argc, const_cast<const char **>(argv));
     }
-    catch (const CmdLine::Error & ex) {
-        FATAL(ex.message);
+    catch (const CmdLine::Error & error) {
+        FATAL(error.message);
     }
 
     Selector selector;
@@ -52,8 +58,8 @@ int main(int argc, char * argv[]) {
             selector.animate();
         } while (!client.isFinished());
     }
-    catch (const Client::Error & ex) {
-        FATAL(ex.message);
+    catch (const Client::Error & error) {
+        FATAL(error.message);
     }
 
     return 0;

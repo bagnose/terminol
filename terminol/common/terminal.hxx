@@ -31,26 +31,26 @@ public:
 
     class I_Observer {
     public:
-        virtual const std::string & terminalGetDisplayName() const throw () = 0;
-        virtual void terminalCopy(const std::string & text, Selection selection) throw () = 0;
-        virtual void terminalPaste(Selection selection) throw () = 0;
-        virtual void terminalResizeLocalFont(int delta) throw () = 0;
-        virtual void terminalResizeGlobalFont(int delta) throw () = 0;
-        virtual void terminalResetTitleAndIcon() throw () = 0;
-        virtual void terminalSetWindowTitle(const std::string & str, bool transient) throw () = 0;
-        virtual void terminalSetIconName(const std::string & str) throw () = 0;
-        virtual void terminalBell() throw () = 0;
-        virtual void terminalResizeBuffer(int16_t rows, int16_t cols) throw () = 0;
-        virtual bool terminalFixDamageBegin() throw () = 0;
+        virtual const std::string & terminalGetDisplayName() const = 0;
+        virtual void terminalCopy(const std::string & text, Selection selection) = 0;
+        virtual void terminalPaste(Selection selection) = 0;
+        virtual void terminalResizeLocalFont(int delta) = 0;
+        virtual void terminalResizeGlobalFont(int delta) = 0;
+        virtual void terminalResetTitleAndIcon() = 0;
+        virtual void terminalSetWindowTitle(const std::string & str, bool transient) = 0;
+        virtual void terminalSetIconName(const std::string & str) = 0;
+        virtual void terminalBell() = 0;
+        virtual void terminalResizeBuffer(int16_t rows, int16_t cols) = 0;
+        virtual bool terminalFixDamageBegin() = 0;
         virtual void terminalDrawBg(Pos     pos,
                                     int16_t count,
-                                    UColor  color) throw () = 0;
+                                    UColor  color) = 0;
         virtual void terminalDrawFg(Pos             pos,
                                     int16_t         count,
                                     UColor          color,
                                     AttrSet         attrs,
                                     const uint8_t * str,       // nul-terminated
-                                    size_t          size) throw () = 0;
+                                    size_t          size) = 0;
         virtual void terminalDrawCursor(Pos             pos,
                                         UColor          fg,
                                         UColor          bg,
@@ -58,13 +58,13 @@ public:
                                         const uint8_t * str,    // nul-terminated, count 1
                                         size_t          size,
                                         bool            wrapNext,
-                                        bool            focused) throw () = 0;
+                                        bool            focused) = 0;
         virtual void terminalDrawScrollbar(size_t  totalRows,
                                            size_t  historyOffset,
-                                           int16_t visibleRows) throw () = 0;
+                                           int16_t visibleRows) = 0;
         virtual void terminalFixDamageEnd(const Region & damage,
-                                          bool           scrollbar) throw () = 0;
-        virtual void terminalReaped(int status) throw () = 0;
+                                          bool           scrollbar) = 0;
+        virtual void terminalReaped(int status) = 0;
 
     protected:
         ~I_Observer() {}
@@ -170,37 +170,37 @@ protected:
 
     // VtStateMachine::I_Observer implementation:
 
-    void     machineNormal(utf8::Seq seq, utf8::Length length) throw () override;
-    void     machineControl(uint8_t control) throw () override;
-    void     machineSimpleEsc(const SimpleEsc & esc) throw () override;
-    void     machineCsiEsc(const CsiEsc & esc) throw () override;
-    void     machineDcsEsc(const DcsEsc & esc) throw () override;
-    void     machineOscEsc(const OscEsc & esc) throw () override;
+    void     machineNormal(utf8::Seq seq, utf8::Length length) override;
+    void     machineControl(uint8_t control) override;
+    void     machineSimpleEsc(const SimpleEsc & esc) override;
+    void     machineCsiEsc(const CsiEsc & esc) override;
+    void     machineDcsEsc(const DcsEsc & esc) override;
+    void     machineOscEsc(const OscEsc & esc) override;
 
     // Tty::I_Observer implementation:
 
-    void     ttyData(const uint8_t * data, size_t size) throw () override;
-    void     ttySync() throw () override;
-    void     ttyReaped(int status) throw () override;
+    void     ttyData(const uint8_t * data, size_t size) override;
+    void     ttySync() override;
+    void     ttyReaped(int status) override;
 
     // Buffer::I_Renderer implementation:
 
     void     bufferDrawBg(Pos     pos,
                           int16_t count,
-                          UColor  color) throw () override;
+                          UColor  color) override;
     void     bufferDrawFg(Pos             pos,
                           int16_t         count,
                           UColor          color,
                           AttrSet         attrs,
                           const uint8_t * str,
-                          size_t          size) throw () override;
+                          size_t          size) override;
     void     bufferDrawCursor(Pos             pos,
                               UColor          fg,
                               UColor          bg,
                               AttrSet         attrs,
                               const uint8_t * str,
                               size_t          size,
-                              bool            wrapNext) throw () override;
+                              bool            wrapNext) override;
 };
 
 std::ostream & operator << (std::ostream & ost, Terminal::Button button);

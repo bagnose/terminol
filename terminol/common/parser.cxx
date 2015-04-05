@@ -291,8 +291,8 @@ bool Parser::tryPath(const std::string & path) {
                     interpretTokens(tokens);
                 }
             }
-            catch (const ParseError & ex) {
-                std::cerr << path << ":" << num << ": " << ex.message << std::endl;
+            catch (const ParseError & error) {
+                std::cerr << path << ":" << num << ": " << error.message << std::endl;
             }
         }
         return true;
