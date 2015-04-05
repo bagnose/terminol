@@ -9,7 +9,7 @@
 
 class Client : protected SocketClient::I_Observer {
     SocketClient   _socket;
-    bool         & _done;
+    bool           _finished;
 
 public:
     struct Error {
@@ -19,10 +19,9 @@ public:
 
     Client(I_Selector   & selector,
            const Config & config,
-           bool           shutdown,
-           bool         & done) try :
+           bool           shutdown) try :
         _socket(*this, selector, config.socketPath),
-        _done(done)
+        _finished(false)
     {
         uint8_t byte = shutdown ? 0xFF : 0;
         _socket.send(&byte, 1);
@@ -33,17 +32,19 @@ public:
 
     virtual ~Client() {}
 
+    bool isFinished() const { return _finished; }
+
 protected:
 
     // SocketClient::I_Observer implementation:
 
     void clientDisconnected() throw () override {
         ERROR("Client disconnected");
-        _done = true;
+        _finished = true;
     }
 
     void clientQueueEmpty() throw () override {
-        _done = true;
+        _finished = true;
     }
 };
 

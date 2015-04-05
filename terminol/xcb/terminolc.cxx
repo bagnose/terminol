@@ -46,12 +46,11 @@ int main(int argc, char * argv[]) {
     Selector selector;
 
     try {
-        bool done = false;
-        Client client(selector, config, shutdown, done);
+        Client client(selector, config, shutdown);
 
-        while (!done) {
+        do {
             selector.animate();
-        }
+        } while (!client.isFinished());
     }
     catch (const Client::Error & ex) {
         FATAL(ex.message);

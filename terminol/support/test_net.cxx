@@ -6,14 +6,16 @@
 
 class TestServer : protected SocketServer::I_Observer {
     SocketServer   _socket;
-    size_t       & _count;
+    size_t         _count;
 
 public:
-    TestServer(I_Selector & selector, const std::string & path, size_t & count) :
-        _socket(*this, selector, path), _count(count) {}
+    TestServer(I_Selector & selector, const std::string & path) :
+        _socket(*this, selector, path), _count(0) {}
 
     virtual ~TestServer() {
     }
+
+    size_t getCount() const { return _count; }
 
 protected:
 
@@ -72,15 +74,14 @@ protected:
 int main() {
     Selector selector;
     auto path = "/tmp/my-socket";
-    size_t count = 0;
-    TestServer server(selector, path, count);
+    TestServer server(selector, path);
     TestClient client1(selector, path);
     TestClient client2(selector, path);
     TestClient client3(selector, path);
     TestClient client4(selector, path);
     TestClient client5(selector, path);
 
-    while (count != 5) {
+    while (server.getCount() != 5) {
         selector.animate();
     }
 
