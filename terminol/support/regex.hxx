@@ -46,7 +46,7 @@ public:
                              nullptr);     // tableptr
 
         if (!_pcre) {
-            throw Error("PCRE commpilation of \"" + pattern + "\" "
+            throw Error("PCRE compilation of \"" + pattern + "\" "
                         "failed at offset " + stringify(errOffset) +
                         ", error: " + stringify(err));
         }
@@ -122,6 +122,14 @@ public:
 
 protected:
     std::vector<Substr> common(const char * text, size_t size, size_t offset = 0) const {
+        // FIXME This will need reworking. We don't want to allocate offsets everytime
+        // this function is called. Also, if there is insufficient match room then we want
+        // to try again with more match room.
+        // XXX Or, perhaps we need a different code path for when we are just
+        // testing for the existence a match and not interested in the results.
+
+        // XXX may want PCRE_NO_UTF8_CHECK check in options.
+
         std::vector<int>    offsets(_maxMatches * 3, 0);
         std::vector<Substr> substrs;
 
