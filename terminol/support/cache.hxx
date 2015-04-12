@@ -5,27 +5,26 @@
 #define SUPPORT__CACHE__HXX
 
 #include "terminol/support/debug.hxx"
+#include "terminol/support/pattern.hxx"
 
 #include <unordered_map>
 #include <cstddef>
 
 // LRU cache container
-template <typename Key, typename T> class Cache {
+template <typename Key, typename T> class Cache : protected Uncopyable {
     struct Link {
         Link *prev;
         Link *next;
 
         Link() : prev(this), next(this) {}
-        Link(const Link & link) : prev(this), next(this) {
-            ASSERT(link.single(), "");
-        }
+        Link(const Link & UNUSED(link)) : prev(this), next(this) {}
 
-        // After this call, this->next==link.
+        // After this call, link->next==this
         void insert(Link & link) {
-            link.prev  = this;
-            link.next  = next;
-            next->prev = &link;
-            next       = &link;
+            link.next = this;
+            link.prev = prev;
+            prev->next = &link;
+            prev = &link;
         }
 
         void extract() {
@@ -37,7 +36,7 @@ template <typename Key, typename T> class Cache {
 
         bool single() const {
             if (prev == next) {
-                ASSERT(prev == this, "");
+                ASSERT(prev == this, "Invalid link.");
                 return true;
             }
             else {
@@ -59,8 +58,6 @@ template <typename Key, typename T> class Cache {
         return entry;
     }
 
-    typedef std::unordered_map<Key, Entry> Map;
-
     static Key & entryToKey(Entry & entry) {
         typedef typename Map::value_type Pair;
         auto keyOffset   = offsetof(Pair, first);
@@ -70,9 +67,10 @@ template <typename Key, typename T> class Cache {
         return key;
     }
 
-    Link   _sentinel;       // next is newest, prev is oldest
-    Map    _map;
-    size_t _maxEntries;
+    typedef std::unordered_map<Key, Entry> Map;
+
+    Link _sentinel;       // next is oldest, prev is newest
+    Map  _map;
 
 public:
     typedef Key                     key_type;
@@ -85,7 +83,12 @@ public:
     typedef size_t                  size_type;
     typedef ptrdiff_t               difference_type;
 
+    //
+    //
+    //
+
     class iterator {
+        friend class Cache;
         Link * _link;
     public:
         typedef std::bidirectional_iterator_tag iterator_category;
@@ -137,6 +140,10 @@ public:
         }
     };
 
+    //
+    //
+    //
+
     class reverse_iterator {
         iterator _iterator;
     public:
@@ -148,33 +155,37 @@ public:
 
         explicit reverse_iterator(Link * link) : _iterator(link) {}
 
-        iterator base() const { return _iterator; }
+        iterator base() const {
+            auto iter = _iterator;
+            --iter;
+            return iter;
+        }
 
         pointer operator->() {
-            return operator->(_iterator);
+            return _iterator.operator->();
         }
 
         reference operator*() {
-            return operator*(_iterator);
+            return _iterator.operator*();
         }
 
-        iterator &operator++() {
+        reverse_iterator &operator++() {
             --_iterator;
             return *this;
         }
 
-        iterator operator++(int) {
+        reverse_iterator operator++(int) {
             iterator rval(*this);
             operator++();
             return rval;
         }
 
-        iterator &operator--() {
+        reverse_iterator &operator--() {
             ++_iterator;
             return *this;
         }
 
-        iterator operator--(int) {
+        reverse_iterator operator--(int) {
             iterator rval(*this);
             operator--();
             return rval;
@@ -189,6 +200,10 @@ public:
         }
     };
 
+    //
+    //
+    //
+
     iterator begin() {
         return iterator(_sentinel.next);
     }
@@ -198,22 +213,18 @@ public:
     }
 
     reverse_iterator rbegin() {
-        return iterator(_sentinel.prev);
+        return reverse_iterator(_sentinel.prev);
     }
 
     reverse_iterator rend() {
-        return iterator(&_sentinel);
+        return reverse_iterator(&_sentinel);
     }
 
-    explicit Cache(size_t maxEntries = 0) : _maxEntries(maxEntries) {}
+    Cache() {}
 
     iterator insert(const Key & key, const T & t) {
-        if (_maxEntries != 0 && _map.size() == _maxEntries) {
-            removeOldest();
-        }
-
         auto pair = _map.emplace(key, t);
-        ASSERT(pair.second, "");
+        ASSERT(pair.second, "Duplicate key.");
 
         auto & entry = pair.first->second;
         _sentinel.insert(entry.link);
@@ -222,7 +233,7 @@ public:
     }
 
     iterator erase(iterator iter) {
-        auto & entry = iter->second;
+        auto & entry = linkToEntry(*iter._link);
         Link * next  = entry.link.next;
         entry.link.extract();
         return iterator(next);
@@ -236,23 +247,29 @@ public:
         }
         else {
             auto & entry = iter->second;
-            makeNewest(entry);
+            entry.link.extract();
+            _sentinel.insert(entry.link);
             return iterator(&entry.link);
         }
     }
 
-private:
-    void removeOldest() {
-        ASSERT(!_sentinel.single(), "");
-        auto & entry = linkToEntry(*_sentinel.prev);
-        entry.link.extract();
-        auto & key = entryToKey(entry);
-        _map.erase(key);
+    T & at(const Key & key) {
+        auto iter = find(key);
+
+        if (iter == end()) {
+            throw std::out_of_range("Cache");
+        }
+        else {
+            return iter->second;
+        }
     }
 
-    void makeNewest(Entry & entry) {
-        entry.link.extract();
-        _sentinel.insert(entry.link);
+    bool empty() const {
+        return _map.empty();
+    }
+
+    size_t size() const {
+        return _map.size();
     }
 };
 

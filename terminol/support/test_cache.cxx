@@ -5,67 +5,60 @@
 
 #include <vector>
 
-int main() {
-    Cache<int, std::string> cache(3);
-    std::vector<int> keys;
+template <typename Key, typename T>
+void enforceKeys(Cache<Key, T> & cache, std::initializer_list<Key> keys) {
+    auto iter1 = cache.begin();
+    auto iter2 = keys.begin();
 
-    keys.clear();
-    for (auto & pair : cache) { keys.push_back(pair.first); }
-    ENFORCE(keys.empty(), "");
-    //ENFORCE(cache.lookup(11) == nullptr, "");
+    while (iter1 != cache.end() && iter2 != keys.end()) {
+        //std::cout << iter1->first << " " << *iter2 << std::endl;
+        ENFORCE(iter1->first == *iter2, "Key mismatch.");
+
+        ++iter1;
+        ++iter2;
+    }
+
+    ENFORCE(iter1 == cache.end(), "More keys than expected.");
+    ENFORCE(iter2 == keys.end(), "Fewer keys than expected.");
+}
+
+template <typename Key, typename T>
+void enforceIteration(Cache<Key, T> & cache) {
+    auto iter  = cache.begin();
+    auto rIter = cache.rend();
+
+    while (iter != cache.end()) {
+        --rIter;
+        ENFORCE(iter->first == rIter->first, "Match.");
+        ++iter;
+    }
+}
+
+int main() {
+    Cache<int, std::string> cache;
+
+    ENFORCE(cache.empty(), "");
     ENFORCE(cache.find(11) == cache.end(), "");
 
-    // Add 6
-    cache.insert(6, "Degrees of Kevin Bacon.");
-    //ENFORCE(cache.lookup(6) != nullptr, "");
+    cache.insert(6, "degrees of kevin bacon");
     ENFORCE(cache.find(6) != cache.end(), "");
-    //ENFORCE(cache.lookup(-1) == nullptr, "");
-    ENFORCE(cache.find(-1) == cache.end(), "");
-    keys.clear();
-    for (auto & pair : cache) { keys.push_back(pair.first); }
-    ENFORCE(keys.size() == 1, "");
-    ENFORCE(keys[0] == 6, "");
+    enforceKeys(cache, {6});
 
-    // Add 42
-    cache.insert(42,  "The meaning of life.");
-    keys.clear();
-    for (auto & pair : cache) { keys.push_back(pair.first); }
-    ENFORCE(keys.size() == 2, "");
-    ENFORCE(keys[0] == 42, "");
-    ENFORCE(keys[1] == 6, "");
+    cache.insert(42, "the meaning of life");
+    enforceKeys(cache, {6, 42});
 
-    // Lookup 42, shouldn't change the cache order
-    keys.clear();
-    for (auto & pair : cache) { keys.push_back(pair.first); }
-    ENFORCE(keys.size() == 2, "");
-    ENFORCE(keys[0] == 42, "");
-    ENFORCE(keys[1] == 6, "");
+    cache.insert(99, "luft balloons");
+    enforceKeys(cache, {6, 42, 99});
+    enforceIteration(cache);
 
-    // Lookup 6, should reverse the cache order
     cache.find(6);
-    keys.clear();
-    for (auto & pair : cache) { keys.push_back(pair.first); }
-    ENFORCE(keys.size() == 2, "");
-    ENFORCE(keys[0] == 6, "");
-    ENFORCE(keys[1] == 42, "");
+    enforceKeys(cache, {42, 99, 6});
 
-    // Lookup 6, shouldn't change the cache order
-    cache.find(6);
-    keys.clear();
-    for (auto & pair : cache) { keys.push_back(pair.first); }
-    ENFORCE(keys.size() == 2, "");
-    ENFORCE(keys[0] == 6, "");
-    ENFORCE(keys[1] == 42, "");
+    cache.find(99);
+    enforceKeys(cache, {42, 6, 99});
 
-    // Add 99 and 666, this should push 42 out
-    cache.insert(99,  "Luftballons.");
-    cache.insert(666, "The number of the beast.");
-    keys.clear();
-    for (auto & pair : cache) { keys.push_back(pair.first); }
-    ENFORCE(keys.size() == 3, "");
-    ENFORCE(keys[0] == 666, "");
-    ENFORCE(keys[1] == 99, "");
-    ENFORCE(keys[2] == 6, "");
+    cache.erase(cache.find(6));
+    enforceKeys(cache, {42, 99});
 
     return 0;
 }
