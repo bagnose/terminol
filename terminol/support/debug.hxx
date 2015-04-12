@@ -8,6 +8,12 @@
 #include <cstring>
 #include <cerrno>
 
+typedef void (*TerminateHandler)();
+
+[[noreturn]] void terminate();
+TerminateHandler setTerminate(TerminateHandler f);
+TerminateHandler getTerminate();
+
 #define LIKELY(x)   __builtin_expect(!!(x), 1)
 #define UNLIKELY(x) __builtin_expect(!!(x), 0)
 
@@ -48,7 +54,7 @@
             << __FILE__ << ":" << __LINE__ << " " \
             << output  \
             << std::endl; \
-        std::terminate(); \
+        terminate(); \
     } while (false)
 
 // Perform the action exactly once
@@ -90,7 +96,7 @@
                 << output  \
                 << "  (("#condition"))" \
                 << std::endl; \
-            std::terminate(); \
+            terminate(); \
         } \
     } while (false)
 
@@ -107,7 +113,7 @@
                 << output  \
                 << "  (("#condition"))" \
                 << std::endl; \
-            std::terminate(); \
+            terminate(); \
         } \
     } while (false)
 
