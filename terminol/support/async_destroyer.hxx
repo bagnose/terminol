@@ -4,34 +4,23 @@
 #ifndef SUPPORT__ASYNC_DESTROYER__HXX
 #define SUPPORT__ASYNC_DESTROYER__HXX
 
+#include "terminol/support/destroyer_interface.hxx"
 #include "terminol/support/pattern.hxx"
-#include "terminol/support/debug.hxx"
 #include "terminol/support/queue.hxx"
 
 #include <thread>
 
-class AsyncDestroyer : private Uncopyable {
+class AsyncDestroyer : public I_Destroyer, private Uncopyable {
 public:
-    class Garbage {
-    public:
-        virtual ~Garbage() = default;       // Heavy lifting goes here.
-    protected:
-        Garbage() = default;
-    };
-
-    //
-    //
-    //
-
     AsyncDestroyer() : _queue(), _thread(&AsyncDestroyer::background, this) {}
 
-    ~AsyncDestroyer() {
+    virtual ~AsyncDestroyer() {
         _queue.finalise();
         _thread.join();
     }
 
     // Callable from multiple threads.
-    void add(Garbage * garbage) {
+    void add(Garbage * garbage) override {
         _queue.add(std::move(garbage));
     }
 

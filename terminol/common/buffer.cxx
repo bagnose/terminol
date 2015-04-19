@@ -116,7 +116,7 @@ bool Buffer::BufferIter::isStartOfPara() {
 
 Buffer::Buffer(const Config       & config,
                I_Deduper          & deduper,
-               AsyncDestroyer     & destroyer,
+               I_Destroyer        & destroyer,
                int16_t              rows,
                int16_t              cols,
                uint32_t             historyLimit,

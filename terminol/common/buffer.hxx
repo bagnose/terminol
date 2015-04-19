@@ -257,7 +257,7 @@ class Buffer {
 
     const Config               & _config;
     I_Deduper                  & _deduper;
-    AsyncDestroyer             & _destroyer;
+    I_Destroyer                & _destroyer;
     std::deque<I_Deduper::Tag>   _tags;             // The paragraph history.
     uint32_t                     _lostTags;         // Incremented for each _tags.pop_front().
     std::vector<Cell>            _pending;          // Paragraph pending to become historical.
@@ -305,7 +305,7 @@ public:
 
     Buffer(const Config       & config,
            I_Deduper          & deduper,
-           AsyncDestroyer     & destroyer,
+           I_Destroyer        & destroyer,
            int16_t              rows,
            int16_t              cols,
            uint32_t             historyLimit,

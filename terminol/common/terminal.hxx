@@ -109,7 +109,7 @@ public:
              const Config       & config,
              I_Selector         & selector,
              I_Deduper          & deduper,
-             AsyncDestroyer     & destroyer,
+             I_Destroyer        & destroyer,
              int16_t              rows,
              int16_t              cols,
              const std::string  & windowId,
