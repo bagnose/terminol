@@ -249,7 +249,7 @@ install: $(2)_INSTALL
 .PHONY: $(2)_INSTALL
 
 $(2)_INSTALL: all
-	install -D dist/bin/$$($(2)_NAME) $(INSTALLDIR)/bin/$$($(2)_NAME)
+	install -D $$($(2)_EXE) $(INSTALLDIR)/bin/$$(notdir $(2))
 endif
 endef
 
