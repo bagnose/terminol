@@ -274,6 +274,8 @@ $(eval $(call EXE,TEST,terminol/support/test-rle,test_rle.cxx,$(SUPPORT_CFLAGS),
 
 $(eval $(call EXE,TEST,terminol/support/test-cache,test_cache.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 
+$(eval $(call EXE,TEST,terminol/support/test-math,test_math.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
+
 $(eval $(call EXE,TEST,terminol/support/test-queue,test_queue.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 
 $(eval $(call EXE,TEST,terminol/support/test-destroyer,test_destroyer.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
