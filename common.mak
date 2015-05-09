@@ -257,7 +257,7 @@ endef
 # SUPPORT
 #
 
-$(eval $(call LIB,terminol/support,conv.cxx debug.cxx pattern.cxx sys.cxx time.cxx,$(SUPPORT_CFLAGS),))
+$(eval $(call LIB,terminol/support,conv.cxx debug.cxx pattern.cxx sys.cxx test.cxx time.cxx,$(SUPPORT_CFLAGS),))
 
 $(eval $(call EXE,TEST,terminol/support/test-support,test_support.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 
