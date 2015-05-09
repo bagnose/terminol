@@ -7,9 +7,9 @@
 #include "terminol/support/destroyer_interface.hxx"
 #include "terminol/support/pattern.hxx"
 
-class SyncDestoyer : public I_Destroyer, private Uncopyable {
+class SyncDestroyer : public I_Destroyer, private Uncopyable {
 public:
-    virtual ~SyncDestoyer() {}
+    virtual ~SyncDestroyer() {}
 
     void add(Garbage * garbage) override {
         delete garbage;
