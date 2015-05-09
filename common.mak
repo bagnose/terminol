@@ -40,6 +40,9 @@ ifneq ($(WARN),noerror)
   CXXFLAGS += -Werror
 endif
 
+# XXX not to be merged with master:
+WFLAGS += -Wno-unused-parameter -Wno-unused-const-variable
+
 ifeq ($(COMPILER),gnu)
   CXX := g++
 else ifeq ($(COMPILER),clang)
@@ -59,7 +62,9 @@ ifeq ($(MODE),release)
 else ifeq ($(MODE),debug)
   CPPFLAGS += -DDEBUG=1
   CXXFLAGS += -g
-  CXXFLAGS += -O1
+  #CXXFLAGS += -O1
+  # XXX not to be merged with master:
+  CXXFLAGS += -O0
 else ifeq ($(MODE),coverage)
   CPPFLAGS += -DDEBUG=1
   CXXFLAGS += -g --coverage
