@@ -86,6 +86,10 @@ public:
         return common(text.data(), text.size());
     }
 
+    std::vector<Substr> matchOffsets(const std::vector<uint8_t> & text) const {
+        return common(reinterpret_cast<const char *>(&text.front()), text.size());
+    }
+
     // First element is "whole match", subsequent are "captures" (things in parentheses).
     bool matchTest(const std::string & text) const {
         return matchTest(text.data(), text.size());

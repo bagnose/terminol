@@ -289,13 +289,19 @@ $(eval $(call EXE,TEST,terminol/support/test-destroyer,test_destroyer.cxx,$(SUPP
 # COMMON
 #
 
-$(eval $(call LIB,terminol/common,ascii.cxx bindings.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx escape.cxx simple_deduper.cxx enums.cxx key_map.cxx parser.cxx terminal.cxx tty.cxx utf8.cxx vt_state_machine.cxx,$(COMMON_CFLAGS),terminol/support))
+$(eval $(call LIB,terminol/common,ascii.cxx bindings.cxx bit_sets.cxx buffer.cxx config.cxx data_types.cxx dedupe_repository.cxx enums.cxx escape.cxx key_map.cxx para.cxx para_cache.cxx parser.cxx simple_deduper.cxx simple_repository.cxx terminal.cxx text.cxx tty.cxx utf8.cxx vt_state_machine.cxx,$(COMMON_CFLAGS),terminol/support))
 
 $(eval $(call EXE,TEST,terminol/common/test-utf8,test_utf8.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
 $(eval $(call EXE,TEST,terminol/common/test-data-types,test_data_types.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
 $(eval $(call EXE,PRIV,terminol/common/abuse,abuse.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
+
+$(eval $(call EXE,TEST,terminol/common/test-para,test_para.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
+
+$(eval $(call EXE,TEST,terminol/common/test-text,test_text.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
+
+$(eval $(call EXE,TEST,terminol/common/test-buffer2,test_buffer2.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
 $(eval $(call EXE,PRIV,terminol/common/wedge,wedge.cxx,$(COMMON_CFLAGS),terminol/common,$(COMMON_LDFLAGS)))
 
