@@ -146,23 +146,24 @@ protected:
             switch (rval) {
                 case PCRE_ERROR_NOMATCH:
                     break;
+                case PCRE_ERROR_NULL:
+                    break;
                 default:
-                    ERROR("Unknown error matching.");
+                    ERROR("Unknown error matching: " << rval);
                     break;
             }
-            return substrs;
         }
         else if (rval == 0) {
             ERROR("Insufficient match room.");
             offsets.resize(0);
-            return substrs;
         }
         else {
             for (int i = 0; i != rval; ++i) {
                 substrs.emplace_back(offsets[2 * i], offsets[2 * i + 1]);
             }
-            return substrs;
         }
+
+        return substrs;
     }
 };
 
