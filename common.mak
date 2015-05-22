@@ -26,7 +26,7 @@ XCB_CFLAGS      := $(shell pkg-config --cflags $(SUPPORT_MODULES) $(COMMON_MODUL
 XCB_LDFLAGS     := $(shell pkg-config --libs   $(SUPPORT_MODULES) $(COMMON_MODULES) $(GFX_MODULES) $(XCB_MODULES))
 
 CPPFLAGS        := -DVERSION=\"$(VERSION)\" -iquotesrc
-CXXFLAGS        := -fpic -fno-rtti -pedantic -std=c++11
+CXXFLAGS        := -fpic -fno-rtti -pedantic -std=c++11 -lpthread
 WFLAGS          := -Wextra -Wall -Wno-long-long -Wundef                   \
                    -Wredundant-decls -Wshadow -Wsign-compare              \
                    -Wmissing-field-initializers -Wno-format-zero-length   \
@@ -34,7 +34,7 @@ WFLAGS          := -Wextra -Wall -Wno-long-long -Wundef                   \
                    -Wctor-dtor-privacy -Wnon-virtual-dtor
 AR              := ar
 ARFLAGS         := csr
-LDFLAGS         :=
+LDFLAGS         := -lpthread
 
 ifneq ($(WARN),noerror)
   CXXFLAGS += -Werror
@@ -46,11 +46,6 @@ else ifeq ($(COMPILER),clang)
   CXX := clang++
 else
   $(error Unrecognised COMPILER: $(COMPILER))
-endif
-
-ifeq ($(COMPILER),gnu)
-    CXXFLAGS += -lpthread
-    LDFLAGS  += -lpthread
 endif
 
 ifeq ($(MODE),release)
