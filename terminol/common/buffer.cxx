@@ -161,7 +161,6 @@ Buffer::~Buffer() {
             _deduper(deduper), _tags(tags) {}
 
         ~Garbage() override {
-            PRINT("Taking out the garbage!");
             for (auto tag : _tags) {
                 // Deregister all of our valid tags. Note, really only the last tags can
                 // be invalid.
