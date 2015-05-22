@@ -48,6 +48,11 @@ else
   $(error Unrecognised COMPILER: $(COMPILER))
 endif
 
+ifeq ($(COMPILER),gnu)
+    CXXFLAGS += -lpthread
+    LDFLAGS  += -lpthread
+endif
+
 ifeq ($(MODE),release)
   CPPFLAGS += -DDEBUG=0 -DNDEBUG
   WFLAGS   += -Wno-unused-parameter
