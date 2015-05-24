@@ -92,6 +92,7 @@ endif
 all:
 
 info:
+	@echo 'CXX     : $(CXX)'
 	@echo 'CPPFLAGS: $(CPPFLAGS)'
 	@echo 'CXXFLAGS: $(CXXFLAGS)'
 	@echo 'LDFLAGS:  $(LDFLAGS)'
