@@ -1001,7 +1001,7 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     //NYI("Ignored: "  << a << ", " << set);
                     break;
                 case 47: {
-                    Buffer * newBuffer = set ? &_altBuffer : &_priBuffer;
+                    auto newBuffer = set ? &_altBuffer : &_priBuffer;
                     if (_buffer != newBuffer) {
                         newBuffer->migrateFrom(*_buffer, false);
                         _buffer = newBuffer;
@@ -1080,7 +1080,7 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     _modes.setTo(Mode::ALT_SENDS_ESC, set);
                     break;
                 case 1047: {
-                    Buffer * newBuffer = set ? &_altBuffer : &_priBuffer;
+                    auto newBuffer = set ? &_altBuffer : &_priBuffer;
                     if (_buffer != newBuffer) {
                         newBuffer->migrateFrom(*_buffer, set);
                         _buffer = newBuffer;
@@ -1095,7 +1095,7 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     }
                     break;
                 case 1049: { // rmcup/smcup, alternative screen
-                    Buffer * newBuffer = set ? &_altBuffer : &_priBuffer;
+                    auto newBuffer = set ? &_altBuffer : &_priBuffer;
                     if (_buffer != newBuffer) {
                         if (set) { _buffer->saveCursor(); }
                         newBuffer->migrateFrom(*_buffer, set);
