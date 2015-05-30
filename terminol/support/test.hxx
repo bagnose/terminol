@@ -9,6 +9,7 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <exception>
 
 class Test {
     std::vector<std::string> _names;
@@ -43,6 +44,12 @@ public:
         _names.push_back(name);
     }
 
+    ~Test() {
+        if (!std::uncaught_exception() && _failures > 0) {
+            std::terminate();
+        }
+    }
+
     template <typename Func, typename... Args>
     void run(const std::string & name, Func && func, Args &&...args) {
         push(name);
@@ -61,10 +68,6 @@ public:
         std::ostringstream sst;
         sst << "(" << lhs << " == " << rhs << ") " << description;
         return common(equal, sst.str());
-    }
-
-    int rval() const {
-        return _failures > 0 ? 1 : 0;
     }
 };
 

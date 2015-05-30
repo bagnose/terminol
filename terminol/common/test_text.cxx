@@ -179,5 +179,6 @@ int main() {
     test.run("historical", testHistorical);
     //test.run("straddling-para", testStraddlingPara);
     //test.run("rfind", testRfind);
-    return test.rval();
+
+    return 0;
 }

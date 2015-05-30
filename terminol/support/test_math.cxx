@@ -11,6 +11,4 @@ int main() {
     test.assertEqual(1, divideRoundUp(1, 10),  "1 div-round-up 10.");
     test.assertEqual(1, divideRoundUp(10, 10), "10 div-round-up 10.");
     test.assertEqual(2, divideRoundUp(11, 10), "11 div-round-up 10.");
-
-    return test.rval();
 }
