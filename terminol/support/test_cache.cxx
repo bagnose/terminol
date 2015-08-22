@@ -2,6 +2,7 @@
 // Copyright © 2015 David Bryant
 
 #include "terminol/support/cache.hxx"
+#include "terminol/support/test.hxx"
 
 #include <vector>
 
@@ -35,13 +36,15 @@ void enforceIteration(Cache<Key, T> & cache) {
 }
 
 int main() {
+    Test test("support/cache");
+
     Cache<int, std::string> cache;
 
-    ENFORCE(cache.empty(), "");
-    ENFORCE(cache.find(11) == cache.end(), "");
+    test.assert(cache.empty(), "empty cache");
+    test.assert(cache.find(11) == cache.end(), "");
 
     cache.insert(6, "degrees of kevin bacon");
-    ENFORCE(cache.find(6) != cache.end(), "");
+    test.assert(cache.find(6) != cache.end(), "");
     enforceKeys(cache, {6});
 
     cache.insert(42, "the meaning of life");
