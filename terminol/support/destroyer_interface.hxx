@@ -1,8 +1,8 @@
 // vi:noai:sw=4
 // Copyright © 2015 David Bryant
 
-#ifndef SUPPORT_DESTROYER_INTERFACE__HXX
-#define SUPPORT_DESTROYER_INTERFACE__HXX
+#ifndef SUPPORT__DESTROYER_INTERFACE__HXX
+#define SUPPORT__DESTROYER_INTERFACE__HXX
 
 class I_Destroyer {
 public:
@@ -19,4 +19,4 @@ protected:
     ~I_Destroyer() {}
 };
 
-#endif // SUPPORT_DESTROYER_INTERFACE__HXX
+#endif // SUPPORT__DESTROYER_INTERFACE__HXX

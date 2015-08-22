@@ -1,8 +1,8 @@
 // vi:noai:sw=4
 // Copyright © 2015 David Bryant
 
-#ifndef SUPPORT__MATH_HXX
-#define SUPPORT__MATH_HXX
+#ifndef SUPPORT__MATH__HXX
+#define SUPPORT__MATH__HXX
 
 #include <type_traits>
 
@@ -11,4 +11,4 @@ template <typename A, typename B> auto divideRoundUp(A a, B b) noexcept -> declt
     return (a + b - 1) / b;
 }
 
-#endif // SUPPORT__MATH_HXX
+#endif // SUPPORT__MATH__HXX
