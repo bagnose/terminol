@@ -9,9 +9,12 @@
 // Inherit from this to be uncopyable (and unassignable).
 class Uncopyable {
 public:
-    Uncopyable              ()                   = default;
-    Uncopyable              (const Uncopyable &) = delete;
-    Uncopyable & operator = (const Uncopyable &) = delete;
+    Uncopyable(const Uncopyable &) noexcept = delete;
+    Uncopyable & operator = (const Uncopyable &) noexcept = delete;
+
+protected:
+    Uncopyable() noexcept = default;
+    ~Uncopyable() noexcept = default;
 };
 
 //

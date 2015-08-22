@@ -265,6 +265,8 @@ endef
 
 $(eval $(call LIB,terminol/support,conv.cxx debug.cxx pattern.cxx sys.cxx test.cxx time.cxx,$(SUPPORT_CFLAGS),))
 
+$(eval $(call EXE,TEST,terminol/support/test-pattern,test_pattern.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
+
 $(eval $(call EXE,TEST,terminol/support/test-support,test_support.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 
 $(eval $(call EXE,TEST,terminol/support/test-net,test_net.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
