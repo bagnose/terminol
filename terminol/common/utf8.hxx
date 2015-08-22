@@ -20,7 +20,7 @@ enum Length : uint8_t {
     LMAX = L4
 };
 
-typedef int32_t CodePoint;
+using CodePoint = int32_t;
 
 //
 //

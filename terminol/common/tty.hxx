@@ -41,7 +41,7 @@ public:
         std::string message;
     };
 
-    typedef std::vector<std::string> Command;           // XXX questionable typedef
+    using Command = std::vector<std::string>;           // XXX questionable alias
 
     Tty(I_Observer        & observer,
         I_Selector        & selector,

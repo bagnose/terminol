@@ -8,7 +8,7 @@
 #include <cstring>
 #include <cerrno>
 
-typedef void (*TerminateHandler)();
+using TerminateHandler = void (*)();
 
 [[noreturn]] void terminate();
 TerminateHandler setTerminate(TerminateHandler f);

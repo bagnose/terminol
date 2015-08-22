@@ -45,13 +45,13 @@ public:
 //
 //
 
-typedef BitSet<Modifier, uint8_t> ModifierSet;
+using ModifierSet = BitSet<Modifier, uint8_t>;
 std::ostream & operator << (std::ostream & ost, ModifierSet modifierSet);
 
-typedef BitSet<Attr, uint8_t> AttrSet;
+using AttrSet = BitSet<Attr, uint8_t>;
 std::ostream & operator << (std::ostream & ost, AttrSet attrSet);
 
-typedef BitSet<Mode, uint32_t> ModeSet;
+using ModeSet = BitSet<Mode, uint32_t>;
 std::ostream & operator << (std::ostream & ost, ModeSet modeSet);
 
 #endif // COMMON__BIT_SETS__HXX

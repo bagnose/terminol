@@ -11,7 +11,7 @@
 
 class I_Deduper {
 public:
-    typedef uint32_t Tag;       // Note, can use smaller tag sizes to cause collisions, etc.
+    using Tag = uint32_t;       // Note, can use smaller tag sizes to cause collisions, etc.
     static Tag invalidTag() { return std::numeric_limits<Tag>::max(); }
 
     virtual Tag store(const std::vector<Cell> & cells) = 0;

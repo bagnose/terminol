@@ -11,7 +11,7 @@
 
 class I_Repository {
 public:
-    typedef uint32_t Tag;       // Note, can use smaller tag sizes to cause collisions, etc.
+    using Tag = uint32_t;       // Note, can use smaller tag sizes to cause collisions, etc.
 
     struct Entry {
         Entry() {}

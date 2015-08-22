@@ -13,7 +13,7 @@
 //
 
 class Timer {
-    typedef std::chrono::steady_clock Clock;
+    using Clock = std::chrono::steady_clock;
     Clock::time_point _endTime;
 
 public:

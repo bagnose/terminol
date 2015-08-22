@@ -268,8 +268,8 @@ public:
     }
 };
 
-typedef IStreamHandler<std::string> StringHandler;
-typedef IStreamHandler<int>         IntHandler;
+using StringHandler = IStreamHandler<std::string>;
+using IntHandler    = IStreamHandler<int>;
 
 template <class F> class MiscHandler : public CmdLine::Handler {
     F _func;

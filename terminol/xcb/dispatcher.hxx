@@ -104,7 +104,7 @@ protected:
     void handleRead(int fd) override;
 
 private:
-    typedef std::unordered_map<xcb_window_t, I_Observer *> Observers;
+    using Observers = std::unordered_map<xcb_window_t, I_Observer *>;
 
     I_Selector       & _selector;
     xcb_connection_t * _connection;

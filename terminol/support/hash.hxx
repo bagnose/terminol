@@ -7,7 +7,7 @@
 #include <algorithm>
 
 template <class T> struct SDBM {
-    typedef T Type;
+    using Type = T;
     T operator () (T val, uint8_t next) {
         return static_cast<T>(next) + (val << 6) + (val << 16) - val;
     }

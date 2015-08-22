@@ -59,7 +59,7 @@ template <typename Key, typename T> class Cache : protected Uncopyable {
     }
 
     static Key & entryToKey(Entry & entry) {
-        typedef typename Map::value_type Pair;
+        using Pair = typename Map::value_type;
         auto keyOffset   = offsetof(Pair, first);
         auto entryOffset = offsetof(Pair, second);
         auto bytePtr     = reinterpret_cast<uint8_t *>(&entry);
@@ -67,21 +67,21 @@ template <typename Key, typename T> class Cache : protected Uncopyable {
         return key;
     }
 
-    typedef std::unordered_map<Key, Entry> Map;
+    using Map = std::unordered_map<Key, Entry>;
 
     Link _sentinel;       // next is oldest, prev is newest
     Map  _map;
 
 public:
-    typedef Key                     key_type;
-    typedef T                       mapped_type;
-    typedef std::pair<const Key, T> value_type;
-    typedef value_type             &reference;
-    typedef const value_type       &const_reference;
-    typedef value_type             *pointer;
-    typedef const value_type       *const_pointer;
-    typedef size_t                  size_type;
-    typedef ptrdiff_t               difference_type;
+    using key_type        = Key;
+    using mapped_type     = T;
+    using value_type      = std::pair<const Key, T>;
+    using reference       = value_type &;
+    using const_reference = const value_type &;
+    using pointer         = value_type *;
+    using const_pointer   = const value_type *;
+    using size_type       = size_t;
+    using difference_type = ptrdiff_t;
 
     //
     //
@@ -91,11 +91,11 @@ public:
         friend class Cache;
         Link * _link;
     public:
-        typedef std::bidirectional_iterator_tag iterator_category;
-        typedef std::pair<const Key, T>         value_type;
-        typedef ptrdiff_t                       difference_type;
-        typedef value_type                     *pointer;
-        typedef value_type                     &reference;
+        using iterator_category = std::bidirectional_iterator_tag;
+        using value_type        = std::pair<const Key, T>;
+        using difference_type   = ptrdiff_t;
+        using pointer           = value_type *;
+        using reference         = value_type &;
 
         explicit iterator(Link * link) : _link(link) {}
 
@@ -147,11 +147,11 @@ public:
     class reverse_iterator {
         iterator _iterator;
     public:
-        typedef std::bidirectional_iterator_tag iterator_category;
-        typedef std::pair<const Key, T>         value_type;
-        typedef ptrdiff_t                       difference_type;
-        typedef value_type                     *pointer;
-        typedef value_type                     &reference;
+        using iterator_category = std::bidirectional_iterator_tag;
+        using value_type        = std::pair<const Key, T>;
+        using difference_type   = ptrdiff_t;
+        using pointer           = value_type *;
+        using reference         = value_type &;
 
         explicit reverse_iterator(Link * link) : _iterator(link) {}
 

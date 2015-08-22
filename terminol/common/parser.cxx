@@ -17,7 +17,7 @@ class Parser : protected Uncopyable {
         virtual void handle(const std::string & value) throw (ParseError) = 0;
     };
 
-    typedef std::unordered_map<std::string, Handler *> Handlers;
+    using Handlers = std::unordered_map<std::string, Handler *>;
 
     //
 
@@ -44,7 +44,7 @@ class Parser : protected Uncopyable {
 
     //
 
-    typedef std::unordered_map<std::string, Action> Actions;
+    using Actions = std::unordered_map<std::string, Action>;
 
     //
 

@@ -74,6 +74,6 @@ std::ostream & operator << (std::ostream & ost, Action action);
 //
 //
 
-typedef std::map<KeyCombo, Action> Bindings;
+using Bindings = std::map<KeyCombo, Action>;
 
 #endif // COMMON__BINDINGS__HXX

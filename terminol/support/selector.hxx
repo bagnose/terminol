@@ -64,7 +64,7 @@ protected:
 //
 
 class SelectSelector : public I_Selector {
-    typedef std::chrono::steady_clock Clock;
+    using Clock = std::chrono::steady_clock;
 
     struct TimeEntry {
         TimeEntry(Clock::time_point  time_, I_TimeoutHandler * handler_) :
@@ -229,7 +229,7 @@ public:
     }
 };
 
-typedef SelectSelector Selector;
+using Selector = SelectSelector;
 
 #else // __linux__
 
@@ -240,7 +240,7 @@ typedef SelectSelector Selector;
 //
 
 class EPollSelector : public I_Selector {
-    typedef std::chrono::steady_clock Clock;
+    using Clock = std::chrono::steady_clock;
 
     struct TimeEntry {
         TimeEntry(Clock::time_point  time_, I_TimeoutHandler * handler_) :
@@ -444,7 +444,7 @@ public:
     }
 };
 
-typedef EPollSelector Selector;
+using Selector = EPollSelector;
 
 #endif // __linux__
 

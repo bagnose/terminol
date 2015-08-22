@@ -56,7 +56,7 @@ public:
 };
 
 int main() {
-    typedef int Item;
+    using Item = int;
 
     Queue<Item> queue;
 
