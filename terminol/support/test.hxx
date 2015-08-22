@@ -5,11 +5,13 @@
 #define SUPPORT__TEST__HXX
 
 #include "terminol/support/debug.hxx"
+#include "terminol/support/conv.hxx"
 
 #include <string>
 #include <sstream>
 #include <vector>
 #include <exception>
+#include <iterator>
 
 class Test {
     std::vector<std::string> _names;
@@ -24,40 +26,45 @@ class Test {
     }
 
     void pop() {
-        _names.pop_back();
         ASSERT(!_names.empty(), "Too many pops.");
+        _names.pop_back();
     }
 
     std::string getPath() const {
-        std::string path;
-        for (auto & name : _names) {
-            if (!path.empty()) {
-                path += "/";
-            }
-            path += name;
-        }
-        return path;
+        std::ostringstream ost;
+        std::copy(_names.begin(), _names.end(),
+                  std::ostream_iterator<std::string>(ost, "/"));
+        return ost.str();
     }
 
     template <typename T>
     static std::string stringify(const T & t, bool abbrev) {
-        std::ostringstream sst;
-        sst << t;
-        auto str = sst.str();
+        auto str = ::stringify(t);
 
-        // TODO abbreviate if we are told and need to.
+        if (abbrev) {
+            constexpr size_t MAX = 16;
+            if (str.size() > MAX) {
+                str.resize(MAX);
+                std::fill(str.end() - 3, str.end(), '.');
+            }
+        }
 
         return str;
     }
 
 public:
     explicit Test(const std::string & name) {
-        _names.push_back(name);
+        push(name);
     }
 
     ~Test() {
-        if (!std::uncaught_exception() && _failures > 0) {
-            std::terminate();
+        if (!std::uncaught_exception()) {
+            pop();
+            ASSERT(_names.empty(), "Insufficient pops");
+
+            if (_failures > 0) {
+                std::terminate();
+            }
         }
     }
 

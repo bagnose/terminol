@@ -8,9 +8,13 @@
 #include <unistd.h>
 
 bool Test::common(bool success, const std::string & message) {
-    std::ostringstream sst;
-
     ++_count;
+    if (success) {
+        ++_successes;
+    }
+    else {
+        ++_failures;
+    }
 
     const char * pass;
     const char * fail;
@@ -24,20 +28,12 @@ bool Test::common(bool success, const std::string & message) {
         fail = "FAIL";
     }
 
-    sst
-        << (success ? pass : fail)
-        << " " << _count << ""
+    std::ostringstream sst;
+    sst << (success ? pass : fail)
+        << " " << _count
         << " " << getPath() << " -"
-        << " " << message << ""
-        ;
+        << " " << message;
     std::cerr << sst.str() << std::endl;
-
-    if (success) {
-        ++_successes;
-    }
-    else {
-        ++_failures;
-    }
 
     return success;
 }
