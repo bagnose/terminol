@@ -16,18 +16,19 @@ class Queue : private Uncopyable {
 public:
     struct Finalised {};
 
-    Queue() : _queue(), _finalised(false), _mutex(), _condition() {}
+    // These functions are called by the producer:
 
-    ~Queue() {
-        finalise();
+    void add(const T & t) {
+        std::unique_lock<std::mutex> lock(_mutex);
+        ASSERT(!_finalised, "Add after finalised.");
+        _queue.push(t);
+        _condition.notify_one();
     }
-
-    // These two functions are called by the producer:
 
     void add(T && t) {
         std::unique_lock<std::mutex> lock(_mutex);
         ASSERT(!_finalised, "Add after finalised.");
-        _queue.push(t);
+        _queue.push(std::move(t));
         _condition.notify_one();
     }
 
@@ -57,9 +58,9 @@ public:
 
 private:
     std::queue<T>           _queue;
-    bool                    _finalised;
     std::mutex              _mutex;
     std::condition_variable _condition;
+    bool                    _finalised = false;
 };
 
 #endif // SUPPORT__QUEUE__HXX
