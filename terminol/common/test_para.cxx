@@ -38,7 +38,7 @@ utf8::Seq encode(const char * ch) noexcept {
     return seq;
 }
 
-std::vector<uint8_t> vec(const char *str) {
+std::vector<uint8_t> vec(const char * str) {
     std::vector<uint8_t> rval;
 
     while (*str != '\0') {

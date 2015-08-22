@@ -13,8 +13,8 @@
 // LRU cache container
 template <typename Key, typename T> class Cache : protected Uncopyable {
     struct Link {
-        Link *prev;
-        Link *next;
+        Link * prev;
+        Link * next;
 
         Link() noexcept : prev(this), next(this) {}
         Link(const Link & UNUSED(link)) noexcept : prev(this), next(this) {}
