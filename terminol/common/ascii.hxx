@@ -52,7 +52,7 @@ const uint8_t DEL   = '\x7F';
 
 // Streaming helper.
 struct Char {
-    explicit Char(uint8_t c_) : c(c_) {}
+    explicit Char(uint8_t c_) noexcept : c(c_) {}
     uint8_t c;
 };
 

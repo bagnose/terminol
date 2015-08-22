@@ -27,7 +27,7 @@ using CodePoint = int32_t;
 //
 
 // Given a lead character, what is the length of the sequence?
-Length    leadLength(uint8_t lead);
+Length    leadLength(uint8_t lead) noexcept;
 
 // Decode a sequence into a code point. Assumes sequence is complete.
 CodePoint decode(const uint8_t * sequence) throw (Error);
@@ -38,28 +38,28 @@ Length    codePointLength(CodePoint codePoint) throw (Error);
 // Encode a code point into a sequence. Assumes sequence has sufficient allocation.
 Length    encode(CodePoint codePoint, uint8_t * sequence) throw (Error);
 
-bool      isLead(uint8_t byte);
+bool      isLead(uint8_t byte) noexcept;
 
-bool      isCont(uint8_t byte);
+bool      isCont(uint8_t byte) noexcept;
 
 //
 //
 //
 
 struct Seq {
-    Seq(uint8_t b0 = '\0', uint8_t b1 = '\0', uint8_t b2 = '\0', uint8_t b3 = '\0') :
+    Seq(uint8_t b0 = '\0', uint8_t b1 = '\0', uint8_t b2 = '\0', uint8_t b3 = '\0') noexcept :
         bytes { b0, b1, b2, b3 } {}
 
-    void clear() {
+    void clear() noexcept {
         bytes[0] = bytes[1] = bytes[2] = bytes[3] = '\0';
     }
 
-    uint8_t lead() const { return bytes[0]; }
+    uint8_t lead() const noexcept { return bytes[0]; }
 
     uint8_t bytes[Length::LMAX];
 };
 
-inline bool operator == (Seq lhs, Seq rhs) {
+inline bool operator == (Seq lhs, Seq rhs) noexcept {
     return
         lhs.bytes[0] == rhs.bytes[0] &&
         lhs.bytes[1] == rhs.bytes[1] &&
@@ -67,7 +67,7 @@ inline bool operator == (Seq lhs, Seq rhs) {
         lhs.bytes[3] == rhs.bytes[3];
 }
 
-inline bool operator != (Seq lhs, Seq rhs) {
+inline bool operator != (Seq lhs, Seq rhs) noexcept {
     return !(lhs == rhs);
 }
 
@@ -96,19 +96,19 @@ private:
     Seq     _seq;
 
 public:
-    Machine() : _state(State::START), _index(0), _seq() {}
+    Machine() noexcept : _state(State::START), _index(0), _seq() {}
 
-    Length length() const {
+    Length length() const noexcept {
         ASSERT(_state == State::ACCEPT, "");
         return static_cast<Length>(_index);
     }
 
-    Seq seq() const {
+    Seq seq() const noexcept {
         ASSERT(_state == State::ACCEPT, "");
         return _seq;
     }
 
-    State consume(uint8_t c);
+    State consume(uint8_t c) noexcept;
 };
 
 } // namespace utf8

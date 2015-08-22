@@ -5,9 +5,9 @@
 #define SUPPORT__SYS__HXX
 
 // Set FD_CLOEXEC
-void fdCloseExec(int fd);
+void fdCloseExec(int fd) noexcept;
 
 // Set O_NONBLOCK
-void fdNonBlock(int fd);
+void fdNonBlock(int fd) noexcept;
 
 #endif // SUPPORT__SYS__HXX

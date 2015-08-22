@@ -14,7 +14,7 @@ class Pipe {
     int _fds[2];
 
 public:
-    Pipe() {
+    Pipe() noexcept {
 #ifdef __linux__
         // pipe2() doesn't raise EINTR.
         ENFORCE_SYS(::pipe2(_fds, O_NONBLOCK | O_CLOEXEC) != -1, "");
@@ -28,13 +28,13 @@ public:
 #endif
     }
 
-    ~Pipe() {
+    ~Pipe() noexcept {
         ENFORCE_SYS(::close(_fds[0]) != -1, "");
         ENFORCE_SYS(::close(_fds[1]) != -1, "");
     }
 
-    int readFd() { return _fds[0]; }
-    int writeFd() { return _fds[1]; }
+    int readFd() noexcept { return _fds[0]; }
+    int writeFd() noexcept { return _fds[1]; }
 };
 
 #endif // SUPPORT__PIPE__HXX

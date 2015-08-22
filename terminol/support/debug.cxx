@@ -22,12 +22,12 @@ void terminate() {
     std::abort();
 }
 
-TerminateHandler setTerminate(TerminateHandler f) {
+TerminateHandler setTerminate(TerminateHandler f) noexcept {
     auto oldHandler = terminateHandler;
     terminateHandler = f;
     return oldHandler;
 }
 
-TerminateHandler getTerminate() {
+TerminateHandler getTerminate() noexcept {
     return terminateHandler;
 }

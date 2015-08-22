@@ -17,7 +17,7 @@ const uint8_t B6 = 1 << 6;
 const uint8_t B7 = 1 << 7;
 
 // Just inspect the lead octect to determine the length.
-Length leadLength(uint8_t lead) {
+Length leadLength(uint8_t lead) noexcept {
     if ((lead & B7) == 0) {
         // 0xxxxxxx
         return Length::L1;
@@ -165,7 +165,7 @@ Length encode(CodePoint codePoint, uint8_t * sequence) throw (Error) {
 }
 
 
-bool isLead(uint8_t byte) {
+bool isLead(uint8_t byte) noexcept {
     if ((byte & B7) == 0) {
         return true;
     }
@@ -183,7 +183,7 @@ bool isLead(uint8_t byte) {
     }
 }
 
-bool isCont(uint8_t byte) {
+bool isCont(uint8_t byte) noexcept {
     return !isLead(byte);
 }
 
@@ -203,7 +203,7 @@ std::ostream & operator << (std::ostream & ost, Seq seq) {
 //
 //
 
-Machine::State Machine::consume(uint8_t c) {
+Machine::State Machine::consume(uint8_t c) noexcept {
     switch (_state) {
         case State::START:
         case State::ACCEPT:

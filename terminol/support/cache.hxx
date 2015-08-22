@@ -16,25 +16,25 @@ template <typename Key, typename T> class Cache : protected Uncopyable {
         Link *prev;
         Link *next;
 
-        Link() : prev(this), next(this) {}
-        Link(const Link & UNUSED(link)) : prev(this), next(this) {}
+        Link() noexcept : prev(this), next(this) {}
+        Link(const Link & UNUSED(link)) noexcept : prev(this), next(this) {}
 
         // After this call, link->next==this
-        void insert(Link & link) {
+        void insert(Link & link) noexcept {
             link.next = this;
             link.prev = prev;
             prev->next = &link;
             prev = &link;
         }
 
-        void extract() {
+        void extract() noexcept {
             prev->next = next;
             next->prev = prev;
             next = this;
             prev = this;
         }
 
-        bool single() const {
+        bool single() const noexcept {
             if (prev == next) {
                 ASSERT(prev == this, "Invalid link.");
                 return true;
@@ -51,14 +51,14 @@ template <typename Key, typename T> class Cache : protected Uncopyable {
         Link  link;
     };
 
-    static Entry & linkToEntry(Link & link) {
+    static Entry & linkToEntry(Link & link) noexcept {
         auto linkOffset = offsetof(Entry, link);
         auto bytePtr    = reinterpret_cast<uint8_t *>(&link);
         auto & entry    = *reinterpret_cast<Entry *>(bytePtr - linkOffset);
         return entry;
     }
 
-    static Key & entryToKey(Entry & entry) {
+    static Key & entryToKey(Entry & entry) noexcept {
         using Pair = typename Map::value_type;
         auto keyOffset   = offsetof(Pair, first);
         auto entryOffset = offsetof(Pair, second);
@@ -97,45 +97,45 @@ public:
         using pointer           = value_type *;
         using reference         = value_type &;
 
-        explicit iterator(Link * link) : _link(link) {}
+        explicit iterator(Link * link) noexcept : _link(link) {}
 
-        pointer operator->() {
+        pointer operator->() noexcept {
             Key & key = entryToKey(linkToEntry(*_link));
             return reinterpret_cast<pointer>(&key);
         }
 
-        reference operator*() {
+        reference operator*() noexcept {
             Key & key = entryToKey(linkToEntry(*_link));
             return reinterpret_cast<reference>(key);
         }
 
-        iterator &operator++() {
+        iterator &operator++() noexcept {
             _link = _link->next;
             return *this;
         }
 
-        iterator operator++(int) {
+        iterator operator++(int) noexcept {
             iterator rval(*this);
             operator++();
             return rval;
         }
 
-        iterator &operator--() {
+        iterator &operator--() noexcept {
             _link = _link->prev;
             return *this;
         }
 
-        iterator operator--(int) {
+        iterator operator--(int) noexcept {
             iterator rval(*this);
             operator--();
             return rval;
         }
 
-        friend bool operator == (iterator lhs, iterator rhs) {
+        friend bool operator == (iterator lhs, iterator rhs) noexcept {
             return lhs._link == rhs._link;
         }
 
-        friend bool operator != (iterator lhs, iterator rhs) {
+        friend bool operator != (iterator lhs, iterator rhs) noexcept {
             return !(lhs == rhs);
         }
     };
@@ -153,49 +153,49 @@ public:
         using pointer           = value_type *;
         using reference         = value_type &;
 
-        explicit reverse_iterator(Link * link) : _iterator(link) {}
+        explicit reverse_iterator(Link * link) noexcept : _iterator(link) {}
 
-        iterator base() const {
+        iterator base() const noexcept {
             auto iter = _iterator;
             --iter;
             return iter;
         }
 
-        pointer operator->() {
+        pointer operator->() noexcept {
             return _iterator.operator->();
         }
 
-        reference operator*() {
+        reference operator*() noexcept {
             return _iterator.operator*();
         }
 
-        reverse_iterator &operator++() {
+        reverse_iterator &operator++() noexcept {
             --_iterator;
             return *this;
         }
 
-        reverse_iterator operator++(int) {
+        reverse_iterator operator++(int) noexcept {
             iterator rval(*this);
             operator++();
             return rval;
         }
 
-        reverse_iterator &operator--() {
+        reverse_iterator &operator--() noexcept {
             ++_iterator;
             return *this;
         }
 
-        reverse_iterator operator--(int) {
+        reverse_iterator operator--(int) noexcept {
             iterator rval(*this);
             operator--();
             return rval;
         }
 
-        friend bool operator == (reverse_iterator lhs, reverse_iterator rhs) {
+        friend bool operator == (reverse_iterator lhs, reverse_iterator rhs) noexcept {
             return lhs._link == rhs._link;
         }
 
-        friend bool operator != (reverse_iterator lhs, reverse_iterator rhs) {
+        friend bool operator != (reverse_iterator lhs, reverse_iterator rhs) noexcept {
             return !(lhs == rhs);
         }
     };
@@ -204,19 +204,19 @@ public:
     //
     //
 
-    iterator begin() {
+    iterator begin() noexcept {
         return iterator(_sentinel.next);
     }
 
-    iterator end() {
+    iterator end() noexcept {
         return iterator(&_sentinel);
     }
 
-    reverse_iterator rbegin() {
+    reverse_iterator rbegin() noexcept {
         return reverse_iterator(_sentinel.prev);
     }
 
-    reverse_iterator rend() {
+    reverse_iterator rend() noexcept {
         return reverse_iterator(&_sentinel);
     }
 
@@ -239,7 +239,7 @@ public:
         return iterator(next);
     }
 
-    iterator find(const Key & key) {
+    iterator find(const Key & key) noexcept {
         auto iter = _map.find(key);
 
         if (iter == _map.end()) {
@@ -264,11 +264,11 @@ public:
         }
     }
 
-    bool empty() const {
+    bool empty() const noexcept {
         return _map.empty();
     }
 
-    size_t size() const {
+    size_t size() const noexcept {
         return _map.size();
     }
 };

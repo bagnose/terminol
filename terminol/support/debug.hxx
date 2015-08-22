@@ -11,8 +11,8 @@
 using TerminateHandler = void (*)();
 
 [[noreturn]] void terminate();
-TerminateHandler setTerminate(TerminateHandler f);
-TerminateHandler getTerminate();
+TerminateHandler setTerminate(TerminateHandler f) noexcept;
+TerminateHandler getTerminate() noexcept;
 
 #define LIKELY(x)   __builtin_expect(!!(x), 1)
 #define UNLIKELY(x) __builtin_expect(!!(x), 0)

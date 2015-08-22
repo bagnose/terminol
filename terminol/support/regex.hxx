@@ -21,7 +21,7 @@ class Regex : protected Uncopyable {
     const int _maxMatches;
 public:
     struct Substr {
-        Substr(int first_, int last_) : first(first_), last(last_) {}
+        Substr(int first_, int last_) noexcept : first(first_), last(last_) {}
 
         int first;
         int last;

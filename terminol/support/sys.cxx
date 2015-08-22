@@ -8,7 +8,7 @@
 #include <fcntl.h>
 
 // Set FD_CLOEXEC
-void fdCloseExec(int fd) {
+void fdCloseExec(int fd) noexcept {
     ENFORCE_SYS(fd != -1, "");
     int flags;
     ENFORCE_SYS((flags = ::fcntl(fd, F_GETFD)) != -1, "");      // No EINTR.
@@ -17,7 +17,7 @@ void fdCloseExec(int fd) {
 }
 
 // Set O_NONBLOCK
-void fdNonBlock(int fd) {
+void fdNonBlock(int fd) noexcept {
     ENFORCE_SYS(fd != -1, "");
     int flags;
     ENFORCE_SYS((flags = ::fcntl(fd, F_GETFL)) != -1, "");      // No EINTR.

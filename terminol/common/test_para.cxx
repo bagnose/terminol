@@ -27,7 +27,7 @@ ostream & operator << (ostream & ost, const vector<uint8_t> & vec) {
 
 namespace {
 
-utf8::Seq encode(const char *ch) {
+utf8::Seq encode(const char * ch) noexcept {
     utf8::Seq seq;
     auto length = utf8::leadLength(ch[0]);
 
