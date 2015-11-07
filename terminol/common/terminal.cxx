@@ -65,8 +65,8 @@ const utf8::Seq SPECIAL_SEQS[] = {
 //
 //
 
-static_assert(STATIC_ARRAY_SIZE(UK_SEQS)      == 1, "Incorrect size: UK_SEQS.");
-static_assert(STATIC_ARRAY_SIZE(SPECIAL_SEQS) == 31, "Incorrect size: SPECIAL_SEQS.");
+static_assert(arraySize(UK_SEQS)      == 1,  "Incorrect size: UK_SEQS.");
+static_assert(arraySize(SPECIAL_SEQS) == 31, "Incorrect size: SPECIAL_SEQS.");
 
 const CharSub Terminal::CS_US;
 const CharSub Terminal::CS_UK(UK_SEQS, 35, 1);
