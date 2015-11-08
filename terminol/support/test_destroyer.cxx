@@ -27,7 +27,7 @@ void destroy(Test & test) {
         Destroyer destroyer;
 
         for (int i = 0; i != 100; ++i) {
-            destroyer.add(new IncDec(count));
+            destroyer.add(std::make_unique<IncDec>(count));
         }
     }
 

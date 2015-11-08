@@ -172,7 +172,7 @@ Buffer::~Buffer() {
         }
     };
 
-    _destroyer.add(new Garbage(_deduper, std::move(_tags)));
+    _destroyer.add(std::make_unique<Garbage>(_deduper, std::move(_tags)));
 }
 
 //

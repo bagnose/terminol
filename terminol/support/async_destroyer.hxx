@@ -20,7 +20,7 @@ public:
     }
 
     // Callable from multiple threads.
-    void add(Garbage * garbage) override {
+    void add(std::unique_ptr<Garbage> garbage) override {
         _queue.add(std::move(garbage));
     }
 
@@ -28,17 +28,19 @@ protected:
     void background() {
         try {
             for (;;) {
-                auto garbage = _queue.remove();
-                delete garbage;     // Do the heavy lifting.
+                _queue.remove();
             }
         }
-        catch (const Queue<Garbage *>::Finalised &) {
+        catch (const GarbageQueue::Finalised &) {
+            // Normal exit.
         }
     }
 
 private:
-    Queue<Garbage *> _queue;
-    std::thread      _thread;
+    using GarbageQueue = Queue<std::unique_ptr<Garbage>>;
+
+    GarbageQueue _queue;
+    std::thread  _thread;
 };
 
 #endif // SUPPORT__ASYNC_DESTROYER__HXX

@@ -4,6 +4,8 @@
 #ifndef SUPPORT__DESTROYER_INTERFACE__HXX
 #define SUPPORT__DESTROYER_INTERFACE__HXX
 
+#include <memory>
+
 class I_Destroyer {
 public:
     class Garbage {
@@ -14,7 +16,7 @@ public:
         Garbage() = default;
     };
 
-    virtual void add(Garbage * garbage) = 0;
+    virtual void add(std::unique_ptr<Garbage> garbage) = 0;
 
 protected:
     ~I_Destroyer() {}

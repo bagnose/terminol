@@ -26,7 +26,7 @@ XCB_CFLAGS      := $(shell pkg-config --cflags $(SUPPORT_MODULES) $(COMMON_MODUL
 XCB_LDFLAGS     := $(shell pkg-config --libs   $(SUPPORT_MODULES) $(COMMON_MODULES) $(GFX_MODULES) $(XCB_MODULES))
 
 CPPFLAGS        := -DVERSION=\"$(VERSION)\" -iquotesrc
-CXXFLAGS        := -fpic -fno-rtti -pedantic -std=c++11 -pthread
+CXXFLAGS        := -fpic -fno-rtti -pedantic -std=c++14 -pthread
 WFLAGS          := -Wextra -Wall -Wno-long-long -Wundef                   \
                    -Wredundant-decls -Wshadow -Wsign-compare              \
                    -Wmissing-field-initializers -Wno-format-zero-length   \
