@@ -332,7 +332,7 @@ public:
 
     // I_Selector implementation:
 
-    void addReadable(int fd, I_ReadHandler * handler) {
+    void addReadable(int fd, I_ReadHandler * handler) override {
         ASSERT(_readRegs.find(fd) == _readRegs.end(), "");
 
         struct epoll_event event;
@@ -351,7 +351,7 @@ public:
         _readRegs.insert(std::make_pair(fd, handler));
     }
 
-    void removeReadable(int fd) {
+    void removeReadable(int fd) override {
         auto iter = _readRegs.find(fd);
         ASSERT(iter != _readRegs.end(), "");
 
@@ -369,7 +369,7 @@ public:
         _readRegs.erase(iter);
     }
 
-    void addWriteable(int fd, I_WriteHandler * handler) {
+    void addWriteable(int fd, I_WriteHandler * handler) override {
         ASSERT(_writeRegs.find(fd) == _writeRegs.end(), "");
 
         struct epoll_event event;
@@ -388,7 +388,7 @@ public:
         _writeRegs.insert(std::make_pair(fd, handler));
     }
 
-    void removeWriteable(int fd) {
+    void removeWriteable(int fd) override {
         auto iter = _writeRegs.find(fd);
         ASSERT(iter != _writeRegs.end(), "");
 
@@ -406,7 +406,7 @@ public:
         _writeRegs.erase(iter);
     }
 
-    void addTimeoutable(I_TimeoutHandler * handler, int milliseconds) {
+    void addTimeoutable(I_TimeoutHandler * handler, int milliseconds) override {
 #if DEBUG
         for (auto & reg : _timeoutRegs) {
             ASSERT(reg.handler != handler, "Handler already registered.");
@@ -428,7 +428,7 @@ public:
         _timeoutRegs.insert(iter, TimeEntry(scheduled, handler));
     }
 
-    void removeTimeoutable(I_TimeoutHandler * handler) {
+    void removeTimeoutable(I_TimeoutHandler * handler) override {
         for (auto iter = _timeoutRegs.begin(); iter != _timeoutRegs.end(); ++iter) {
             if (iter->handler == handler) {
                 _timeoutRegs.erase(iter);
