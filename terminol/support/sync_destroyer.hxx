@@ -9,7 +9,7 @@
 
 class SyncDestroyer : public I_Destroyer, private Uncopyable {
 public:
-    virtual ~SyncDestroyer() {}
+    virtual ~SyncDestroyer() = default;
 
     void add(Garbage * garbage) override {
         delete garbage;
