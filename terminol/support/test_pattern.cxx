@@ -11,7 +11,7 @@ public:
         other._formed = false;
     }
 
-    Movable & operator= (Movable && other) noexcept {
+    Movable & operator = (Movable && other) noexcept {
         _formed = other._formed;
         other._formed = false;
         return *this;

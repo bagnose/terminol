@@ -100,33 +100,33 @@ public:
 
         explicit iterator(Link * link) noexcept : _link(link) {}
 
-        pointer operator->() noexcept {
+        pointer operator -> () noexcept {
             Key & key = entryToKey(linkToEntry(*_link));
             return reinterpret_cast<pointer>(&key);
         }
 
-        reference operator*() noexcept {
+        reference operator * () noexcept {
             Key & key = entryToKey(linkToEntry(*_link));
             return reinterpret_cast<reference>(key);
         }
 
-        iterator &operator++() noexcept {
+        iterator & operator ++ () noexcept {
             _link = _link->next;
             return *this;
         }
 
-        iterator operator++(int) noexcept {
+        iterator operator ++ (int) noexcept {
             iterator rval(*this);
             operator++();
             return rval;
         }
 
-        iterator &operator--() noexcept {
+        iterator & operator -- () noexcept {
             _link = _link->prev;
             return *this;
         }
 
-        iterator operator--(int) noexcept {
+        iterator operator -- (int) noexcept {
             iterator rval(*this);
             operator--();
             return rval;
@@ -163,31 +163,31 @@ public:
             return iter;
         }
 
-        pointer operator->() noexcept {
+        pointer operator -> () noexcept {
             return _iterator.operator->();
         }
 
-        reference operator*() noexcept {
+        reference operator * () noexcept {
             return _iterator.operator*();
         }
 
-        reverse_iterator &operator++() noexcept {
+        reverse_iterator & operator++() noexcept {
             --_iterator;
             return *this;
         }
 
-        reverse_iterator operator++(int) noexcept {
+        reverse_iterator operator ++ (int) noexcept {
             iterator rval(*this);
             operator++();
             return rval;
         }
 
-        reverse_iterator &operator--() noexcept {
+        reverse_iterator & operator -- () noexcept {
             ++_iterator;
             return *this;
         }
 
-        reverse_iterator operator--(int) noexcept {
+        reverse_iterator operator -- (int) noexcept {
             iterator rval(*this);
             operator--();
             return rval;
