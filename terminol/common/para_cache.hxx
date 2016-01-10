@@ -12,7 +12,7 @@
 #include <mutex>
 #include <unordered_map>
 
-class ParaCache : Uncopyable {
+class ParaCache : private Uncopyable {
     struct Entry {
         Entry(const Para & para_) : para(para_), checkoutCount(0) {}
 
