@@ -114,8 +114,7 @@ void Para::dump(std::ostream & ost, bool decorate) const {
 void Para::expand(uint32_t newSize) {
     auto oldSize = getLength();
 
-    if (newSize <= oldSize)
-    {
+    if (newSize <= oldSize) {
         return;
     }
 
