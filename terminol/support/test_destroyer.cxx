@@ -18,7 +18,7 @@ void destroy(Test & test) {
 
     public:
         IncDec(std::atomic_int & count_) : _count(count_) { ++_count; }
-        ~IncDec() override                                { --_count; }
+        ~IncDec()                                         { --_count; }
     };
 
     {
