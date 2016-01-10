@@ -41,8 +41,7 @@ public:
         virtual void reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) noexcept {}
 
     protected:
-        I_Observer() {}
-        virtual ~I_Observer() {}
+        virtual ~I_Observer() = 0;
     };
 
     virtual void add(xcb_window_t window, I_Observer * observer) = 0;
@@ -52,6 +51,8 @@ protected:
   I_Dispatcher() {}
   ~I_Dispatcher() {}
 };
+
+inline I_Dispatcher::I_Observer::~I_Observer() = default;
 
 //
 //
