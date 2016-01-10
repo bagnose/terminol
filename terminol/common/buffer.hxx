@@ -8,7 +8,7 @@
 #include "terminol/common/config.hxx"
 #include "terminol/common/deduper_interface.hxx"
 #include "terminol/common/char_sub.hxx"
-#include "terminol/support/async_destroyer.hxx"
+#include "terminol/support/destroyer_interface.hxx"
 #include "terminol/support/regex.hxx"
 
 #include <deque>

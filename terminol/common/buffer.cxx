@@ -151,7 +151,7 @@ Buffer::~Buffer() {
         delete _search;
     }
 
-    class Garbage : public AsyncDestroyer::Garbage {
+    class Garbage : public I_Destroyer::Garbage {
     private:
         I_Deduper                & _deduper;
         std::deque<I_Deduper::Tag> _tags;
