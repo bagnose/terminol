@@ -10,56 +10,7 @@
 
 namespace {
 
-void write(Text & text, utf8::Seq seq, int16_t & row, int16_t & col) {
-    ASSERT(row < text.getRows() && col < text.getCols(), "row/col out of range.");
-
-    if (seq.lead() == '\n') {
-        if (row + 1 == text.getRows()) {
-            text.addLine(false);
-        }
-        else {
-            ++row;
-        }
-
-        col = 0;
-    }
-    else {
-        text.setCell(row, col, Cell::utf8(seq));
-
-        ++col;
-
-        if (col == text.getCols()) {
-            if (row + 1 == text.getRows()) {
-                text.addLine(true);
-            }
-            else {
-                text.makeContinued(row);
-                ++row;
-            }
-
-            col = 0;
-        }
-    }
-}
-
-void write(Text & text, const std::string & str, int16_t & row, int16_t & col) {
-    auto p = str;
-
-    auto iter = str.begin();
-
-    while (iter != str.end()) {
-        utf8::Seq seq;
-
-        auto length = utf8::leadLength(*iter);
-        for (uint8_t i = 0; i != length; ++i) {
-            seq.bytes[i] = *iter++;
-        }
-
-        write(text, seq, row, col);
-    }
-}
-
-std::string read(const Text & text, int16_t row, int16_t col, int32_t count) {
+std::string read(const Text & text, int32_t count, int16_t & row, int16_t & col) {
     std::string result;
 
     for (int32_t i = 0; i != count; ++i) {
@@ -80,6 +31,55 @@ std::string read(const Text & text, int16_t row, int16_t col, int32_t count) {
     return result;
 }
 
+int32_t write(Text & text, const std::string & str, int16_t & row, int16_t & col) {
+    int32_t count = 0;
+    auto p = str;
+
+    auto iter = str.begin();
+
+    while (iter != str.end()) {
+        ++count;
+        utf8::Seq seq;
+
+        auto length = utf8::leadLength(*iter);
+        for (uint8_t i = 0; i != length; ++i) {
+            seq.bytes[i] = *iter++;
+        }
+
+        ASSERT(row < text.getRows() && col < text.getCols(), "row/col out of range.");
+
+        if (seq.lead() == '\n') {
+            if (row + 1 == text.getRows()) {
+                text.addLine(false);
+            }
+            else {
+                ++row;
+            }
+
+            col = 0;
+        }
+        else {
+            text.setCell(row, col, Cell::utf8(seq));
+
+            ++col;
+
+            if (col == text.getCols()) {
+                if (row + 1 == text.getRows()) {
+                    text.addLine(true);
+                }
+                else {
+                    text.makeContinued(row);
+                    ++row;
+                }
+
+                col = 0;
+            }
+        }
+    }
+
+    return count;
+}
+
 SimpleRepository repository;
 ParaCache        paraCache(repository);
 
@@ -91,14 +91,16 @@ void testBasics(Test & test) {
     int16_t col = 0;
     write(text, input.c_str(), row, col);
 
-    auto output = read(text, 0, 0, input.size());
+    row = 0;
+    col = 0;
+    auto output = read(text, input.size(), row, col);
 
     test.assertEqual(input, output, "Write/read '" + input + "'.");
 }
 
 void testStraddlingPara(Test & test) {
     Text text(repository, paraCache, 1, 24, 0);
-    // Note, this dash in this string is utf-8.
+    // Note, the dash in this string is utf-8.
     std::string input =
         "It was a dark and stormy night; the rain fell in torrents — except " \
         "at occasional intervals, when it was checked by a violent gust of wind " \
@@ -108,20 +110,12 @@ void testStraddlingPara(Test & test) {
 
     int16_t row = 0;
     int16_t col = 0;
-    write(text, input.c_str(), row, col);
-    //text.dumpCurrent(std::cout, true);
+    int32_t count = write(text, input.c_str(), row, col);
 
-    {
-        std::string subInput = "It was a dark and stormy";
-        auto output = read(text, -13, 0, subInput.size());
-        test.assertEqual(subInput, output, "Write/read '" + subInput + "'.");
-    }
-
-    {
-        std::string subInput = "t the darkness.";  // Determined empirically.
-        auto output = read(text, 0, 0, subInput.size());
-        test.assertEqual(subInput, output, "Write/read '" + subInput + "'.");
-    }
+    row = -count / text.getCols();
+    col = 0;
+    auto output = read(text, count, row, col);
+    test.assertEqual(input, output, "Straddling write/read.");
 }
 
 void testHistorical(Test & test) {
@@ -175,10 +169,10 @@ void testRfind(Test & test) {
 
 int main() {
     Test test("common/text");
-    //test.run("basics", testBasics);
+    test.run("basics", testBasics);
     test.run("historical", testHistorical);
-    //test.run("straddling-para", testStraddlingPara);
-    //test.run("rfind", testRfind);
+    test.run("straddling-para", testStraddlingPara);
+    test.run("rfind", testRfind);
 
     return 0;
 }

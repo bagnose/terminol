@@ -287,6 +287,16 @@ void Text::makeUncontinued(int16_t row) {
     }
 }
 
+void Text::resizeClip(int16_t rows, int16_t cols, const std::vector<Marker *> & points) {
+    ASSERT(rows > 0 && cols > 0, "");
+
+    if (cols != getCols()) {
+    }
+}
+
+void Text::resizeReflow(int16_t rows, int16_t cols, const std::vector<Marker *> & points) {
+}
+
 void Text::dumpHistory(std::ostream & ost, bool UNUSED(decorate)) const {
     ost << "WIP" << std::endl;
 }

@@ -116,8 +116,9 @@ public:
 
     void makeUncontinued(int16_t row);
 
-    void resize(int16_t UNUSED(rows), int16_t UNUSED(cols), const std::vector<Marker *> & UNUSED(points) = {}) {
-    }
+    void resizeClip(int16_t rows, int16_t cols, const std::vector<Marker *> & points = {});
+
+    void resizeReflow(int16_t rows, int16_t cols, const std::vector<Marker *> & points = {});
 
     void dumpHistory(std::ostream & ost, bool decorate = false) const;
 
