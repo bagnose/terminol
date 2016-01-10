@@ -76,6 +76,35 @@ void test1(Test & test) {
 }
 
 void test2(Test & test) {
+    {
+        Para para;
+        para.setCell(0, Cell::ascii('a'));
+        test.assertEqual(para.getString(), vec("a"), "");
+        para.insertCell(0, 1, Cell::ascii('b'));
+        test.assertEqual(para.getString(), vec("b"), "");
+    }
+
+    {
+        Para para;
+        para.setCell(0, Cell::ascii('a'));
+        para.setCell(1, Cell::ascii('b'));
+        test.assertEqual(para.getString(), vec("ab"), "");
+        para.insertCell(0, 1, Cell::ascii('c'));
+        test.assertEqual(para.getString(), vec("cb"), "");
+    }
+
+    {
+        Para para;
+        para.setCell(0, Cell::ascii('a'));
+        para.setCell(1, Cell::ascii('b'));
+        para.setCell(2, Cell::ascii('c'));
+        test.assertEqual(para.getString(), vec("abc"), "");
+        para.insertCell(1, 2, Cell::ascii('d'));
+        test.assertEqual(para.getString(), vec("adc"), "");
+    }
+}
+
+void test3(Test & test) {
     // Construct a Para from styles and string.
 
     std::vector<Style> styles(8);
@@ -90,7 +119,7 @@ void test2(Test & test) {
     test.assertEqual(std::vector<uint8_t>(b, e), string, "");
 }
 
-void test3(Test & test) {
+void test4(Test & test) {
 #if DEBUG
     struct Violation {
         static void terminateHandler() {
@@ -125,6 +154,7 @@ int main() {
     test.run("1", &test1);
     test.run("2", &test2);
     test.run("3", &test3);
+    test.run("4", &test4);
 
     return 0;
 }

@@ -35,7 +35,7 @@ public:
 
     void setCell(uint32_t offset, const Cell & cell);
 
-    void insertCell(uint32_t UNUSED(offset), uint32_t UNUSED(end), const Cell & UNUSED(cell));
+    void insertCell(uint32_t offset, uint32_t end, const Cell & cell);
 
     Cell getCell(uint32_t offset) const;
 

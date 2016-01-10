@@ -67,8 +67,26 @@ void Para::setCell(uint32_t offset, const Cell & cell) {
     }
 }
 
-void Para::insertCell(uint32_t UNUSED(offset), uint32_t UNUSED(end), const Cell & UNUSED(cell)) {
-    FATAL("NYI");
+void Para::insertCell(uint32_t offset, uint32_t end, const Cell & cell) {
+    auto index     = _indices[offset];
+    auto newLength = utf8::leadLength(cell.seq.lead());
+
+    // Insert at 'offset'.
+    _styles.insert(_styles.begin() + offset, cell.style);
+    _string.insert(_string.begin() + index, &cell.seq.bytes[0], &cell.seq.bytes[newLength]);
+    _indices.insert(_indices.begin() + offset, _indices[offset]);
+    for (auto iter = _indices.begin() + offset + 1; iter != _indices.end(); ++iter) {
+        *iter += newLength;
+    }
+
+    // Erase at 'end'.
+    _string.erase(_string.begin() + _indices[end], _string.begin() + _indices[end + 1]);
+    _styles.erase(_styles.begin() + end);
+    auto oldLength = _indices[end + 1] - _indices[end];
+    for (auto iter = _indices.begin() + end + 1; iter != _indices.end(); ++iter) {
+        *iter -= oldLength;
+    }
+    _indices.erase(_indices.begin() + end);
 }
 
 Cell Para::getCell(uint32_t offset) const {
