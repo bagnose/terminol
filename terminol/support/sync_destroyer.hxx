@@ -11,7 +11,7 @@ class SyncDestroyer : public I_Destroyer, private Uncopyable {
 public:
     virtual ~SyncDestroyer() = default;
 
-    void add(std::unique_ptr<Garbage> garbage) override {}
+    void add(std::unique_ptr<Garbage> garbage) override { garbage.reset(); }
 };
 
 #endif // SUPPORT__SYNC_DESTROYER__HXX
