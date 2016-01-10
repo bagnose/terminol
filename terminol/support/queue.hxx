@@ -44,7 +44,7 @@ public:
 
     T remove() throw (Finalised) {
         std::unique_lock<std::mutex> lock(_mutex);
-        _condition.wait(lock, [this]{ return _finalised || !_queue.empty(); });
+        _condition.wait(lock, [this]() { return _finalised || !_queue.empty(); });
 
         if (!_queue.empty()) {
             auto t = std::move(_queue.front());
