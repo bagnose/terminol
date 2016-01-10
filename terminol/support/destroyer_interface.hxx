@@ -16,7 +16,7 @@ public:
     virtual void add(std::unique_ptr<Garbage> garbage) = 0;
 
 protected:
-    ~I_Destroyer() {}
+    ~I_Destroyer() = default;
 };
 
 inline I_Destroyer::Garbage::~Garbage() = default;

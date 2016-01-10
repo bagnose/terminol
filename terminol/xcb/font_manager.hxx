@@ -19,8 +19,7 @@ public:
         virtual void useFontSet(FontSet * fontSet, int delta) = 0;
 
     protected:
-        I_Client() {}
-        ~I_Client() {}
+        ~I_Client() = default;
     };
 
 private:

@@ -299,7 +299,7 @@ public:
                                       bool            wrapNext) = 0;
 
     protected:
-        ~I_Renderer() {}
+        ~I_Renderer() = default;
     };
 
 

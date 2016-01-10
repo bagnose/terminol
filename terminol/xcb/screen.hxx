@@ -33,8 +33,7 @@ public:
         virtual void screenReaped(Screen * screen, int status) = 0;
 
     protected:
-        I_Observer() {}
-        ~I_Observer() {}
+        ~I_Observer() = default;
     };
 
 private:

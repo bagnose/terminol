@@ -26,8 +26,7 @@ public:
     virtual void dump(std::ostream & ost) const = 0;
 
 protected:
-    I_Deduper() {}
-    ~I_Deduper() {}
+    ~I_Deduper() = default;
 };
 
 #endif // COMMON__DEDUPER_INTERFACE__HXX

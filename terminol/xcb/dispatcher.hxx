@@ -48,8 +48,7 @@ public:
     virtual void remove(xcb_window_t window) = 0;
 
 protected:
-  I_Dispatcher() {}
-  ~I_Dispatcher() {}
+  ~I_Dispatcher() = default;
 };
 
 inline I_Dispatcher::I_Observer::~I_Observer() = default;

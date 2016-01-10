@@ -157,7 +157,7 @@ public:
                                    const Para & para, int32_t pos) = 0;
 
     protected:
-        ~I_Visitor() {}
+        ~I_Visitor() = default;
     };
 
     //

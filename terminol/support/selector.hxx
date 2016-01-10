@@ -21,8 +21,7 @@ public:
         virtual void handleRead(int fd) = 0;
 
     protected:
-        I_ReadHandler() {}
-        ~I_ReadHandler() {}
+        ~I_ReadHandler() = default;
     };
 
     class I_WriteHandler {
@@ -30,8 +29,7 @@ public:
         virtual void handleWrite(int fd) = 0;
 
     protected:
-        I_WriteHandler() {}
-        ~I_WriteHandler() {}
+        ~I_WriteHandler() = default;
     };
 
     class I_TimeoutHandler {
@@ -39,8 +37,7 @@ public:
         virtual void handleTimeout() = 0;
 
     protected:
-        I_TimeoutHandler() {}
-        ~I_TimeoutHandler() {}
+        ~I_TimeoutHandler() = default;
     };
 
     virtual void addReadable(int fd, I_ReadHandler * handler) = 0;
@@ -51,8 +48,7 @@ public:
     virtual void removeTimeoutable(I_TimeoutHandler * handler) = 0;
 
 protected:
-    I_Selector() {}
-    ~I_Selector() {}
+    ~I_Selector() = default;
 };
 
 #ifndef __linux__

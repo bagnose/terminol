@@ -23,7 +23,7 @@ public:
         virtual void ttyReaped(int status) = 0;
 
     protected:
-        ~I_Observer() {}
+        ~I_Observer() = default;
     };
 
 private:

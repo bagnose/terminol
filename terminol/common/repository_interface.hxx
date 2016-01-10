@@ -30,7 +30,6 @@ public:
     virtual void     discard(Tag tag) = 0;
 
 protected:
-    I_Repository()  = default;
     ~I_Repository() = default;
 };
 

@@ -13,8 +13,7 @@ public:
     virtual void shutdown() = 0;
 
 protected:
-    I_Creator() {}
-    ~I_Creator() {}
+    ~I_Creator() = default;
 };
 
 //
