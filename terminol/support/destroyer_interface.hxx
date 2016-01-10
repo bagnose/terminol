@@ -10,10 +10,7 @@ class I_Destroyer {
 public:
     class Garbage {
     public:
-        virtual ~Garbage() = default;       // Heavy lifting goes here.
-
-    protected:
-        Garbage() = default;
+        virtual ~Garbage() = 0;       // Heavy lifting goes here.
     };
 
     virtual void add(std::unique_ptr<Garbage> garbage) = 0;
@@ -21,5 +18,7 @@ public:
 protected:
     ~I_Destroyer() {}
 };
+
+inline I_Destroyer::Garbage::~Garbage() = default;
 
 #endif // SUPPORT__DESTROYER_INTERFACE__HXX
