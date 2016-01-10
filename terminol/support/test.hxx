@@ -39,6 +39,17 @@ class Test {
         return path;
     }
 
+    template <typename T>
+    static std::string stringify(const T & t, bool abbrev) {
+        std::ostringstream sst;
+        sst << t;
+        auto str = sst.str();
+
+        // TODO abbreviate if we are told and need to.
+
+        return str;
+    }
+
 public:
     explicit Test(const std::string & name) {
         _names.push_back(name);
@@ -66,7 +77,11 @@ public:
                      const std::string & description) {
         auto equal = (lhs == rhs);
         std::ostringstream sst;
-        sst << "(" << lhs << " == " << rhs << ") " << description;
+        sst << "("
+            << stringify(lhs, equal)
+            << " == "
+            << stringify(rhs, equal)
+            << ") " << description;
         return common(equal, sst.str());
     }
 };

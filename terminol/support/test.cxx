@@ -24,10 +24,11 @@ bool Test::common(bool success, const std::string & message) {
         fail = "FAIL";
     }
 
-    sst << _count << "."
-        << " " << getPath()
-        << " \"" << message << "\""
-        << " " << (success ? pass : fail)
+    sst
+        << (success ? pass : fail)
+        << " " << _count << ""
+        << " " << getPath() << " -"
+        << " " << message << ""
         ;
     std::cerr << sst.str() << std::endl;
 
