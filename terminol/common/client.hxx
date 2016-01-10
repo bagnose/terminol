@@ -48,5 +48,4 @@ protected:
     }
 };
 
-
 #endif // COMMON__CLIENT__HXX

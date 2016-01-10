@@ -21,7 +21,7 @@ TerminateHandler getTerminate() noexcept;
 
 // BSD doesn't have EINTR
 #ifndef __linux__
-#define TEMP_FAILURE_RETRY(a) (a)
+#   define TEMP_FAILURE_RETRY(a) (a)
 #endif
 
 #define PRINT(output) \
@@ -105,7 +105,7 @@ TerminateHandler getTerminate() noexcept;
 
 // ASSERT (and its variants) may be compiled out.
 #if DEBUG
-#  define ASSERT(condition, output) \
+#   define ASSERT(condition, output) \
     do { \
         if (!LIKELY(condition)) { \
             std::cerr \
@@ -120,11 +120,11 @@ TerminateHandler getTerminate() noexcept;
 #  define ASSERT_SYS(condition, output) \
     ASSERT(condition, output << " (" << ::strerror(errno) << ")")
 #else
-#  define ASSERT(condition, output) \
-    do { } while (false)
+#   define ASSERT(condition, output) \
+    do {} while (false)
 
-#  define ASSERT_SYS(condition, output) \
-    do { } while (false)
+#   define ASSERT_SYS(condition, output) \
+    do {} while (false)
 #endif
 
 #endif // SUPPORT__DEBUG__HXX

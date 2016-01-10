@@ -37,4 +37,3 @@ bool split(const std::string        & line,
 
     return true;
 }
-

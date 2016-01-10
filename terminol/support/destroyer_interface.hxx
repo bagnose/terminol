@@ -9,6 +9,7 @@ public:
     class Garbage {
     public:
         virtual ~Garbage() = default;       // Heavy lifting goes here.
+
     protected:
         Garbage() = default;
     };
