@@ -18,6 +18,10 @@ void ParaCache::shrink() {
             iter = _cache.erase(iter);
         }
         else {
+            ++iter;
+        }
+
+        if (iter == _cache.end()) {
             break;
         }
     }
