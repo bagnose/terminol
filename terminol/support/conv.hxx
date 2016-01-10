@@ -151,7 +151,8 @@ inline std::string humanSize(size_t bytes) {
         "MB",
         "GB",
         "PB",
-        "XB"
+        "EB",
+        "ZB"
     };
 
     auto offset = 0;
