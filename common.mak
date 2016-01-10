@@ -40,12 +40,15 @@ ifneq ($(WARN),noerror)
   CXXFLAGS += -Werror
 endif
 
-# XXX not to be merged with master:
-WFLAGS += -Wno-unused-parameter -Wno-unused-const-variable
-
 ifeq ($(COMPILER),gnu)
+  WFLAGS += -Wsuggest-override -Wno-virtual-move-assign
+  # XXX next line not to be merged with master:
+  WFLAGS += -Wno-error=unused-parameter
   CXX := g++
 else ifeq ($(COMPILER),clang)
+  WFLAGS +=
+  # XXX next line not to be merged with master:
+  WFLAGS += -Wno-error=unused-const-variable -Wno-error=unused-parameter
   CXX := clang++
 else
   $(error Unrecognised COMPILER: $(COMPILER))
