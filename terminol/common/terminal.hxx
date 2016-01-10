@@ -16,7 +16,7 @@
 
 #include <xkbcommon/xkbcommon.h>
 
-class Terminal :
+class Terminal final :
     protected VtStateMachine::I_Observer,
     protected Tty::I_Observer,
     protected Buffer::I_Renderer,

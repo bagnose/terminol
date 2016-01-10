@@ -5,7 +5,7 @@
 #include "terminol/xcb/color_set.hxx"
 #include "terminol/common/parser.hxx"
 
-class MyWidget : public Widget {
+class MyWidget final : public Widget {
 public:
     explicit MyWidget(Dispatcher     & dispatcher,
                       Basics         & basics,

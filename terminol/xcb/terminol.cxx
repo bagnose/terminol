@@ -25,7 +25,7 @@
 #include <unistd.h>
 #include <sys/select.h>
 
-class EventLoop :
+class EventLoop final :
     protected I_Selector::I_ReadHandler,
     protected Screen::I_Observer,
     protected I_Dispatcher::I_Observer,
