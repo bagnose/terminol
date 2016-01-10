@@ -155,6 +155,7 @@ Buffer::~Buffer() {
     private:
         I_Deduper                & _deduper;
         std::deque<I_Deduper::Tag> _tags;
+
     public:
         Garbage(I_Deduper                   & deduper,
                 std::deque<I_Deduper::Tag> && tags) :

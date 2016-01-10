@@ -21,7 +21,7 @@ public:
     Para(const std::vector<Style>   & styles,
          const std::vector<uint8_t> & string);
 
-    const std::vector<Style> & getStyles() const { return _styles; }
+    const std::vector<Style>   & getStyles() const { return _styles; }
     const std::vector<uint8_t> & getString() const { return _string; }
 
     uint32_t getLength() const { return static_cast<uint32_t>(_styles.size()); }

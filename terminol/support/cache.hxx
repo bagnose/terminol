@@ -90,6 +90,7 @@ public:
     class iterator {
         friend class Cache;
         Link * _link;
+
     public:
         using iterator_category = std::bidirectional_iterator_tag;
         using value_type        = std::pair<const Key, T>;
@@ -146,6 +147,7 @@ public:
 
     class reverse_iterator {
         iterator _iterator;
+
     public:
         using iterator_category = std::bidirectional_iterator_tag;
         using value_type        = std::pair<const Key, T>;
