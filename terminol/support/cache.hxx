@@ -46,9 +46,10 @@ template <typename Key, typename T> class Cache : protected Uncopyable {
     };
 
     struct Entry {
-        Entry(const T & t_) : t(t_) {}
-        T     t;
-        Link  link;
+        T    t;
+        Link link;
+
+        explicit Entry(const T & t_) : t(t_) {}
     };
 
     static Entry & linkToEntry(Link & link) noexcept {
@@ -225,7 +226,7 @@ public:
     Cache() {}
 
     iterator insert(const Key & key, const T & t) {
-        auto pair = _map.emplace(key, t);
+        auto pair = _map.emplace(key, Entry(t));
         ASSERT(pair.second, "Duplicate key.");
 
         auto & entry = pair.first->second;

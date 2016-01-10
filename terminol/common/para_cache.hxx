@@ -14,7 +14,7 @@
 
 class ParaCache : private Uncopyable {
     struct Entry {
-        Entry(const Para & para_) : para(para_), checkoutCount(0) {}
+        explicit Entry(const Para & para_) : para(para_), checkoutCount(0) {}
 
         Para     para;
         uint32_t checkoutCount;
