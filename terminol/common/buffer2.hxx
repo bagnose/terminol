@@ -35,7 +35,7 @@ class Buffer2 {
         SavedCursor() : cursor(), charSub(nullptr) {}
     };
 
-    Text         _text;         // XXX todo: primary vs secondary
+    Text         _text;
     Cursor       _cursor;           // Current cursor.
     SavedCursor  _savedCursor;      // Saved cursor.
     CharSubArray _charSubs;
@@ -43,12 +43,42 @@ class Buffer2 {
     int16_t      _marginEnd;        // Index of last row in  margin (exclusive).
 
 public:
+    class I_Renderer {
+    public:
+        virtual void bufferDrawBg(Pos     pos,
+                                  int16_t count,
+                                  UColor  color) = 0;
+        virtual void bufferDrawFg(Pos             pos,
+                                  int16_t         count,
+                                  UColor          color,
+                                  AttrSet         attrs,
+                                  const uint8_t * str,       // nul-terminated
+                                  size_t          size) = 0;
+        virtual void bufferDrawCursor(Pos             pos,
+                                      UColor          fg,
+                                      UColor          bg,
+                                      AttrSet         attrs,
+                                      const uint8_t * str,    // nul-terminated, count 1
+                                      size_t          size,
+                                      bool            wrapNext) = 0;
+
+    protected:
+        ~I_Renderer() {}
+    };
+
+    //
+    //
+    //
+
     Buffer2(I_Repository & repository, ParaCache & paraCache,
             int16_t rows, int16_t cols, uint32_t historyLimit,
             const CharSubArray & charSubArray) :
         _text(repository, paraCache, rows, cols, historyLimit),
         _charSubs(charSubArray)
     {}
+
+    int16_t getRows() const { return _text.getRows(); }
+    int16_t getCols() const { return _text.getCols(); }
 
     void write(utf8::Seq seq, bool autoWrap, bool UNUSED(insert)) {
         damageCell();
@@ -66,9 +96,6 @@ public:
     }
 
 private:
-    int16_t getRows() const { return _text.getRows(); }
-    int16_t getCols() const { return _text.getCols(); }
-
     const CharSub * getCharSub(CharSet charSet) const {
         return _charSubs.get(charSet);
     }
