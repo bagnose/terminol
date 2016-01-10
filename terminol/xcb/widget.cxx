@@ -65,7 +65,7 @@ Widget::Widget(I_Dispatcher & dispatcher,
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to create window.")) {
         throw Error("Failed to create window.");
     }
-    auto windowGuard = scopeGuard([&] { xcb_destroy_window(_basics.connection(), _window); });
+    ScopeGuard windowGuard([&]() { xcb_destroy_window(_basics.connection(), _window); });
 
     // Flush our XCB calls.
 

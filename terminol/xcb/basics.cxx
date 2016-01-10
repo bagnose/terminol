@@ -31,7 +31,7 @@ Basics::Basics() throw (Error) {
     if (xcb_connection_has_error(_connection)) {
         throw Error("Failed to connect to display.");
     }
-    auto connectionGuard = scopeGuard([&] { xcb_disconnect(_connection); });
+    ScopeGuard connectionGuard([&]() { xcb_disconnect(_connection); });
 
     auto setup      = xcb_get_setup(_connection);
     auto screenIter = xcb_setup_roots_iterator(setup);
@@ -61,21 +61,20 @@ Basics::Basics() throw (Error) {
     if (!_keySymbols) {
         throw Error("Failed to load key symbols");
     }
-    auto keySymbolsGuard = scopeGuard([&] { xcb_key_symbols_free(_keySymbols); });
+    ScopeGuard keySymbolsGuard([&]() { xcb_key_symbols_free(_keySymbols); });
 
     _normalCursor = loadNormalCursor();
-    auto normalCursorGuard = scopeGuard([&] { xcb_free_cursor(_connection, _normalCursor); });
+    ScopeGuard normalCursorGuard([&]() { xcb_free_cursor(_connection, _normalCursor); });
 
     _invisibleCursor = loadInvisibleCursor();
-    auto invisibleCursorGuard = scopeGuard([&] { xcb_free_cursor(_connection, _invisibleCursor); });
+    ScopeGuard invisibleCursorGuard([&]() { xcb_free_cursor(_connection, _invisibleCursor); });
 
     if (xcb_ewmh_init_atoms_replies(&_ewmhConnection,
                                     xcb_ewmh_init_atoms(_connection, &_ewmhConnection),
                                     nullptr) == 0) {
         throw Error("Failed to initialise EWMH atoms");
     }
-    auto ewmhConnectionGuard =
-        scopeGuard([&] { xcb_ewmh_connection_wipe(&_ewmhConnection); } );
+    ScopeGuard ewmhConnectionGuard([&]() { xcb_ewmh_connection_wipe(&_ewmhConnection); } );
 
     try {
         _atomPrimary        = XCB_ATOM_PRIMARY;
@@ -269,7 +268,7 @@ xcb_cursor_t Basics::loadNormalCursor() throw (Error) {
     if (xcb_request_failed(_connection, cookie, "can't open font")) {
         throw Error("Failed to open font: " + fontName + ".");
     }
-    auto guard  = scopeGuard([&] { xcb_close_font(_connection, font); });
+    ScopeGuard guard([&]() { xcb_close_font(_connection, font); });
 
     // Create the cursor:
     auto cursor = xcb_generate_id(_connection);
@@ -298,7 +297,7 @@ xcb_cursor_t Basics::loadInvisibleCursor() throw (Error) {
     if (xcb_request_failed(_connection, cookie, "couldn't create pixmap")) {
         throw Error("Failed to create pixmap.");
     }
-    auto guard = scopeGuard([&] { xcb_free_pixmap(_connection, pixmap); });
+    ScopeGuard guard([&]() { xcb_free_pixmap(_connection, pixmap); });
 
     auto cursor = xcb_generate_id(_connection);
     cookie = xcb_create_cursor_checked(_connection,
@@ -330,7 +329,7 @@ xcb_pixmap_t Basics::getRootPixmap(xcb_atom_t atom) throw (Error) {
         throw Error("Couldn't query root pixmap [1].");
     }
 
-    auto guard = scopeGuard([&] { std::free(reply); });
+    ScopeGuard guard([&]() { std::free(reply); });
 
     if (xcb_get_property_value_length(reply) != sizeof(xcb_pixmap_t)) {
         throw Error("Couldn't query root pixmap [2].");
@@ -370,16 +369,16 @@ void Basics::determineMasks() throw (Error) {
     auto capsLockCodes   = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Caps_Lock);
     auto modeSwitchCodes = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Mode_switch);
 
-    auto guard = scopeGuard([&] {
-                            if (modeSwitchCodes) { std::free(modeSwitchCodes); }
-                            if (capsLockCodes)   { std::free(capsLockCodes); }
-                            if (shiftLockCodes)  { std::free(shiftLockCodes); }
-                            if (numLockCodes)    { std::free(numLockCodes); }
-                            if (superCodes)      { std::free(superCodes); }
-                            if (controlCodes)    { std::free(controlCodes); }
-                            if (altCodes)        { std::free(altCodes); }
-                            if (shiftCodes)      { std::free(shiftCodes); }
-                            });
+    ScopeGuard guard([&]() {
+                         if (modeSwitchCodes) { std::free(modeSwitchCodes); }
+                         if (capsLockCodes)   { std::free(capsLockCodes); }
+                         if (shiftLockCodes)  { std::free(shiftLockCodes); }
+                         if (numLockCodes)    { std::free(numLockCodes); }
+                         if (superCodes)      { std::free(superCodes); }
+                         if (controlCodes)    { std::free(controlCodes); }
+                         if (altCodes)        { std::free(altCodes); }
+                         if (shiftCodes)      { std::free(shiftCodes); }
+                     });
 
     auto cookie      = xcb_get_modifier_mapping(_connection);
     auto modmapReply = xcb_get_modifier_mapping_reply(_connection, cookie, nullptr);

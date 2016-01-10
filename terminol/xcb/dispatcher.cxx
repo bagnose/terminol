@@ -8,7 +8,7 @@ void Dispatcher::poll() throw (Error) {
         auto event = ::xcb_poll_for_event(_connection);
         if (!event) { break; }
 
-        auto guard        = scopeGuard([event] { std::free(event); });
+        ScopeGuard guard([event]() { std::free(event); });
         auto responseType = XCB_EVENT_RESPONSE_TYPE(event);
 
         if (responseType != 0) {
@@ -24,8 +24,8 @@ void Dispatcher::poll() throw (Error) {
 
 void Dispatcher::wait(uint8_t event_type) throw (Error) {
     for (;;) {
-        auto event        = ::xcb_wait_for_event(_connection);
-        auto guard        = scopeGuard([event] { std::free(event); });
+        auto event = ::xcb_wait_for_event(_connection);
+        ScopeGuard guard([event]() { std::free(event); });
         auto responseType = XCB_EVENT_RESPONSE_TYPE(event);
 
         if (responseType == 0) {

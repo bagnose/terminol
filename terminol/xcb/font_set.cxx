@@ -22,7 +22,7 @@ FontSet::FontSet(const Config & config,
     catch (const Error &) {
         FATAL("Master font should always load.");
     }
-    auto normalGuard = scopeGuard([&] { unload(_normal); });
+    ScopeGuard normalGuard([&]() { unload(_normal); });
 
     try {
         _bold = load(name, size, false, true, false);
@@ -31,7 +31,7 @@ FontSet::FontSet(const Config & config,
         std::cerr << "Using non-bold font" << std::endl;
         _bold = pango_font_description_copy(_normal);
     }
-    auto boldGuard = scopeGuard([&] { unload(_bold); });
+    ScopeGuard boldGuard([&]() { unload(_bold); });
 
     try {
         _italic = load(name, size, false, false, true);
@@ -40,7 +40,7 @@ FontSet::FontSet(const Config & config,
         std::cerr << "Using non-italic font" << std::endl;
         _italic = pango_font_description_copy(_normal);
     }
-    auto italicGuard = scopeGuard([&] { unload(_italic); });
+    ScopeGuard italicGuard([&]() { unload(_italic); });
 
     try {
         _italicBold = load(name, size, false, true, true);
@@ -55,7 +55,7 @@ FontSet::FontSet(const Config & config,
             _italicBold = pango_font_description_copy(_normal);
         }
     }
-    auto italicBoldGuard = scopeGuard([&] { unload(_italicBold); });
+    ScopeGuard italicBoldGuard([&]() { unload(_italicBold); });
 
     // Dismiss guards
     italicBoldGuard.dismiss();
@@ -97,7 +97,7 @@ PangoFontDescription * FontSet::load(const std::string & family,
 #endif
 
     auto desc = pango_font_description_new();
-    auto descGuard = scopeGuard([&] { pango_font_description_free(desc); });
+    ScopeGuard descGuard([&]() { pango_font_description_free(desc); });
     pango_font_description_set_family(desc, family.c_str());
     //pango_font_description_set_size(desc, size * PANGO_SCALE);
     pango_font_description_set_absolute_size(desc, size * PANGO_SCALE);
@@ -147,13 +147,13 @@ void FontSet::measure(PangoFontDescription * desc, uint16_t & width, uint16_t & 
                                             _basics.screen()->root,
                                             _basics.visual(),
                                             1, 1);
-    auto surfaceGuard = scopeGuard([&] { cairo_surface_destroy(surface); });
+    ScopeGuard surfaceGuard([&]() { cairo_surface_destroy(surface); });
 
     auto cr = cairo_create(surface);
-    auto crGuard = scopeGuard([&] { cairo_destroy(cr); });
+    ScopeGuard crGuard([&]() { cairo_destroy(cr); });
 
     auto layout = pango_cairo_create_layout(cr);
-    auto layoutGuard = scopeGuard([&] { g_object_unref(layout); });
+    ScopeGuard layoutGuard([&]() { g_object_unref(layout); });
 
     pango_layout_set_font_description(layout, desc);
 

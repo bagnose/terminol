@@ -219,10 +219,10 @@ void Tty::openPty(uint16_t            rows,
         throw Error("openpty() failed.");
     }
 
-    auto guard = scopeGuard([&] {
-                            TEMP_FAILURE_RETRY(::close(master));
-                            TEMP_FAILURE_RETRY(::close(slave));
-                            });
+    ScopeGuard guard([&]() {
+                         TEMP_FAILURE_RETRY(::close(master));
+                         TEMP_FAILURE_RETRY(::close(slave));
+                     });
 
     _pid = ::fork();
 

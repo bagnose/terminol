@@ -4,7 +4,10 @@
 #ifndef SUPPORT__PATTERN__HXX
 #define SUPPORT__PATTERN__HXX
 
+#include "terminol/support/debug.hxx"
+
 #include <utility>
+#include <functional>
 
 // Inherit from this to be uncopyable (and unassignable).
 class Uncopyable {
@@ -21,27 +24,21 @@ protected:
 // http://channel9.msdn.com/Shows/Going+Deep/C-and-Beyond-2012-Andrei-Alexandrescu-Systematic-Error-Handling-in-C
 //
 
-template <class Fun> class ScopeGuard : private Uncopyable {
-    Fun  _f;
-    bool _active;
+class ScopeGuard : private Uncopyable {
+    using Function = std::function<void ()>;
+
+    Function _function;
 
 public:
-    explicit ScopeGuard(Fun f) : _f(std::move(f)) , _active(true) {}
-    ~ScopeGuard() { if (_active) _f(); }
+    explicit ScopeGuard(Function function) : _function(std::move(function)) { ASSERT(_function, ""); }
 
-    void dismiss() { _active = false; }
-
-    ScopeGuard(ScopeGuard && rhs) :
-        _f(std::move(rhs._f)),
-        _active(rhs._active)
-    {
-        rhs.dismiss();
+    ~ScopeGuard() {
+        if (_function) { _function(); }
     }
-};
 
-template <class Fun> ScopeGuard<Fun> scopeGuard(Fun f) {
-    return ScopeGuard<Fun>(std::move(f));
-}
+    // Prevent the guard from executing when it is destroyed.
+    void dismiss() { _function = nullptr; }
+};
 
 /*
 void fun() {
@@ -52,7 +49,7 @@ void fun() {
                          unlink(name);
                          });
     auto buf = malloc(1024 * 1024);
-    auto g2 = scopeGuard([] { free(buf); });
+    ScopeGuard guard([]() { std::free(buf); });
     ...
         use fd and buf ...
 }

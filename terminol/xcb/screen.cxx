@@ -59,7 +59,7 @@ Screen::Screen(I_Observer         & observer,
 
     _fontSet = _fontManager.addClient(this);
     ASSERT(_fontSet, "Null font-set.");
-    auto fontGuard = scopeGuard([&] { _fontManager.removeClient(this); });
+    ScopeGuard fontGuard([&]() { _fontManager.removeClient(this); });
 
     // Calculate what our initial geometry should be. Though the WM
     // may give us something else.
@@ -118,7 +118,7 @@ Screen::Screen(I_Observer         & observer,
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate GC")) {
         throw Error("Failed to create GC.");
     }
-    auto gcGuard = scopeGuard([&] { xcb_free_gc(_basics.connection(), getWindow()); });
+    ScopeGuard gcGuard([&]() { xcb_free_gc(_basics.connection(), getWindow()); });
 
     // Create the TTY and terminal.
 
@@ -481,7 +481,7 @@ void Screen::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) noexc
         auto reply = xcb_get_property_reply(_basics.connection(), cookie, nullptr);
         if (!reply) { break; }
 
-        auto guard  = scopeGuard([reply] { std::free(reply); });
+        ScopeGuard guard([reply]() { std::free(reply); });
         auto value  = static_cast<uint8_t *>(xcb_get_property_value(reply));
         auto length = xcb_get_property_value_length(reply);
         if (length == 0) { break; }
@@ -1295,7 +1295,7 @@ void Screen::terminalDrawFg(Pos             pos,
 
     cairo_save(_cr); {
         auto layout = pango_cairo_create_layout(_cr);
-        auto layoutGuard = scopeGuard([&] { g_object_unref(layout); });
+        ScopeGuard layoutGuard([&]() { g_object_unref(layout); });
 
         auto font = _fontSet->get(attrs.get(Attr::ITALIC), attrs.get(Attr::BOLD));
         pango_layout_set_font_description(layout, font);
@@ -1340,7 +1340,7 @@ void Screen::terminalDrawCursor(Pos             pos,
 
     cairo_save(_cr); {
         auto layout = pango_cairo_create_layout(_cr);
-        auto layoutGuard = scopeGuard([&] { g_object_unref(layout); });
+        ScopeGuard layoutGuard([&]() { g_object_unref(layout); });
 
         auto font = _fontSet->get(attrs.get(Attr::ITALIC), attrs.get(Attr::BOLD));
         pango_layout_set_font_description(layout, font);
