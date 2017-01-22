@@ -10,6 +10,7 @@
 
 #include <set>
 #include <deque>
+#include <vector>
 
 #include <unistd.h>
 #include <stdio.h>
