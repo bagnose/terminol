@@ -7,16 +7,17 @@
 
 Para::Para() : _styles(), _string(), _indices({0}) {}
 
-Para::Para(const std::vector<Style>   & styles,
-           const std::vector<uint8_t> & string) :
-    _styles(styles),
-    _string(string),
+Para::Para(std::vector<Style>   styles,
+           std::vector<uint8_t> string) :
+    _styles(std::move(styles)),
+    _string(std::move(string)),
     _indices()
 {
     _indices.reserve(_styles.size() + 1);
+    int32_t index = 0;
+    ASSERT(_string.size() <= std::numeric_limits<decltype(index)>::max(), "");
 
-    int16_t index = 0;
-    for (auto iter = string.begin(); iter != string.end(); /* */) {
+    for (auto iter = _string.begin(); iter != _string.end(); /* */) {
         _indices.push_back(index);
         uint8_t length = utf8::leadLength(*iter);
         iter  += length;

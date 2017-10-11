@@ -10,6 +10,10 @@
 
 class Text {
     class Line {
+        uint32_t _index;
+        uint32_t _seqnum    : 31;
+        uint32_t _continued : 1;   // True if this line is continued on the next line?
+
     public:
         Line(uint32_t index, uint32_t seqnum, bool continued) :
             _index(index), _seqnum(seqnum), _continued(continued ? 1 : 0) {}
@@ -44,11 +48,6 @@ class Text {
                 << " seqnum=" << _seqnum << " "
                 << (isContinued() ? "(cont)" : "") << std::endl;
         }
-
-    private:
-        uint32_t _index;
-        uint32_t _seqnum    : 31;
-        uint32_t _continued : 1;   // True if this line is continued on the next line?
     };
 
     static_assert(sizeof(Line) == 8, "Line is 8 bytes");
@@ -57,20 +56,20 @@ class Text {
     //
     //
 
-    I_Repository                & _repository;
-    ParaCache                   & _paraCache;
+    I_Repository                  & _repository;
+    ParaCache                       _paraCache;
 
-    std::deque<I_Repository::Tag> _historyTags;         // Paragraph history as tags.
-    uint32_t                      _poppedHistoryTags;   // Incremented for every _historyTags.pop_front();
-    std::deque<Line>              _historyLines;
+    std::deque<I_Repository::Tag>   _historyTags;         // Paragraph history as tags.
+    uint32_t                        _poppedHistoryTags;   // Incremented for every _historyTags.pop_front();
+    std::deque<Line>                _historyLines;
 
-    std::deque<Para>              _currentParas;        // Current paragraphs.
-    uint32_t                      _poppedCurrentParas;  // Incremented for every _currentParas.pop_front();
-    uint32_t                      _straddlingLines;     // Number of lines that straddle history and current.
-    std::deque<Line>              _currentLines;
+    std::deque<Para>                _currentParas;        // Current paragraphs.
+    uint32_t                        _poppedCurrentParas;  // Incremented for every _currentParas.pop_front();
+    uint32_t                        _straddlingLines;     // Number of lines that straddle history and current.
+    std::deque<Line>                _currentLines;
 
-    int16_t                       _cols;
-    //uint32_t                      _historyTagLimit;
+    int16_t                         _cols;
+    uint32_t                        _historyTagLimit;
 
 public:
     class Marker {
@@ -81,20 +80,19 @@ public:
         uint32_t _index;
     };
 
-    Marker begin() const;
-    Marker end() const;
-
     //
     //
     //
 
     Text(I_Repository & repository,
-         ParaCache    & paraCache,
          int16_t        rows,
          int16_t        cols,
          uint32_t       historyLimit);
 
     ~Text();
+
+    Marker begin() const;
+    Marker end() const;
 
     int16_t getRows() const;
 

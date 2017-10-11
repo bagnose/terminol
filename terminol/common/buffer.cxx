@@ -1277,7 +1277,7 @@ void Buffer::dumpHistory(std::ostream & ost) const {
 
         if (tag == I_Deduper::invalidTag()) {
             cells = _pending;
-            cont  = true;
+            cont  = true;       // dead assignment
             wrap  = getCols();
         }
         else {

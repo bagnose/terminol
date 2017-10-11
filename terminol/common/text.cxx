@@ -7,13 +7,12 @@
 #include <iomanip>
 
 Text::Text(I_Repository & repository,
-           ParaCache    & paraCache,
            int16_t        rows,
            int16_t        cols,
            uint32_t       historyLimit) :
     //
     _repository(repository),
-    _paraCache(paraCache),
+    _paraCache(_repository),
     //
     _historyTags(),
     _poppedHistoryTags(0),
@@ -24,13 +23,17 @@ Text::Text(I_Repository & repository,
     _straddlingLines(0),
     _currentLines(),        // Generated below.
     //
-    _cols(cols)/*,
-    _historyTagLimit(historyLimit)*/
+    _cols(cols),
+    _historyTagLimit(historyLimit)
 {
     ASSERT(rows > 0 && cols > 0, "Rows and cols must be positive.");
     for (int16_t r = 0; r != rows; ++r) {
         _currentLines.emplace_back(r, 0, false);
     }
+}
+
+Text::~Text() {
+    // TODO remove _historyTags from repository
 }
 
 auto Text::begin() const -> Marker {
@@ -60,9 +63,6 @@ auto Text::end() const -> Marker {
     marker._index   = _currentParas.size();
 
     return marker;
-}
-
-Text::~Text() {
 }
 
 int16_t Text::getRows() const {
@@ -298,7 +298,14 @@ void Text::resizeReflow(int16_t rows, int16_t cols, const std::vector<Marker *> 
 }
 
 void Text::dumpHistory(std::ostream & ost, bool UNUSED(decorate)) const {
-    ost << "WIP" << std::endl;
+    for (auto tag : _historyTags) {
+        auto entry = _repository.retrieve(tag);
+        ost << tag << ": ";
+        for (auto ch : entry.string) {
+            ost << ch;
+        }
+        ost << std::endl;
+    }
 }
 
 void Text::dumpCurrent(std::ostream & ost, bool decorate) const {
@@ -341,9 +348,8 @@ void Text::dumpDetail(std::ostream & ost, bool UNUSED(blah)) {
     ost << "history paras {" << std::endl;
     for (auto & tag : _historyTags) {
         ost << std::setw(3) << userRow << " ";
-        auto & para = _paraCache.checkout(tag);
+        auto & para = _paraCache.get(tag);
         para.dump(ost, true);
-        _paraCache.checkin(tag);
         ++userRow;
     }
     ost << "} history tags" << std::endl;
@@ -405,7 +411,7 @@ auto Text::rfind(const Regex & regex, Marker & marker, bool & ongoing) -> std::v
     else {
         // checkout
         auto tag = _historyTags[marker._index];
-        paraPtr = &_paraCache.checkout(tag);
+        paraPtr = &_paraCache.get(tag);
     }
 
     auto & para = *paraPtr;
@@ -441,12 +447,6 @@ auto Text::rfind(const Regex & regex, Marker & marker, bool & ongoing) -> std::v
         match._offsetEnd   = e;
 
         matches.push_back(match);
-    }
-
-    if (!marker._current) {
-        // checkin
-        auto tag = _historyTags[marker._index];
-        _paraCache.checkin(tag);
     }
 
     ongoing = true;

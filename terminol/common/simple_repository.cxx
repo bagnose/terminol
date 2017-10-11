@@ -5,8 +5,6 @@
 
 SimpleRepository::SimpleRepository() : _nextTag(0) {}
 
-SimpleRepository::~SimpleRepository() {}
-
 auto SimpleRepository::store(const Entry & entry) -> Tag {
     std::unique_lock<std::mutex> lock(_mutex);
 
@@ -43,4 +41,21 @@ void SimpleRepository::discard(Tag tag) {
     std::unique_lock<std::mutex> lock(_mutex);
 
     _entries.erase(tag);
+}
+
+void SimpleRepository::dump(std::ostream & ost) const {
+    std::unique_lock<std::mutex> lock(_mutex);
+
+    for (auto & pair : _entries) {
+        auto   tag   = pair.first;
+        auto & entry = pair.second;
+
+        ost << tag << ": ";
+
+        for (auto byte : entry.string) {
+            ost << byte;
+        }
+
+        ost << std::endl;
+    }
 }

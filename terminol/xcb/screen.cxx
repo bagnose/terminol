@@ -692,6 +692,7 @@ bool Screen::xy2Pos(int x, int y, Pos & pos, Hand & hand) const {
 
     if (x < border_thickness) {
         pos.col = 0;
+        hand    = Hand::LEFT;
         within  = false;
     }
     else if (x < border_thickness + fontWidth * _terminal->getCols()) {
@@ -704,7 +705,8 @@ bool Screen::xy2Pos(int x, int y, Pos & pos, Hand & hand) const {
     }
     else {
         pos.col = _terminal->getCols();
-        within = false;
+        hand    = Hand::RIGHT;
+        within  = false;
     }
 
     // y / rows:

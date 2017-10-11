@@ -1,5 +1,5 @@
 // vi:noai:sw=4
-// Copyright © 2015 David Bryant
+// Copyright © 2017 David Bryant
 
 #ifndef COMMON__PARA__HXX
 #define COMMON__PARA__HXX
@@ -11,15 +11,14 @@
 class Para {
     std::vector<Style>   _styles;
     std::vector<uint8_t> _string;
-    std::vector<int16_t> _indices;  // Indices of each code point in _string.
-
-    void expand(uint32_t newSize);
+    std::vector<int32_t> _indices;  // Index of each code point in _string.
 
 public:
     Para();
 
-    Para(const std::vector<Style>   & styles,
-         const std::vector<uint8_t> & string);
+    // Pass-by-value because we are taking a copy.
+    Para(std::vector<Style>   styles,
+         std::vector<uint8_t> string);
 
     const std::vector<Style>   & getStyles() const { return _styles; }
     const std::vector<uint8_t> & getString() const { return _string; }
@@ -43,6 +42,9 @@ public:
     void truncate(uint32_t length);
 
     void dump(std::ostream & ost, bool decorate) const;
+
+private:
+    void expand(uint32_t newSize);
 };
 
 #endif // COMMON__PARA__HXX

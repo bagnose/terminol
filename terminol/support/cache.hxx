@@ -223,9 +223,11 @@ public:
         return reverse_iterator(&_sentinel);
     }
 
-    Cache() {}
+    Cache() = default;
 
-    iterator insert(const Key & key, const T & t) {
+    Cache(Cache &&) = default;
+
+    iterator insert(const Key & key, T && t) {
         auto pair = _map.emplace(key, Entry(t));
         ASSERT(pair.second, "Duplicate key.");
 

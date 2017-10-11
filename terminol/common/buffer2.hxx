@@ -6,7 +6,6 @@
 
 #include "terminol/common/data_types.hxx"
 #include "terminol/common/repository_interface.hxx"
-#include "terminol/common/para_cache.hxx"
 #include "terminol/common/text.hxx"
 #include "terminol/common/char_sub.hxx"
 
@@ -70,10 +69,12 @@ public:
     //
     //
 
-    Buffer2(I_Repository & repository, ParaCache & paraCache,
-            int16_t rows, int16_t cols, uint32_t historyLimit,
+    Buffer2(I_Repository       & repository,
+            int16_t              rows,
+            int16_t              cols,
+            uint32_t             historyLimit,
             const CharSubArray & charSubArray) :
-        _text(repository, paraCache, rows, cols, historyLimit),
+        _text(repository, rows, cols, historyLimit),
         _charSubs(charSubArray)
     {}
 

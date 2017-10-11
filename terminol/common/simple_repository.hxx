@@ -9,20 +9,20 @@
 #include <mutex>
 #include <unordered_map>
 
-class SimpleRepository : public I_Repository {
+class SimpleRepository final : public I_Repository {
     mutable std::mutex             _mutex;
     Tag                            _nextTag;
     std::unordered_map<Tag, Entry> _entries;
 
 public:
     SimpleRepository();
-    virtual ~SimpleRepository();
 
     Tag      store(const Entry & entry) override;
     Entry    retrieve(Tag tag) const override;
     uint32_t length(Tag tag) const override;
     bool     match(Tag tag, const std::vector<Regex> & regexes) const override;
     void     discard(Tag tag) override;
+    void     dump(std::ostream & ost) const override;
 };
 
 #endif // COMMON__SIMPLE_REPOSITORY__HXX

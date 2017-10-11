@@ -5,44 +5,7 @@
 #include "terminol/support/rle.hxx"
 #include "terminol/support/hash.hxx"
 
-std::vector<uint8_t> DedupeRepository::encode(const Entry & entry) {
-    std::vector<uint8_t> bytes;
-    OutMemoryStream os(bytes, true);
-
-    // Write the size of the string followed by the string content.
-    uint32_t size = entry.string.size();
-    os.writeAll(&size, sizeof size, 1);
-    os.writeAll(&entry.string.front(), 1, entry.string.size());
-
-    // RLE encode the styles
-    rleEncode(entry.styles, os);
-
-    return bytes;
-}
-
-auto DedupeRepository::decode(const std::vector<uint8_t> & bytes) -> Entry {
-    Entry entry;
-    InMemoryStream is(bytes);
-
-    // Read the size of the string followed by the string content.
-    uint32_t size;
-    is.readAll(&size, sizeof size, 1);
-    entry.string.resize(size);
-    is.readAll(&entry.string.front(), 1, entry.string.size());
-
-    // RLE decode the styles
-    rleDecode(is, entry.styles);
-
-    return entry;
-}
-
-auto DedupeRepository::makeTag(const std::vector<uint8_t> & bytes) -> Tag {
-    return hash<SDBM<Tag>>(&bytes.front(), bytes.size());
-}
-
 DedupeRepository::DedupeRepository() : _totalRefs(0) {}
-
-DedupeRepository::~DedupeRepository() {}
 
 auto DedupeRepository::store(const Entry & entry) -> Tag {
     auto bytes = encode(entry);
@@ -141,4 +104,57 @@ void DedupeRepository::discard(Tag tag) {
     }
 
     --_totalRefs;
+}
+
+void DedupeRepository::dump(std::ostream & ost) const {
+    std::unique_lock<std::mutex> lock(_mutex);
+
+    for (auto & pair : _entries) {
+        auto   tag          = pair.first;
+        auto & dedupe_entry = pair.second;
+        auto   entry        = decode(dedupe_entry.bytes);
+
+        ost << tag << "(" << dedupe_entry.refs << "): ";
+
+        for (auto byte : entry.string) {
+            ost << byte;
+        }
+
+        ost << std::endl;
+    }
+}
+
+std::vector<uint8_t> DedupeRepository::encode(const Entry & entry) {
+    std::vector<uint8_t> bytes;
+    OutMemoryStream os(bytes, true);
+
+    // Write the size of the string followed by the string content.
+    uint32_t size = entry.string.size();
+    os.writeAll(&size, sizeof size, 1);
+    os.writeAll(&entry.string.front(), 1, entry.string.size());
+
+    // RLE encode the styles
+    rleEncode(entry.styles, os);
+
+    return bytes;
+}
+
+auto DedupeRepository::decode(const std::vector<uint8_t> & bytes) -> Entry {
+    Entry entry;
+    InMemoryStream is(bytes);
+
+    // Read the size of the string followed by the string content.
+    uint32_t size;
+    is.readAll(&size, sizeof size, 1);
+    entry.string.resize(size);
+    is.readAll(&entry.string.front(), 1, entry.string.size());
+
+    // RLE decode the styles
+    rleDecode(is, entry.styles);
+
+    return entry;
+}
+
+auto DedupeRepository::makeTag(const std::vector<uint8_t> & bytes) -> Tag {
+    return hash<SDBM<Tag>>(&bytes.front(), bytes.size());
 }

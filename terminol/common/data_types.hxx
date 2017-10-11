@@ -41,9 +41,7 @@ std::istream & operator >> (std::istream & ist, Color & color);
 
 struct UColor {
     enum class Type : uint8_t { STOCK, INDEXED, DIRECT };
-    enum class Name : uint8_t {
-        TEXT_FG, TEXT_BG, SELECT_FG, SELECT_BG, CURSOR_FILL, CURSOR_TEXT
-    };
+    enum class Name : uint8_t { TEXT_FG, TEXT_BG, SELECT_FG, SELECT_BG, CURSOR_FILL, CURSOR_TEXT };
 
     Type type;              // 1 byte
 
