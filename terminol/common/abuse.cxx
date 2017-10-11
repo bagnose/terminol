@@ -9,6 +9,8 @@
 
 // FIXME model this off the state machine
 
+namespace {
+
 int randomInt(int min, int max /* exclusive */) {
     return min + (random() % (max - min));
 }
@@ -100,6 +102,8 @@ void writeRandomBytes(std::ostream & ost) {
         ost << randomChar(0x0, 0x100);
     }
 }
+
+} // namespace {anonymous}
 
 int main(int argc, char * argv[]) {
     if (argc > 1) {

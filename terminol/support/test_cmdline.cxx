@@ -6,6 +6,8 @@
 
 #include <cstdarg>
 
+namespace {
+
 void parse(CmdLine * cmdLine, ...) {
     va_list ap;
     std::vector<const char *> vector;
@@ -24,6 +26,8 @@ void parse(CmdLine * cmdLine, ...) {
 
     cmdLine->parse(vector.size(), &vector.front());
 }
+
+} // namespace {anonymous}
 
 int main() {
     try {

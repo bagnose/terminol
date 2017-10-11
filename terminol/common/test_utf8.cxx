@@ -16,6 +16,8 @@ const uint8_t B7 = 1 << 7;
 
 using namespace utf8;
 
+namespace {
+
 std::ostream & showCodePointBits(std::ostream & ost, CodePoint cp) {
     size_t s     = sizeof cp;
     bool  active = false;
@@ -86,6 +88,8 @@ void forwardReverse(CodePoint cp) {
 
     ENFORCE(cp == cp2, cp << " = " << cp2);
 }
+
+} // namespace {anonymous}
 
 int main() {
     try {

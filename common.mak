@@ -16,19 +16,20 @@ ifeq ($(shell pkg-config $(ALL_MODULES) && echo installed),)
   $(error Missing packages from: $(ALL_MODULES))
 endif
 
-SUPPORT_CFLAGS  := $(shell pkg-config --cflags $(SUPPORT_MODULES))
+SUPPORT_CFLAGS  := $(shell pkg-config --cflags $(SUPPORT_MODULES) | sed 's|-I/|-isystem /|')
 SUPPORT_LDFLAGS := $(shell pkg-config --libs   $(SUPPORT_MODULES))
 
-COMMON_CFLAGS   := $(shell pkg-config --cflags $(SUPPORT_MODULES) $(COMMON_MODULES))
+COMMON_CFLAGS   := $(shell pkg-config --cflags $(SUPPORT_MODULES) $(COMMON_MODULES) | sed 's|-I/|-isystem /|')
 COMMON_LDFLAGS  := $(shell pkg-config --libs   $(SUPPORT_MODULES) $(COMMON_MODULES))
 
-XCB_CFLAGS      := $(shell pkg-config --cflags $(SUPPORT_MODULES) $(COMMON_MODULES) $(GFX_MODULES) $(XCB_MODULES))
+XCB_CFLAGS      := $(shell pkg-config --cflags $(SUPPORT_MODULES) $(COMMON_MODULES) $(GFX_MODULES) $(XCB_MODULES) | sed 's|-I/|-isystem /|')
 XCB_LDFLAGS     := $(shell pkg-config --libs   $(SUPPORT_MODULES) $(COMMON_MODULES) $(GFX_MODULES) $(XCB_MODULES))
 
 CPPFLAGS        := -DVERSION=\"$(VERSION)\" -iquote src
 CXXFLAGS        := -fpic -fno-rtti -std=c++14 -pthread
-WFLAGS          := -Wpedantic -Wextra -Wall -Wundef                       \
-                   -Wredundant-decls -Wshadow -Wsign-compare              \
+WFLAGS          := -Wpedantic -Wextra -Wall -Wundef -Wshadow              \
+                   -Wredundant-decls -Wsign-compare                       \
+                   -Wmissing-declarations -Wold-style-cast                \
                    -Wmissing-field-initializers -Wno-format-zero-length   \
                    -Wno-unused-function -Woverloaded-virtual -Wsign-promo \
                    -Wctor-dtor-privacy -Wnon-virtual-dtor
@@ -46,7 +47,7 @@ ifeq ($(COMPILER),gnu)
   WFLAGS += -Wno-error=unused-parameter
   CXX := g++
 else ifeq ($(COMPILER),clang)
-  WFLAGS +=
+  WFLAGS += -Wextra-semi -Wcomma
   # XXX next line not to be merged with master:
   WFLAGS += -Wno-error=unused-parameter
   CXX := clang++

@@ -16,6 +16,8 @@
 // *before* #including para.hxx (which pulls in stringify()).
 namespace std {
 
+ostream & operator << (ostream & ost, const vector<uint8_t> & vec);
+
 ostream & operator << (ostream & ost, const vector<uint8_t> & vec) {
     for (auto c : vec) {
         ost << c;
@@ -147,7 +149,7 @@ void test4(Test & test) {
 #endif
 }
 
-} // namespace
+} // namespace {anonymous}
 
 int main() {
     Test test("common/para");

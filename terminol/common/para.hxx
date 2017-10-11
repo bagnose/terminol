@@ -28,7 +28,7 @@ public:
     Style getStyle(uint32_t offset) const {
         ASSERT(offset < getLength(), "");
         return _styles[offset];
-    };
+    }
 
     const uint8_t * getStringAtOffset(uint32_t offset) const;
 

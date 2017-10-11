@@ -4,6 +4,8 @@
 #include "terminol/support/debug.hxx"
 #include "terminol/support/conv.hxx"
 
+namespace {
+
 void test1() {
     std::vector<std::string> tokens;
 
@@ -56,6 +58,8 @@ void test2(uint8_t num, const char ascii[2]) {
         FATAL(error.message);
     }
 }
+
+} // namespace {anonymous}
 
 int main() {
     test1();

@@ -10,6 +10,8 @@ using namespace std;
 
 #include <unistd.h>
 
+namespace {
+
 void fillChar(int rows, int cols, char c) {
     for (int i = 0; i != rows; ++i) {
         cout << CsiEsc::CUP(i + 1, 1);
@@ -20,6 +22,8 @@ void fillChar(int rows, int cols, char c) {
     }
     cout << flush;
 }
+
+} // namespace {anonymous}
 
 int main() {
     cout << CsiEsc::DECCOLM(CsiEsc::Cols::_80);
