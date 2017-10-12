@@ -21,10 +21,8 @@ class Regex : protected Uncopyable {
     const int _maxMatches;
 public:
     struct Substr {
-        Substr(int first_, int last_) noexcept : first(first_), last(last_) {}
-
-        int first;
-        int last;
+        int first = 0;
+        int last  = 0;
     };
 
     struct Error {
@@ -163,7 +161,7 @@ protected:
         }
         else {
             for (int i = 0; i != rval; ++i) {
-                substrs.emplace_back(offsets[2 * i], offsets[2 * i + 1]);
+                substrs.push_back({offsets[2 * i], offsets[2 * i + 1]});
             }
         }
 

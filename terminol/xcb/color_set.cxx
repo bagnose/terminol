@@ -33,13 +33,13 @@ ColorSet::ColorSet(const Config & config,
     for (auto r = 0; r != 6; ++r) {
         for (auto g = 0; g != 6; ++g) {
             for (auto b = 0; b != 6; ++b) {
-                _indexedColors[index++] = DColor(r / 5.0, g / 5.0, b / 5.0);
+                _indexedColors[index++] = DColor{r / 5.0, g / 5.0, b / 5.0};
             }
         }
     }
 
     for (auto v = 0; v != 24; ++v) {
-        _indexedColors[index++] = DColor(v / 23.0, v / 23.0, v / 23.0);
+        _indexedColors[index++] = DColor{v / 23.0, v / 23.0, v / 23.0};
     }
 
     ASSERT(index == 0, "");
@@ -82,7 +82,7 @@ uint32_t ColorSet::alloc_color(const Color & color) {
 }
 
 DColor ColorSet::convert(const Color & color) {
-    return DColor(color.r / 255.0,
+    return DColor{color.r / 255.0,
                   color.g / 255.0,
-                  color.b / 255.0);
+                  color.b / 255.0};
 }

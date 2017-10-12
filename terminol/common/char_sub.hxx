@@ -47,11 +47,6 @@ public:
 enum class CharSet { G0, G1, G2, G3 };
 
 struct CharSubArray {
-    CharSubArray(const CharSub * g0,
-                 const CharSub * g1,
-                 const CharSub * g2,
-                 const CharSub * g3) : charSubs {{ g0, g1, g2, g3 }} {}
-
     std::array<const CharSub *, 4> charSubs;
 
     void set(CharSet set_, const CharSub * sub) {

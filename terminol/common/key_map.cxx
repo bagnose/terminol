@@ -21,10 +21,10 @@ namespace xkb {
 namespace {
 
 struct Map {
-    xkb_keysym_t sym;
-    int          num;
-    uint8_t      escape;
-    uint8_t      code;
+    xkb_keysym_t sym    = XKB_KEY_NoSymbol;
+    int          num    = 0;
+    uint8_t      escape = 0;
+    uint8_t      code   = 0;
 };
 
 const Map MAP_NORMAL[] = {

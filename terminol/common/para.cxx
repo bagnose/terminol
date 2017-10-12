@@ -102,7 +102,7 @@ Cell Para::getCell(uint32_t offset) const {
         auto indexBegin = _indices[offset];
         auto indexEnd   = _indices[offset + 1];
 
-        std::copy(&_string[indexBegin], &_string[indexEnd], cell.seq.bytes);
+        std::copy(&_string[indexBegin], &_string[indexEnd], cell.seq.bytes.begin());
 
         return cell;
     }

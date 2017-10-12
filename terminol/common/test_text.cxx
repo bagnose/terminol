@@ -17,7 +17,7 @@ std::string read(const Text & text, int32_t count, int16_t & row, int16_t & col)
         auto cell = text.getCell(row, col);
         auto seq  = cell.seq;
 
-        std::copy(seq.bytes, seq.bytes + utf8::leadLength(seq.lead()),
+        std::copy(seq.bytes.begin(), seq.bytes.begin() + utf8::leadLength(seq.lead()),
                   std::back_inserter(result));
 
         ++col;

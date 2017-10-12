@@ -63,11 +63,8 @@ class SelectSelector final : public I_Selector {
     using Clock = std::chrono::steady_clock;
 
     struct TimeEntry {
-        TimeEntry(Clock::time_point  time_, I_TimeoutHandler * handler_) :
-            time(time_), handler(handler_) {}
-
         Clock::time_point   time;
-        I_TimeoutHandler  * handler;
+        I_TimeoutHandler  * handler = nullptr;
     };
 
     std::map<int, I_ReadHandler *>  _readRegs;
@@ -239,11 +236,8 @@ class EPollSelector final : public I_Selector {
     using Clock = std::chrono::steady_clock;
 
     struct TimeEntry {
-        TimeEntry(Clock::time_point  time_, I_TimeoutHandler * handler_) :
-            time(time_), handler(handler_) {}
-
         Clock::time_point   time;
-        I_TimeoutHandler  * handler;
+        I_TimeoutHandler  * handler = nullptr;
     };
 
     int                             _fd;
@@ -425,7 +419,7 @@ public:
             ++iter;
         }
 
-        _timeoutRegs.insert(iter, TimeEntry(scheduled, handler));
+        _timeoutRegs.insert(iter, TimeEntry{scheduled, handler});
     }
 
     void removeTimeoutable(I_TimeoutHandler * handler) override {

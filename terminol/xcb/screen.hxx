@@ -225,7 +225,7 @@ private:
             case UColor::Type::DIRECT:
                 auto v = ucolor.values;
                 auto d = 255.0;
-                return DColor(v.r / d, v.g / d, v.b / d);
+                return DColor{v.r / d, v.g / d, v.b / d};
         }
 
         FATAL("Unreachable");

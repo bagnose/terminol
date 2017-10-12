@@ -11,12 +11,9 @@
 
 class DedupeRepository final : public I_Repository {
     struct DedupeEntry {
-        explicit DedupeEntry(int32_t length_, const std::vector<uint8_t> & bytes_) :
-            refs(1), length(length_), bytes(bytes_) {}
-
-        uint32_t             refs;
         uint32_t             length;
         std::vector<uint8_t> bytes;
+        uint32_t             refs = 1;
     };
 
     mutable std::mutex                   _mutex;

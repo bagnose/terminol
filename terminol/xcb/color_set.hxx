@@ -10,10 +10,9 @@
 #include <cstdint>
 
 struct DColor {
-    DColor() : r(0.0), g(0.0), b(0.0) {}
-    DColor(double r_, double g_, double b_) : r(r_), g(g_), b(b_) {}
-
-    double r, g, b;
+    double r = 0.0;
+    double g = 0.0;
+    double b = 0.0;
 };
 
 //

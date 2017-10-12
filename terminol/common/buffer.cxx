@@ -1505,7 +1505,7 @@ void Buffer::dispatchFg(bool reverse, I_Renderer & renderer) const {
                 attrs0 = attrs1;
             }
 
-            std::copy(cell.seq.bytes, cell.seq.bytes + length, std::back_inserter(run));
+            std::copy(cell.seq.bytes.begin(), cell.seq.bytes.begin() + length, std::back_inserter(run));
         }
 
         // There may be an unterminated run to flush.
@@ -1548,7 +1548,7 @@ void Buffer::dispatchCursor(bool reverse, I_Renderer & renderer) const {
 
         auto length = utf8::leadLength(cell.seq.lead());
         std::vector<uint8_t> run;         // Buffer for accumulating character runs.
-        std::copy(cell.seq.bytes, cell.seq.bytes + length, std::back_inserter(run));
+        std::copy(cell.seq.bytes.begin(), cell.seq.bytes.begin() + length, std::back_inserter(run));
 
         auto size = run.size();
         run.push_back(NUL);

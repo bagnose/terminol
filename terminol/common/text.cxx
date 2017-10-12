@@ -457,7 +457,7 @@ auto Text::rfind(const Regex & regex, Marker & marker, bool & ongoing) -> std::v
 void Text::cleanStraddling() {
     if (_straddlingLines > 0 && !_currentLines[_straddlingLines - 1].isContinued()) {
         auto tag = _repository.store(
-            I_Repository::Entry(_currentParas.front().getStyles(), _currentParas.front().getString()));
+            I_Repository::Entry{_currentParas.front().getStyles(), _currentParas.front().getString()});
 
         for (uint32_t seqnum = 0; seqnum != _straddlingLines; ++seqnum) {
             uint32_t index = _historyTags.size() + _poppedHistoryTags;

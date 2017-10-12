@@ -15,11 +15,6 @@ public:
     using Tag = uint32_t;       // Note, can use smaller tag sizes to cause collisions, etc.
 
     struct Entry {
-        Entry() {}
-
-        Entry(const std::vector<Style> & styles_, const std::vector<uint8_t> & string_) :
-            styles(styles_), string(string_) {}
-
         std::vector<Style>   styles;
         std::vector<uint8_t> string;
     };

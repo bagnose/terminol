@@ -7,6 +7,7 @@
 #include "terminol/support/debug.hxx"
 
 #include <cstdint>
+#include <array>
 
 namespace utf8 {
 
@@ -48,15 +49,15 @@ bool      isCont(uint8_t byte) noexcept;
 
 struct Seq {
     Seq(uint8_t b0 = '\0', uint8_t b1 = '\0', uint8_t b2 = '\0', uint8_t b3 = '\0') noexcept :
-        bytes { b0, b1, b2, b3 } {}
+        bytes{{b0, b1, b2, b3}} {}
 
     void clear() noexcept {
-        bytes[0] = bytes[1] = bytes[2] = bytes[3] = '\0';
+        bytes = {{'\0', '\0', '\0', '\0'}};
     }
 
     uint8_t lead() const noexcept { return bytes[0]; }
 
-    uint8_t bytes[Length::LMAX];
+    std::array<uint8_t, Length::LMAX> bytes = {{'\0', '\0', '\0', '\0'}};
 };
 
 inline bool operator == (Seq lhs, Seq rhs) noexcept {
@@ -91,12 +92,12 @@ public:
     };
 
 private:
-    State   _state;
-    uint8_t _index;
+    State   _state = State::START;
+    uint8_t _index = 0;
     Seq     _seq;
 
 public:
-    Machine() noexcept : _state(State::START), _index(0), _seq() {}
+    Machine() noexcept = default;
 
     Length length() const noexcept {
         ASSERT(_state == State::ACCEPT, "");

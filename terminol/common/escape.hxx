@@ -14,7 +14,7 @@
 
 struct SimpleEsc {
     std::vector<uint8_t> inters;
-    uint8_t              code;
+    uint8_t              code = 0;
 
     // Convert to human readable string.
     std::string str() const;

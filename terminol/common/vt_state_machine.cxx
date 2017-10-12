@@ -377,7 +377,7 @@ void VtStateMachine::oscString(utf8::Seq seq, utf8::Length length) {
     }
     else {
         // put
-        std::copy(seq.bytes, seq.bytes + size_t(length), std::back_inserter(_escSeq));
+        std::copy(seq.bytes.begin(), seq.bytes.begin() + length, std::back_inserter(_escSeq));
     }
 }
 

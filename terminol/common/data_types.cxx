@@ -28,9 +28,9 @@ std::istream & operator >> (std::istream & ist, Color & color) {
     }
 
 
-    color = Color(hexToByte(str[1], str[2]),
+    color = Color{hexToByte(str[1], str[2]),
                   hexToByte(str[3], str[4]),
-                  hexToByte(str[5], str[6]));
+                  hexToByte(str[5], str[6])};
 
     return ist;
 }

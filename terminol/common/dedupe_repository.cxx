@@ -18,7 +18,7 @@ again:
     auto iter = _entries.find(tag);
 
     if (iter == _entries.end()) {
-        _entries.insert(std::make_pair(tag, DedupeEntry(entry.styles.size(), bytes)));
+        _entries.insert(std::make_pair(tag, DedupeEntry{static_cast<uint32_t>(entry.styles.size()), std::move(bytes)}));
     }
     else {
         auto & dedupeEntry = iter->second;

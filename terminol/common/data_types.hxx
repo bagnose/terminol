@@ -16,10 +16,9 @@
 //
 
 struct Color {
-    uint8_t r, g, b;
-
-    Color() : r(0), g(0), b(0) {}
-    Color(uint8_t r_, uint8_t g_, uint8_t b_) : r(r_), g(g_), b(b_) {}
+    uint8_t r = 0;
+    uint8_t g = 0;
+    uint8_t b = 0;
 };
 
 inline bool operator == (Color lhs, Color rhs) {
@@ -104,17 +103,9 @@ inline bool operator != (UColor lhs, UColor rhs) { return !(lhs == rhs); }
 //
 
 struct Style {
-    AttrSet attrs;    // 1 byte
-    UColor  fg;       // 4 bytes
-    UColor  bg;       // 4 bytes
-
-    Style() :
-        attrs(),
-        fg(UColor::stock(UColor::Name::TEXT_FG)),
-        bg(UColor::stock(UColor::Name::TEXT_BG)) {}
-
-    Style(AttrSet attrs_, UColor fg_, UColor bg_) :
-        attrs(attrs_), fg(fg_), bg(bg_) {}
+    AttrSet attrs;                                     // 1 byte
+    UColor  fg = UColor::stock(UColor::Name::TEXT_FG); // 4 bytes
+    UColor  bg = UColor::stock(UColor::Name::TEXT_BG); // 4 bytes
 };
 
 static_assert(sizeof(Style) == 9, "Style should be 9 bytes.");
@@ -197,9 +188,6 @@ inline std::ostream & operator << (std::ostream & ost, Pos pos) {
 struct Region {
     Pos begin;
     Pos end;
-
-    Region() : begin(), end() {}
-    Region(Pos begin_, Pos end_) : begin(begin_), end(end_) {}
 
     void clear() { *this = Region(); }
 
