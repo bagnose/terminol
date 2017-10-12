@@ -10,12 +10,11 @@
 #include <queue>
 #include <mutex>
 #include <condition_variable>
+#include <optional>
 
 template <typename T>
 class Queue : private Uncopyable {
 public:
-    struct Finalised {};
-
     // These functions are called by the producer:
 
     void add(const T & t) {
@@ -42,18 +41,18 @@ public:
 
     // This function is called by the consumer:
 
-    T remove() /*throw (Finalised)*/ {
+    std::optional<T> remove() {
         std::unique_lock<std::mutex> lock(_mutex);
         _condition.wait(lock, [this]() { return _finalised || !_queue.empty(); });
 
-        if (!_queue.empty()) {
+        if (_queue.empty()) {
+            return std::nullopt;
+        }
+        else {
             auto t = std::move(_queue.front());
             _queue.pop();
             return t;
         }
-
-        ASSERT(_finalised, "");
-        throw Finalised();
     }
 
 private:

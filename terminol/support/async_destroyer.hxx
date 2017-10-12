@@ -26,14 +26,7 @@ public:
 
 protected:
     void background() {
-        try {
-            for (;;) {
-                _queue.remove();
-            }
-        }
-        catch (const GarbageQueue::Finalised &) {
-            // Normal exit.
-        }
+        while (_queue.remove()) {}
     }
 
 private:

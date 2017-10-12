@@ -13,13 +13,8 @@ class Consumer {
     std::thread _thread;
 
     void consume() {
-        try {
-            for (;;) {
-                _queue.remove();
-                std::cout << static_cast<void *>(this) << " consumed" << std::endl;
-            }
-        }
-        catch (const typename Queue<T>::Finalised &) {
+        while (_queue.remove()) {
+            std::cout << static_cast<void *>(this) << " consumed" << std::endl;
         }
     }
 
