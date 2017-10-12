@@ -113,8 +113,6 @@ Terminal::Terminal(I_Observer         & observer,
     _modes.set(Mode::ALT_SENDS_ESC);
 }
 
-Terminal::~Terminal() {}
-
 void Terminal::resize(int16_t rows, int16_t cols) {
     // Special exception, resizes can occur during dispatch to support
     // font size changes.

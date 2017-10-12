@@ -10,11 +10,11 @@
 
 #include <thread>
 
-class AsyncDestroyer : public I_Destroyer, private Uncopyable {
+class AsyncDestroyer final : public I_Destroyer, private Uncopyable {
 public:
     AsyncDestroyer() : _queue(), _thread(&AsyncDestroyer::background, this) {}
 
-    virtual ~AsyncDestroyer() {
+    ~AsyncDestroyer() {
         _queue.finalise();
         _thread.join();
     }

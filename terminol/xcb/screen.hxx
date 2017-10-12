@@ -19,7 +19,7 @@
 #include <xcb/xcb_keysyms.h>
 #include <cairo-xcb.h>
 
-class Screen :
+class Screen final :
     public    Widget,
     protected Terminal::I_Observer,
     protected FontManager::I_Client
@@ -100,7 +100,7 @@ public:
            FontManager        & fontManager,
            const Tty::Command & command = Tty::Command()) /*throw (Widget::Error, Error)*/;
 
-    virtual ~Screen();
+    ~Screen();
 
     xcb_window_t getWindowId() { return getWindow(); }
 

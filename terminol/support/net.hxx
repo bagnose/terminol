@@ -17,7 +17,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-class SocketServer : protected I_Selector::I_ReadHandler {
+class SocketServer final : protected I_Selector::I_ReadHandler {
 public:
     class I_Observer {
     public:
@@ -80,7 +80,7 @@ public:
         _selector.addReadable(_fd, this);
     }
 
-    virtual ~SocketServer() {
+    ~SocketServer() {
         for (auto con : _connections) {
             _selector.removeReadable(con);
             ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(con)) != -1, "");
@@ -139,7 +139,7 @@ protected:
 //
 //
 
-class SocketClient : protected I_Selector::I_WriteHandler {
+class SocketClient final : protected I_Selector::I_WriteHandler {
 public:
     class I_Observer {
     public:
@@ -197,7 +197,7 @@ public:
         }
     }
 
-    virtual ~SocketClient() {
+    ~SocketClient() {
         if (!_queue.empty()) {
             _selector.removeWriteable(_fd);
         }

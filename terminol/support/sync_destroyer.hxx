@@ -7,10 +7,8 @@
 #include "terminol/support/destroyer_interface.hxx"
 #include "terminol/support/pattern.hxx"
 
-class SyncDestroyer : public I_Destroyer, private Uncopyable {
+class SyncDestroyer final : public I_Destroyer, private Uncopyable {
 public:
-    virtual ~SyncDestroyer() = default;
-
     void add(std::unique_ptr<Garbage> garbage) override { garbage.reset(); }
 };
 

@@ -7,7 +7,7 @@
 #include "terminol/support/net.hxx"
 #include "terminol/common/config.hxx"
 
-class Client : protected SocketClient::I_Observer {
+class Client final : protected SocketClient::I_Observer {
     SocketClient   _socket;
     bool           _finished;
 
@@ -29,8 +29,6 @@ public:
     catch (const SocketClient::Error & error) {
         throw Error(error.message);
     }
-
-    virtual ~Client() {}
 
     bool isFinished() const { return _finished; }
 

@@ -20,7 +20,7 @@ protected:
 //
 //
 
-class Server : protected SocketServer::I_Observer {
+class Server final : protected SocketServer::I_Observer {
     I_Creator    & _creator;
     SocketServer   _socket;
 
@@ -39,8 +39,6 @@ public:
     catch (const SocketServer::Error & error) {
         throw Error(error.message);
     }
-
-    virtual ~Server() {}
 
 protected:
 

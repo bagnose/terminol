@@ -59,7 +59,7 @@ protected:
 //
 //
 
-class SelectSelector : public I_Selector {
+class SelectSelector final : public I_Selector {
     using Clock = std::chrono::steady_clock;
 
     struct TimeEntry {
@@ -77,7 +77,7 @@ class SelectSelector : public I_Selector {
 public:
     SelectSelector() {}
 
-    virtual ~SelectSelector() {
+    ~SelectSelector() {
         ASSERT(_readRegs.empty(), "");
         ASSERT(_writeRegs.empty(), "");
     }
@@ -235,7 +235,7 @@ using Selector = SelectSelector;
 //
 //
 
-class EPollSelector : public I_Selector {
+class EPollSelector final : public I_Selector {
     using Clock = std::chrono::steady_clock;
 
     struct TimeEntry {
@@ -256,7 +256,7 @@ public:
         _fd = ::epoll_create1(EPOLL_CLOEXEC);
     }
 
-    virtual ~EPollSelector() {
+    ~EPollSelector() {
         ENFORCE_SYS(::close(_fd) != -1, "");
     }
 

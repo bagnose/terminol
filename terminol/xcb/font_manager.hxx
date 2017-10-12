@@ -13,7 +13,7 @@
 #include <map>
 #include <memory>
 
-class FontManager : protected Uncopyable {
+class FontManager final : protected Uncopyable {
 public:
     class I_Client {
     public:
@@ -41,7 +41,7 @@ public:
         _fontSets(),
         _dispatch(false) {}
 
-    virtual ~FontManager() {
+    ~FontManager() {
         ASSERT(!_dispatch, "");
 
         for (auto p : _fontSets) {

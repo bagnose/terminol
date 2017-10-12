@@ -14,7 +14,7 @@
 //
 //
 
-class SimpleDeduper : public I_Deduper {
+class SimpleDeduper final : public I_Deduper {
     struct Entry {
         uint32_t             refs;
         uint32_t             length;
@@ -30,7 +30,6 @@ class SimpleDeduper : public I_Deduper {
 
 public:
     SimpleDeduper();
-    virtual ~SimpleDeduper();
 
     // I_Deduper implementation:
 

@@ -90,7 +90,7 @@ public:
         loop();
     }
 
-    virtual ~EventLoop() {
+    ~EventLoop() {
         _singleton = nullptr;
     }
 

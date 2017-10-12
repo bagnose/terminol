@@ -18,8 +18,7 @@ public:
                          size_t num_items) /*throw (StreamError)*/ = 0;
 
 protected:
-    InStream() = default;
-    virtual ~InStream() = default;
+    ~InStream() = default;
 };
 
 class OutStream {
@@ -29,8 +28,7 @@ public:
                           size_t       num_items) /*throw (StreamError)*/ = 0;
 
 protected:
-    OutStream() = default;
-    virtual ~OutStream() = default;
+    ~OutStream() = default;
 };
 
 //
@@ -39,7 +37,7 @@ protected:
 
 struct EndOfFile : StreamError {};
 
-class InMemoryStream : public InStream {
+class InMemoryStream final : public InStream {
     const std::vector<uint8_t> & _buffer;
     size_t                       _index;
 
@@ -61,7 +59,7 @@ public:
     }
 };
 
-class OutMemoryStream : public OutStream {
+class OutMemoryStream final : public OutStream {
     std::vector<uint8_t> & _buffer;
     bool                   _append;
     size_t                 _index;

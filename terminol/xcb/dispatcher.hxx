@@ -41,23 +41,21 @@ public:
         virtual void reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) noexcept {}
 
     protected:
-        virtual ~I_Observer() = 0;
+        ~I_Observer() = default;
     };
 
     virtual void add(xcb_window_t window, I_Observer * observer) = 0;
     virtual void remove(xcb_window_t window) = 0;
 
 protected:
-  ~I_Dispatcher() = default;
+    ~I_Dispatcher() = default;
 };
 
-inline I_Dispatcher::I_Observer::~I_Observer() = default;
-
 //
 //
 //
 
-class Dispatcher :
+class Dispatcher final :
     public    I_Dispatcher,
     protected I_Selector::I_ReadHandler
 {
@@ -74,7 +72,7 @@ public:
         _selector.addReadable(xcb_get_file_descriptor(_connection), this);
     }
 
-    virtual ~Dispatcher() {
+    ~Dispatcher() {
         _selector.removeReadable(xcb_get_file_descriptor(_connection));
     }
 

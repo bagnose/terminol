@@ -11,7 +11,7 @@
 #include <vector>
 #include <string>
 
-class Tty :
+class Tty final :
     protected I_Selector::I_ReadHandler,
     protected Uncopyable
 {
@@ -51,7 +51,7 @@ public:
         const std::string & windowId,
         const Command     & command) /*throw (Error)*/;
 
-    virtual ~Tty();
+    ~Tty();
 
     void tryReap();
     void killReap();
