@@ -3,13 +3,14 @@
 
 #include "terminol/support/conv.hxx"
 
-bool split(const std::string        & line,
-           std::vector<std::string> & tokens,
-           const std::string        & delim) /*throw (ParseError)*/ {
+std::optional<std::vector<std::string>> split(const std::string & line,
+                                              const std::string & delim) /*throw (ParseError)*/{
     auto i = line.find_first_not_of(delim);
 
-    if (i == std::string::npos) { return false; }   // blank line
-    if (line[i] == '#')         { return false; }   // comment
+    if (i == std::string::npos) { return std::nullopt; }   // blank line
+    if (line[i] == '#')         { return std::nullopt; }   // comment
+
+    std::vector<std::string> tokens;
 
     for (;;) {
         bool quote = line[i] == '"';
@@ -35,5 +36,5 @@ bool split(const std::string        & line,
         if (i == std::string::npos) { break; }
     }
 
-    return true;
+    return tokens;
 }

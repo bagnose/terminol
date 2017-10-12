@@ -255,12 +255,11 @@ void Parser::parse() {
     auto xdg_config_dirs = static_cast<const char *>(::getenv("XDG_CONFIG_DIRS"));
 
     if (xdg_config_dirs) {
-        std::vector<std::string> dirs;
-        split(xdg_config_dirs, dirs, ":");
-
-        for (auto & d : dirs) {
-            if (tryPath(d + conf)) {
-                return;
+        if (auto dirs = split(xdg_config_dirs, ":")) {
+            for (auto & d : *dirs) {
+                if (tryPath(d + conf)) {
+                    return;
+                }
             }
         }
     }
@@ -286,10 +285,9 @@ bool Parser::tryPath(const std::string & path) {
         while (getline(ifs, line).good()) {
             ++num;
 
-            std::vector<std::string> tokens;
             try {
-                if (split(line, tokens)) {
-                    interpretTokens(tokens);
+                if (auto tokens = split(line)) {
+                    interpretTokens(*tokens);
                 }
             }
             catch (const ParseError & error) {
@@ -339,13 +337,12 @@ void Parser::handleSet(const std::string & key, const std::string & value) /*thr
 }
 
 void Parser::handleBindSym(const std::string & sym, const std::string & action) /*throw (ParseError)*/ {
-    std::vector<std::string> tokens;
-    if (split(sym, tokens, "+")) {
-        auto key = tokens.back(); tokens.pop_back();
+    if (auto tokens = split(sym, "+")) {
+        auto key = tokens->back(); tokens->pop_back();
 
         ModifierSet modifiers;
 
-        for (auto & m : tokens) {
+        for (auto & m : *tokens) {
             auto modifier = xkb::nameToModifier(m);
             modifiers.set(modifier);
         }

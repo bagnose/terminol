@@ -7,24 +7,25 @@
 namespace {
 
 void test1() {
-    std::vector<std::string> tokens;
-
     try {
-        ENFORCE(!split("######", tokens), "Comment 1");
-        ENFORCE(!split("#", tokens), " Comment 2");
-        ENFORCE(!split("\t    # COMMENT", tokens), "Comment 3");
-        ENFORCE(!split("", tokens), "Empty line");
-        ENFORCE(!split(" \t \t", tokens), "Blank line");
+        ENFORCE(!split("######"), "Comment 1");
+        ENFORCE(!split("#"), " Comment 2");
+        ENFORCE(!split("\t    # COMMENT"), "Comment 3");
+        ENFORCE(!split(""), "Empty line");
+        ENFORCE(!split(" \t \t"), "Blank line");
 
-        ENFORCE(split(" \t  a b c_d  foo       \t", tokens), "");
+        auto t = split(" \t  a b c_d  foo       \t");
+        ENFORCE(t, "");
+        auto tokens = *t;
         ENFORCE(tokens.size() == 4, "");
         ENFORCE(tokens[0] == "a", "");
         ENFORCE(tokens[1] == "b", "");
         ENFORCE(tokens[2] == "c_d", "");
         ENFORCE(tokens[3] == "foo", "");
 
-        tokens.clear();
-        ENFORCE(split(" \"a b c\" \"d e f\" \"\" ", tokens), "");
+        t = split(" \"a b c\" \"d e f\" \"\" ");
+        ENFORCE(t, "");
+        tokens = *t;
         ENFORCE(tokens.size() == 3, "");
         ENFORCE(tokens[0] == "a b c", "");
         ENFORCE(tokens[1] == "d e f", "");
@@ -35,8 +36,7 @@ void test1() {
     }
 
     try {
-        tokens.clear();
-        split("\"unterminated quote...", tokens);
+        split("\"unterminated quote...");
         ENFORCE(false, "Unreachable");
     }
     catch (const ParseError &) {

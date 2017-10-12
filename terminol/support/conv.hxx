@@ -10,6 +10,7 @@
 #include <vector>
 #include <sstream>
 #include <cmath>
+#include <optional>
 
 // Query the size of an array at compile time, e.g.:
 //
@@ -18,7 +19,7 @@
 //
 // Note, this was taken from "Effective Modern C++, page 16".
 template <typename T, std::size_t N>
-constexpr std::size_t arraySize(T (&)[N]) throw () {
+constexpr std::size_t arraySize(T (&)[N]) {
     return N;
 }
 
@@ -34,9 +35,8 @@ template <typename T> T clamp(T val, T min, T max) {
     else                { return val; }
 }
 
-bool split(const std::string        & line,
-           std::vector<std::string> & tokens,
-           const std::string        & delim = "\t ") /*throw (ParseError)*/;
+std::optional<std::vector<std::string>> split(const std::string & line,
+                                              const std::string & delim = "\t ") /*throw (ParseError)*/;
 
 template <typename T> std::string stringify(const T & t) {
     std::ostringstream ost;

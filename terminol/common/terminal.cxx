@@ -1194,7 +1194,7 @@ void Terminal::machineControl(uint8_t control) {
             if (_modes.get(Mode::CR_ON_LF)) {
                 _buffer->moveCursor2(true, 0, false, 0);
             }
-            // Fall-through:
+            [[fallthrough]];
         case FF:
         case VT:
             _buffer->forwardIndex();
