@@ -30,13 +30,13 @@ using CodePoint = int32_t;
 Length    leadLength(uint8_t lead) noexcept;
 
 // Decode a sequence into a code point. Assumes sequence is complete.
-CodePoint decode(const uint8_t * sequence) throw (Error);
+CodePoint decode(const uint8_t * sequence) /*throw (Error)*/;
 
 // Given a code point, what is the length of the sequence?
-Length    codePointLength(CodePoint codePoint) throw (Error);
+Length    codePointLength(CodePoint codePoint) /*throw (Error)*/;
 
 // Encode a code point into a sequence. Assumes sequence has sufficient allocation.
-Length    encode(CodePoint codePoint, uint8_t * sequence) throw (Error);
+Length    encode(CodePoint codePoint, uint8_t * sequence) /*throw (Error)*/;
 
 bool      isLead(uint8_t byte) noexcept;
 

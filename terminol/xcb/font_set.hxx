@@ -45,7 +45,7 @@ protected:
     };
 
     PangoFontDescription * load(const std::string & family, int size, bool master,
-                                bool bold, bool italic) throw (Error);
+                                bool bold, bool italic) /*throw (Error)*/;
     void unload(PangoFontDescription * desc);
 
     void measure(PangoFontDescription * desc, uint16_t & width, uint16_t & height);

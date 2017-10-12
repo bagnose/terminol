@@ -75,7 +75,7 @@ PangoFontDescription * FontSet::load(const std::string & family,
                                      int                 size,
                                      bool                master,
                                      bool                bold,
-                                     bool                italic) throw (Error) {
+                                     bool                italic) /*throw (Error)*/ {
 #if 0
     {
         PangoFontMap * fontmap = pango_cairo_font_map_get_default();

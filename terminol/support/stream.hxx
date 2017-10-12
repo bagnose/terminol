@@ -15,7 +15,7 @@ class InStream {
 public:
     virtual void readAll(void * data,
                          size_t item_size,
-                         size_t num_items) throw (StreamError) = 0;
+                         size_t num_items) /*throw (StreamError)*/ = 0;
 
 protected:
     InStream() = default;
@@ -26,7 +26,7 @@ class OutStream {
 public:
     virtual void writeAll(const void * data,
                           size_t       item_size,
-                          size_t       num_items) throw (StreamError) = 0;
+                          size_t       num_items) /*throw (StreamError)*/ = 0;
 
 protected:
     OutStream() = default;
@@ -49,7 +49,7 @@ public:
 
     void readAll(void * data,
                  size_t item_size,
-                 size_t num_items) throw (EndOfFile) override {
+                 size_t num_items) /*throw (EndOfFile)*/ override {
         auto size = item_size * num_items;
         if (_index + size > _buffer.size()) {
             throw EndOfFile();
@@ -72,7 +72,7 @@ public:
 
     void writeAll(const void * data,
                   size_t       item_size,
-                  size_t       num_items) throw (EndOfFile) override {
+                  size_t       num_items) /*throw (EndOfFile)*/ override {
         size_t size = item_size * num_items;
 
         if (_append) {

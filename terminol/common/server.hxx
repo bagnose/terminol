@@ -32,7 +32,7 @@ public:
 
     Server(I_Creator    & creator,
            I_Selector   & selector,
-           const Config & config) throw (Error) try :
+           const Config & config) /*throw (Error)*/ try :
         _creator(creator),
         _socket(*this, selector, config.socketPath)
     {}

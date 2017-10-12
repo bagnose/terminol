@@ -23,7 +23,7 @@ public:
 
         virtual bool isNegatable() const = 0;
         virtual bool wantsValue() const = 0;
-        virtual void handle(bool negated, const std::string & value) throw (Error) = 0;
+        virtual void handle(bool negated, const std::string & value) /*throw (Error)*/ = 0;
 
         virtual ~Handler() {}
     };
@@ -95,7 +95,7 @@ public:
         _options.push_back(Option(handler, shortOpt, longOpt, mandatory));
     }
 
-    std::vector<std::string> parse(int argc, const char ** argv) throw (Error) {
+    std::vector<std::string> parse(int argc, const char ** argv) /*throw (Error)*/ {
         std::vector<std::string> arguments;
         bool ignore = false;
 
@@ -213,7 +213,7 @@ public:
     }
 
 protected:
-    Handler * lookupShort(char s) throw (Error) {
+    Handler * lookupShort(char s) /*throw (Error)*/ {
         auto iter = _shortToHandler.find(s);
 
         if (iter == _shortToHandler.end()) {
@@ -224,7 +224,7 @@ protected:
         return iter->second;
     }
 
-    Handler * lookupLong(const std::string & l) throw (Error) {
+    Handler * lookupLong(const std::string & l) /*throw (Error)*/ {
         auto iter = _longToHandler.find(l);
 
         if (iter == _longToHandler.end()) {
@@ -260,7 +260,7 @@ public:
     bool isNegatable() const override { return false; }
     bool wantsValue()  const override { return true; }
 
-    void handle(bool UNUSED(negated), const std::string & value) throw (Error) override {
+    void handle(bool UNUSED(negated), const std::string & value) /*throw (Error)*/ override {
         try {
             _value = unstringify<V>(value);
         }
@@ -281,7 +281,7 @@ public:
     bool isNegatable() const override { return false; }
     bool wantsValue()  const override { return true; }
 
-    void handle(bool UNUSED(negated), const std::string & value) throw (Error) override {
+    void handle(bool UNUSED(negated), const std::string & value) /*throw (Error)*/ override {
         _func(value);
     }
 };

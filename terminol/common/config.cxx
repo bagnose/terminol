@@ -231,7 +231,7 @@ Config::Config() :
     socketPath = ost.str();
 }
 
-void Config::setColorScheme(const std::string & name) throw (ParseError) {
+void Config::setColorScheme(const std::string & name) /*throw (ParseError)*/ {
     if (name == "rxvt") {
         std::copy(COLOURS_RXVT, COLOURS_RXVT + 16, systemColors);
 

@@ -98,7 +98,7 @@ public:
            Basics             & basics,
            const ColorSet     & colorSet,
            FontManager        & fontManager,
-           const Tty::Command & command = Tty::Command()) throw (Widget::Error, Error);
+           const Tty::Command & command = Tty::Command()) /*throw (Widget::Error, Error)*/;
 
     virtual ~Screen();
 

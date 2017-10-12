@@ -22,7 +22,7 @@ Screen::Screen(I_Observer         & observer,
                Basics             & basics,
                const ColorSet     & colorSet,
                FontManager        & fontManager,
-               const Tty::Command & command) throw (Widget::Error, Error) :
+               const Tty::Command & command) /*throw (Widget::Error, Error)*/ :
     Widget(dispatcher, basics, colorSet.getBackgroundPixel(), config.initialX, config.initialY, -1, -1),
     _observer(observer),
     _config(config),

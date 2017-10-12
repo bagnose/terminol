@@ -60,7 +60,7 @@ public:
         std::string message;
     };
 
-    Basics() throw (Error);
+    Basics() /*throw (Error)*/;
     ~Basics();
 
     const std::string     & hostname()       const { return _hostname;        }
@@ -99,11 +99,11 @@ public:
 
 protected:
     xcb_atom_t   lookupAtom(const std::string & name,
-                            bool create) throw (NotFoundError, Error);
-    xcb_cursor_t loadNormalCursor() throw (Error);
-    xcb_cursor_t loadInvisibleCursor() throw (Error);
-    xcb_pixmap_t getRootPixmap(xcb_atom_t atom) throw (Error);
-    void         determineMasks() throw (Error);
+                            bool create) /*throw (NotFoundError, Error)*/;
+    xcb_cursor_t loadNormalCursor() /*throw (Error)*/;
+    xcb_cursor_t loadInvisibleCursor() /*throw (Error)*/;
+    xcb_pixmap_t getRootPixmap(xcb_atom_t atom) /*throw (Error)*/;
+    void         determineMasks() /*throw (Error)*/;
 };
 
 #endif // XCB__BASICS__HXX

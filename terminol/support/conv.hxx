@@ -36,7 +36,7 @@ template <typename T> T clamp(T val, T min, T max) {
 
 bool split(const std::string        & line,
            std::vector<std::string> & tokens,
-           const std::string        & delim = "\t ") throw (ParseError);
+           const std::string        & delim = "\t ") /*throw (ParseError)*/;
 
 template <typename T> std::string stringify(const T & t) {
     std::ostringstream ost;
@@ -44,7 +44,7 @@ template <typename T> std::string stringify(const T & t) {
     return ost.str();
 }
 
-template <typename T> T unstringify(const std::string & str) throw (ParseError) {
+template <typename T> T unstringify(const std::string & str) /*throw (ParseError)*/ {
     std::istringstream ist(str + '\n');
     T t;
     ist >> t;
@@ -52,11 +52,10 @@ template <typename T> T unstringify(const std::string & str) throw (ParseError) 
     else { throw ParseError("Failed to unstringify: '" + str + "'"); }
 }
 
-template <> inline std::string unstringify<>(const std::string & str) throw (ParseError) {
-    return str;
-}
+template <> inline std::string unstringify<>(const std::string & str) /*throw (ParseError)*/ {
+    return str; }
 
-template <> inline bool unstringify<>(const std::string & str) throw (ParseError) {
+template <> inline bool unstringify<>(const std::string & str) /*throw (ParseError)*/ {
     if (str == "0" || str == "false" || str == "False") {
         return false;
     }
@@ -103,7 +102,7 @@ inline char nibbleToHex(uint8_t nibble) {
     else              { return 'A' + (nibble - 10); }
 }
 
-inline uint8_t hexToNibble(char hex) throw (ParseError) {
+inline uint8_t hexToNibble(char hex) /*throw (ParseError)*/ {
     if      (hex >= '0' && hex <= '9') { return hex - '0'; }
     else if (hex >= 'A' && hex <= 'F') { return 10 + hex - 'A'; }
     else if (hex >= 'a' && hex <= 'f') { return 10 + hex - 'a'; }
@@ -119,7 +118,7 @@ inline void byteToHex(uint8_t byte, char & hex0, char & hex1) {
     hex1 = nibbleToHex(byte & 0x0F);
 }
 
-inline uint8_t hexToByte(char hex0, char hex1) throw (ParseError) {
+inline uint8_t hexToByte(char hex0, char hex1) /*throw (ParseError)*/ {
     return (hexToNibble(hex0) << 4) + hexToNibble(hex1);
 }
 

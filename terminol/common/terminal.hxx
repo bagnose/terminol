@@ -113,7 +113,7 @@ public:
              int16_t              rows,
              int16_t              cols,
              const std::string  & windowId,
-             const Tty::Command & command) throw (Tty::Error);
+             const Tty::Command & command) /*throw (Tty::Error)*/;
     virtual ~Terminal();
 
     // Geometry:

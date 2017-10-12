@@ -15,7 +15,7 @@ class Parser : protected Uncopyable {
     public:
         virtual ~Handler() {}
 
-        virtual void handle(const std::string & value) throw (ParseError) = 0;
+        virtual void handle(const std::string & value) /*throw (ParseError)*/ = 0;
     };
 
     using Handlers = std::unordered_map<std::string, Handler *>;
@@ -27,7 +27,7 @@ class Parser : protected Uncopyable {
     public:
         SimpleHandler(T & t) : _t(t) {}
 
-        void handle(const std::string & value) throw (ParseError) override {
+        void handle(const std::string & value) /*throw (ParseError)*/ override {
             _t = unstringify<T>(value);
         }
     };
@@ -38,7 +38,7 @@ class Parser : protected Uncopyable {
         F _func;
     public:
         GenericHandler(F func) : _func(func) {}
-        void handle(const std::string & value) throw (ParseError) override {
+        void handle(const std::string & value) /*throw (ParseError)*/ override {
             _func(value);
         }
     };
@@ -70,9 +70,9 @@ public:
 protected:
     void parse();
     bool tryPath(const std::string & path);
-    void interpretTokens(const std::vector<std::string> & tokens) throw (ParseError);
-    void handleSet(const std::string & key, const std::string & value) throw (ParseError);
-    void handleBindSym(const std::string & sym, const std::string & action) throw (ParseError);
+    void interpretTokens(const std::vector<std::string> & tokens) /*throw (ParseError)*/;
+    void handleSet(const std::string & key, const std::string & value) /*throw (ParseError)*/;
+    void handleBindSym(const std::string & sym, const std::string & action) /*throw (ParseError)*/;
 };
 
 //
@@ -303,7 +303,7 @@ bool Parser::tryPath(const std::string & path) {
     }
 }
 
-void Parser::interpretTokens(const std::vector<std::string> & tokens) throw (ParseError) {
+void Parser::interpretTokens(const std::vector<std::string> & tokens) /*throw (ParseError)*/ {
     ASSERT(!tokens.empty(), "No tokens!");
 
     if (tokens[0] == "set") {
@@ -327,7 +327,7 @@ void Parser::interpretTokens(const std::vector<std::string> & tokens) throw (Par
     }
 }
 
-void Parser::handleSet(const std::string & key, const std::string & value) throw (ParseError) {
+void Parser::handleSet(const std::string & key, const std::string & value) /*throw (ParseError)*/ {
     auto iter = _handlers.find(key);
     if (iter == _handlers.end()) {
         throw ParseError("No such setting: '" + key + "'");
@@ -338,7 +338,7 @@ void Parser::handleSet(const std::string & key, const std::string & value) throw
     }
 }
 
-void Parser::handleBindSym(const std::string & sym, const std::string & action) throw (ParseError) {
+void Parser::handleBindSym(const std::string & sym, const std::string & action) /*throw (ParseError)*/ {
     std::vector<std::string> tokens;
     if (split(sym, tokens, "+")) {
         auto key = tokens.back(); tokens.pop_back();

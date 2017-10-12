@@ -17,11 +17,11 @@ namespace xkb {
 
 std::string symToName(xkb_keysym_t keySym);
 
-xkb_keysym_t nameToSym(const std::string & name) throw (ParseError);
+xkb_keysym_t nameToSym(const std::string & name) /*throw (ParseError)*/;
 
 std::string modifierToName(Modifier modifier);
 
-Modifier nameToModifier(const std::string & name) throw (ParseError);
+Modifier nameToModifier(const std::string & name) /*throw (ParseError)*/;
 
 bool isPotent(xkb_keysym_t keySym);
 

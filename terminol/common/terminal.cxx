@@ -80,7 +80,7 @@ Terminal::Terminal(I_Observer         & observer,
                    int16_t              rows,
                    int16_t              cols,
                    const std::string  & windowId,
-                   const Tty::Command & command) throw (Tty::Error) :
+                   const Tty::Command & command) /*throw (Tty::Error)*/ :
     _observer(observer),
     //
     _config(config),

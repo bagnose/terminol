@@ -24,7 +24,7 @@
 namespace {
 
 // TODO consolidate this function
-std::string nthToken(const std::string & str, size_t n) throw (ParseError) {
+std::string nthToken(const std::string & str, size_t n) /*throw (ParseError)*/ {
     ASSERT(n > 0, "n must be positive.");
 
     size_t i = 0;
@@ -52,7 +52,7 @@ Tty::Tty(I_Observer        & observer,
          uint16_t            rows,
          uint16_t            cols,
          const std::string & windowId,
-         const Command     & command) throw (Error) :
+         const Command     & command) /*throw (Error)*/ :
     _observer(observer),
     _selector(selector),
     _config(config),
@@ -209,7 +209,7 @@ void Tty::close() {
 void Tty::openPty(uint16_t            rows,
                   uint16_t            cols,
                   const std::string & windowId,
-                  const Command     & command) throw (Error) {
+                  const Command     & command) /*throw (Error)*/ {
     ASSERT(_fd == -1, "");
 
     int master, slave;

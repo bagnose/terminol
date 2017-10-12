@@ -44,7 +44,7 @@ public:
 
     SocketServer(I_Observer        & observer,
                  I_Selector        & selector,
-                 const std::string & path) throw (Error) :
+                 const std::string & path) /*throw (Error)*/ :
         _observer(observer),
         _selector(selector),
         _path(path)
@@ -164,7 +164,7 @@ public:
 
     SocketClient(I_Observer        & observer,
                  I_Selector        & selector,
-                 const std::string & path) throw (Error) :
+                 const std::string & path) /*throw (Error)*/ :
         _observer(observer),
         _selector(selector)
     {

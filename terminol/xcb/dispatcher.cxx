@@ -3,7 +3,7 @@
 
 #include "terminol/xcb/dispatcher.hxx"
 
-void Dispatcher::poll() throw (Error) {
+void Dispatcher::poll() /*throw (Error)*/ {
     for (;;) {
         auto event = ::xcb_poll_for_event(_connection);
         if (!event) { break; }
@@ -22,7 +22,7 @@ void Dispatcher::poll() throw (Error) {
     }
 }
 
-void Dispatcher::wait(uint8_t event_type) throw (Error) {
+void Dispatcher::wait(uint8_t event_type) /*throw (Error)*/ {
     for (;;) {
         auto event = ::xcb_wait_for_event(_connection);
         ScopeGuard guard([event]() { std::free(event); });

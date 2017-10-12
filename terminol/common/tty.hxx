@@ -49,7 +49,7 @@ public:
         uint16_t            rows,
         uint16_t            cols,
         const std::string & windowId,
-        const Command     & command) throw (Error);
+        const Command     & command) /*throw (Error)*/;
 
     virtual ~Tty();
 
@@ -68,7 +68,7 @@ protected:
     void openPty(uint16_t            rows,
                  uint16_t            cols,
                  const std::string & windowId,
-                 const Command     & command) throw (Error);
+                 const Command     & command) /*throw (Error)*/;
     void execShell(const std::string & windowId,
                    const Command     & command);
 

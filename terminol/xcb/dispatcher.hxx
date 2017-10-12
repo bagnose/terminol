@@ -91,9 +91,9 @@ public:
     // This method is public so that X events can be processed in the
     // absence of the file descriptor becoming readable. Why the descriptor
     // doesn't become readable is a mystery to me.
-    void poll () throw (Error);
+    void poll () /*throw (Error)*/;
 
-    void wait(uint8_t event_type) throw (Error);
+    void wait(uint8_t event_type) /*throw (Error)*/;
 
 protected:
 

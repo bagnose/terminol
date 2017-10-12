@@ -14,7 +14,7 @@
 #include <unistd.h>
 #include <limits.h>
 
-Basics::Basics() throw (Error) {
+Basics::Basics() /*throw (Error)*/ {
 #ifdef __linux__
     char h[HOST_NAME_MAX + 1];
 #else
@@ -233,7 +233,7 @@ void Basics::updateRootPixmap() {
 }
 
 xcb_atom_t Basics::lookupAtom(const std::string & name,
-                              bool create) throw (NotFoundError, Error) {
+                              bool create) /*throw (NotFoundError, Error)*/ {
     auto cookie = xcb_intern_atom(_connection, create ? 0 : 1, name.length(), name.data());
     auto reply  = xcb_intern_atom_reply(_connection, cookie, nullptr);
 
@@ -254,7 +254,7 @@ xcb_atom_t Basics::lookupAtom(const std::string & name,
     }
 }
 
-xcb_cursor_t Basics::loadNormalCursor() throw (Error) {
+xcb_cursor_t Basics::loadNormalCursor() /*throw (Error)*/ {
     uint16_t          cursorId = 152;    // XC_xterm
     const std::string fontName = "cursor";
 
@@ -287,7 +287,7 @@ xcb_cursor_t Basics::loadNormalCursor() throw (Error) {
     return cursor;
 }
 
-xcb_cursor_t Basics::loadInvisibleCursor() throw (Error) {
+xcb_cursor_t Basics::loadInvisibleCursor() /*throw (Error)*/ {
     auto pixmap = xcb_generate_id(_connection);
     auto cookie = xcb_create_pixmap_checked(_connection,
                                             1,
@@ -314,7 +314,7 @@ xcb_cursor_t Basics::loadInvisibleCursor() throw (Error) {
     return cursor;
 }
 
-xcb_pixmap_t Basics::getRootPixmap(xcb_atom_t atom) throw (Error) {
+xcb_pixmap_t Basics::getRootPixmap(xcb_atom_t atom) /*throw (Error)*/ {
     auto cookie = xcb_get_property(_connection,
                                    0,     // delete
                                    _screen->root,
@@ -358,7 +358,7 @@ void resolveCode(uint8_t             & mask,
 
 } // namespace {anonymous}
 
-void Basics::determineMasks() throw (Error) {
+void Basics::determineMasks() /*throw (Error)*/ {
     // Note, xcb_key_symbols_get_keycode() may return nullptr.
     auto shiftCodes      = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Shift_L);
     auto altCodes        = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Alt_L);

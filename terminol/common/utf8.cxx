@@ -39,7 +39,7 @@ Length leadLength(uint8_t lead) noexcept {
     }
 }
 
-CodePoint decode(const uint8_t * sequence) throw (Error) {
+CodePoint decode(const uint8_t * sequence) /*throw (Error)*/ {
     CodePoint codePoint = 0;
     auto      lead      = sequence[0];
     auto      length    = leadLength(lead);
@@ -110,7 +110,7 @@ CodePoint decode(const uint8_t * sequence) throw (Error) {
     return codePoint;
 }
 
-Length codePointLength(CodePoint codePoint) throw (Error) {
+Length codePointLength(CodePoint codePoint) /*throw (Error)*/ {
     if      (codePoint < 0x80) {
         return Length::L1;
     }
@@ -129,7 +129,7 @@ Length codePointLength(CodePoint codePoint) throw (Error) {
     }
 }
 
-Length encode(CodePoint codePoint, uint8_t * sequence) throw (Error) {
+Length encode(CodePoint codePoint, uint8_t * sequence) /*throw (Error)*/ {
     Length length = codePointLength(codePoint);
 
     // Lead char.

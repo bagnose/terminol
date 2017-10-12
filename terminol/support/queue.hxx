@@ -42,7 +42,7 @@ public:
 
     // This function is called by the consumer:
 
-    T remove() throw (Finalised) {
+    T remove() /*throw (Finalised)*/ {
         std::unique_lock<std::mutex> lock(_mutex);
         _condition.wait(lock, [this]() { return _finalised || !_queue.empty(); });
 

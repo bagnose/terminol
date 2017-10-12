@@ -5,7 +5,7 @@
 
 bool split(const std::string        & line,
            std::vector<std::string> & tokens,
-           const std::string        & delim) throw (ParseError) {
+           const std::string        & delim) /*throw (ParseError)*/ {
     auto i = line.find_first_not_of(delim);
 
     if (i == std::string::npos) { return false; }   // blank line
