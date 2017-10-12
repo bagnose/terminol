@@ -33,7 +33,6 @@ WFLAGS          := -Wpedantic -Wextra -Wall -Wundef -Wshadow              \
                    -Wmissing-field-initializers -Wno-format-zero-length   \
                    -Wno-unused-function -Woverloaded-virtual -Wsign-promo \
                    -Wctor-dtor-privacy -Wnon-virtual-dtor
-AR              := ar
 ARFLAGS         := csr
 LDFLAGS         := -pthread
 
@@ -46,11 +45,13 @@ ifeq ($(COMPILER),gnu)
   # XXX next line not to be merged with master:
   WFLAGS += -Wno-error=unused-parameter
   CXX := g++
+  AR  := ar
 else ifeq ($(COMPILER),clang)
   WFLAGS += -Wextra-semi -Wcomma
   # XXX next line not to be merged with master:
   WFLAGS += -Wno-error=unused-parameter
   CXX := clang++
+  AR  := llvm-ar
 else
   $(error Unrecognised COMPILER: $(COMPILER))
 endif
