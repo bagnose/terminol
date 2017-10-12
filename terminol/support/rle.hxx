@@ -20,8 +20,6 @@ void rleEncode(const std::vector<Item> & items, OutStream & ostream) {
     static_assert(std::is_unsigned<Count>::value, "");
     static_assert(std::is_standard_layout<Item>::value, "");
 
-    std::vector<uint8_t> bytes;
-
     auto  initial = true;
     Count count   = 0;
     Item  item;
