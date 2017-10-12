@@ -230,7 +230,7 @@ endif
 ifeq ($(MODE),analysis)
 	$(V)touch $$@
 else
-	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(2)_OBJ) $(6) $$($(2)_DEP_LIB)
+	$(V)$(CXX) $(LDFLAGS) -o $$@ $$($(2)_OBJ) $$($(2)_DEP_LIB) $(6)
 endif
 
 ifeq (TEST,$(1))
