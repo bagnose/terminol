@@ -1,4 +1,4 @@
-# Copyright © 2013-2015 David Bryant
+# Copyright © 2013-2017 David Bryant
 
 INSTALLDIR      ?= ~/local/terminol
 VERBOSE         ?= false
@@ -25,9 +25,9 @@ COMMON_LDFLAGS  := $(shell pkg-config --libs   $(SUPPORT_MODULES) $(COMMON_MODUL
 XCB_CFLAGS      := $(shell pkg-config --cflags $(SUPPORT_MODULES) $(COMMON_MODULES) $(GFX_MODULES) $(XCB_MODULES))
 XCB_LDFLAGS     := $(shell pkg-config --libs   $(SUPPORT_MODULES) $(COMMON_MODULES) $(GFX_MODULES) $(XCB_MODULES))
 
-CPPFLAGS        := -DVERSION=\"$(VERSION)\" -iquotesrc
-CXXFLAGS        := -fpic -fno-rtti -pedantic -std=c++14 -pthread
-WFLAGS          := -Wextra -Wall -Wno-long-long -Wundef                   \
+CPPFLAGS        := -DVERSION=\"$(VERSION)\" -iquote src
+CXXFLAGS        := -fpic -fno-rtti -std=c++14 -pthread
+WFLAGS          := -Wpedantic -Wextra -Wall -Wundef                       \
                    -Wredundant-decls -Wshadow -Wsign-compare              \
                    -Wmissing-field-initializers -Wno-format-zero-length   \
                    -Wno-unused-function -Woverloaded-virtual -Wsign-promo \
@@ -48,7 +48,7 @@ ifeq ($(COMPILER),gnu)
 else ifeq ($(COMPILER),clang)
   WFLAGS +=
   # XXX next line not to be merged with master:
-  WFLAGS += -Wno-error=unused-const-variable -Wno-error=unused-parameter
+  WFLAGS += -Wno-error=unused-parameter
   CXX := clang++
 else
   $(error Unrecognised COMPILER: $(COMPILER))
@@ -75,13 +75,13 @@ else ifeq ($(MODE),coverage)
   ifeq ($(COMPILER),gnu)
     CXXFLAGS += -O1
   else
-    $(error Coverage is only support by gnu compiler)
+    $(error Coverage is only supported by gnu compiler)
   endif
 else ifeq ($(MODE),analysis)
   ifeq ($(COMPILER),clang)
     CXXFLAGS += --analyze
   else
-    $(error Analysis is only support by clang compiler)
+    $(error Analysis is only supported by clang compiler)
   endif
 else
   $(error Unrecognised MODE: $(MODE))
