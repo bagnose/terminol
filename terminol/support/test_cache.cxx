@@ -40,11 +40,11 @@ int main() {
 
     Cache<int, std::string> cache;
 
-    test.assert(cache.empty(), "empty cache");
-    test.assert(cache.find(11) == cache.end(), "");
+    test.enforce(cache.empty(), "empty cache");
+    test.enforce(cache.find(11) == cache.end(), "");
 
     cache.insert(6, "degrees of kevin bacon");
-    test.assert(cache.find(6) != cache.end(), "");
+    test.enforce(cache.find(6) != cache.end(), "");
     enforceKeys(cache, {6});
 
     cache.insert(42, "the meaning of life");

@@ -75,13 +75,13 @@ public:
         pop();
     }
 
-    bool assert(bool condition, const std::string & description) {
+    bool enforce(bool condition, const std::string & description) {
         return common(condition, description);
     }
 
     template <typename T>
-    bool assertEqual(const T & lhs, const T & rhs,
-                     const std::string & description) {
+    bool enforceEqual(const T & lhs, const T & rhs,
+                      const std::string & description) {
         auto equal = (lhs == rhs);
         std::ostringstream sst;
         sst << "("

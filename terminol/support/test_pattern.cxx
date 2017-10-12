@@ -27,20 +27,20 @@ private:
 
 void test_move_construct(Test & test) {
     Movable m1;
-    test.assert(m1.formed(), "default formed");
+    test.enforce(m1.formed(), "default formed");
     Movable m2;
-    test.assert(m2.formed(), "default formed");
+    test.enforce(m2.formed(), "default formed");
     m1 = std::move(m2);
-    test.assert(m1.formed(), "formed after move to");
-    test.assert(!m2.formed(), "unformed after move from");
+    test.enforce(m1.formed(), "formed after move to");
+    test.enforce(!m2.formed(), "unformed after move from");
 }
 
 void test_move_assign(Test & test) {
     Movable m1;
-    test.assert(m1.formed(), "default formed");
+    test.enforce(m1.formed(), "default formed");
     Movable m2(std::move(m1));
-    test.assert(m2.formed(), "formed after move to");
-    test.assert(!m1.formed(), "unformed after move from");
+    test.enforce(m2.formed(), "formed after move to");
+    test.enforce(!m1.formed(), "unformed after move from");
 }
 
 } // namespace {anonymous}

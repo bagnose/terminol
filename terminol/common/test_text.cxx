@@ -94,7 +94,7 @@ void testBasics(Test & test) {
     col = 0;
     auto output = read(text, input.size(), row, col);
 
-    test.assertEqual(input, output, "Write/read '" + input + "'.");
+    test.enforceEqual(input, output, "Write/read '" + input + "'.");
 }
 
 void testStraddlingPara(Test & test) {
@@ -115,7 +115,7 @@ void testStraddlingPara(Test & test) {
     row = -count / text.getCols();
     col = 0;
     auto output = read(text, count, row, col);
-    test.assertEqual(input, output, "Straddling write/read.");
+    test.enforceEqual(input, output, "Straddling write/read.");
 }
 
 void testHistorical(Test & test) {
@@ -143,28 +143,28 @@ void testRfind(Test & test) {
 
     // 3rd line
     auto matches = text.rfind(regex, marker, ongoing);
-    test.assert(ongoing, "Ongoing (3rd line).");
-    test.assert(matches.empty(), "No matches (3rd line).");
+    test.enforce(ongoing, "Ongoing (3rd line).");
+    test.enforce(matches.empty(), "No matches (3rd line).");
 
     // 2nd line
     matches = text.rfind(regex, marker, ongoing);
-    test.assert(ongoing, "Ongoing (2nd line).");
-    test.assert(matches.size() == 1, "One match (2nd line).");
-    test.assert(matches[0].row()    == 1 &&
+    test.enforce(ongoing, "Ongoing (2nd line).");
+    test.enforce(matches.size() == 1, "One match (2nd line).");
+    test.enforce(matches[0].row()    == 1 &&
                 matches[0].col()    == 1 &&
                 matches[0].length() == 1, "Match specifics (2nd line).");
 
     // 1st line
     matches = text.rfind(regex, marker, ongoing);
-    test.assert(ongoing, "Ongoing (1st line).");
-    test.assert(matches.size() == 1, "One match (1st line).");
-    test.assert(matches[0].row()    == 0 &&
+    test.enforce(ongoing, "Ongoing (1st line).");
+    test.enforce(matches.size() == 1, "One match (1st line).");
+    test.enforce(matches[0].row()    == 0 &&
                 matches[0].col()    == 4 &&
                 matches[0].length() == 1, "Match specifics (1st line).");
 
     // hit the end
     matches = text.rfind(regex, marker, ongoing);
-    test.assert(!ongoing, "Not ongoing.");
+    test.enforce(!ongoing, "Not ongoing.");
 }
 
 } // namespace {anonymous}

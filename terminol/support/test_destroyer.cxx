@@ -31,7 +31,7 @@ void destroy(Test & test) {
         }
     }
 
-    test.assertEqual(0, count.load(), "All garbage has been destroyed.");
+    test.enforceEqual(0, count.load(), "All garbage has been destroyed.");
 }
 
 } // namespace {anonymous}

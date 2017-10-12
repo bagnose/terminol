@@ -55,44 +55,44 @@ void test1(Test & test) {
     // Construct an empty Para and populate it.
 
     Para para;
-    test.assertEqual(para.getLength(), 0u, "");
+    test.enforceEqual(para.getLength(), 0u, "");
 
     para.setCell(0, Cell::utf8(encode(u8"<")));
-    test.assertEqual(para.getString(), vec(u8"<"), "");
-    test.assertEqual(para.getLength(), 1u, "");
+    test.enforceEqual(para.getString(), vec(u8"<"), "");
+    test.enforceEqual(para.getLength(), 1u, "");
 
     para.setCell(2, Cell::utf8(encode(u8">")));
-    test.assertEqual(para.getString(), vec(u8"< >"), "");
-    test.assertEqual(para.getLength(), 3u, "");
+    test.enforceEqual(para.getString(), vec(u8"< >"), "");
+    test.enforceEqual(para.getLength(), 3u, "");
 
     para.setCell(0, Cell::utf8(encode(u8"≤")));
-    test.assertEqual(para.getString(), vec(u8"≤ >"), "");
-    test.assertEqual(para.getLength(), 3u, "");
+    test.enforceEqual(para.getString(), vec(u8"≤ >"), "");
+    test.enforceEqual(para.getLength(), 3u, "");
 
     para.setCell(2, Cell::utf8(encode(u8"≥")));
-    test.assertEqual(para.getString(), vec(u8"≤ ≥"), "");
-    test.assertEqual(para.getLength(), 3u, "");
+    test.enforceEqual(para.getString(), vec(u8"≤ ≥"), "");
+    test.enforceEqual(para.getLength(), 3u, "");
 
     para.truncate(1);
-    test.assertEqual(para.getLength(), 1u, "");
+    test.enforceEqual(para.getLength(), 1u, "");
 }
 
 void test2(Test & test) {
     {
         Para para;
         para.setCell(0, Cell::ascii('a'));
-        test.assertEqual(para.getString(), vec("a"), "");
+        test.enforceEqual(para.getString(), vec("a"), "");
         para.insertCell(0, 1, Cell::ascii('b'));
-        test.assertEqual(para.getString(), vec("b"), "");
+        test.enforceEqual(para.getString(), vec("b"), "");
     }
 
     {
         Para para;
         para.setCell(0, Cell::ascii('a'));
         para.setCell(1, Cell::ascii('b'));
-        test.assertEqual(para.getString(), vec("ab"), "");
+        test.enforceEqual(para.getString(), vec("ab"), "");
         para.insertCell(0, 1, Cell::ascii('c'));
-        test.assertEqual(para.getString(), vec("cb"), "");
+        test.enforceEqual(para.getString(), vec("cb"), "");
     }
 
     {
@@ -100,9 +100,9 @@ void test2(Test & test) {
         para.setCell(0, Cell::ascii('a'));
         para.setCell(1, Cell::ascii('b'));
         para.setCell(2, Cell::ascii('c'));
-        test.assertEqual(para.getString(), vec("abc"), "");
+        test.enforceEqual(para.getString(), vec("abc"), "");
         para.insertCell(1, 2, Cell::ascii('d'));
-        test.assertEqual(para.getString(), vec("adc"), "");
+        test.enforceEqual(para.getString(), vec("adc"), "");
     }
 }
 
@@ -113,12 +113,12 @@ void test3(Test & test) {
     std::vector<uint8_t> string = vec(u8"òőło-ȯụŏ");
 
     Para para(styles, string);
-    test.assertEqual(para.getString(), string, "");
+    test.enforceEqual(para.getString(), string, "");
 
     auto b = para.getStringAtOffset(0);
     auto e = para.getStringAtOffset(8);
 
-    test.assertEqual(std::vector<uint8_t>(b, e), string, "");
+    test.enforceEqual(std::vector<uint8_t>(b, e), string, "");
 }
 
 void test4(Test & test) {
@@ -145,7 +145,7 @@ void test4(Test & test) {
 
     setTerminate(oldHandler);
 
-    test.assert(success, "");
+    test.enforce(success, "");
 #endif
 }
 
