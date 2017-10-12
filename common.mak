@@ -127,6 +127,9 @@ ifeq ($(VERBOSE),false)
 	@echo ' [CXX] $@'
 endif
 	$(V)$(CXX) -c $< -o $@ $(CPPFLAGS) $(CXXFLAGS) $(WFLAGS) $($(<)_CXXFLAGS) -MMD -MP -MF $(patsubst %.o,%.dep,$@)
+ifeq ($(COMPILER),clang)
+	$(V)rc --compile $(CXX) -c $< -o $@ $(CPPFLAGS) $(CXXFLAGS) $(WFLAGS) $($(<)_CXXFLAGS)
+endif
 
 # List of directories that we defined a rule for making (to prevent redefinitions).
 MKDIR_DIRS :=
