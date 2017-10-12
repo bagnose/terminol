@@ -11,7 +11,7 @@
 #include <cstdint>
 
 template <typename T, typename I> class BitSet {
-    I _bits;
+    I _bits = 0;
     static I bit(T t) {
         auto shift = static_cast<unsigned int>(t);
         ASSERT(shift < sizeof(T) * 8, "Overflow.");
@@ -19,7 +19,7 @@ template <typename T, typename I> class BitSet {
     }
 
 public:
-    BitSet() : _bits(0) {}
+    BitSet() = default;
 
     void clear()        { _bits  =  I(0);        }
     void set(T t)       { _bits |=  bit(t);      }

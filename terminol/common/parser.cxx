@@ -349,7 +349,7 @@ void Parser::handleBindSym(const std::string & sym, const std::string & action) 
 
         auto keySym = xkb::nameToSym(key);
 
-        KeyCombo keyCombo(keySym, modifiers);
+        KeyCombo keyCombo{keySym, modifiers};
 
         auto iter = _actions.find(action);
         if (iter == _actions.end()) {

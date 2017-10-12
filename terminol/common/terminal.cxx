@@ -392,7 +392,7 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
     modifiers.unset(Modifier::CAPS_LOCK);
     modifiers.unset(Modifier::MODE_SWITCH);
 
-    auto iter = _config.bindings.find(KeyCombo(keySym, modifiers));
+    auto iter = _config.bindings.find(KeyCombo{keySym, modifiers});
 
     if (iter != _config.bindings.end()) {
         auto action = iter->second;
@@ -1163,7 +1163,7 @@ const CharSub * Terminal::lookupCharSub(uint8_t code) {
             NYI("German");
             return nullptr;
         default:
-            WARNING("Unknown character set: " << Char(code));
+            WARNING("Unknown character set: " << Char{code});
             return nullptr;
     }
 }

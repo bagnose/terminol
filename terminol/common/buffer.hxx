@@ -54,10 +54,10 @@ class Buffer {
     // APos (Absolute-Position) is a position identifier that is able to
     // refer to historical AND active lines.
     struct APos {
-        int32_t row; // >= 0 --> _active, < 0 --> _history
-        int16_t col;
+        int32_t row = 0; // >= 0 --> _active, < 0 --> _history
+        int16_t col = 0;
 
-        APos() : row(0), col(0) {}
+        APos() = default;
         APos(int32_t row_, int16_t col_) : row(row_), col(col_) {}
         APos(Pos pos, uint32_t offset) : row(pos.row - offset), col(pos.col) {}
     };
@@ -83,23 +83,21 @@ class Buffer {
     // HLine (or Historical-Line) represents a line of text in the historical region.
     // It can also be thought of as representing a segment of an unwrapped line.
     struct HLine {
-        uint32_t index;             // index into _tags (adjusted by _lostTags)
-        uint32_t seqnum;            // continuation number, 0 -> 1st line, 1 -> 2nd line, etc
-
-        HLine(uint32_t index_, uint32_t seqnum_) : index(index_), seqnum(seqnum_) {}
+        uint32_t index  = 0; // index into _tags (adjusted by _lostTags)
+        uint32_t seqnum = 0; // continuation number, 0 -> 1st line, 1 -> 2nd line, etc
     };
 
     // ALine (or Active-Line) represents a line of text in the active region.
     // An ALine directly contains its cells
     struct ALine {
-        std::vector<Cell> cells;    // active lines have a greater/equal capacity to their wrap/size
-        bool              cont;     // does this line continue on the next line?
-        int16_t           wrap;     // wrappable index, <= cells.size()
+        std::vector<Cell> cells;        // active lines have a greater/equal capacity to their wrap/size
+        bool              cont = false; // does this line continue on the next line?
+        int16_t           wrap = 0;     // wrappable index, <= cells.size()
 
         explicit ALine(int16_t cols, const Style & style = Style()) :
-            cells(cols, Cell::blank(style)), cont(false), wrap(0) {}
+            cells(cols, Cell::blank(style)) {}
 
-        ALine(std::vector<Cell> & cells_, bool cont_, int16_t wrap_, int16_t cols) :
+        ALine(std::vector<Cell> && cells_, bool cont_, int16_t wrap_, int16_t cols) :
             cells(std::move(cells_)), cont(cont_), wrap(wrap_)
         {
             ASSERT(wrap_ <= cols, "");
@@ -129,11 +127,8 @@ class Buffer {
 
     // Damage for a visible line (active or historical, but in the viewport)
     struct Damage {
-        int16_t begin;      // inclusive
-        int16_t end;        // exclusive
-
-        // Initially there is no damage.
-        Damage() : begin(0), end(0) {}
+        int16_t begin = 0; // inclusive
+        int16_t end   = 0; // exclusive
 
         // Explicitly specify the damage.
         void damageSet(int16_t begin_, int16_t end_) {
@@ -167,19 +162,15 @@ class Buffer {
 
     // Cursor encompasses the state associated with a VT cursor.
     struct Cursor {
-        Pos     pos;            // Current cursor position.
-        Style   style;          // Current cursor style.
-        bool    wrapNext;       // Flag indicating whether the next char wraps.
-        CharSet charSet;        // Which CharSet is in use?
-
-        Cursor() : pos(), style(), wrapNext(false), charSet(CharSet::G0) {}
+        Pos     pos;                    // Current cursor position.
+        Style   style;                  // Current cursor style.
+        bool    wrapNext = false;       // Flag indicating whether the next char wraps.
+        CharSet charSet  = CharSet::G0; // Which CharSet is in use?
     };
 
     struct SavedCursor {
         Cursor          cursor;
-        const CharSub * charSub;
-
-        SavedCursor() : cursor(), charSub(nullptr) {}
+        const CharSub * charSub = nullptr;
     };
 
     //

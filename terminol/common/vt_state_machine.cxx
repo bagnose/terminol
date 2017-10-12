@@ -536,7 +536,7 @@ void VtStateMachine::processControl(uint8_t c) {
     if (_config.traceTty) {
         std::cerr
             << CsiEsc::SGR(CsiEsc::StockSGR::FG_YELLOW)
-            << Char(c)
+            << Char{c}
             << CsiEsc::SGR(CsiEsc::StockSGR::RESET_ALL);
         if (c == LF || c == FF || c == VT) {
             std::cerr << std::endl;

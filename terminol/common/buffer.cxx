@@ -1584,7 +1584,7 @@ void Buffer::rebuildHistory() {
         size_t   offset = 0;
 
         do {
-            _history.push_back(HLine(index + _lostTags, seqnum));
+            _history.push_back(HLine{index + _lostTags, seqnum});
             ++seqnum;
             offset += _cols;
         } while (offset < length);
@@ -1835,7 +1835,7 @@ void Buffer::bump() {
             _tags.push_back(tag);
         }
 
-        _history.push_back(HLine(_tags.size() + _lostTags - 1, 0));
+        _history.push_back(HLine{static_cast<uint32_t>(_tags.size() + _lostTags - 1), 0});
     }
     else {
         // This line is a continuation of the previous line.
@@ -1849,7 +1849,7 @@ void Buffer::bump() {
 
         _pending.resize(oldSize + wrap, Cell::blank());
         std::copy(cells.begin(), cells.begin() + wrap, _pending.begin() + oldSize);
-        _history.push_back(HLine(_tags.size() + _lostTags - 1, _history.back().seqnum + 1));
+        _history.push_back(HLine{static_cast<uint32_t>(_tags.size() + _lostTags - 1), _history.back().seqnum + 1});
 
         if (!cont) {
             // This line is not itself continued.
@@ -1894,7 +1894,7 @@ void Buffer::unbump() {
     std::vector<Cell> cells(_pending.begin() + offset, _pending.end());
     _pending.erase(_pending.begin() + offset, _pending.end());
 
-    _active.emplace_front(cells, cont, cells.size(), _cols);
+    _active.emplace_front(std::move(cells), cont, cells.size(), _cols);
     ASSERT(cells.empty(), "Not stolen by move constructor?");
     ASSERT(_active.front().wrap <= _cols, "");
 

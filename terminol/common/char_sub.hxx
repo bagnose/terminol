@@ -6,19 +6,21 @@
 
 #include "terminol/common/utf8.hxx"
 
+#include <array>
+
 // CharSub (or Character-Substitution) is a translation layer used to
 // support different character sets, e.g. US versus UK. CharSub uses a
 // table to translate ASCII characters into UTF-8 sequences. If there is
 // no entry for the ASCII character then it remains unchanged.
 class CharSub {
-    const utf8::Seq * _seqs;
-    size_t            _offset;
-    size_t            _size;
-    bool              _special;
+    const utf8::Seq * _seqs    = nullptr;
+    size_t            _offset  = 0;
+    size_t            _size    = 0;
+    bool              _special = false;
 
 public:
     // Construct a dummy CharSub - one that does no actual substitution.
-    CharSub() : _seqs(nullptr), _offset(0), _size(0), _special(false) {}
+    CharSub() = default;
 
     // Construct a CharSub with a substitution table. Note 'seqs' must be
     // static data.
@@ -48,9 +50,9 @@ struct CharSubArray {
     CharSubArray(const CharSub * g0,
                  const CharSub * g1,
                  const CharSub * g2,
-                 const CharSub * g3) : charSubs { g0, g1, g2, g3 } {}
+                 const CharSub * g3) : charSubs {{ g0, g1, g2, g3 }} {}
 
-    const CharSub * charSubs[4];
+    std::array<const CharSub *, 4> charSubs;
 
     void set(CharSet set_, const CharSub * sub) {
         charSubs[static_cast<int>(set_)] = sub;

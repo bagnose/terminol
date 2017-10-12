@@ -19,27 +19,23 @@ class Buffer2 {
 
     // Cursor encompasses the state associated with a VT cursor.
     struct Cursor {
-        Pos     pos;            // Current cursor position.
-        Style   style;          // Current cursor style.
-        bool    wrapNext;       // Flag indicating whether the next char wraps.
-        CharSet charSet;        // Which CharSet is in use?
-
-        Cursor() : pos(), style(), wrapNext(false), charSet(CharSet::G0) {}
+        Pos     pos;                    // Current cursor position.
+        Style   style;                  // Current cursor style.
+        bool    wrapNext = false;       // Flag indicating whether the next char wraps.
+        CharSet charSet  = CharSet::G0; // Which CharSet is in use?
     };
 
     struct SavedCursor {
         Cursor          cursor;
-        const CharSub * charSub;
-
-        SavedCursor() : cursor(), charSub(nullptr) {}
+        const CharSub * charSub = nullptr;
     };
 
     Text         _text;
     Cursor       _cursor;           // Current cursor.
     SavedCursor  _savedCursor;      // Saved cursor.
     CharSubArray _charSubs;
-    //int16_t      _marginBegin;      // Index of first row in margin (inclusive).
-    int16_t      _marginEnd;        // Index of last row in  margin (exclusive).
+    //int16_t      _marginBegin = 0; // Index of first row in margin (inclusive).
+    int16_t      _marginEnd = 0;     // Index of last row in  margin (exclusive).
 
 public:
     class I_Renderer {

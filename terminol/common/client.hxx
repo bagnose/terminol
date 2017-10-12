@@ -9,7 +9,7 @@
 
 class Client final : protected SocketClient::I_Observer {
     SocketClient   _socket;
-    bool           _finished;
+    bool           _finished = false;
 
 public:
     struct Error {
@@ -20,8 +20,7 @@ public:
     Client(I_Selector   & selector,
            const Config & config,
            bool           shutdown) try :
-        _socket(*this, selector, config.socketPath),
-        _finished(false)
+        _socket(*this, selector, config.socketPath)
     {
         uint8_t byte = shutdown ? 0xFF : 0;
         _socket.send(&byte, 1);

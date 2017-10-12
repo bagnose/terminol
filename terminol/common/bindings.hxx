@@ -11,11 +11,7 @@
 #include <map>
 
 struct KeyCombo {
-    KeyCombo() : key(XKB_KEY_NoSymbol), modifiers() {}
-    KeyCombo(xkb_keysym_t key_, ModifierSet modifiers_) :
-        key(key_), modifiers(modifiers_) {}
-
-    xkb_keysym_t key;
+    xkb_keysym_t key = XKB_KEY_NoSymbol;
     ModifierSet  modifiers;
 };
 
