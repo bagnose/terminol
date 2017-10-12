@@ -4,7 +4,7 @@
 #ifndef SUPPORT__HASH__HXX
 #define SUPPORT__HASH__HXX
 
-#include <algorithm>
+#include <numeric>
 
 template <class T> struct SDBM {
     using Type = T;
