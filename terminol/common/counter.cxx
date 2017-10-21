@@ -8,12 +8,7 @@ int main(int argc, char * argv[]) {
     size_t columns = 160;
 
     if (argc > 1) {
-        try {
-            columns = unstringify<size_t>(argv[1]);
-        }
-        catch (const ParseError & error) {
-            FATAL("Bad lines: " << error.message);
-        }
+        columns = unstringify<size_t>(argv[1]);
     }
 
     for (size_t i = 0; i != columns; ++i) {

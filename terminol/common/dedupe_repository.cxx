@@ -25,16 +25,16 @@ again:
 
         if (bytes != dedupeEntry.bytes) {
             // Hash collision.
-            ENFORCE(_entries.size() < std::numeric_limits<Tag>::max(),
-                    "No dedupe room left.");
+            THROW_UNLESS(_entries.size() < std::numeric_limits<Tag>::max(),
+                         GenericError("No dedupe room left"));
 
             ++tag;
             goto again;
         }
         else if (dedupeEntry.refs == std::numeric_limits<uint32_t>::max()) {
             // Avoid ref count overflow.
-            ENFORCE(_entries.size() < std::numeric_limits<Tag>::max(),
-                    "No dedupe room left.");
+            THROW_UNLESS(_entries.size() < std::numeric_limits<Tag>::max(),
+                         GenericError("No dedupe room left"));
 
             ++tag;
             goto again;
@@ -93,9 +93,7 @@ void DedupeRepository::discard(Tag tag) {
 
     auto iter = _entries.find(tag);
 
-    if (iter == _entries.end()) {
-        throw std::out_of_range("Couldn't find tag.");
-    }
+    THROW_UNLESS(iter != _entries.end(), GenericError("Couldn't find tag"));
 
     auto & entry = iter->second;
 
@@ -126,7 +124,7 @@ void DedupeRepository::dump(std::ostream & ost) const {
 
 std::vector<uint8_t> DedupeRepository::encode(const Entry & entry) {
     std::vector<uint8_t> bytes;
-    OutMemoryStream os(bytes, true);
+    OutMemoryStream os(bytes);
 
     // Write the size of the string followed by the string content.
     uint32_t size = entry.string.size();

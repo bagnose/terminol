@@ -39,7 +39,7 @@ Length leadLength(uint8_t lead) noexcept {
     }
 }
 
-CodePoint decode(const uint8_t * sequence) /*throw (Error)*/ {
+CodePoint decode(const uint8_t * sequence) {
     CodePoint codePoint = 0;
     auto      lead      = sequence[0];
     auto      length    = leadLength(lead);
@@ -70,10 +70,7 @@ CodePoint decode(const uint8_t * sequence) /*throw (Error)*/ {
     for (size_t i = 1; i != length; ++i) {
         // 10xxxxxx
         auto cont = sequence[i];
-        if ((cont & (B7|B6)) != B7) {
-            FATAL("Illegal continuation: " << toBinaryString(cont));
-            throw Error();
-        }
+        THROW_UNLESS((cont & (B7|B6)) == B7, ConversionError("Illegal continuation: " + toBinaryString(cont)));
         codePoint = (codePoint << 6) | (cont & (B5|B4|B3|B2|B1|B0));
     }
 
@@ -83,34 +80,26 @@ CodePoint decode(const uint8_t * sequence) /*throw (Error)*/ {
         case Length::L1:
             break;
         case Length::L2:
-            if (codePoint < 0x80) {
-                FATAL("Overlong 2, codePoint=" << codePoint);
-                throw Error();
-            }
+            THROW_UNLESS(codePoint >= 0x80,
+                         ConversionError("Overlong 2, codePoint=" + stringify(codePoint)));
             break;
         case Length::L3:
-            if (codePoint < 0x800) {
-                FATAL("Overlong 3, codePoint=" << codePoint);
-                throw Error();
-            }
+            THROW_UNLESS(codePoint >= 0x800,
+                         ConversionError("Overlong 3, codePoint=" + stringify(codePoint)));
             break;
         case Length::L4:
-            if (codePoint < 0x10000) {
-                FATAL("Overlong 4, codePoint=" << codePoint);
-                throw Error();
-            }
+            THROW_UNLESS(codePoint >= 0x10000,
+                         ConversionError("Overlong 4, codePoint=" + stringify(codePoint)));
             break;
     }
 
-    if (codePoint >= 0xD800 && codePoint <= 0xDFFF) {
-        FATAL("Illegal codePoint: " << codePoint);
-        throw Error();
-    }
+    THROW_UNLESS(codePoint < 0xD800 || codePoint > 0xDFFF,
+                 ConversionError("Illegal codePoint=" + stringify(codePoint)));
 
     return codePoint;
 }
 
-Length codePointLength(CodePoint codePoint) /*throw (Error)*/ {
+Length codePointLength(CodePoint codePoint) {
     if      (codePoint < 0x80) {
         return Length::L1;
     }
@@ -124,12 +113,11 @@ Length codePointLength(CodePoint codePoint) /*throw (Error)*/ {
         return Length::L4;
     }
     else {
-        FATAL("Illegal codePoint: " << codePoint);
-        throw Error();
+        THROW(ConversionError("Illegal codePoint=" + stringify(codePoint)));
     }
 }
 
-Length encode(CodePoint codePoint, uint8_t * sequence) /*throw (Error)*/ {
+Length encode(CodePoint codePoint, uint8_t * sequence) {
     Length length = codePointLength(codePoint);
 
     // Lead char.

@@ -63,7 +63,7 @@ Widget::Widget(I_Dispatcher & dispatcher,
                                         winMask,
                                         winValues);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to create window.")) {
-        throw Error("Failed to create window.");
+        THROW(XError("Failed to create window"));
     }
     ScopeGuard windowGuard([&]() { xcb_destroy_window(_basics.connection(), _window); });
 
@@ -102,6 +102,6 @@ void Widget::resize(const xcb_rectangle_t & geometry) {
 void Widget::map() {
     auto cookie = xcb_map_window_checked(_basics.connection(), _window);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to map window")) {
-        throw Error("Failed to map window.");
+        THROW(XError("Failed to map window"));
     }
 }

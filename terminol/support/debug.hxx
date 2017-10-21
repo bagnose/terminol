@@ -87,7 +87,7 @@ TerminateHandler getTerminate() noexcept;
     )
 #endif
 
-// ENFORCE (and its variants) never get compiled out.
+// ENFORCE never gets compiled out
 #define ENFORCE(condition, output) \
     do { \
         if (!LIKELY(condition)) { \
@@ -100,10 +100,7 @@ TerminateHandler getTerminate() noexcept;
         } \
     } while (false)
 
-#define ENFORCE_SYS(condition, output) \
-    ENFORCE(condition, output << " (" << ::strerror(errno) << ")")
-
-// ASSERT (and its variants) may be compiled out.
+// ASSERT may be compiled out
 #if DEBUG
 #   define ASSERT(condition, output) \
     do { \
@@ -116,14 +113,8 @@ TerminateHandler getTerminate() noexcept;
             terminate(); \
         } \
     } while (false)
-
-#  define ASSERT_SYS(condition, output) \
-    ASSERT(condition, output << " (" << ::strerror(errno) << ")")
 #else
 #   define ASSERT(condition, output) \
-    do {} while (false)
-
-#   define ASSERT_SYS(condition, output) \
     do {} while (false)
 #endif
 

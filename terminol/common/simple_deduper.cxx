@@ -13,7 +13,7 @@ namespace {
 
 void encode(const std::vector<Cell> & cells,
             std::vector<uint8_t>    & bytes) {
-    OutMemoryStream os(bytes, true);
+    OutMemoryStream os(bytes);
 
     // RLE encode the styles.
     std::vector<Style> styles;

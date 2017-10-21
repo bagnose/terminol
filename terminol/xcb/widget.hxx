@@ -14,12 +14,6 @@ class Widget :
     protected I_Dispatcher::I_Observer,
     protected Uncopyable
 {
-public:
-    struct Error {
-        explicit Error(const std::string & message_) : message(message_) {}
-        std::string message;
-    };
-
 protected:
     Widget(I_Dispatcher & dispatcher,
            Basics       & basics,

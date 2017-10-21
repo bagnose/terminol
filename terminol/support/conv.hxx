@@ -5,6 +5,7 @@
 #define SUPPORT__CONV__HXX
 
 #include "terminol/support/debug.hxx"
+#include "terminol/support/exception.hxx"
 
 #include <string>
 #include <vector>
@@ -23,10 +24,6 @@ constexpr std::size_t arraySize(T (&)[N]) {
     return N;
 }
 
-struct ParseError {
-    explicit ParseError(const std::string & message_) : message(message_) {}
-    std::string message;
-};
 
 template <typename T>
 T clamp(T val, T min, T max) {
@@ -37,7 +34,7 @@ T clamp(T val, T min, T max) {
 }
 
 std::optional<std::vector<std::string>> split(const std::string & line,
-                                              const std::string & delim = "\t ") /*throw (ParseError)*/;
+                                              const std::string & delim = "\t ");
 
 namespace detail {
 
@@ -68,28 +65,28 @@ std::string stringify(const T & first, const Args &... remaining) {
 }
 
 template <typename T>
-T unstringify(const std::string & str) /*throw (ParseError)*/ {
+T unstringify(const std::string & str) {
     std::istringstream ist(str + '\n');
-    T t;
+    auto t = T{};
     ist >> t;
-    if (ist.good()) { return t; }
-    else { throw ParseError("Failed to unstringify: '" + str + "'"); }
+    THROW_UNLESS(ist.good(), ConversionError("Failed to unstringify: '" + str + "'"));
+    return t;
 }
 
 template <>
-inline std::string unstringify<>(const std::string & str) /*throw (ParseError)*/ {
+inline std::string unstringify<>(const std::string & str) {
     return str;
 }
 
 template <>
-inline bool unstringify<>(const std::string & str) /*throw (ParseError)*/ {
+inline bool unstringify<>(const std::string & str) {
     if (str == "0" || str == "false" || str == "False") {
         return false;
     }
     else if (str == "1" || str == "true" || str == "True") {
         return true;
     }
-    else { throw ParseError("Failed to unstringify: " + str); }
+    else { THROW(ConversionError("Failed to unstringify: " + str)); }
 }
 
 template <typename T>
@@ -131,14 +128,14 @@ inline char nibbleToHex(uint8_t nibble) {
     else              { return 'A' + (nibble - 10); }
 }
 
-inline uint8_t hexToNibble(char hex) /*throw (ParseError)*/ {
+inline uint8_t hexToNibble(char hex) {
     if      (hex >= '0' && hex <= '9') { return hex - '0'; }
     else if (hex >= 'A' && hex <= 'F') { return 10 + hex - 'A'; }
     else if (hex >= 'a' && hex <= 'f') { return 10 + hex - 'a'; }
     else {
         std::ostringstream ost;
         ost << "Illegal hex char: " << hex;
-        throw ParseError(ost.str());
+        THROW(ConversionError(ost.str()));
     }
 }
 
@@ -147,7 +144,7 @@ inline void byteToHex(uint8_t byte, char & hex0, char & hex1) {
     hex1 = nibbleToHex(byte & 0x0F);
 }
 
-inline uint8_t hexToByte(char hex0, char hex1) /*throw (ParseError)*/ {
+inline uint8_t hexToByte(char hex0, char hex1) {
     return (hexToNibble(hex0) << 4) + hexToNibble(hex1);
 }
 

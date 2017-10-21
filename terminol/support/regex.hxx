@@ -25,12 +25,7 @@ public:
         int last  = 0;
     };
 
-    struct Error {
-        explicit Error(const std::string & message_) : message(message_) {}
-        std::string message;
-    };
-
-    explicit Regex(const std::string & pattern, int maxMatches = 10) /*throw (Error)*/ :
+    explicit Regex(const std::string & pattern, int maxMatches = 10) :
         _maxMatches(maxMatches)
     {
         const char * err       = nullptr;
@@ -43,9 +38,9 @@ public:
                              nullptr);     // tableptr
 
         if (!_pcre) {
-            throw Error("PCRE compilation of \"" + pattern + "\" "
-                        "failed at offset " + stringify(errOffset) +
-                        ", error: " + stringify(err));
+            THROW(GenericError("PCRE compilation of \"" + pattern + "\" "
+                               "failed at offset " + stringify(errOffset) +
+                               ", error: " + stringify(err)));
         }
     }
 

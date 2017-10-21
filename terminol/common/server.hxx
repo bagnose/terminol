@@ -25,20 +25,12 @@ class Server final : protected SocketServer::I_Observer {
     SocketServer   _socket;
 
 public:
-    struct Error {
-        explicit Error(const std::string & message_) : message(message_) {}
-        std::string message;
-    };
-
     Server(I_Creator    & creator,
            I_Selector   & selector,
-           const Config & config) /*throw (Error)*/ try :
+           const Config & config) :
         _creator(creator),
         _socket(*this, selector, config.socketPath)
     {}
-    catch (const SocketServer::Error & error) {
-        throw Error(error.message);
-    }
 
 protected:
 

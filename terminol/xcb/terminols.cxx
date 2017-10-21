@@ -84,9 +84,7 @@ public:
         _singleton = this;
 
         if (config.serverFork) {
-            if (::daemon(1, 1) == -1) {
-                throw Error("Failed to daemonise");
-            }
+            THROW_IF_SYSCALL_FAILS(::daemon(1, 1), "Failed to daemonise");
         }
 
         if (_config.x11PseudoTransparency) {
@@ -158,8 +156,7 @@ protected:
 
         // It doesn't matter if we read more than one 'death byte' off the pipe
         // because we are going to try to reap *all* the children.
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::read(_pipe.readFd(),
-                                              static_cast<void *>(buf), size)) != -1, "");
+        THROW_IF_SYSCALL_FAILS(::read(_pipe.readFd(), static_cast<void *>(buf), size), "read()");
 
         for (auto & p : _screens) {
             auto & s = p.second;
@@ -200,7 +197,7 @@ protected:
 
     // I_Dispatcher::I_Observer implementation:
 
-    void propertyNotify(xcb_property_notify_event_t * event) noexcept override {
+    void propertyNotify(xcb_property_notify_event_t * event) override {
         if (_config.x11PseudoTransparency) {
             if (event->window == _basics.screen()->root &&
                 event->atom == _basics.atomXRootPixmapId())
@@ -224,8 +221,8 @@ protected:
             auto id = screen->getWindowId();
             _screens.insert(std::make_pair(id, std::move(screen)));
         }
-        catch (const Screen::Error & error) {
-            PRINT("Failed to create screen: " << error.message);
+        catch (const Exception & error) {
+            ERROR("Failed to create screen: " << error.what());
         }
     }
 
@@ -268,15 +265,10 @@ std::string makeHelp(const std::string & progName) {
 
 } // namespace {anonymous}
 
-int main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) try {
     Config config;
 
-    try {
-        parseConfig(config);
-    }
-    catch (const ParseError & error) {
-        FATAL(error.message);
-    }
+    parseConfig(config);
 
     CmdLine cmdLine(makeHelp(argv[0]), VERSION, "--execute");
     cmdLine.add(new StringHandler(config.fontName),   '\0', "font-name");
@@ -288,34 +280,15 @@ int main(int argc, char * argv[]) {
     cmdLine.add(new StringHandler(config.socketPath), '\0', "socket");
     cmdLine.add(new BoolHandler(config.serverFork),   '\0', "fork");
     cmdLine.add(new_MiscHandler([&](const std::string & name) {
-                                try {
                                     config.setColorScheme(name);
-                                }
-                                catch (const ParseError & error) {
-                                    throw CmdLine::Handler::Error(error.message);
-                                }
                                 }), '\0', "color-scheme");
 
-    try {
-        auto command = cmdLine.parse(argc, const_cast<const char **>(argv));
-        EventLoop eventLoop(config, command);
-    }
-    catch (const EventLoop::Error & error) {
-        FATAL(error.message);
-    }
-    catch (const Dispatcher::Error & error) {
-        FATAL(error.message);
-    }
-    catch (const Basics::Error & error) {
-        FATAL(error.message);
-    }
-    catch (const Server::Error & error) {
-        FATAL(error.message);
-    }
-    catch (const CmdLine::Error & error) {
-        FATAL(error.message);
-    }
+    auto command = cmdLine.parse(argc, const_cast<const char **>(argv));
+    EventLoop eventLoop(config, command);
 
     return 0;
 }
-
+catch (const UserError & ex) {
+    std::cerr << ex.message() << std::endl;
+    return 1;
+}

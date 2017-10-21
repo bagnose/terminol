@@ -30,7 +30,7 @@ void parse(CmdLine * cmdLine, ...) {
 } // namespace {anonymous}
 
 int main() {
-    try {
+    {
         CmdLine cmdLine("help", "version");
         bool goTrue  = false;
         bool goFalse = true;
@@ -40,19 +40,13 @@ int main() {
         ENFORCE(goTrue,   "");
         ENFORCE(!goFalse, "");
     }
-    catch (const CmdLine::Error & error) {
-        std::cerr << error.message << std::endl;
-    }
 
-    try {
+    {
         CmdLine cmdLine("help", "version");
         std::string str;
         cmdLine.add(new IStreamHandler<std::string>(str), '\0', "str", true);
         parse(&cmdLine, "dummy", "--str=foo", nullptr);
         ENFORCE(str == "foo", "");
-    }
-    catch (const CmdLine::Error & error) {
-        std::cerr << error.message << std::endl;
     }
 
     return 0;

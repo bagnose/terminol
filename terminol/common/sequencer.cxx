@@ -9,13 +9,7 @@ int main(int argc, char * argv[]) {
     int count = 1;
 
     if (argc == 2) {
-        try {
-            count = unstringify<int>(argv[1]);
-        }
-        catch (const ParseError & error) {
-            std::cerr << error.message << std::endl;
-            return 1;
-        }
+        count = unstringify<int>(argv[1]);
     }
 
     const char * str =

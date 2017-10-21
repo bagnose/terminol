@@ -6,7 +6,7 @@
 
 #include <cmath>
 
-void hsv_to_rgb(double & h, double & s, double & v) noexcept {
+void hsv_to_rgb(double & h, double & s, double & v) {
     if (s == 0.0) {
         h = v;
         s = v;
@@ -60,7 +60,7 @@ void hsv_to_rgb(double & h, double & s, double & v) noexcept {
     }
 }
 
-void rgb_to_hsv(double & r, double & g, double & b) noexcept {
+void rgb_to_hsv(double & r, double & g, double & b) {
     double h, s, v;
     double min, max;
     double delta;

@@ -16,14 +16,9 @@ class CmdLine {
 public:
     class Handler {
     public:
-        struct Error {
-            std::string message;
-            Error(const std::string & message_) : message(message_) {}
-        };
-
         virtual bool isNegatable() const = 0;
         virtual bool wantsValue() const = 0;
-        virtual void handle(bool negated, const std::string & value) /*throw (Error)*/ = 0;
+        virtual void handle(bool negated, const std::string & value) = 0;
 
         virtual ~Handler() {}
     };
@@ -57,11 +52,6 @@ private:
     std::map<std::string, Handler *> _longToHandler;
 
 public:
-    struct Error {
-        std::string message;
-        Error(const std::string & message_) : message(message_) {}
-    };
-
     CmdLine(const std::string & help,
             const std::string & version,
             const std::string & delimiter = "--") :
@@ -94,7 +84,7 @@ public:
         _options.push_back(Option(handler, shortOpt, longOpt, mandatory));
     }
 
-    std::vector<std::string> parse(int argc, const char ** argv) /*throw (Error)*/ {
+    std::vector<std::string> parse(int argc, const char ** argv) {
         std::vector<std::string> arguments;
         bool ignore = false;
 
@@ -145,23 +135,13 @@ public:
                         if (handler->wantsValue()) {
                             ++i;
                             if (i == argc) {
-                                throw Error("No value provided.");
+                                THROW(ConversionError("No value provided"));
                             }
                             value = argv[i];
-                            try {
-                                handler->handle(negated, value);
-                            }
-                            catch (const Handler::Error & error) {
-                                throw Error(error.message);
-                            }
+                            handler->handle(negated, value);
                         }
                         else {
-                            try {
-                                handler->handle(negated, value);
-                            }
-                            catch (const Handler::Error & error) {
-                                throw Error(error.message);
-                            }
+                            handler->handle(negated, value);
                         }
                     }
                     else {
@@ -170,15 +150,10 @@ public:
                         value = str.substr(j);
                         auto handler = lookupLong(opt);
                         if (handler->wantsValue()) {
-                            try {
-                                handler->handle(negated, value);
-                            }
-                            catch (const Handler::Error & error) {
-                                throw Error(error.message);
-                            }
+                            handler->handle(negated, value);
                         }
                         else {
-                            throw Error("No value required for option.");
+                            THROW(ConversionError("No value required for option."));
                         }
                     }
                 }
@@ -193,12 +168,7 @@ public:
                             // TODO
                         }
                         else {
-                            try {
-                                handler->handle(negated, value);
-                            }
-                            catch (const Handler::Error & error) {
-                                throw Error(error.message);
-                            }
+                            handler->handle(negated, value);
                         }
                     }
                 }
@@ -212,22 +182,22 @@ public:
     }
 
 protected:
-    Handler * lookupShort(char s) /*throw (Error)*/ {
+    Handler * lookupShort(char s) {
         auto iter = _shortToHandler.find(s);
 
         if (iter == _shortToHandler.end()) {
             std::string str; str.push_back(s);
-            throw Error("Unknown option: -" + str);
+            THROW(UserError("Unknown option: -" + str));
         }
 
         return iter->second;
     }
 
-    Handler * lookupLong(const std::string & l) /*throw (Error)*/ {
+    Handler * lookupLong(const std::string & l) {
         auto iter = _longToHandler.find(l);
 
         if (iter == _longToHandler.end()) {
-            throw Error("Unknown option: --" + l);
+            THROW(UserError("Unknown option: --" + l));
         }
 
         return iter->second;
@@ -246,7 +216,7 @@ public:
     bool isNegatable() const override { return true; }
     bool wantsValue()  const override { return false; }
 
-    void handle(bool negated, const std::string & UNUSED(value)) noexcept override {
+    void handle(bool negated, const std::string & UNUSED(value)) override {
         _value = !negated;
     }
 };
@@ -260,13 +230,8 @@ public:
     bool isNegatable() const override { return false; }
     bool wantsValue()  const override { return true; }
 
-    void handle(bool UNUSED(negated), const std::string & value) /*throw (Error)*/ override {
-        try {
-            _value = unstringify<V>(value);
-        }
-        catch (const ParseError & error) {
-            throw Error(error.message);
-        }
+    void handle(bool UNUSED(negated), const std::string & value) override {
+        _value = unstringify<V>(value);
     }
 };
 
@@ -282,7 +247,7 @@ public:
     bool isNegatable() const override { return false; }
     bool wantsValue()  const override { return true; }
 
-    void handle(bool UNUSED(negated), const std::string & value) /*throw (Error)*/ override {
+    void handle(bool UNUSED(negated), const std::string & value) override {
         _func(value);
     }
 };

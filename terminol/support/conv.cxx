@@ -4,7 +4,7 @@
 #include "terminol/support/conv.hxx"
 
 std::optional<std::vector<std::string>> split(const std::string & line,
-                                              const std::string & delim) /*throw (ParseError)*/{
+                                              const std::string & delim) {
     auto i = line.find_first_not_of(delim);
 
     if (i == std::string::npos) { return std::nullopt; }   // blank line
@@ -20,7 +20,7 @@ std::optional<std::vector<std::string>> split(const std::string & line,
 
         if (j == std::string::npos) {
             if (quote) {
-                throw ParseError("Unterminated quote.");
+                THROW(ConversionError("Unterminated quote"));
             }
             else {
                 j = line.size();

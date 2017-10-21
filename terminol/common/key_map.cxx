@@ -184,18 +184,14 @@ bool applyKeyMap(const Map * mode,
 std::string symToName(xkb_keysym_t keySym) {
     char buf[128];
     auto size = xkb_keysym_get_name(keySym, buf, sizeof buf);
-    ENFORCE(size != -1, "Bad keysym");
+    THROW_UNLESS(size != -1, GenericError("Bad keysym"));
     return std::string(buf, buf + size);
 }
 
-xkb_keysym_t nameToSym(const std::string & name) /*throw (ParseError)*/ {
+xkb_keysym_t nameToSym(const std::string & name) {
     auto keySym = xkb_keysym_from_name(name.c_str(), static_cast<xkb_keysym_flags>(0));
-    if (keySym == XKB_KEY_NoSymbol) {
-        throw ParseError("Bad keysym: '" + name + "'");
-    }
-    else {
-        return keySym;
-    }
+    THROW_UNLESS(keySym != XKB_KEY_NoSymbol, ConversionError("Bad keysym: '" + name + "'"));
+    return keySym;
 }
 
 std::string modifierToName(Modifier modifier) {
@@ -221,7 +217,7 @@ std::string modifierToName(Modifier modifier) {
     FATAL("Unreachable.");
 }
 
-Modifier nameToModifier(const std::string & name) /*throw (ParseError)*/ {
+Modifier nameToModifier(const std::string & name) {
     if (name == "shift") {
         return Modifier::SHIFT;
     }
@@ -247,7 +243,7 @@ Modifier nameToModifier(const std::string & name) /*throw (ParseError)*/ {
         return Modifier::MODE_SWITCH;
     }
     else {
-        throw ParseError("Bad modifier: " + name);
+        THROW(ConversionError("Bad modifier: " + name));
     }
 }
 

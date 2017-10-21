@@ -14,7 +14,7 @@
 #include <unistd.h>
 #include <limits.h>
 
-Basics::Basics() /*throw (Error)*/ {
+Basics::Basics() {
 #ifdef __linux__
     char h[HOST_NAME_MAX + 1];
 #else
@@ -28,9 +28,7 @@ Basics::Basics() /*throw (Error)*/ {
     _displayName = d ? d : ":0";
 
     _connection = xcb_connect(_displayName.c_str(), &_screenNum);
-    if (xcb_connection_has_error(_connection)) {
-        throw Error("Failed to connect to display.");
-    }
+    THROW_UNLESS(!xcb_connection_has_error(_connection), XError("Failed to connect to display"));
     ScopeGuard connectionGuard([&]() { xcb_disconnect(_connection); });
 
     auto setup      = xcb_get_setup(_connection);
@@ -53,14 +51,10 @@ Basics::Basics() /*throw (Error)*/ {
             }
         }
     }
-    if (!_visual) {
-        throw Error("Failed to locate visual");
-    }
+    THROW_UNLESS(_visual, XError("Failed to locate visual"));
 
     _keySymbols = xcb_key_symbols_alloc(_connection);
-    if (!_keySymbols) {
-        throw Error("Failed to load key symbols");
-    }
+    THROW_UNLESS(_keySymbols, XError("Failed to load key symbols"));
     ScopeGuard keySymbolsGuard([&]() { xcb_key_symbols_free(_keySymbols); });
 
     _normalCursor = loadNormalCursor();
@@ -69,42 +63,36 @@ Basics::Basics() /*throw (Error)*/ {
     _invisibleCursor = loadInvisibleCursor();
     ScopeGuard invisibleCursorGuard([&]() { xcb_free_cursor(_connection, _invisibleCursor); });
 
-    if (xcb_ewmh_init_atoms_replies(&_ewmhConnection,
-                                    xcb_ewmh_init_atoms(_connection, &_ewmhConnection),
-                                    nullptr) == 0) {
-        throw Error("Failed to initialise EWMH atoms");
-    }
+    THROW_UNLESS(xcb_ewmh_init_atoms_replies(&_ewmhConnection,
+                                             xcb_ewmh_init_atoms(_connection, &_ewmhConnection),
+                                             nullptr) != 0,
+            XError("Failed to initialise EWMH atoms"));
     ScopeGuard ewmhConnectionGuard([&]() { xcb_ewmh_connection_wipe(&_ewmhConnection); } );
 
+    _atomPrimary        = XCB_ATOM_PRIMARY;
+    _atomClipboard      = lookupAtom("CLIPBOARD", true);
     try {
-        _atomPrimary        = XCB_ATOM_PRIMARY;
-        _atomClipboard      = lookupAtom("CLIPBOARD", true);
-        try {
-            _atomUtf8String = lookupAtom("UTF8_STRING", false);
-        }
-        catch (const NotFoundError & error) {
-            WARNING("No atom UTF8_STRING, falling back on STRING.");
-            _atomUtf8String = XCB_ATOM_STRING;
-        }
-        _atomTargets            = lookupAtom("TARGETS", true);
-        _atomWmProtocols        = lookupAtom("WM_PROTOCOLS", false);
-        _atomWmDeleteWindow     = lookupAtom("WM_DELETE_WINDOW", true);
-        _atomXRootPixmapId      = lookupAtom("_XROOTPMAP_ID", true);
-        _atomESetRootPmapId     = lookupAtom("ESETROOT_PMAP_ID", true);
-        _atomNetWmWindowOpacity = lookupAtom("_NET_WM_WINDOW_OPACITY", true);           // FIXME need a wrapper method that throws if atom doesn't exist. getAtom() -> lookupAtom()
+        _atomUtf8String = lookupAtom("UTF8_STRING", false);
     }
-    catch (const NotFoundError & error) {
-        throw Error(error.message);
+    catch (const ConversionError & error) {
+        WARNING("No atom UTF8_STRING, falling back on STRING.");
+        _atomUtf8String = XCB_ATOM_STRING;
     }
+    _atomTargets            = lookupAtom("TARGETS", true);
+    _atomWmProtocols        = lookupAtom("WM_PROTOCOLS", false);
+    _atomWmDeleteWindow     = lookupAtom("WM_DELETE_WINDOW", true);
+    _atomXRootPixmapId      = lookupAtom("_XROOTPMAP_ID", true);
+    _atomESetRootPmapId     = lookupAtom("ESETROOT_PMAP_ID", true);
+    _atomNetWmWindowOpacity = lookupAtom("_NET_WM_WINDOW_OPACITY", true); // FIXME need a wrapper method that throws if atom doesn't exist. getAtom() -> lookupAtom()
 
     try {
         _rootPixmap = getRootPixmap(_atomXRootPixmapId);
     }
-    catch (const Error &) {
+    catch (const XError &) {
         try {
             _rootPixmap = getRootPixmap(_atomESetRootPmapId);
         }
-        catch (const Error &) {
+        catch (const XError &) {
             _rootPixmap = XCB_PIXMAP_NONE;
         }
         // XXX disable PseudoTransparency?
@@ -227,34 +215,31 @@ void Basics::updateRootPixmap() {
     try {
         _rootPixmap = getRootPixmap(_atomXRootPixmapId);
     }
-    catch (const Error & error) {
-        ERROR("Failed to get root pixmap: " << error.message);
+    catch (const XError & error) {
+        ERROR("Failed to get root pixmap: " << error.what());
     }
 }
 
 xcb_atom_t Basics::lookupAtom(const std::string & name,
-                              bool create) /*throw (NotFoundError, Error)*/ {
+                              bool create) {
     auto cookie = xcb_intern_atom(_connection, create ? 0 : 1, name.length(), name.data());
     auto reply  = xcb_intern_atom_reply(_connection, cookie, nullptr);
 
-    if (reply) {
-        auto atom = reply->atom;
-        std::free(reply);
+    THROW_UNLESS(reply, XError("Failed to get atom " + name));
 
-        if (atom == XCB_ATOM_NONE) {
-            ASSERT(!create, "");
-            throw NotFoundError("Atom not found: " + name);
-        }
-        else {
-            return atom;
-        }
+    auto atom = reply->atom;
+    std::free(reply);
+
+    if (atom == XCB_ATOM_NONE) {
+        ASSERT(!create, "");
+        THROW(ConversionError("Atom not found: " + name));
     }
     else {
-        throw Error("Failed to get atom: " + name);
+        return atom;
     }
 }
 
-xcb_cursor_t Basics::loadNormalCursor() /*throw (Error)*/ {
+xcb_cursor_t Basics::loadNormalCursor() {
     uint16_t          cursorId = 152;    // XC_xterm
     const std::string fontName = "cursor";
 
@@ -265,8 +250,8 @@ xcb_cursor_t Basics::loadNormalCursor() /*throw (Error)*/ {
                                         font,
                                         fontName.size(),
                                         fontName.data());
-    if (xcb_request_failed(_connection, cookie, "can't open font")) {
-        throw Error("Failed to open font: " + fontName + ".");
+    if (xcb_request_failed(_connection, cookie, "Can't open font")) {
+        THROW(XError("Failed to open font: " + fontName));
     }
     ScopeGuard guard([&]() { xcb_close_font(_connection, font); });
 
@@ -281,13 +266,13 @@ xcb_cursor_t Basics::loadNormalCursor() /*throw (Error)*/ {
                                     cursorId + 1,
                                     0, 0, 0, max / 2, max / 2, max / 2);
     if (xcb_request_failed(_connection, cookie, "couldn't create cursor")) {
-        throw Error("Failed to create cursor.");
+        THROW(XError("Failed to create cursor"));
     }
 
     return cursor;
 }
 
-xcb_cursor_t Basics::loadInvisibleCursor() /*throw (Error)*/ {
+xcb_cursor_t Basics::loadInvisibleCursor() {
     auto pixmap = xcb_generate_id(_connection);
     auto cookie = xcb_create_pixmap_checked(_connection,
                                             1,
@@ -295,7 +280,7 @@ xcb_cursor_t Basics::loadInvisibleCursor() /*throw (Error)*/ {
                                             _screen->root,
                                             1, 1);
     if (xcb_request_failed(_connection, cookie, "couldn't create pixmap")) {
-        throw Error("Failed to create pixmap.");
+        THROW(XError("Failed to create pixmap"));
     }
     ScopeGuard guard([&]() { xcb_free_pixmap(_connection, pixmap); });
 
@@ -308,13 +293,13 @@ xcb_cursor_t Basics::loadInvisibleCursor() /*throw (Error)*/ {
                                        0, 0, 0,
                                        1, 1);
     if (xcb_request_failed(_connection, cookie, "couldn't create cursor")) {
-        throw Error("Failed to create cursor.");
+        THROW(XError("Failed to create cursor"));
     }
 
     return cursor;
 }
 
-xcb_pixmap_t Basics::getRootPixmap(xcb_atom_t atom) /*throw (Error)*/ {
+xcb_pixmap_t Basics::getRootPixmap(xcb_atom_t atom) {
     auto cookie = xcb_get_property(_connection,
                                    0,     // delete
                                    _screen->root,
@@ -324,15 +309,12 @@ xcb_pixmap_t Basics::getRootPixmap(xcb_atom_t atom) /*throw (Error)*/ {
                                    1);
 
     auto reply = xcb_get_property_reply(_connection, cookie, nullptr);
-
-    if (!reply) {
-        throw Error("Couldn't query root pixmap [1].");
-    }
+    THROW_UNLESS(reply, XError("Couldn't query root pixmap [1]"));
 
     ScopeGuard guard([&]() { std::free(reply); });
 
     if (xcb_get_property_value_length(reply) != sizeof(xcb_pixmap_t)) {
-        throw Error("Couldn't query root pixmap [2].");
+        THROW(XError("Couldn't query root pixmap [2]"));
     }
 
     auto pixmap = *static_cast<xcb_pixmap_t *>(xcb_get_property_value(reply));
@@ -358,7 +340,7 @@ void resolveCode(uint8_t             & mask,
 
 } // namespace {anonymous}
 
-void Basics::determineMasks() /*throw (Error)*/ {
+void Basics::determineMasks() {
     // Note, xcb_key_symbols_get_keycode() may return nullptr.
     auto shiftCodes      = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Shift_L);
     auto altCodes        = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Alt_L);
@@ -382,7 +364,7 @@ void Basics::determineMasks() /*throw (Error)*/ {
 
     auto cookie      = xcb_get_modifier_mapping(_connection);
     auto modmapReply = xcb_get_modifier_mapping_reply(_connection, cookie, nullptr);
-    if (!modmapReply) { throw Error("Couldn't determine masks."); }
+    THROW_UNLESS(modmapReply, XError("Couldn't determine masks"));
     auto modmap      = xcb_get_modifier_mapping_keycodes(modmapReply);
 
     // Clear the masks.

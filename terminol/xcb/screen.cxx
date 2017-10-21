@@ -22,7 +22,7 @@ Screen::Screen(I_Observer         & observer,
                Basics             & basics,
                const ColorSet     & colorSet,
                FontManager        & fontManager,
-               const Tty::Command & command) /*throw (Widget::Error, Error)*/ :
+               const Tty::Command & command) :
     Widget(dispatcher, basics, colorSet.getBackgroundPixel(), config.initialX, config.initialY, -1, -1),
     _observer(observer),
     _config(config),
@@ -116,20 +116,15 @@ Screen::Screen(I_Observer         & observer,
                                    XCB_GC_FOREGROUND | XCB_GC_GRAPHICS_EXPOSURES,
                                    gcValues);
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate GC")) {
-        throw Error("Failed to create GC.");
+        THROW(XError("Failed to create GC"));
     }
     ScopeGuard gcGuard([&]() { xcb_free_gc(_basics.connection(), getWindow()); });
 
     // Create the TTY and terminal.
 
-    try {
-        _terminal = new Terminal(*this, _config, selector, deduper, destroyer,
-                                 rows, cols, stringify(getWindow()), command);
-        _open     = true;
-    }
-    catch (const Tty::Error & error) {
-        throw Error("Failed to create tty: " + error.message);
-    }
+    _terminal = new Terminal(*this, _config, selector, deduper, destroyer,
+                             rows, cols, stringify(getWindow()), command);
+    _open     = true;
 
     // Update the window title.
 
@@ -139,7 +134,7 @@ Screen::Screen(I_Observer         & observer,
 
     cookie = xcb_map_window_checked(_basics.connection(), getWindow());
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to map window")) {
-        throw Error("Failed to map window.");
+        THROW(XError("Failed to map window"));
     }
 
     // Flush our XCB calls.
@@ -194,7 +189,7 @@ Screen::~Screen() {
 
 // Events:
 
-void Screen::keyPress(xcb_key_press_event_t * event) noexcept {
+void Screen::keyPress(xcb_key_press_event_t * event) {
     ASSERT(event->event == getWindow(), "Unexpected window.");
 
     if (_config.autoHideCursor) {
@@ -224,11 +219,11 @@ void Screen::keyPress(xcb_key_press_event_t * event) noexcept {
     }
 }
 
-void Screen::keyRelease(xcb_key_release_event_t * UNUSED(event)) noexcept {
+void Screen::keyRelease(xcb_key_release_event_t * UNUSED(event)) {
     // XXX Drop this override?
 }
 
-void Screen::buttonPress(xcb_button_press_event_t * event) noexcept {
+void Screen::buttonPress(xcb_button_press_event_t * event) {
     ASSERT(event->event == getWindow(), "Unexpected window.");
 
     if (_config.autoHideCursor) {
@@ -289,7 +284,7 @@ void Screen::buttonPress(xcb_button_press_event_t * event) noexcept {
     }
 }
 
-void Screen::buttonRelease(xcb_button_release_event_t * event) noexcept {
+void Screen::buttonRelease(xcb_button_release_event_t * event) {
     ASSERT(event->event == getWindow(), "Unexpected window.");
 
     if (_config.autoHideCursor) {
@@ -308,7 +303,7 @@ void Screen::buttonRelease(xcb_button_release_event_t * event) noexcept {
     }
 }
 
-void Screen::motionNotify(xcb_motion_notify_event_t * event) noexcept {
+void Screen::motionNotify(xcb_motion_notify_event_t * event) {
     ASSERT(event->event == getWindow(), "Unexpected window.");
 
     if (_config.autoHideCursor) {
@@ -351,21 +346,21 @@ void Screen::motionNotify(xcb_motion_notify_event_t * event) noexcept {
 
 }
 
-void Screen::mapNotify(xcb_map_notify_event_t * UNUSED(event)) noexcept {
+void Screen::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
     ASSERT(!_mapped, "Received map notification, but already mapped.");
 
     _mapped = true;
     createPixmapAndSurface();
 }
 
-void Screen::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) noexcept {
+void Screen::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
     ASSERT(_mapped, "Received unmap notification, but not mapped.");
 
     _mapped = false;
     destroySurfaceAndPixmap();
 }
 
-void Screen::expose(xcb_expose_event_t * event) noexcept {
+void Screen::expose(xcb_expose_event_t * event) {
     // If there is a deferral then our pixmap won't be valid.
     if (_deferred) { return; }
 
@@ -379,7 +374,7 @@ void Screen::expose(xcb_expose_event_t * event) noexcept {
     }
 }
 
-void Screen::configureNotify(xcb_configure_notify_event_t * event) noexcept {
+void Screen::configureNotify(xcb_configure_notify_event_t * event) {
     ASSERT(event->window == getWindow(), "Unexpected window.");
 
     // Note, once we've had a deferral we don't apply the
@@ -418,7 +413,7 @@ void Screen::configureNotify(xcb_configure_notify_event_t * event) noexcept {
     }
 }
 
-void Screen::focusIn(xcb_focus_in_event_t * event) noexcept {
+void Screen::focusIn(xcb_focus_in_event_t * event) {
     if (event->detail != XCB_NOTIFY_DETAIL_INFERIOR &&
         event->detail != XCB_NOTIFY_DETAIL_POINTER &&
         event->mode   != XCB_NOTIFY_MODE_GRAB)
@@ -427,7 +422,7 @@ void Screen::focusIn(xcb_focus_in_event_t * event) noexcept {
     }
 }
 
-void Screen::focusOut(xcb_focus_out_event_t * event) noexcept {
+void Screen::focusOut(xcb_focus_out_event_t * event) {
     if (event->detail != XCB_NOTIFY_DETAIL_INFERIOR &&
         event->detail != XCB_NOTIFY_DETAIL_POINTER &&
         event->mode   != XCB_NOTIFY_MODE_GRAB)
@@ -436,11 +431,11 @@ void Screen::focusOut(xcb_focus_out_event_t * event) noexcept {
     }
 }
 
-void Screen::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) noexcept {
+void Screen::enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {
     // XXX Drop this override?
 }
 
-void Screen::leaveNotify(xcb_leave_notify_event_t * event) noexcept {
+void Screen::leaveNotify(xcb_leave_notify_event_t * event) {
     // XXX total guess that this is how we ensure we release
     // the button (broken grabs)...
     if (event->mode == 2) {
@@ -451,7 +446,7 @@ void Screen::leaveNotify(xcb_leave_notify_event_t * event) noexcept {
     }
 }
 
-void Screen::destroyNotify(xcb_destroy_notify_event_t * event) noexcept {
+void Screen::destroyNotify(xcb_destroy_notify_event_t * event) {
     ASSERT(event->window == getWindow(), "Unexpected window.");
 
     _terminal->killReap();
@@ -459,11 +454,11 @@ void Screen::destroyNotify(xcb_destroy_notify_event_t * event) noexcept {
     _destroyed = true;
 }
 
-void Screen::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) noexcept {
+void Screen::selectionClear(xcb_selection_clear_event_t * UNUSED(event)) {
     _terminal->clearSelection();
 }
 
-void Screen::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) noexcept {
+void Screen::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
     if (!_open) { return; }
 
     std::vector<uint8_t> content;
@@ -498,7 +493,7 @@ void Screen::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) noexc
     }
 }
 
-void Screen::selectionRequest(xcb_selection_request_event_t * event) noexcept {
+void Screen::selectionRequest(xcb_selection_request_event_t * event) {
     ASSERT(event->owner == getWindow(), "Unexpected window.");
 
     xcb_selection_notify_event_t response;
@@ -557,7 +552,7 @@ void Screen::selectionRequest(xcb_selection_request_event_t * event) noexcept {
     xcb_flush(_basics.connection());        // Required?
 }
 
-void Screen::clientMessage(xcb_client_message_event_t * event) noexcept {
+void Screen::clientMessage(xcb_client_message_event_t * event) {
     if (event->type == _basics.atomWmProtocols()) {
         if (event->data.data32[0] == _basics.atomWmDeleteWindow()) {
             handleDelete();
@@ -792,9 +787,9 @@ void Screen::createPixmapAndSurface() {
                                         _basics.visual(),
                                         _geometry.width,
                                         _geometry.height);
-    ENFORCE(_surface, "Failed to create surface.");
-    ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS,
-            "Bad cairo surface status.");
+    ASSERT(_surface, "Failed to create surface.");
+    ASSERT(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS,
+           "Bad cairo surface status.");
 
     renderPixmap();
 }

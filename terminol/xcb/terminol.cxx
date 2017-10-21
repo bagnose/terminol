@@ -47,11 +47,6 @@ class EventLoop final :
     static EventLoop * _singleton;
 
 public:
-    struct Error {
-        explicit Error(const std::string & message_) : message(message_) {}
-        std::string message;
-    };
-
     EventLoop(const Config       & config,
               const Tty::Command & command) :
         _config(config),
@@ -116,7 +111,7 @@ protected:
             _selector.animate();
 
             // Poll for X11 events that may not have shown up on the descriptor.
-            _dispatcher.poll();     // XXX throws
+            _dispatcher.poll();
 
             if (_exited)   { break; }
             if (_deferral) { _screen.deferral(); _deferral = false; }
@@ -132,10 +127,9 @@ protected:
         char buf[BUFSIZ];
         auto size = sizeof buf;
 
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::read(_pipe.readFd(),
-                                              static_cast<void *>(buf), size)) != -1, "");
+        THROW_IF_SYSCALL_FAILS(::read(_pipe.readFd(), static_cast<void *>(buf), size), "read()");
 
-        _screen.tryReap();          // XXX We should assert that this success. Why bother with screenReaped?
+        _screen.tryReap(); // XXX We should assert that this succeeds. Why bother with screenReaped?
     }
 
     // I_Selector::I_ReadHandler implementation:
@@ -167,7 +161,7 @@ protected:
 
     // I_Dispatcher::I_Observer implementation:
 
-    void propertyNotify(xcb_property_notify_event_t * event) noexcept override {
+    void propertyNotify(xcb_property_notify_event_t * event) override {
         if (_config.x11PseudoTransparency) {
             if (event->window == _basics.screen()->root &&
                 event->atom == _basics.atomXRootPixmapId())
@@ -207,15 +201,10 @@ std::string makeHelp(const std::string & progName) {
 
 } // namespace {anonymous}
 
-int main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) try {
     Config config;
 
-    try {
-        parseConfig(config);
-    }
-    catch (const ParseError & error) {
-        FATAL(error.message);
-    }
+    parseConfig(config);
 
     CmdLine cmdLine(makeHelp(argv[0]), VERSION, "--execute");
     cmdLine.add(new StringHandler(config.fontName), '\0', "font-name");
@@ -225,33 +214,15 @@ int main(int argc, char * argv[]) {
     cmdLine.add(new BoolHandler(config.traditionalWrapping), '\0', "traditional-wrapping");
     cmdLine.add(new StringHandler(config.termName), '\0', "term-name");
     cmdLine.add(new_MiscHandler([&](const std::string & name) {
-                                try {
                                     config.setColorScheme(name);
-                                }
-                                catch (const ParseError & error) {
-                                    throw CmdLine::Handler::Error(error.message);
-                                }
                                 }), '\0', "color-scheme");
 
-    try {
-        auto command = cmdLine.parse(argc, const_cast<const char **>(argv));
-        EventLoop eventLoop(config, command);
-    }
-    catch (const EventLoop::Error & error) {
-        FATAL(error.message);
-    }
-    catch (const Dispatcher::Error & error) {
-        FATAL(error.message);
-    }
-    catch (const Screen::Error & error) {
-        FATAL(error.message);
-    }
-    catch (const Basics::Error & error) {
-        FATAL(error.message);
-    }
-    catch (const CmdLine::Error & error) {
-        FATAL(error.message);
-    }
+    auto command = cmdLine.parse(argc, const_cast<const char **>(argv));
+    EventLoop eventLoop(config, command);
 
     return 0;
+}
+catch (const UserError & ex) {
+    std::cerr << ex.message() << std::endl;
+    return 1;
 }

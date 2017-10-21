@@ -84,11 +84,6 @@ private:
     bool              _hadDeleteRequest;
 
 public:
-    struct Error {
-        explicit Error(const std::string & message_) : message(message_) {}
-        std::string message;
-    };
-
     Screen(I_Observer         & observer,
            const Config       & config,
            I_Selector         & selector,
@@ -98,7 +93,7 @@ public:
            Basics             & basics,
            const ColorSet     & colorSet,
            FontManager        & fontManager,
-           const Tty::Command & command = Tty::Command()) /*throw (Widget::Error, Error)*/;
+           const Tty::Command & command = Tty::Command());
 
     ~Screen();
 
@@ -181,24 +176,24 @@ protected:
 
     // I_Dispatcher::I_Observer overrides:
 
-    void keyPress(xcb_key_press_event_t * event) noexcept override;
-    void keyRelease(xcb_key_release_event_t * event) noexcept override;
-    void buttonPress(xcb_button_press_event_t * event) noexcept override;
-    void buttonRelease(xcb_button_release_event_t * event) noexcept override;
-    void motionNotify(xcb_motion_notify_event_t * event) noexcept override;
-    void mapNotify(xcb_map_notify_event_t * event) noexcept override;
-    void unmapNotify(xcb_unmap_notify_event_t * event) noexcept override;
-    void expose(xcb_expose_event_t * event) noexcept override;
-    void configureNotify(xcb_configure_notify_event_t * event) noexcept override;
-    void focusIn(xcb_focus_in_event_t * event) noexcept override;
-    void focusOut(xcb_focus_out_event_t * event) noexcept override;
-    void enterNotify(xcb_enter_notify_event_t * event) noexcept override;
-    void leaveNotify(xcb_leave_notify_event_t * event) noexcept override;
-    void destroyNotify(xcb_destroy_notify_event_t * event) noexcept override;
-    void selectionClear(xcb_selection_clear_event_t * event) noexcept override;
-    void selectionNotify(xcb_selection_notify_event_t * event) noexcept override;
-    void selectionRequest(xcb_selection_request_event_t * event) noexcept override;
-    void clientMessage(xcb_client_message_event_t * event) noexcept override;
+    void keyPress(xcb_key_press_event_t * event) override;
+    void keyRelease(xcb_key_release_event_t * event) override;
+    void buttonPress(xcb_button_press_event_t * event) override;
+    void buttonRelease(xcb_button_release_event_t * event) override;
+    void motionNotify(xcb_motion_notify_event_t * event) override;
+    void mapNotify(xcb_map_notify_event_t * event) override;
+    void unmapNotify(xcb_unmap_notify_event_t * event) override;
+    void expose(xcb_expose_event_t * event) override;
+    void configureNotify(xcb_configure_notify_event_t * event) override;
+    void focusIn(xcb_focus_in_event_t * event) override;
+    void focusOut(xcb_focus_out_event_t * event) override;
+    void enterNotify(xcb_enter_notify_event_t * event) override;
+    void leaveNotify(xcb_leave_notify_event_t * event) override;
+    void destroyNotify(xcb_destroy_notify_event_t * event) override;
+    void selectionClear(xcb_selection_clear_event_t * event) override;
+    void selectionNotify(xcb_selection_notify_event_t * event) override;
+    void selectionRequest(xcb_selection_request_event_t * event) override;
+    void clientMessage(xcb_client_message_event_t * event) override;
 
 private:
     DColor getColor(const UColor & ucolor) const {

@@ -31,7 +31,7 @@ void test1() {
         ENFORCE(tokens[1] == "d e f", "");
         ENFORCE(tokens[2] == "", "");
     }
-    catch (const ParseError &) {
+    catch (const ConversionError &) {
         ENFORCE(false, "Unreachable");
     }
 
@@ -39,7 +39,8 @@ void test1() {
         split("\"unterminated quote...");
         ENFORCE(false, "Unreachable");
     }
-    catch (const ParseError &) {
+    catch (const ConversionError &) {
+        // expected
     }
 }
 
@@ -54,8 +55,8 @@ void test2(uint8_t num, const char ascii[2]) {
         uint8_t tmpNum = hexToByte(ascii[0], ascii[1]);
         ENFORCE(tmpNum == num, "Mismatch hex --> byte: " << tmpNum << " == " << num);
     }
-    catch (const ParseError & error) {
-        FATAL(error.message);
+    catch (const ConversionError & error) {
+        FATAL(error.what());
     }
 }
 

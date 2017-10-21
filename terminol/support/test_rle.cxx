@@ -6,7 +6,7 @@
 
 int main () {
     std::vector<uint8_t> buffer;
-    OutMemoryStream os(buffer, true);
+    OutMemoryStream os(buffer);
     std::vector<int> input{1, 2, 3, 3};
     rleEncode(input, os);
     InMemoryStream is(buffer);

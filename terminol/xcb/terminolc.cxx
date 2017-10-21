@@ -24,15 +24,10 @@ std::string makeHelp(const std::string & progName) {
 
 } // namespace {anonymous}
 
-int main(int argc, char * argv[]) {
+int main(int argc, char * argv[]) try {
     Config config;
 
-    try {
-        parseConfig(config);
-    }
-    catch (const ParseError & error) {
-        FATAL(error.message);
-    }
+    parseConfig(config);
 
     bool shutdown = false;
 
@@ -42,25 +37,19 @@ int main(int argc, char * argv[]) {
 
     // Command line
 
-    try {
-        cmdLine.parse(argc, const_cast<const char **>(argv));
-    }
-    catch (const CmdLine::Error & error) {
-        FATAL(error.message);
-    }
+    cmdLine.parse(argc, const_cast<const char **>(argv));
 
     Selector selector;
 
-    try {
-        Client client(selector, config, shutdown);
+    Client client(selector, config, shutdown);
 
-        do {
-            selector.animate();
-        } while (!client.isFinished());
-    }
-    catch (const Client::Error & error) {
-        FATAL(error.message);
-    }
+    do {
+        selector.animate();
+    } while (!client.isFinished());
 
     return 0;
+}
+catch (const UserError & ex) {
+    std::cerr << ex.message() << std::endl;
+    return 1;
 }

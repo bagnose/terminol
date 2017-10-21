@@ -80,7 +80,7 @@ Terminal::Terminal(I_Observer         & observer,
                    int16_t              rows,
                    int16_t              cols,
                    const std::string  & windowId,
-                   const Tty::Command & command) /*throw (Tty::Error)*/ :
+                   const Tty::Command & command) :
     _observer(observer),
     //
     _config(config),
@@ -1663,8 +1663,8 @@ void Terminal::machineOscEsc(const OscEsc & esc) {
                     break;
             }
         }
-        catch (const ParseError & error) {
-            ERROR(error.message);
+        catch (const ConversionError & error) {
+            ERROR(error.what());
         }
     }
 }

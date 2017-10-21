@@ -36,11 +36,6 @@ private:
     bool                   _suspended;
 
 public:
-    struct Error {
-        explicit Error(const std::string & message_) : message(message_) {}
-        std::string message;
-    };
-
     using Command = std::vector<std::string>;           // XXX questionable alias
 
     Tty(I_Observer        & observer,
@@ -49,7 +44,7 @@ public:
         uint16_t            rows,
         uint16_t            cols,
         const std::string & windowId,
-        const Command     & command) /*throw (Error)*/;
+        const Command     & command);
 
     ~Tty();
 
@@ -68,7 +63,7 @@ protected:
     void openPty(uint16_t            rows,
                  uint16_t            cols,
                  const std::string & windowId,
-                 const Command     & command) /*throw (Error)*/;
+                 const Command     & command);
     void execShell(const std::string & windowId,
                    const Command     & command);
 

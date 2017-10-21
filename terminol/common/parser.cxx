@@ -15,7 +15,7 @@ class Parser : protected Uncopyable {
     public:
         virtual ~Handler() {}
 
-        virtual void handle(const std::string & value) /*throw (ParseError)*/ = 0;
+        virtual void handle(const std::string & value) = 0;
     };
 
     using Handlers = std::unordered_map<std::string, Handler *>;
@@ -28,7 +28,7 @@ class Parser : protected Uncopyable {
     public:
         SimpleHandler(T & t) : _t(t) {}
 
-        void handle(const std::string & value) /*throw (ParseError)*/ override {
+        void handle(const std::string & value) override {
             _t = unstringify<T>(value);
         }
     };
@@ -40,7 +40,7 @@ class Parser : protected Uncopyable {
         F _func;
     public:
         GenericHandler(F func) : _func(func) {}
-        void handle(const std::string & value) /*throw (ParseError)*/ override {
+        void handle(const std::string & value) override {
             _func(value);
         }
     };
@@ -74,9 +74,9 @@ public:
 protected:
     void parse();
     bool tryPath(const std::string & path);
-    void interpretTokens(const std::vector<std::string> & tokens) /*throw (ParseError)*/;
-    void handleSet(const std::string & key, const std::string & value) /*throw (ParseError)*/;
-    void handleBindSym(const std::string & sym, const std::string & action) /*throw (ParseError)*/;
+    void interpretTokens(const std::vector<std::string> & tokens);
+    void handleSet(const std::string & key, const std::string & value);
+    void handleBindSym(const std::string & sym, const std::string & action);
 };
 
 //
@@ -294,8 +294,8 @@ bool Parser::tryPath(const std::string & path) {
                     interpretTokens(*tokens);
                 }
             }
-            catch (const ParseError & error) {
-                std::cerr << path << ":" << num << ": " << error.message << std::endl;
+            catch (const ConversionError & error) {
+                std::cerr << path << ":" << num << ": " << error.what() << std::endl;
             }
         }
         return true;
@@ -305,7 +305,7 @@ bool Parser::tryPath(const std::string & path) {
     }
 }
 
-void Parser::interpretTokens(const std::vector<std::string> & tokens) /*throw (ParseError)*/ {
+void Parser::interpretTokens(const std::vector<std::string> & tokens) {
     ASSERT(!tokens.empty(), "No tokens!");
 
     if (tokens[0] == "set") {
@@ -313,7 +313,7 @@ void Parser::interpretTokens(const std::vector<std::string> & tokens) /*throw (P
             handleSet(tokens[1], tokens[2]);
         }
         else {
-            throw ParseError("Syntax: 'set NAME VALUE'");
+            THROW(ConversionError("Syntax: 'set NAME VALUE'"));
         }
     }
     else if (tokens[0] == "bindsym") {
@@ -321,18 +321,18 @@ void Parser::interpretTokens(const std::vector<std::string> & tokens) /*throw (P
             handleBindSym(tokens[1], tokens[2]);
         }
         else {
-            throw ParseError("Syntax: 'bindsym KEY ACTION'");
+            THROW(ConversionError("Syntax: 'bindsym KEY ACTION'"));
         }
     }
     else {
-        throw ParseError("Unrecognised token: '" + tokens[0] + "'");
+        THROW(ConversionError("Unrecognised token: '" + tokens[0] + "'"));
     }
 }
 
-void Parser::handleSet(const std::string & key, const std::string & value) /*throw (ParseError)*/ {
+void Parser::handleSet(const std::string & key, const std::string & value) {
     auto iter = _handlers.find(key);
     if (iter == _handlers.end()) {
-        throw ParseError("No such setting: '" + key + "'");
+        THROW(ConversionError("No such setting: '" + key + "'"));
     }
     else {
         auto handler = iter->second;
@@ -340,7 +340,7 @@ void Parser::handleSet(const std::string & key, const std::string & value) /*thr
     }
 }
 
-void Parser::handleBindSym(const std::string & sym, const std::string & action) /*throw (ParseError)*/ {
+void Parser::handleBindSym(const std::string & sym, const std::string & action) {
     if (auto tokens = split(sym, "+")) {
         auto key = tokens->back(); tokens->pop_back();
 
@@ -357,7 +357,7 @@ void Parser::handleBindSym(const std::string & sym, const std::string & action) 
 
         auto iter = _actions.find(action);
         if (iter == _actions.end()) {
-            throw ParseError("Bad action: '" + action + "'");
+            THROW(ConversionError("Bad action: '" + action + "'"));
         }
         else {
             auto resolvedAction = iter->second;
@@ -365,7 +365,7 @@ void Parser::handleBindSym(const std::string & sym, const std::string & action) 
         }
     }
     else {
-        throw ParseError("??");
+        THROW(ConversionError("??"));
     }
 }
 

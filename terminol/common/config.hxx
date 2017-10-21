@@ -87,7 +87,7 @@ struct Config {
 
     Config();
 
-    void setColorScheme(const std::string & name) /*throw (ParseError)*/;
+    void setColorScheme(const std::string & name);
 };
 
 #endif // COMMON__CONFIG__HXX

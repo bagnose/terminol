@@ -11,13 +11,7 @@ int main(int argc, char * argv[]) {
         return 0;
     }
 
-    try {
-        std::cout << CsiEsc::CUP(unstringify<int>(argv[1]),
-                                 unstringify<int>(argv[2]));
-        return 0;
-    }
-    catch (const ParseError & error) {
-        std::cerr << error.message << std::endl;
-        return 1;
-    }
+    std::cout << CsiEsc::CUP(unstringify<int>(argv[1]),
+                             unstringify<int>(argv[2]));
+    return 0;
 }

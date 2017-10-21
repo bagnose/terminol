@@ -3,7 +3,7 @@
 
 #include "terminol/support/regex.hxx"
 
-int main() try {
+int main() {
     Regex regex("(\\w+) and (\\w+)");
     auto m = regex.matchString("Some foods are chewy and crunchy.");
     ENFORCE(m.size() == 3, m.size());
@@ -12,7 +12,4 @@ int main() try {
     ENFORCE(m[2] == "crunchy", m[2]);
 
     return 0;
-}
-catch (const Regex::Error & error) {
-    FATAL(error.message);
 }

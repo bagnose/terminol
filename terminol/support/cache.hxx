@@ -259,13 +259,8 @@ public:
 
     T & at(const Key & key) {
         auto iter = find(key);
-
-        if (iter == end()) {
-            throw std::out_of_range("Cache");
-        }
-        else {
-            return iter->second;
-        }
+        THROW_UNLESS(iter != end(), std::out_of_range("Cache"));
+        return iter->second;
     }
 
     bool empty() const noexcept {

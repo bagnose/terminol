@@ -3,6 +3,7 @@
 
 #include "terminol/common/config.hxx"
 #include "terminol/support/conv.hxx"
+#include "terminol/support/exception.hxx"
 
 #include <limits>
 
@@ -216,12 +217,7 @@ Config::Config() :
     x11CompositedTransparency(false),
     x11TransparencyValue(0.1)
 {
-    try {
-        setColorScheme("rxvt");
-    }
-    catch (const ParseError &) {
-        FATAL("");
-    }
+    setColorScheme("rxvt");
 
     auto user = static_cast<const char *>(::getenv("USER"));
     if (!user) { user = "unknown-user"; }
@@ -231,7 +227,7 @@ Config::Config() :
     socketPath = ost.str();
 }
 
-void Config::setColorScheme(const std::string & name) /*throw (ParseError)*/ {
+void Config::setColorScheme(const std::string & name) {
     if (name == "rxvt") {
         std::copy(COLOURS_RXVT, COLOURS_RXVT + 16, systemColors);
 
@@ -281,7 +277,7 @@ void Config::setColorScheme(const std::string & name) /*throw (ParseError)*/ {
         normalBgColor = systemColors[8];
     }
     else {
-        throw ParseError("No such color scheme: " + name);
+        THROW(UserError("No such color scheme: " + name));
     }
 
     scrollbarFgColor = { 0x7F, 0x7F, 0x7F };

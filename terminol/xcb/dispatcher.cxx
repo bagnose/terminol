@@ -2,8 +2,9 @@
 // Copyright © 2014 David Bryant
 
 #include "terminol/xcb/dispatcher.hxx"
+#include "terminol/xcb/exception.hxx"
 
-void Dispatcher::poll() /*throw (Error)*/ {
+void Dispatcher::poll() {
     for (;;) {
         auto event = ::xcb_poll_for_event(_connection);
         if (!event) { break; }
@@ -16,13 +17,11 @@ void Dispatcher::poll() /*throw (Error)*/ {
         }
     }
 
-    auto error = ::xcb_connection_has_error(_connection);
-    if (error != 0) {
-        throw Error("Lost display connection, error=" + stringify(error));
-    }
+    int error = ::xcb_connection_has_error(_connection);
+    THROW_UNLESS(error == 0, XError("Lost display connection, error=" + stringify(error)));
 }
 
-void Dispatcher::wait(uint8_t event_type) /*throw (Error)*/ {
+void Dispatcher::wait(uint8_t event_type) {
     for (;;) {
         auto event = ::xcb_wait_for_event(_connection);
         ScopeGuard guard([event]() { std::free(event); });
@@ -41,9 +40,7 @@ void Dispatcher::wait(uint8_t event_type) /*throw (Error)*/ {
     }
 
     auto error = ::xcb_connection_has_error(_connection);
-    if (error != 0) {
-        throw Error("Lost display connection, error=" + stringify(error));
-    }
+    THROW_UNLESS(error == 0, XError("Lost display connection, error=" + stringify(error)));
 }
 
 void Dispatcher::dispatch(uint8_t responseType, xcb_generic_event_t * event) {
@@ -179,12 +176,5 @@ void Dispatcher::dispatch(uint8_t responseType, xcb_generic_event_t * event) {
 
 void Dispatcher::handleRead(int fd) {
     ASSERT(fd == xcb_get_file_descriptor(_connection), "");
-
-    try {
-        poll();
-    }
-    catch (const Error & error)
-    {
-        FATAL(error.message);
-    }
+    poll();
 }

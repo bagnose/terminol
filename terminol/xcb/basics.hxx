@@ -4,6 +4,7 @@
 #ifndef XCB__BASICS__HXX
 #define XCB__BASICS__HXX
 
+#include "terminol/xcb/exception.hxx"
 #include "terminol/support/pattern.hxx"
 #include "terminol/common/bit_sets.hxx"
 
@@ -12,11 +13,6 @@
 #include <xcb/xcb.h>
 #include <xcb/xcb_ewmh.h>
 #include <xcb/xcb_keysyms.h>
-
-struct NotFoundError {      // FIXME Move to common location.
-    explicit NotFoundError(const std::string & message_) : message(message_) {}
-    std::string message;
-};
 
 class Basics : protected Uncopyable {
     std::string             _hostname;
@@ -55,12 +51,7 @@ class Basics : protected Uncopyable {
     uint8_t                 _maskModeSwitch;
 
 public:
-    struct Error {
-        explicit Error(const std::string & message_) : message(message_) {}
-        std::string message;
-    };
-
-    Basics() /*throw (Error)*/;
+    Basics();
     ~Basics();
 
     const std::string     & hostname()       const { return _hostname;        }
@@ -98,12 +89,11 @@ public:
     void                    updateRootPixmap();
 
 protected:
-    xcb_atom_t   lookupAtom(const std::string & name,
-                            bool create) /*throw (NotFoundError, Error)*/;
-    xcb_cursor_t loadNormalCursor() /*throw (Error)*/;
-    xcb_cursor_t loadInvisibleCursor() /*throw (Error)*/;
-    xcb_pixmap_t getRootPixmap(xcb_atom_t atom) /*throw (Error)*/;
-    void         determineMasks() /*throw (Error)*/;
+    xcb_atom_t   lookupAtom(const std::string & name, bool create);
+    xcb_cursor_t loadNormalCursor();
+    xcb_cursor_t loadInvisibleCursor();
+    xcb_pixmap_t getRootPixmap(xcb_atom_t atom);
+    void         determineMasks();
 };
 
 #endif // XCB__BASICS__HXX

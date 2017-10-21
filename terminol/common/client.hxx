@@ -12,21 +12,13 @@ class Client final : protected SocketClient::I_Observer {
     bool           _finished = false;
 
 public:
-    struct Error {
-        explicit Error(const std::string & message_) : message(message_) {}
-        std::string message;
-    };
-
     Client(I_Selector   & selector,
            const Config & config,
-           bool           shutdown) try :
+           bool           shutdown) :
         _socket(*this, selector, config.socketPath)
     {
         uint8_t byte = shutdown ? 0xFF : 0;
         _socket.send(&byte, 1);
-    }
-    catch (const SocketClient::Error & error) {
-        throw Error(error.message);
     }
 
     bool isFinished() const { return _finished; }

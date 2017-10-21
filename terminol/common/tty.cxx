@@ -24,22 +24,22 @@
 namespace {
 
 // TODO consolidate this function
-std::string nthToken(const std::string & str, size_t n) /*throw (ParseError)*/ {
+std::string nthToken(const std::string & str, size_t n) {
     ASSERT(n > 0, "n must be positive.");
 
     size_t i = 0;
     size_t j = 0;
 
     do {
-        if (j == std::string::npos) { throw ParseError(""); }
+        THROW_UNLESS(j != std::string::npos, ConversionError(""));
         i = str.find_first_not_of(" \t", j);
-        if (i == std::string::npos) { throw ParseError(""); }
+        THROW_UNLESS(i != std::string::npos, ConversionError(""));
         j = str.find_first_of(" \t", i);
         --n;
     } while (n != 0);
 
     if (j == std::string::npos) { j = str.size(); }
-    if (i == j) { throw ParseError(""); }
+    THROW_UNLESS(i != j, ConversionError(""));
 
     return str.substr(i, j - i);
 }
@@ -52,7 +52,7 @@ Tty::Tty(I_Observer        & observer,
          uint16_t            rows,
          uint16_t            cols,
          const std::string & windowId,
-         const Command     & command) /*throw (Error)*/ :
+         const Command     & command) :
     _observer(observer),
     _selector(selector),
     _config(config),
@@ -114,7 +114,7 @@ void Tty::resize(uint16_t rows, uint16_t cols) {
     ASSERT(_fd != -1, "PTY already closed.");
     ASSERT(_pid != 0, "Child already reaped.");
     const struct winsize winsize = { rows, cols, 0, 0 };
-    ENFORCE_SYS(::ioctl(_fd, TIOCSWINSZ, &winsize) != -1, "");
+    THROW_IF_SYSCALL_FAILS(::ioctl(_fd, TIOCSWINSZ, &winsize), "");
 }
 
 void Tty::write(const uint8_t * data, size_t size) {
@@ -146,7 +146,7 @@ void Tty::write(const uint8_t * data, size_t size) {
                     _dumpWrites = true;
                     goto done;
                 default:
-                    FATAL("Unexpected error: " << errno << " " << ::strerror(errno));
+                    THROW_SYSTEM_ERROR(errno, "write()");
             }
         }
         else if (rval == 0) {
@@ -173,8 +173,8 @@ bool Tty::hasSubprocess() const {
         auto pid = unstringify<pid_t>(nthToken(line, 8));
         return pid != _pid;
     }
-    catch (const ParseError & error) {
-        ERROR(error.message);
+    catch (const ConversionError & error) {
+        ERROR(error.what());
         return false;
     }
 }
@@ -202,40 +202,33 @@ void Tty::close() {
         _selector.removeReadable(_fd);
     }
 
-    ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(_fd)) != -1, "::close() failed");
+    THROW_IF_SYSCALL_FAILS(::close(_fd), "");
     _fd = -1;
 }
 
 void Tty::openPty(uint16_t            rows,
                   uint16_t            cols,
                   const std::string & windowId,
-                  const Command     & command) /*throw (Error)*/ {
+                  const Command     & command) {
     ASSERT(_fd == -1, "");
 
     int master, slave;
     struct winsize winsize = { rows, cols, 0, 0 };
 
-    if (::openpty(&master, &slave, nullptr, nullptr, &winsize) == -1) {
-        throw Error("openpty() failed.");
-    }
-
+    THROW_IF_SYSCALL_FAILS(::openpty(&master, &slave, nullptr, nullptr, &winsize), "openpty() failed");
     ScopeGuard guard([&]() {
                          TEMP_FAILURE_RETRY(::close(master));
                          TEMP_FAILURE_RETRY(::close(slave));
                      });
 
-    _pid = ::fork();
-
-    if (_pid == -1) {
-        throw Error("fork() failed.");
-    }
+    _pid = THROW_IF_SYSCALL_FAILS(::fork(), "fork() failed");
 
     guard.dismiss();
 
     if (_pid != 0) {
         // Parent code-path.
 
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(slave)) != -1, "");
+        THROW_IF_SYSCALL_FAILS(::close(slave), "");
 
         // Set non-blocking.
         fdNonBlock(master);
@@ -249,21 +242,21 @@ void Tty::openPty(uint16_t            rows,
         // Child code-path.
 
         // Create a new process group.
-        ENFORCE_SYS(::setsid() != -1, "");      // No EINTR.
+        THROW_IF_SYSCALL_FAILS(::setsid(), "");
 
         // Hook stdin/out/err up to the PTY.
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(STDIN_FILENO)) != -1, "");
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::fcntl(slave, F_DUPFD, STDIN_FILENO)) != -1, "");
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(STDOUT_FILENO)) != -1, "");
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::fcntl(slave, F_DUPFD, STDOUT_FILENO)) != -1, "");
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(STDERR_FILENO)) != -1, "");
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::fcntl(slave, F_DUPFD, STDERR_FILENO)) != -1, "");
+        THROW_IF_SYSCALL_FAILS(::close(STDIN_FILENO), "");
+        THROW_IF_SYSCALL_FAILS(::fcntl(slave, F_DUPFD, STDIN_FILENO), "");
+        THROW_IF_SYSCALL_FAILS(::close(STDOUT_FILENO), "");
+        THROW_IF_SYSCALL_FAILS(::fcntl(slave, F_DUPFD, STDOUT_FILENO), "");
+        THROW_IF_SYSCALL_FAILS(::close(STDERR_FILENO), "");
+        THROW_IF_SYSCALL_FAILS(::fcntl(slave, F_DUPFD, STDERR_FILENO), "");
 
         // Acquire controlling TTY.
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::ioctl(slave, TIOCSCTTY, nullptr)) != -1, "");
+        THROW_IF_SYSCALL_FAILS(::ioctl(slave, TIOCSCTTY, nullptr), "");
 
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(slave)) != -1, "");
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(master)) != -1, "");
+        THROW_IF_SYSCALL_FAILS(::close(slave), "");
+        THROW_IF_SYSCALL_FAILS(::close(master), "");
 
         execShell(windowId, command);
     }
@@ -324,11 +317,11 @@ bool Tty::pollReap(int msec, int & status) {
     ASSERT(msec >= 0, "");
 
     for (;;) {
-        int  stat;
-        auto pid = TEMP_FAILURE_RETRY(::waitpid(_pid, &stat, WNOHANG));
-        ENFORCE_SYS(pid != -1, "::waitpid() failed.");
+        int   stat;
+        pid_t pid;
+        pid = THROW_IF_SYSCALL_FAILS(::waitpid(_pid, &stat, WNOHANG), "waitpid()");
         if (pid != 0) {
-            ASSERT(pid == _pid, "pid mismatch.");
+            ASSERT(pid == _pid, "pid mismatch");
             _pid = 0;
             status = WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
             return true;
@@ -348,10 +341,10 @@ bool Tty::pollReap(int msec, int & status) {
 int Tty::waitReap() {
     ASSERT(_pid != 0, "");
 
-    int stat;
-    auto pid = TEMP_FAILURE_RETRY(::waitpid(_pid, &stat, 0));
-    ENFORCE_SYS(pid != -1, "::waitpid() failed.");
-    ASSERT(pid == _pid, "pid mismatch.");
+    int  stat;
+    pid_t pid;
+    pid = THROW_IF_SYSCALL_FAILS(::waitpid(_pid, &stat, 0), "waitpid()");
+    ASSERT(pid == _pid, "pid mismatch");
     _pid = 0;
     return WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
 }
@@ -391,7 +384,7 @@ void Tty::handleRead(int fd) {
                     close();
                     goto done;
                 default:
-                    FATAL("Unexpected error: " << errno << " " << ::strerror(errno));
+                    THROW_SYSTEM_ERROR(errno, "read()");
             }
         }
         else if (rval == 0) {

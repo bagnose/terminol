@@ -17,7 +17,7 @@ public:
     }
 
 protected:
-    void expose(xcb_expose_event_t * UNUSED(event)) noexcept override {
+    void expose(xcb_expose_event_t * UNUSED(event)) override {
         PRINT("Expose");
     }
 };
@@ -25,28 +25,15 @@ protected:
 int main(int, char *[]) {
     Config config;
 
-    try {
-        parseConfig(config);
-    }
-    catch (const ParseError & error) {
-        FATAL(error.message);
-    }
+    parseConfig(config);
 
-    try {
-        Basics     basics;
-        ColorSet   color_set(config, basics);
-        Selector   selector;
-        Dispatcher dispatcher(selector, basics.connection());
-        MyWidget   widget(dispatcher, basics, color_set);
+    Basics     basics;
+    ColorSet   color_set(config, basics);
+    Selector   selector;
+    Dispatcher dispatcher(selector, basics.connection());
+    MyWidget   widget(dispatcher, basics, color_set);
 
-        for (;;) {
-            selector.animate();
-        }
-    }
-    catch (const Widget::Error & error) {
-        FATAL(error.message);
-    }
-    catch (const Basics::Error & error) {
-        FATAL(error.message);
+    for (;;) {
+        selector.animate();
     }
 }

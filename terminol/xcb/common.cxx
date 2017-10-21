@@ -77,14 +77,14 @@ std::string stringifyError(xcb_generic_error_t * error) {
     std::ostringstream ost;
 
 #if 0
-     typedef struct {
-    uint8_t   response_type;  /**< Type of the response */
-    uint8_t   error_code;     /**< Error code */
+typedef struct {
+    uint8_t  response_type;  /**< Type of the response */
+    uint8_t  error_code;     /**< Error code */
     uint16_t sequence;       /**< Sequence number */
-    uint32_t resource_id;     /** < Resource ID for requests with side effects only */
-    uint16_t minor_code;      /** < Minor opcode of the failed request */
-    uint8_t major_code;       /** < Major opcode of the failed request */
-    uint8_t pad0;
+    uint32_t resource_id;    /** < Resource ID for requests with side effects only */
+    uint16_t minor_code;     /** < Minor opcode of the failed request */
+    uint8_t  major_code;     /** < Major opcode of the failed request */
+    uint8_t  pad0;
     uint32_t pad[5];         /**< Padding */
     uint32_t full_sequence;  /**< full sequence */
 } xcb_generic_error_t;

@@ -5,6 +5,7 @@
 #define SUPPORT__SELECTOR__HXX
 
 #include "terminol/support/debug.hxx"
+#include "terminol/support/exception.hxx"
 
 #include <map>
 #include <chrono>
@@ -114,14 +115,11 @@ public:
             tv.tv_sec  = duration.count() / A_MILLION;
             tv.tv_usec = duration.count() % A_MILLION;
 
-            n = TEMP_FAILURE_RETRY(::select(max + 1, &readFds, &writeFds, nullptr, &tv));
+            n = THROW_IF_SYSCALL_FAILS(::select(max + 1, &readFds, &writeFds, nullptr, &tv), "select()");
         }
         else {
-            n = TEMP_FAILURE_RETRY(::select(max + 1, &readFds, &writeFds, nullptr, nullptr));
-            ENFORCE_SYS(n != 0, "");
+            n = THROW_IF_SYSCALL_FAILS(::select(max + 1, &readFds, &writeFds, nullptr, nullptr), "select()");
         }
-
-        ENFORCE_SYS(n != -1, "");
 
         if (n == 0) {
             ASSERT(!_timeoutRegs.empty(), "");
@@ -247,11 +245,11 @@ class EPollSelector final : public I_Selector {
 
 public:
     EPollSelector() {
-        _fd = ::epoll_create1(EPOLL_CLOEXEC);
+        _fd = THROW_IF_SYSCALL_FAILS(::epoll_create1(EPOLL_CLOEXEC), "");
     }
 
     ~EPollSelector() {
-        ENFORCE_SYS(::close(_fd) != -1, "");
+        TEMP_FAILURE_RETRY(::close(_fd));
     }
 
     void animate() {
@@ -269,14 +267,11 @@ public:
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(next - now);
             auto timeout  = duration.count();
 
-            n = TEMP_FAILURE_RETRY(::epoll_wait(_fd, event_array, MAX_EVENTS, timeout));
+            n = THROW_IF_SYSCALL_FAILS(::epoll_wait(_fd, event_array, MAX_EVENTS, timeout), "epoll_wait()");
         }
         else {
-            n = TEMP_FAILURE_RETRY(::epoll_wait(_fd, event_array, MAX_EVENTS, -1));
-            ENFORCE_SYS(n != 0, "");
+            n = THROW_IF_SYSCALL_FAILS(::epoll_wait(_fd, event_array, MAX_EVENTS, -1), "epoll_wait()");
         }
-
-        ENFORCE_SYS(n != -1, "");
 
         if (n == 0) {
             ASSERT(!_timeoutRegs.empty(), "");
@@ -335,11 +330,11 @@ public:
 
         if (_writeRegs.find(fd) == _writeRegs.end()) {
             event.events = EPOLLIN;
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_ADD, fd, &event) != -1, "");     // epoll_ctl() doesn't raise EINTR.
+            THROW_IF_SYSCALL_FAILS(::epoll_ctl(_fd, EPOLL_CTL_ADD, fd, &event), "epoll_ctl()");
         }
         else {
             event.events = EPOLLIN | EPOLLOUT;
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");     // epoll_ctl() doesn't raise EINTR.
+            THROW_IF_SYSCALL_FAILS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event), "epoll_ctl()");
         }
 
         _readRegs.insert(std::make_pair(fd, handler));
@@ -350,14 +345,14 @@ public:
         ASSERT(iter != _readRegs.end(), "");
 
         if (_writeRegs.find(fd) == _writeRegs.end()) {
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_DEL, fd, nullptr) != -1, "");        // epoll_ctl() doesn't raise EINTR.
+            THROW_IF_SYSCALL_FAILS(::epoll_ctl(_fd, EPOLL_CTL_DEL, fd, nullptr), "epoll_ctl()");
         }
         else {
             struct epoll_event event;
             std::memset(&event, 0, sizeof event);
             event.events = EPOLLOUT;
             event.data.fd = fd;
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");     // epoll_ctl() doesn't raise EINTR.
+            THROW_IF_SYSCALL_FAILS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event), "epoll_ctl()");
         }
 
         _readRegs.erase(iter);
@@ -372,11 +367,11 @@ public:
 
         if (_readRegs.find(fd) == _readRegs.end()) {
             event.events = EPOLLOUT;
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_ADD, fd, &event) != -1, "");     // epoll_ctl() doesn't raise EINTR.
+            THROW_IF_SYSCALL_FAILS(::epoll_ctl(_fd, EPOLL_CTL_ADD, fd, &event), "");
         }
         else {
             event.events = EPOLLIN | EPOLLOUT;
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");     // epoll_ctl() doesn't raise EINTR.
+            THROW_IF_SYSCALL_FAILS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event), "");
         }
 
         _writeRegs.insert(std::make_pair(fd, handler));
@@ -387,14 +382,14 @@ public:
         ASSERT(iter != _writeRegs.end(), "");
 
         if (_readRegs.find(fd) == _readRegs.end()) {
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_DEL, fd, nullptr) != -1, "");        // epoll_ctl() doesn't raise EINTR.
+            THROW_IF_SYSCALL_FAILS(::epoll_ctl(_fd, EPOLL_CTL_DEL, fd, nullptr), "");
         }
         else {
             struct epoll_event event;
             std::memset(&event, 0, sizeof event);
             event.events = EPOLLIN;
             event.data.fd = fd;
-            ENFORCE_SYS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event) != -1, "");     // epoll_ctl() doesn't raise EINTR.
+            THROW_IF_SYSCALL_FAILS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event), "");
         }
 
         _writeRegs.erase(iter);

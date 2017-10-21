@@ -5,7 +5,7 @@
 #include "terminol/support/conv.hxx"
 #include "terminol/support/debug.hxx"
 
-int main() try {
+int main() {
     auto strCol = "#3142BD";
     auto color = unstringify<Color>(strCol);
     ENFORCE(color.r == 0x31, "Red is wrong.");
@@ -15,7 +15,4 @@ int main() try {
     ENFORCE(strCol == strCol2, "Strings don't match: " << strCol << " vs " << strCol2);
 
     return 0;
-}
-catch (const ParseError & error) {
-    FATAL(error.message);
 }

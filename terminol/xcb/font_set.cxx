@@ -16,18 +16,13 @@ FontSet::FontSet(const Config & config,
     ASSERT(size > 0, "");
     auto & name = _config.fontName;
 
-    try {
-        _normal = load(name, size, true, false, false);
-    }
-    catch (const Error &) {
-        FATAL("Master font should always load.");
-    }
+    _normal = load(name, size, true, false, false);
     ScopeGuard normalGuard([&]() { unload(_normal); });
 
     try {
         _bold = load(name, size, false, true, false);
     }
-    catch (const Error &) {
+    catch (const Exception &) {
         std::cerr << "Using non-bold font" << std::endl;
         _bold = pango_font_description_copy(_normal);
     }
@@ -36,7 +31,7 @@ FontSet::FontSet(const Config & config,
     try {
         _italic = load(name, size, false, false, true);
     }
-    catch (const Error &) {
+    catch (const Exception &) {
         std::cerr << "Using non-italic font" << std::endl;
         _italic = pango_font_description_copy(_normal);
     }
@@ -45,12 +40,12 @@ FontSet::FontSet(const Config & config,
     try {
         _italicBold = load(name, size, false, true, true);
     }
-    catch (const Error &) {
+    catch (const Exception &) {
         std::cerr << "Note, trying non-bold, italic font" << std::endl;
         try {
             _italicBold = load(name, size, false, false, true);
         }
-        catch (const Error &) {
+        catch (const Exception &) {
             std::cerr << "Using trying non-bold, non-italic font" << std::endl;
             _italicBold = pango_font_description_copy(_normal);
         }
@@ -75,7 +70,7 @@ PangoFontDescription * FontSet::load(const std::string & family,
                                      int                 size,
                                      bool                master,
                                      bool                bold,
-                                     bool                italic) /*throw (Error)*/ {
+                                     bool                italic) {
 #if 0
     {
         PangoFontMap * fontmap = pango_cairo_font_map_get_default();
@@ -126,11 +121,9 @@ PangoFontDescription * FontSet::load(const std::string & family,
     else if (_width != width || _height != height) {
         // A non-master (subsequent) font doesn't conform with the
         // master font's metrics.
-        std::ostringstream ost;
-        ost << "Size mismatch: "
-            << (bold ? "bold" : "") << " "
-            << (italic ? "italic" : "");
-        throw Error(ost.str());
+        THROW(GenericError(stringify("Size mismatch: ",
+                                     (bold ? "bold" : ""), " ",
+                                     (italic ? "italic" : ""))));
     }
 
     descGuard.dismiss();

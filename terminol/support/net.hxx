@@ -7,6 +7,7 @@
 #include "terminol/support/selector.hxx"
 #include "terminol/support/debug.hxx"
 #include "terminol/support/sys.hxx"
+#include "terminol/support/pattern.hxx"
 
 #include <set>
 #include <deque>
@@ -37,20 +38,15 @@ private:
     std::set<int>   _connections;
 
 public:
-    struct Error {
-        explicit Error(const std::string & message_) : message(message_) {}
-        std::string message;
-    };
-
     SocketServer(I_Observer        & observer,
                  I_Selector        & selector,
-                 const std::string & path) /*throw (Error)*/ :
+                 const std::string & path) :
         _observer(observer),
         _selector(selector),
         _path(path)
     {
-        _fd = ::socket(PF_UNIX, SOCK_SEQPACKET, 0);     // socket() doesn't raise EINTR.
-        ENFORCE_SYS(_fd != -1, "Failed to create socket.");
+        _fd = THROW_IF_SYSCALL_FAILS(::socket(PF_UNIX, SOCK_SEQPACKET, 0), "socket()");
+        ScopeGuard fdGuard([this] () { TEMP_FAILURE_RETRY(::close(_fd)); });
 
         fdCloseExec(_fd);
 
@@ -64,35 +60,30 @@ public:
         ::snprintf(address.sun_path, sizeof address.sun_path, "%s", path.c_str());
 #endif
 
-        if (TEMP_FAILURE_RETRY(::bind(_fd, reinterpret_cast<struct sockaddr *>(&address),
-                                      sizeof(address))) == -1) {
-            ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(_fd)) != -1, "");
-            switch (errno) {
-                case EADDRINUSE:
-                    throw Error("Failed to bind to socket " + path + ": " + std::string(::strerror(errno)));
-                default:
-                    FATAL("");
-            }
-        }
-
-        ENFORCE_SYS(::listen(_fd, 5) != -1, "");        // listen() doesn't raise EINTR.
+        THROW_IF_SYSCALL_FAILS(::bind(_fd,
+                                      reinterpret_cast<struct sockaddr *>(&address),
+                                      sizeof(address)),
+                               "Failed to bind to socket " + path);
+        THROW_IF_SYSCALL_FAILS(::listen(_fd, 5), "");
 
         _selector.addReadable(_fd, this);
+
+        fdGuard.dismiss();
     }
 
     ~SocketServer() {
         for (auto con : _connections) {
             _selector.removeReadable(con);
-            ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(con)) != -1, "");
+            TEMP_FAILURE_RETRY(::close(con));
         }
 
         _selector.removeReadable(_fd);
-        ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(_fd)) != -1, "");
+        TEMP_FAILURE_RETRY(::close(_fd));
     }
 
     void disconnect(int id) {
         auto fd = id;
-        ENFORCE_SYS(::shutdown(fd, SHUT_RDWR) != -1, "");   // shutdown() doesn't raise EINTR.
+        THROW_IF_SYSCALL_FAILS(::shutdown(fd, SHUT_RDWR), "");
     }
 
 protected:
@@ -103,32 +94,29 @@ protected:
             struct sockaddr_un address;
             ::memset(&address, 0, sizeof address);
             socklen_t length = sizeof address;
-            auto conFd = TEMP_FAILURE_RETRY(::accept(fd, reinterpret_cast<struct sockaddr *>(&address),
-                                                     &length));
 
-            if (conFd == -1) {
-                ERROR("Failed to accept connection: " << strerror(errno));
-            }
-            else {
-                _selector.addReadable(conFd, this);
-                _connections.insert(conFd);
-                _observer.serverConnected(conFd);
-            }
+            // XXX Can't this fail if the client vanishes during the connect?
+            int conFd = THROW_IF_SYSCALL_FAILS(::accept(fd,
+                                                        reinterpret_cast<struct sockaddr *>(&address),
+                                                        &length),
+                                               "accept()");
+
+            _selector.addReadable(conFd, this);
+            _connections.insert(conFd);
+            _observer.serverConnected(conFd);
         }
         else {
             uint8_t buf[BUFSIZ];
-            auto rval = TEMP_FAILURE_RETRY(::recv(fd, buf, sizeof buf, 0));
+            ssize_t rval = THROW_IF_SYSCALL_FAILS(::recv(fd, buf, sizeof buf, 0), "recv()");
 
-            if (rval == -1) {
-                FATAL("Bad read.");
-            }
-            else if (rval == 0) {
+            if (rval == 0) {
                 _observer.serverDisconnected(fd);
                 _connections.erase(fd);
                 _selector.removeReadable(fd);
-                ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(fd)) != -1, "");
+                TEMP_FAILURE_RETRY(::close(fd));
             }
             else {
+                ASSERT(rval > 0, "");
                 _observer.serverReceived(fd, buf, rval);
             }
         }
@@ -157,19 +145,14 @@ private:
     std::vector<uint8_t>   _queue;
 
 public:
-    struct Error {
-        explicit Error(const std::string & message_) : message(message_) {}
-        std::string message;
-    };
-
     SocketClient(I_Observer        & observer,
                  I_Selector        & selector,
-                 const std::string & path) /*throw (Error)*/ :
+                 const std::string & path) :
         _observer(observer),
         _selector(selector)
     {
-        _fd = ::socket(PF_UNIX, SOCK_SEQPACKET, 0);     // socket() doesn't raise EINTR.
-        ENFORCE_SYS(_fd != -1, "Failed to create socket.");
+        _fd = THROW_IF_SYSCALL_FAILS(::socket(PF_UNIX, SOCK_SEQPACKET, 0), "socket()");
+        ScopeGuard fdGuard([this] () { TEMP_FAILURE_RETRY(::close(_fd)); });
 
         fdCloseExec(_fd);
         fdNonBlock(_fd);
@@ -184,17 +167,14 @@ public:
         ::snprintf(address.sun_path, sizeof address.sun_path, "%s", path.c_str());
 #endif
 
-        if (TEMP_FAILURE_RETRY(::connect(_fd, reinterpret_cast<struct sockaddr *>(&address),
-                                         sizeof(address))) == -1) {
-            ENFORCE_SYS(TEMP_FAILURE_RETRY(::close(_fd)) != -1, "");
-            switch (errno) {
-                case ECONNREFUSED:
-                case EAGAIN:
-                    throw Error("Failed to connect to socket " + path + ": " + std::string(::strerror(errno)));
-                default:
-                    FATAL("");
-            }
-        }
+        // XXX Isn't it possible that we'll get EINPROGRESS ?
+
+        THROW_IF_SYSCALL_FAILS(::connect(_fd,
+                                         reinterpret_cast<struct sockaddr *>(&address),
+                                         sizeof(address)),
+                               "Failed to connect to socket " + path);
+
+        fdGuard.dismiss();
     }
 
     ~SocketClient() {
@@ -220,7 +200,9 @@ protected:
     void handleWrite(int fd) override {
         ASSERT(fd == _fd, "");
         ASSERT(!_queue.empty(), "");
-        auto rval = TEMP_FAILURE_RETRY(::send(fd, &_queue.front(), _queue.size(), MSG_NOSIGNAL));
+
+        ssize_t rval = THROW_IF_SYSCALL_FAILS(::send(fd, &_queue.front(), _queue.size(), MSG_NOSIGNAL),
+                                              "send()");
 
         _queue.erase(_queue.begin(), _queue.begin() + rval);
 

@@ -19,26 +19,26 @@ public:
     public:
         // For the convenience of the subclasses, these virtual methods
         // are not declared abstract.
-        virtual void keyPress(xcb_key_press_event_t * UNUSED(event)) noexcept {}
-        virtual void keyRelease(xcb_key_release_event_t * UNUSED(event)) noexcept {}
-        virtual void buttonPress(xcb_button_press_event_t * UNUSED(event)) noexcept {}
-        virtual void buttonRelease(xcb_button_release_event_t * UNUSED(event)) noexcept {}
-        virtual void motionNotify(xcb_motion_notify_event_t * UNUSED(event)) noexcept {}
-        virtual void mapNotify(xcb_map_notify_event_t * UNUSED(event)) noexcept {}
-        virtual void unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) noexcept {}
-        virtual void expose(xcb_expose_event_t * UNUSED(event)) noexcept {}
-        virtual void configureNotify(xcb_configure_notify_event_t * UNUSED(event)) noexcept {}
-        virtual void focusIn(xcb_focus_in_event_t * UNUSED(event)) noexcept {}
-        virtual void focusOut(xcb_focus_out_event_t * UNUSED(event)) noexcept {}
-        virtual void enterNotify(xcb_enter_notify_event_t * UNUSED(event)) noexcept {}
-        virtual void leaveNotify(xcb_leave_notify_event_t * UNUSED(event)) noexcept {}
-        virtual void destroyNotify(xcb_destroy_notify_event_t * UNUSED(event)) noexcept {}
-        virtual void selectionClear(xcb_selection_clear_event_t * UNUSED(event)) noexcept {}
-        virtual void selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) noexcept {}
-        virtual void selectionRequest(xcb_selection_request_event_t * UNUSED(event)) noexcept {}
-        virtual void clientMessage(xcb_client_message_event_t * UNUSED(event)) noexcept {}
-        virtual void propertyNotify(xcb_property_notify_event_t * UNUSED(event)) noexcept {}
-        virtual void reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) noexcept {}
+        virtual void keyPress(xcb_key_press_event_t * UNUSED(event)) {}
+        virtual void keyRelease(xcb_key_release_event_t * UNUSED(event)) {}
+        virtual void buttonPress(xcb_button_press_event_t * UNUSED(event)) {}
+        virtual void buttonRelease(xcb_button_release_event_t * UNUSED(event)) {}
+        virtual void motionNotify(xcb_motion_notify_event_t * UNUSED(event)) {}
+        virtual void mapNotify(xcb_map_notify_event_t * UNUSED(event)) {}
+        virtual void unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {}
+        virtual void expose(xcb_expose_event_t * UNUSED(event)) {}
+        virtual void configureNotify(xcb_configure_notify_event_t * UNUSED(event)) {}
+        virtual void focusIn(xcb_focus_in_event_t * UNUSED(event)) {}
+        virtual void focusOut(xcb_focus_out_event_t * UNUSED(event)) {}
+        virtual void enterNotify(xcb_enter_notify_event_t * UNUSED(event)) {}
+        virtual void leaveNotify(xcb_leave_notify_event_t * UNUSED(event)) {}
+        virtual void destroyNotify(xcb_destroy_notify_event_t * UNUSED(event)) {}
+        virtual void selectionClear(xcb_selection_clear_event_t * UNUSED(event)) {}
+        virtual void selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {}
+        virtual void selectionRequest(xcb_selection_request_event_t * UNUSED(event)) {}
+        virtual void clientMessage(xcb_client_message_event_t * UNUSED(event)) {}
+        virtual void propertyNotify(xcb_property_notify_event_t * UNUSED(event)) {}
+        virtual void reparentNotify(xcb_reparent_notify_event_t * UNUSED(event)) {}
 
     protected:
         ~I_Observer() = default;
@@ -60,11 +60,6 @@ class Dispatcher final :
     protected I_Selector::I_ReadHandler
 {
 public:
-    struct Error {
-        explicit Error(const std::string & message_) : message(message_) {}
-        std::string message;
-    };
-
     Dispatcher(I_Selector & selector, xcb_connection_t * connection) :
         _selector(selector),
         _connection(connection)
@@ -89,9 +84,9 @@ public:
     // This method is public so that X events can be processed in the
     // absence of the file descriptor becoming readable. Why the descriptor
     // doesn't become readable is a mystery to me.
-    void poll () /*throw (Error)*/;
+    void poll();
 
-    void wait(uint8_t event_type) /*throw (Error)*/;
+    void wait(uint8_t event_type);
 
 protected:
 

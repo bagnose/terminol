@@ -107,13 +107,8 @@ void writeRandomBytes(std::ostream & ost) {
 
 int main(int argc, char * argv[]) {
     if (argc > 1) {
-        try {
-            auto seed = unstringify<int>(argv[1]);
-            ::srandom(seed);
-        }
-        catch (const ParseError & error) {
-            FATAL("Bad seed: " << error.message);
-        }
+        auto seed = unstringify<int>(argv[1]);
+        ::srandom(seed);
     }
 
     for (;;) {
