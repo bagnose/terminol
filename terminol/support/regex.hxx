@@ -31,7 +31,6 @@ public:
     };
 
     explicit Regex(const std::string & pattern, int maxMatches = 10) /*throw (Error)*/ :
-        _pcre(nullptr),
         _maxMatches(maxMatches)
     {
         const char * err       = nullptr;

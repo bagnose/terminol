@@ -18,7 +18,7 @@ class DedupeRepository final : public I_Repository {
 
     mutable std::mutex                   _mutex;
     std::unordered_map<Tag, DedupeEntry> _entries;
-    size_t                               _totalRefs;
+    size_t                               _totalRefs = 0;
 
 public:
     DedupeRepository();

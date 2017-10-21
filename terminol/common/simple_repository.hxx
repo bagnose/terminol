@@ -11,7 +11,7 @@
 
 class SimpleRepository final : public I_Repository {
     mutable std::mutex             _mutex;
-    Tag                            _nextTag;
+    Tag                            _nextTag = 0;
     std::unordered_map<Tag, Entry> _entries;
 
 public:

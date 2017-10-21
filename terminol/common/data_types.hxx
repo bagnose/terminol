@@ -49,7 +49,7 @@ struct UColor {
         uint8_t index;      // 1 byte
         Color   values;     // 3 bytes
 
-        uint8_t _init[3];
+        uint8_t _init[3] = {0, 0, 0};
     };
 
     static UColor stock(Name name) {
@@ -73,7 +73,7 @@ struct UColor {
     }
 
 private:
-    explicit UColor(Type type_) : type(type_), _init{0, 0, 0} {}
+    explicit UColor(Type type_) : type(type_) {}
 };
 
 static_assert(sizeof(UColor) == 4, "UColor should be 4 bytes.");

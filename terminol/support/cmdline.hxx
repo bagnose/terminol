@@ -37,15 +37,14 @@ private:
             handler(handler_),
             shortOpt(shortOpt_),
             longOpt(longOpt_),
-            mandatory(mandatory_),
-            serviced(false)
+            mandatory(mandatory_)
         {}
 
         Handler     * handler;
         char          shortOpt;
         std::string   longOpt;
         bool          mandatory;
-        bool          serviced;
+        bool          serviced = false;
     };
 
     std::string                      _help;

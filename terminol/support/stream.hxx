@@ -39,11 +39,10 @@ struct EndOfFile : StreamError {};
 
 class InMemoryStream final : public InStream {
     const std::vector<uint8_t> & _buffer;
-    size_t                       _index;
+    size_t                       _index = 0;
 
 public:
-    InMemoryStream(const std::vector<uint8_t> & buffer) :
-        _buffer(buffer), _index(0) {}
+    explicit InMemoryStream(const std::vector<uint8_t> & buffer) : _buffer(buffer) {}
 
     void readAll(void * data,
                  size_t item_size,

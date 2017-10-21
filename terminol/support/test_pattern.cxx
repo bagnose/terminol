@@ -5,7 +5,7 @@ namespace {
 
 class Movable : private Uncopyable {
 public:
-    Movable() noexcept : _formed(true) {}
+    Movable() noexcept = default;
 
     Movable(Movable && other) noexcept : _formed(other._formed) {
         other._formed = false;
@@ -22,7 +22,7 @@ public:
     bool formed() const noexcept { return _formed; }
 
 private:
-    bool _formed;
+    bool _formed = true;
 };
 
 void test_move_construct(Test & test) {

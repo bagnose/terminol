@@ -5,7 +5,7 @@
 #include "terminol/support/rle.hxx"
 #include "terminol/support/hash.hxx"
 
-DedupeRepository::DedupeRepository() : _totalRefs(0) {}
+DedupeRepository::DedupeRepository() {}
 
 auto DedupeRepository::store(const Entry & entry) -> Tag {
     auto bytes = encode(entry);

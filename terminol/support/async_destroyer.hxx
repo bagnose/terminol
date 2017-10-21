@@ -12,7 +12,7 @@
 
 class AsyncDestroyer final : public I_Destroyer, private Uncopyable {
 public:
-    AsyncDestroyer() : _queue(), _thread(&AsyncDestroyer::background, this) {}
+    AsyncDestroyer() : _thread(&AsyncDestroyer::background, this) {}
 
     ~AsyncDestroyer() {
         _queue.finalise();

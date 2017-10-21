@@ -6,14 +6,12 @@
 
 class TestServer final : protected SocketServer::I_Observer {
     SocketServer   _socket;
-    size_t         _count;
+    size_t         _count = 0;
 
 public:
     TestServer(I_Selector & selector, const std::string & path) :
-        _socket(*this, selector, path), _count(0) {}
-
-    ~TestServer() {
-    }
+        _socket(*this, selector, path)
+    {}
 
     size_t getCount() const { return _count; }
 
