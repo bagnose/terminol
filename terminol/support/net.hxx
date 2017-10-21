@@ -107,8 +107,6 @@ protected:
                                                      &length));
 
             if (conFd == -1) {
-                fdCloseExec(conFd);
-
                 ERROR("Failed to accept connection: " << strerror(errno));
             }
             else {
