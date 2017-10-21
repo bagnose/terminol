@@ -32,6 +32,10 @@ class ScopeGuard : private Uncopyable {
 public:
     explicit ScopeGuard(Function function) : _function(std::move(function)) { ASSERT(_function, ""); }
 
+    ScopeGuard(ScopeGuard && scope_guard) noexcept :
+        _function(std::exchange(scope_guard._function, nullptr))
+    {}
+
     ~ScopeGuard() {
         if (_function) { _function(); }
     }
