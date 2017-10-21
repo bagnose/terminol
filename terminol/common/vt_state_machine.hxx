@@ -27,7 +27,7 @@ public:
     };
 
 private:
-    enum State : uint8_t {
+    enum class State : uint8_t {
         GROUND,
         ESCAPE,
         ESCAPE_INTERMEDIATE,

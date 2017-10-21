@@ -40,46 +40,46 @@ void VtStateMachine::consume(utf8::Seq seq, utf8::Length length) {
     }
 
     switch (_state) {
-        case GROUND:
+        case State::GROUND:
             ground(seq, length);
             break;
-        case ESCAPE_INTERMEDIATE:
+        case State::ESCAPE_INTERMEDIATE:
             escapeIntermediate(seq, length);
             break;
-        case ESCAPE:
+        case State::ESCAPE:
             escape(seq, length);
             break;
-        case SOS_PM_APC_STRING:
+        case State::SOS_PM_APC_STRING:
             sosPmApcString(seq, length);
             break;
-        case CSI_ENTRY:
+        case State::CSI_ENTRY:
             csiEntry(seq, length);
             break;
-        case CSI_PARAM:
+        case State::CSI_PARAM:
             csiParam(seq, length);
             break;
-        case CSI_IGNORE:
+        case State::CSI_IGNORE:
             csiIgnore(seq, length);
             break;
-        case CSI_INTERMEDIATE:
+        case State::CSI_INTERMEDIATE:
             csiIntermediate(seq, length);
             break;
-        case OSC_STRING:
+        case State::OSC_STRING:
             oscString(seq, length);
             break;
-        case DCS_ENTRY:
+        case State::DCS_ENTRY:
             dcsEntry(seq, length);
             break;
-        case DCS_PARAM:
+        case State::DCS_PARAM:
             dcsParam(seq, length);
             break;
-        case DCS_IGNORE:
+        case State::DCS_IGNORE:
             dcsIgnore(seq, length);
             break;
-        case DCS_INTERMEDIATE:
+        case State::DCS_INTERMEDIATE:
             dcsIntermediate(seq, length);
             break;
-        case DCS_PASSTHROUGH:
+        case State::DCS_PASSTHROUGH:
             dcsPassthrough(seq, length);
             break;
     }
