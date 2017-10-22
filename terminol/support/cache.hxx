@@ -18,6 +18,7 @@ class Cache : protected Uncopyable {
         Link * next;
 
         Link() noexcept : prev(this), next(this) {}
+        Link(Link && UNUSED(link)) noexcept : prev(this), next(this) {}
         Link(const Link & UNUSED(link)) noexcept : prev(this), next(this) {}
 
         // After this call, link->next==this
@@ -225,6 +226,7 @@ public:
     }
 
     Cache() = default;
+    Cache(Cache &&) noexcept = default;
 
     iterator insert(const Key & key, T && t) {
         auto pair = _map.emplace(key, Entry(t));
