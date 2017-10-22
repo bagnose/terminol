@@ -74,7 +74,7 @@ public:
     // I_Dispatcher overrides:
 
     void add (xcb_window_t window, I_Observer * observer) override {
-        _observers.insert(std::make_pair(window, observer));
+        _observers.insert({window, observer});
     }
 
     void remove (xcb_window_t window) override {

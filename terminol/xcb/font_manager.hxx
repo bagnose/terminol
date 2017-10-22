@@ -53,7 +53,7 @@ public:
 
         auto size = std::max(1, _config.fontSize + _delta);
 
-        _clients.insert(std::make_pair(client, size));
+        _clients.insert({client, size});
         auto iter = _fontSets.find(size);
         if (iter == _fontSets.end()) {
             iter = _fontSets.insert({size, std::make_unique<FontSet>(_config, _basics, size)}).first;

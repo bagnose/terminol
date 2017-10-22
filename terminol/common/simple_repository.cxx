@@ -9,7 +9,7 @@ auto SimpleRepository::store(const Entry & entry) -> Tag {
     std::unique_lock<std::mutex> lock(_mutex);
 
     for (;;) {
-        auto pair = _entries.insert(std::make_pair(_nextTag, entry));
+        auto pair = _entries.insert({_nextTag, entry});
 
         if (pair.second) {
             return _nextTag++;

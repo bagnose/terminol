@@ -166,7 +166,7 @@ public:
 
     void addReadable(int fd, I_ReadHandler * handler) {
         ASSERT(_readRegs.find(fd) == _readRegs.end(), "");
-        _readRegs.insert(std::make_pair(fd, handler));
+        _readRegs.insert({fd, handler});
     }
 
     void removeReadable(int fd) {
@@ -177,7 +177,7 @@ public:
 
     void addWriteable(int fd, I_WriteHandler * handler) {
         ASSERT(_writeRegs.find(fd) == _writeRegs.end(), "");
-        _writeRegs.insert(std::make_pair(fd, handler));
+        _writeRegs.insert({fd, handler});
     }
 
     void removeWriteable(int fd) {
@@ -337,7 +337,7 @@ public:
             THROW_IF_SYSCALL_FAILS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event), "epoll_ctl()");
         }
 
-        _readRegs.insert(std::make_pair(fd, handler));
+        _readRegs.insert({fd, handler});
     }
 
     void removeReadable(int fd) override {
@@ -374,7 +374,7 @@ public:
             THROW_IF_SYSCALL_FAILS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event), "");
         }
 
-        _writeRegs.insert(std::make_pair(fd, handler));
+        _writeRegs.insert({fd, handler});
     }
 
     void removeWriteable(int fd) override {

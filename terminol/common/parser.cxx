@@ -204,34 +204,34 @@ Parser::Parser(Config & config) : _config(config) {
     //
     //
 
-    _actions.insert(std::make_pair("search",               Action::SEARCH));
-    _actions.insert(std::make_pair("window-narrower",      Action::WINDOW_NARROWER));
-    _actions.insert(std::make_pair("window-wider",         Action::WINDOW_WIDER));
-    _actions.insert(std::make_pair("window-shorter",       Action::WINDOW_SHORTER));
-    _actions.insert(std::make_pair("window-taller",        Action::WINDOW_TALLER));
-    _actions.insert(std::make_pair("local-font-reset",     Action::LOCAL_FONT_RESET));
-    _actions.insert(std::make_pair("local-font-smaller",   Action::LOCAL_FONT_SMALLER));
-    _actions.insert(std::make_pair("local-font-bigger",    Action::LOCAL_FONT_BIGGER));
-    _actions.insert(std::make_pair("global-font-reset",    Action::GLOBAL_FONT_RESET));
-    _actions.insert(std::make_pair("global-font-smaller",  Action::GLOBAL_FONT_SMALLER));
-    _actions.insert(std::make_pair("global-font-bigger",   Action::GLOBAL_FONT_BIGGER));
-    _actions.insert(std::make_pair("copy-to-clipboard",    Action::COPY_TO_CLIPBOARD));
-    _actions.insert(std::make_pair("paste-from-clipboard", Action::PASTE_FROM_CLIPBOARD));
-    _actions.insert(std::make_pair("scroll-up-line",       Action::SCROLL_UP_LINE));
-    _actions.insert(std::make_pair("scroll-down-line",     Action::SCROLL_DOWN_LINE));
-    _actions.insert(std::make_pair("scroll-up-page",       Action::SCROLL_UP_PAGE));
-    _actions.insert(std::make_pair("scroll-down-page",     Action::SCROLL_DOWN_PAGE));
-    _actions.insert(std::make_pair("scroll-top",           Action::SCROLL_TOP));
-    _actions.insert(std::make_pair("scroll-bottom",        Action::SCROLL_BOTTOM));
-    _actions.insert(std::make_pair("clear-history",        Action::CLEAR_HISTORY));
-    _actions.insert(std::make_pair("debug-global-tags",    Action::DEBUG_GLOBAL_TAGS));
-    _actions.insert(std::make_pair("debug-local-tags",     Action::DEBUG_LOCAL_TAGS));
-    _actions.insert(std::make_pair("debug-history",        Action::DEBUG_HISTORY));
-    _actions.insert(std::make_pair("debug-active",         Action::DEBUG_ACTIVE));
-    _actions.insert(std::make_pair("debug-modes",          Action::DEBUG_MODES));
-    _actions.insert(std::make_pair("debug-selection",      Action::DEBUG_SELECTION));
-    _actions.insert(std::make_pair("debug-stats",          Action::DEBUG_STATS));
-    _actions.insert(std::make_pair("debug-stats2",         Action::DEBUG_STATS2));
+    _actions.insert({"search",               Action::SEARCH});
+    _actions.insert({"window-narrower",      Action::WINDOW_NARROWER});
+    _actions.insert({"window-wider",         Action::WINDOW_WIDER});
+    _actions.insert({"window-shorter",       Action::WINDOW_SHORTER});
+    _actions.insert({"window-taller",        Action::WINDOW_TALLER});
+    _actions.insert({"local-font-reset",     Action::LOCAL_FONT_RESET});
+    _actions.insert({"local-font-smaller",   Action::LOCAL_FONT_SMALLER});
+    _actions.insert({"local-font-bigger",    Action::LOCAL_FONT_BIGGER});
+    _actions.insert({"global-font-reset",    Action::GLOBAL_FONT_RESET});
+    _actions.insert({"global-font-smaller",  Action::GLOBAL_FONT_SMALLER});
+    _actions.insert({"global-font-bigger",   Action::GLOBAL_FONT_BIGGER});
+    _actions.insert({"copy-to-clipboard",    Action::COPY_TO_CLIPBOARD});
+    _actions.insert({"paste-from-clipboard", Action::PASTE_FROM_CLIPBOARD});
+    _actions.insert({"scroll-up-line",       Action::SCROLL_UP_LINE});
+    _actions.insert({"scroll-down-line",     Action::SCROLL_DOWN_LINE});
+    _actions.insert({"scroll-up-page",       Action::SCROLL_UP_PAGE});
+    _actions.insert({"scroll-down-page",     Action::SCROLL_DOWN_PAGE});
+    _actions.insert({"scroll-top",           Action::SCROLL_TOP});
+    _actions.insert({"scroll-bottom",        Action::SCROLL_BOTTOM});
+    _actions.insert({"clear-history",        Action::CLEAR_HISTORY});
+    _actions.insert({"debug-global-tags",    Action::DEBUG_GLOBAL_TAGS});
+    _actions.insert({"debug-local-tags",     Action::DEBUG_LOCAL_TAGS});
+    _actions.insert({"debug-history",        Action::DEBUG_HISTORY});
+    _actions.insert({"debug-active",         Action::DEBUG_ACTIVE});
+    _actions.insert({"debug-modes",          Action::DEBUG_MODES});
+    _actions.insert({"debug-selection",      Action::DEBUG_SELECTION});
+    _actions.insert({"debug-stats",          Action::DEBUG_STATS});
+    _actions.insert({"debug-stats2",         Action::DEBUG_STATS2});
 
     parse();
 }
@@ -352,7 +352,7 @@ void Parser::handleBindSym(const std::string & sym, const std::string & action) 
         }
         else {
             auto resolvedAction = iter->second;
-            _config.bindings.insert(std::make_pair(keyCombo, resolvedAction));
+            _config.bindings.insert({keyCombo, resolvedAction});
         }
     }
     else {

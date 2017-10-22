@@ -83,7 +83,7 @@ again:
     auto iter = _entries.find(tag);
 
     if (iter == _entries.end()) {
-        _entries.insert(std::make_pair(tag, Entry(cells.size(), std::move(bytes))));
+        _entries.insert({tag, Entry(cells.size(), std::move(bytes))});
     }
     else {
         auto & entry = iter->second;
