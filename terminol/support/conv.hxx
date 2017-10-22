@@ -28,7 +28,8 @@ struct ParseError {
     std::string message;
 };
 
-template <typename T> T clamp(T val, T min, T max) {
+template <typename T>
+T clamp(T val, T min, T max) {
     ASSERT(min <= max, "");
     if      (val < min) { return min; }
     else if (val > max) { return max; }
@@ -38,13 +39,15 @@ template <typename T> T clamp(T val, T min, T max) {
 std::optional<std::vector<std::string>> split(const std::string & line,
                                               const std::string & delim = "\t ") /*throw (ParseError)*/;
 
-template <typename T> std::string stringify(const T & t) {
+template <typename T>
+std::string stringify(const T & t) {
     std::ostringstream ost;
     ost << t;
     return ost.str();
 }
 
-template <typename T> T unstringify(const std::string & str) /*throw (ParseError)*/ {
+template <typename T>
+T unstringify(const std::string & str) /*throw (ParseError)*/ {
     std::istringstream ist(str + '\n');
     T t;
     ist >> t;
@@ -52,10 +55,13 @@ template <typename T> T unstringify(const std::string & str) /*throw (ParseError
     else { throw ParseError("Failed to unstringify: '" + str + "'"); }
 }
 
-template <> inline std::string unstringify<>(const std::string & str) /*throw (ParseError)*/ {
-    return str; }
+template <>
+inline std::string unstringify<>(const std::string & str) /*throw (ParseError)*/ {
+    return str;
+}
 
-template <> inline bool unstringify<>(const std::string & str) /*throw (ParseError)*/ {
+template <>
+inline bool unstringify<>(const std::string & str) /*throw (ParseError)*/ {
     if (str == "0" || str == "false" || str == "False") {
         return false;
     }
@@ -65,7 +71,8 @@ template <> inline bool unstringify<>(const std::string & str) /*throw (ParseErr
     else { throw ParseError("Failed to unstringify: " + str); }
 }
 
-template <typename T> std::string explicitSign(T t) {
+template <typename T>
+std::string explicitSign(T t) {
     std::ostringstream ost;
     if (t < 0) { ost << '-'; }
     else       { ost << '+'; }
@@ -73,7 +80,8 @@ template <typename T> std::string explicitSign(T t) {
     return ost.str();
 }
 
-template <typename T> std::string nthStr(T t) {
+template <typename T>
+std::string nthStr(T t) {
     std::ostringstream ost;
     ost << t;
     switch (t) {
@@ -122,7 +130,8 @@ inline uint8_t hexToByte(char hex0, char hex1) /*throw (ParseError)*/ {
     return (hexToNibble(hex0) << 4) + hexToNibble(hex1);
 }
 
-template <typename T> std::string toHexString(T t) {
+template <typename T>
+std::string toHexString(T t) {
     std::string str;
     for (size_t i = 0; i < sizeof(T); ++i) {
         str.push_back(nibbleToHex(t >> (8 * (sizeof(T) - i - 1) + 4) & 0x0F));
@@ -131,7 +140,8 @@ template <typename T> std::string toHexString(T t) {
     return str;
 }
 
-template <typename T> std::string toBinaryString(T t) {
+template <typename T>
+std::string toBinaryString(T t) {
     std::string str;
     for (size_t i = 0; i < 8 * sizeof(T); ++i) {
         str.push_back(((t >> (8 * sizeof(T) - i - 1)) & 0x1) ? '1' : '0');

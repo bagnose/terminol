@@ -251,7 +251,8 @@ public:
     }
 };
 
-template <class V> class IStreamHandler : public CmdLine::Handler {
+template <class V>
+class IStreamHandler final : public CmdLine::Handler {
     V & _value;
 public:
     IStreamHandler(V & value) : _value(value) {}
@@ -272,7 +273,8 @@ public:
 using StringHandler = IStreamHandler<std::string>;
 using IntHandler    = IStreamHandler<int>;
 
-template <class F> class MiscHandler : public CmdLine::Handler {
+template <class F>
+class MiscHandler final : public CmdLine::Handler {
     F _func;
 public:
     MiscHandler(F func) : _func(func) {}
@@ -285,6 +287,7 @@ public:
     }
 };
 
-template <class F> class MiscHandler<F> * new_MiscHandler(const F & f) {
+template <class F>
+MiscHandler<F> * new_MiscHandler(const F & f) {
     return new MiscHandler<F>(f);
 }

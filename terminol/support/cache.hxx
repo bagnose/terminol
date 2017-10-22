@@ -11,7 +11,8 @@
 #include <cstddef>
 
 // LRU cache container
-template <typename Key, typename T> class Cache : protected Uncopyable {
+template <typename Key, typename T>
+class Cache : protected Uncopyable {
     struct Link {
         Link * prev;
         Link * next;

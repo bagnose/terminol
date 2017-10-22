@@ -10,7 +10,8 @@
 #include <iosfwd>
 #include <cstdint>
 
-template <typename T, typename I> class BitSet {
+template <typename T, typename I>
+class BitSet {
     I _bits = 0;
     static I bit(T t) {
         auto shift = static_cast<unsigned int>(t);

@@ -22,7 +22,8 @@ class Parser : protected Uncopyable {
 
     //
 
-    template <class T> class SimpleHandler : public Handler {
+    template <class T>
+    class SimpleHandler final : public Handler {
         T & _t;
     public:
         SimpleHandler(T & t) : _t(t) {}
@@ -34,7 +35,8 @@ class Parser : protected Uncopyable {
 
     //
 
-    template <class F> class GenericHandler : public Handler {
+    template <class F>
+    class GenericHandler final : public Handler {
         F _func;
     public:
         GenericHandler(F func) : _func(func) {}
@@ -53,12 +55,14 @@ class Parser : protected Uncopyable {
     Handlers   _handlers;
     Actions    _actions;
 
-    template <class T> void registerSimpleHandler(const std::string & name, T & value) {
+    template <class T>
+    void registerSimpleHandler(const std::string & name, T & value) {
         auto handler = new SimpleHandler<T>(value);
         _handlers.insert(std::make_pair(name, handler));
     }
 
-    template <class F> void registerGenericHandler(const std::string & name, F func) {
+    template <class F>
+    void registerGenericHandler(const std::string & name, F func) {
         auto handler = new GenericHandler<F>(func);
         _handlers.insert(std::make_pair(name, handler));
     }
