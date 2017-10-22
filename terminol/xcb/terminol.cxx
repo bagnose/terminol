@@ -213,7 +213,7 @@ int main(int argc, char * argv[]) try {
     cmdLine.add(new BoolHandler(config.syncTty),    '\0', "sync");
     cmdLine.add(new BoolHandler(config.traditionalWrapping), '\0', "traditional-wrapping");
     cmdLine.add(new StringHandler(config.termName), '\0', "term-name");
-    cmdLine.add(new_MiscHandler([&](const std::string & name) {
+    cmdLine.add(new MiscHandler([&](const std::string & name) {
                                     config.setColorScheme(name);
                                 }), '\0', "color-scheme");
 

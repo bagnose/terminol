@@ -279,7 +279,7 @@ int main(int argc, char * argv[]) try {
     cmdLine.add(new StringHandler(config.termName),   '\0', "term-name");
     cmdLine.add(new StringHandler(config.socketPath), '\0', "socket");
     cmdLine.add(new BoolHandler(config.serverFork),   '\0', "fork");
-    cmdLine.add(new_MiscHandler([&](const std::string & name) {
+    cmdLine.add(new MiscHandler([&](const std::string & name) {
                                     config.setColorScheme(name);
                                 }), '\0', "color-scheme");
 

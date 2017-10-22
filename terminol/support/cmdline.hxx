@@ -238,11 +238,11 @@ public:
 using StringHandler = IStreamHandler<std::string>;
 using IntHandler    = IStreamHandler<int>;
 
-template <class F>
 class MiscHandler final : public CmdLine::Handler {
-    F _func;
+    using Function = std::function<void (const std::string &)>;
+    Function _func;
 public:
-    MiscHandler(F func) : _func(func) {}
+    explicit MiscHandler(const Function & func) : _func(func) {}
 
     bool isNegatable() const override { return false; }
     bool wantsValue()  const override { return true; }
@@ -251,8 +251,3 @@ public:
         _func(value);
     }
 };
-
-template <class F>
-MiscHandler<F> * new_MiscHandler(const F & f) {
-    return new MiscHandler<F>(f);
-}
