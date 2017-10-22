@@ -11,7 +11,7 @@
 #include "terminol/common/config.hxx"
 #include "terminol/common/parser.hxx"
 #include "terminol/common/key_map.hxx"
-#include "terminol/support/async_destroyer.hxx"
+#include "terminol/support/async_invoker.hxx"
 #include "terminol/support/selector.hxx"
 #include "terminol/support/pipe.hxx"
 #include "terminol/support/debug.hxx"
@@ -35,7 +35,7 @@ class EventLoop final :
     Selector           _selector;
     Pipe               _pipe;
     SimpleDeduper      _deduper;
-    AsyncDestroyer     _destroyer;      // Must be declared after anything indirectly used by it.
+    AsyncInvoker       _asyncInvoker; // Must be declared after anything indirectly used by it.
     Basics             _basics;
     ColorSet           _colorSet;
     FontManager        _fontManager;
@@ -53,7 +53,7 @@ public:
         _selector(),
         _pipe(),
         _deduper(),
-        _destroyer(),
+        _asyncInvoker(),
         _basics(),
         _colorSet(config, _basics),
         _fontManager(config, _basics),
@@ -62,7 +62,7 @@ public:
                 config,
                 _selector,
                 _deduper,
-                _destroyer,
+                _asyncInvoker,
                 _dispatcher,
                 _basics,
                 _colorSet,

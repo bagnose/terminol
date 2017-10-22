@@ -10,7 +10,7 @@
 #include "terminol/common/bit_sets.hxx"
 #include "terminol/common/buffer.hxx"
 #include "terminol/common/deduper_interface.hxx"
-#include "terminol/support/async_destroyer.hxx"
+#include "terminol/support/async_invoker.hxx"
 #include "terminol/support/selector.hxx"
 #include "terminol/support/pattern.hxx"
 
@@ -109,7 +109,7 @@ public:
              const Config       & config,
              I_Selector         & selector,
              I_Deduper          & deduper,
-             I_Destroyer        & destroyer,
+             AsyncInvoker       & asyncInvoker,
              int16_t              rows,
              int16_t              cols,
              const std::string  & windowId,

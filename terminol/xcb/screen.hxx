@@ -11,7 +11,7 @@
 #include "terminol/common/config.hxx"
 #include "terminol/common/key_map.hxx"
 #include "terminol/common/terminal.hxx"
-#include "terminol/support/async_destroyer.hxx"
+#include "terminol/support/async_invoker.hxx"
 #include "terminol/support/selector.hxx"
 #include "terminol/support/pattern.hxx"
 
@@ -90,7 +90,7 @@ public:
            const Config       & config,
            I_Selector         & selector,
            I_Deduper          & deduper,
-           AsyncDestroyer     & destroyer,
+           AsyncInvoker       & asyncInvoker,
            I_Dispatcher       & dispatcher,
            Basics             & basics,
            const ColorSet     & colorSet,

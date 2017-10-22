@@ -116,14 +116,14 @@ bool Buffer::BufferIter::isStartOfPara() {
 
 Buffer::Buffer(const Config       & config,
                I_Deduper          & deduper,
-               I_Destroyer        & destroyer,
+               AsyncInvoker       & asyncInvoker,
                int16_t              rows,
                int16_t              cols,
                uint32_t             historyLimit,
                const CharSubArray & charSubs) :
     _config(config),
     _deduper(deduper),
-    _destroyer(destroyer),
+    _asyncInvoker(asyncInvoker),
     _tags(),
     _lostTags(0),
     _pending(),
@@ -147,28 +147,18 @@ Buffer::Buffer(const Config       & config,
 }
 
 Buffer::~Buffer() {
-    class Garbage : public I_Destroyer::Garbage {
-    private:
-        I_Deduper                & _deduper;
-        std::deque<I_Deduper::Tag> _tags;
-
-    public:
-        Garbage(I_Deduper                   & deduper,
-                std::deque<I_Deduper::Tag> && tags) :
-            _deduper(deduper), _tags(tags) {}
-
-        ~Garbage() override {
-            for (auto tag : _tags) {
-                // Deregister all of our valid tags. Note, really only the last tags can
-                // be invalid.
-                if (tag != I_Deduper::invalidTag()) {
-                    _deduper.remove(tag);
-                }
-            }
+    auto   tagsPtr = std::make_shared<decltype(_tags)>(std::move(_tags));
+    auto & deduper = _deduper;
+    auto function = [tagsPtr, & deduper]() {
+        for (auto tag : *tagsPtr) {
+            // Deregister all of our valid tags. Note, really only the last tags can
+            // be invalid.
+            if (tag != I_Deduper::invalidTag()) { deduper.remove(tag); }
         }
+        tagsPtr->clear();
     };
 
-    _destroyer.add(std::make_unique<Garbage>(_deduper, std::move(_tags)));
+    _asyncInvoker.add(function);
 }
 
 //

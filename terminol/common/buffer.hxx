@@ -8,7 +8,7 @@
 #include "terminol/common/config.hxx"
 #include "terminol/common/deduper_interface.hxx"
 #include "terminol/common/char_sub.hxx"
-#include "terminol/support/destroyer_interface.hxx"
+#include "terminol/support/async_invoker.hxx"
 #include "terminol/support/regex.hxx"
 
 #include <deque>
@@ -248,7 +248,7 @@ class Buffer {
 
     const Config               & _config;
     I_Deduper                  & _deduper;
-    I_Destroyer                & _destroyer;
+    AsyncInvoker               & _asyncInvoker;
     std::deque<I_Deduper::Tag>   _tags;             // The paragraph history.
     uint32_t                     _lostTags;         // Incremented for each _tags.pop_front().
     std::vector<Cell>            _pending;          // Paragraph pending to become historical.
@@ -296,7 +296,7 @@ public:
 
     Buffer(const Config       & config,
            I_Deduper          & deduper,
-           I_Destroyer        & destroyer,
+           AsyncInvoker       & asyncInvoker,
            int16_t              rows,
            int16_t              cols,
            uint32_t             historyLimit,
