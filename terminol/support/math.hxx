@@ -8,7 +8,7 @@
 
 template <typename A, typename B>
 auto divideRoundUp(A a, B b) noexcept -> decltype(a / b) {
-    static_assert(std::is_integral<A>() && std::is_integral<B>(), "Non integral types.");
+    static_assert(std::is_integral_v<A> && std::is_integral_v<B>);
     return (a + b - 1) / b;
 }
 

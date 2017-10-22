@@ -79,6 +79,7 @@ inline bool unstringify<>(const std::string & str) {
 
 template <typename T>
 std::string explicitSign(T t) {
+    static_assert(std::is_arithmetic_v<T>);
     std::ostringstream ost;
     if (t < 0) { ost << '-'; }
     else       { ost << '+'; }
@@ -88,6 +89,7 @@ std::string explicitSign(T t) {
 
 template <typename T>
 std::string nthStr(T t) {
+    static_assert(std::is_integral_v<T>);
     std::ostringstream ost;
     ost << t;
     switch (t) {
