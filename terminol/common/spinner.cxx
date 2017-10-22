@@ -14,7 +14,7 @@ int main() {
     for (int i = 0; ; ++i) {
         auto c = values[i % 4];
         std::cout << '\r' << c << std::flush;
-        usleep(50000);
+        usleep(50'000);
     }
 
     std::cout << ESC << '[' << "?25h";      // show cursor

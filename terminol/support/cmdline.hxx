@@ -67,7 +67,7 @@ public:
             _shortToHandler.insert({shortOpt, handler.get()});
         }
 
-        _options.push_back(Option{std::move(handler), shortOpt, longOpt, mandatory});
+        _options.push_back({std::move(handler), shortOpt, longOpt, mandatory});
     }
 
     std::vector<std::string> parse(int argc, const char ** argv) {
@@ -170,22 +170,13 @@ public:
 protected:
     Handler * lookupShort(char s) {
         auto iter = _shortToHandler.find(s);
-
-        if (iter == _shortToHandler.end()) {
-            std::string str; str.push_back(s);
-            THROW(UserError("Unknown option: -" + str));
-        }
-
+        THROW_UNLESS(iter != _shortToHandler.end(), UserError("Unknown option: -" + stringify(s)));
         return iter->second;
     }
 
     Handler * lookupLong(const std::string & l) {
         auto iter = _longToHandler.find(l);
-
-        if (iter == _longToHandler.end()) {
-            THROW(UserError("Unknown option: --" + l));
-        }
-
+        THROW_UNLESS(iter != _longToHandler.end(), UserError("Unknown option: --" + l));
         return iter->second;
     }
 };
@@ -197,7 +188,7 @@ protected:
 class BoolHandler : public CmdLine::Handler {
     bool & _value;
 public:
-    BoolHandler(bool & value) : _value(value) {}
+    explicit BoolHandler(bool & value) : _value(value) {}
 
     bool isNegatable() const override { return true; }
     bool wantsValue()  const override { return false; }
@@ -211,7 +202,7 @@ template <class V>
 class IStreamHandler final : public CmdLine::Handler {
     V & _value;
 public:
-    IStreamHandler(V & value) : _value(value) {}
+    explicit IStreamHandler(V & value) : _value(value) {}
 
     bool isNegatable() const override { return false; }
     bool wantsValue()  const override { return true; }

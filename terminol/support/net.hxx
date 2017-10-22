@@ -151,6 +151,7 @@ public:
         _observer(observer),
         _selector(selector)
     {
+        // FIXME We are using SOCK_SEQPACKET yet _queue collapses the "datagrams"...
         _fd = THROW_IF_SYSCALL_FAILS(::socket(PF_UNIX, SOCK_SEQPACKET, 0), "socket()");
         ScopeGuard fdGuard([this] () { TEMP_FAILURE_RETRY(::close(_fd)); });
 
@@ -168,7 +169,6 @@ public:
 #endif
 
         // XXX Isn't it possible that we'll get EINPROGRESS ?
-
         THROW_IF_SYSCALL_FAILS(::connect(_fd,
                                          reinterpret_cast<struct sockaddr *>(&address),
                                          sizeof(address)),

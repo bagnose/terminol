@@ -3,8 +3,6 @@
 
 #include "terminol/common/simple_repository.hxx"
 
-SimpleRepository::SimpleRepository() {}
-
 auto SimpleRepository::store(const Entry & entry) -> Tag {
     std::unique_lock<std::mutex> lock(_mutex);
 

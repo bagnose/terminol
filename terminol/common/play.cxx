@@ -32,13 +32,13 @@ int main() {
     cout << CsiEsc::DECSTBM(2, 23);
     cout << flush;
 
-    usleep(1000000);
+    usleep(1'000'000);
 
     /*
     cout << CsiEsc::DECCOLM(CsiEsc::Cols::_80) << flush;
-    usleep(1000000);
+    usleep(1'000'000);
     cout << CsiEsc::DECCOLM(CsiEsc::Cols::_132) << flush;
-    usleep(1000000);
+    usleep(1'000'000);
     cout << CsiEsc::DECCOLM(CsiEsc::Cols::_80) << flush;
     */
 

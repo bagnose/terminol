@@ -29,19 +29,15 @@ private:
     const Config              & _config;
     Basics                    & _basics;
 
-    int                         _delta;     // Global delta
-    std::map<I_Client *, int>   _clients;   // client->size
-    std::map<int, FontSetPtr>   _fontSets;  // size->font-set
-    bool                        _dispatch;  // used to disallow re-entrance
+    int                         _delta = 0;        // Global delta
+    std::map<I_Client *, int>   _clients;          // client->size
+    std::map<int, FontSetPtr>   _fontSets;         // size->font-set
+    bool                        _dispatch = false; // used to disallow re-entrance
 
 public:
     FontManager(const Config & config, Basics & basics) :
         _config(config),
-        _basics(basics),
-        _delta(0),
-        _clients(),
-        _fontSets(),
-        _dispatch(false) {}
+        _basics(basics) {}
 
     ~FontManager() {
         ASSERT(!_dispatch, "");

@@ -93,13 +93,9 @@ Terminal::Terminal(I_Observer         & observer,
                CharSubArray{{{&CS_US, &CS_SPECIAL, &CS_US, &CS_US}}}),
     _buffer(&_priBuffer),
     //
-    _modes(),
-    //
     _press(Press::NONE),
     _button(Button::LEFT),
-    _pointerPos(),
     _focused(true),
-    _lastSeq(),
     //
     _utf8Machine(),
     _vtMachine(*this, _config),

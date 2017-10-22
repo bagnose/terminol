@@ -69,8 +69,6 @@ void decode(const std::vector<uint8_t> & bytes, std::vector<Cell> & cells) {
 
 } // namespace {anonymous}
 
-SimpleDeduper::SimpleDeduper() : _entries(), _totalRefs(0), _mutex() {}
-
 auto SimpleDeduper::store(const std::vector<Cell> & cells) -> Tag {
     std::unique_lock<std::mutex> lock(_mutex);
 

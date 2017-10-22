@@ -25,11 +25,11 @@ class SimpleDeduper final : public I_Deduper {
     };
 
     std::unordered_map<Tag, Entry> _entries;
-    size_t                         _totalRefs;
+    size_t                         _totalRefs = 0;
     mutable std::mutex             _mutex;
 
 public:
-    SimpleDeduper();
+    SimpleDeduper() = default;
 
     // I_Deduper implementation:
 
@@ -44,7 +44,7 @@ public:
     void getByteStats(size_t & uniqueBytes1, size_t & totalBytes) const override;
     void dump(std::ostream & ost) const override;
 
-protected:
+private:
     static Tag makeTag(const std::vector<uint8_t> & bytes);
 };
 

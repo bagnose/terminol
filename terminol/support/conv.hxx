@@ -68,10 +68,10 @@ inline std::string unstringify<>(const std::string & str) {
 
 template <>
 inline bool unstringify<>(const std::string & str) {
-    if (str == "0" || str == "false" || str == "False") {
+    if (str == "0" || str == "false") {
         return false;
     }
-    else if (str == "1" || str == "true" || str == "True") {
+    else if (str == "1" || str == "true") {
         return true;
     }
     else { THROW(ConversionError("Failed to unstringify: " + str)); }

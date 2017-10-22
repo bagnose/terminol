@@ -15,7 +15,7 @@ class SimpleRepository final : public I_Repository {
     std::unordered_map<Tag, Entry> _entries;
 
 public:
-    SimpleRepository();
+    SimpleRepository() = default;
 
     Tag      store(const Entry & entry) override;
     Entry    retrieve(Tag tag) const override;

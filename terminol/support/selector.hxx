@@ -110,7 +110,7 @@ public:
 
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(next - now);
 
-            const int A_MILLION = 1000000;
+            const int A_MILLION = 1'000'000;
             struct timeval tv;
             tv.tv_sec  = duration.count() / A_MILLION;
             tv.tv_usec = duration.count() % A_MILLION;

@@ -12,16 +12,16 @@ void hsv_to_rgb(double & h, double & s, double & v) {
         s = v;
     }
     else {
-        auto hue        = clamp(h * 6.0, 0.0, 6.0);
-        auto saturation = s;
-        auto value      = v;
+        double hue        = clamp(h * 6.0, 0.0, 6.0);
+        double saturation = s;
+        double value      = v;
 
         if (hue == 6.0) { hue = 0.0; }
 
-        auto f = hue - std::floor(hue);
-        auto p = value * (1.0 - saturation);
-        auto q = value * (1.0 - saturation * f);
-        auto t = value * (1.0 - saturation * (1.0 - f));
+        double f = hue - std::floor(hue);
+        double p = value * (1.0 - saturation);
+        double q = value * (1.0 - saturation * f);
+        double t = value * (1.0 - saturation * (1.0 - f));
 
         switch (static_cast<int>(hue)) {
             case 0:
@@ -65,9 +65,9 @@ void rgb_to_hsv(double & r, double & g, double & b) {
     double min, max;
     double delta;
 
-    auto red   = r;
-    auto green = g;
-    auto blue  = b;
+    double red   = r;
+    double green = g;
+    double blue  = b;
 
     h = 0.0;
 
