@@ -13,18 +13,6 @@
 #include <cmath>
 #include <optional>
 
-// Query the size of an array at compile time, e.g.:
-//
-//     int array[] = { 1, 2, 3, 4, 5 };
-//     Maxim::static_assert(array_size(array) == 5);
-//
-// Note, this was taken from "Effective Modern C++, page 16".
-template <typename T, std::size_t N>
-constexpr std::size_t arraySize(T (&)[N]) {
-    return N;
-}
-
-
 template <typename T>
 T clamp(T val, T min, T max) {
     ASSERT(min <= max, "");

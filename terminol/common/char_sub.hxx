@@ -14,21 +14,21 @@
 // no entry for the ASCII character then it remains unchanged.
 class CharSub {
     const utf8::Seq * _seqs    = nullptr;
-    size_t            _offset  = 0;
     size_t            _size    = 0;
+    size_t            _offset  = 0;
     bool              _special = false;
 
 public:
     // Construct a dummy CharSub - one that does no actual substitution.
-    CharSub() = default;
+    constexpr CharSub() = default;
 
     // Construct a CharSub with a substitution table. Note 'seqs' must be
     // static data.
-    CharSub(const utf8::Seq * seqs, size_t offset, size_t size, bool special = false) :
-        _seqs(seqs), _offset(offset), _size(size), _special(special) {}
+    constexpr CharSub(const utf8::Seq * seqs, size_t size, size_t offset, bool special = false) :
+        _seqs(seqs), _size(size), _offset(offset), _special(special) {}
 
     // Bold and italic attributes are disabled from 'special' char subs.
-    bool isSpecial() const { return _special; }
+    constexpr bool isSpecial() const { return _special; }
 
     // If the UTF-8 sequence is the ASCII subset then translate it if there is
     // an entry in the table.

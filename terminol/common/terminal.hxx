@@ -22,10 +22,6 @@ class Terminal final :
     protected Buffer::I_Renderer,
     protected Uncopyable
 {
-    static const CharSub CS_US;
-    static const CharSub CS_UK;
-    static const CharSub CS_SPECIAL;
-
 public:
     enum class Selection { PRIMARY, CLIPBOARD };
 

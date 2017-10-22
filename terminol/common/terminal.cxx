@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <numeric>
+#include <array>
 
 namespace {
 
@@ -21,11 +22,11 @@ int32_t nthArgNonZero(const std::vector<int32_t> & args, size_t n, int32_t fallb
     return arg != 0 ? arg : fallback;
 }
 
-const utf8::Seq UK_SEQS[] = {
+constexpr std::array<utf8::Seq, 1> UK_SEQS = {{
     { 0xC2, 0xA3 }        // POUND: £
-};
+}};
 
-const utf8::Seq SPECIAL_SEQS[] = {
+constexpr std::array<utf8::Seq, 31> SPECIAL_SEQS = {{
     { 0xE2, 0x99, 0xA6 }, // diamond: ♦
     { 0xE2, 0x96, 0x92 }, // 50% cell: ▒
     { 0xE2, 0x90, 0x89 }, // HT: ␉
@@ -57,20 +58,17 @@ const utf8::Seq SPECIAL_SEQS[] = {
     { 0xE2, 0x89, 0xA0 }, // NEQ: ≠
     { 0xC2, 0xA3       }, // POUND: £
     { 0xE2, 0x8B, 0x85 }  // DOT: ⋅
-};
+}};
+
+constexpr CharSub CS_US;
+constexpr CharSub CS_UK(UK_SEQS.data(), UK_SEQS.size(), 35);
+constexpr CharSub CS_SPECIAL(SPECIAL_SEQS.data(), SPECIAL_SEQS.size(), 96, true);
 
 } // namespace {anonymous}
 
 //
 //
 //
-
-static_assert(arraySize(UK_SEQS)      == 1,  "Incorrect size: UK_SEQS.");
-static_assert(arraySize(SPECIAL_SEQS) == 31, "Incorrect size: SPECIAL_SEQS.");
-
-const CharSub Terminal::CS_US;
-const CharSub Terminal::CS_UK(UK_SEQS, 35, 1);
-const CharSub Terminal::CS_SPECIAL(SPECIAL_SEQS, 96, 31, true);
 
 Terminal::Terminal(I_Observer         & observer,
                    const Config       & config,

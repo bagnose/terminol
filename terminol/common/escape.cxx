@@ -5,9 +5,11 @@
 #include "terminol/common/ascii.hxx"
 #include "terminol/support/conv.hxx"
 
+#include <array>
+
 namespace {
 
-const int32_t SGR_TABLE[] = {
+constexpr std::array<int32_t, static_cast<size_t>(CsiEsc::StockSGR::NUM_SGR)> SGR_TABLE = {{
     0,      // reset all
 
     1,      // bold
@@ -65,10 +67,10 @@ const int32_t SGR_TABLE[] = {
     105,    // bg bright magenta
     106,    // bg bright cyan
     107     // bg bright white
-};
+}};
 
 // [0x30..0x7F)
-const char * SIMPLE_STR[] = {
+constexpr std::array<const char *, 0x7F - 0x30> SIMPLE_STR = {{
     nullptr,    // '0'              0x30
     nullptr,    // '1'
     nullptr,    // '2'
@@ -157,12 +159,10 @@ const char * SIMPLE_STR[] = {
     nullptr,    // '|'
     nullptr,    // '}'
     nullptr     // '~'
-};
-
-static_assert(arraySize(SIMPLE_STR) == 0x7F - 0x30, "Incorrect size: SIMPLE_STR.");
+}};
 
 // [0x40..0x80)
-const char * CSI_STR[] = {
+const std::array<const char *, 0x80 - 0x40> CSI_STR = {{
     "ICH",      // '@'              0x40
     "CUU",      // 'A'
     "CUD",      // 'B'
@@ -234,9 +234,7 @@ const char * CSI_STR[] = {
     nullptr,    // '}'
     nullptr,    // '~'
     nullptr     // DEL
-};
-
-static_assert(arraySize(CSI_STR) == 0x80 - 0x40, "Incorrect size: CSI_STR.");
+}};
 
 } // namespace {anonymous}
 
@@ -284,6 +282,7 @@ std::ostream & operator << (std::ostream & ost, const SimpleEsc & esc) {
 //
 
 CsiEsc CsiEsc::SGR(StockSGR sgr) {
+    ASSERT(sgr != StockSGR::NUM_SGR, "");
     CsiEsc esc;
     esc.args.push_back(SGR_TABLE[static_cast<size_t>(sgr)]);
     esc.mode = 'm';

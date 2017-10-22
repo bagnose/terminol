@@ -46,14 +46,14 @@ bool      isCont(uint8_t byte) noexcept;
 //
 
 struct Seq {
-    Seq(uint8_t b0 = '\0', uint8_t b1 = '\0', uint8_t b2 = '\0', uint8_t b3 = '\0') noexcept :
+    constexpr Seq(uint8_t b0 = '\0', uint8_t b1 = '\0', uint8_t b2 = '\0', uint8_t b3 = '\0') noexcept :
         bytes{{b0, b1, b2, b3}} {}
 
-    void clear() noexcept {
+    constexpr void clear() noexcept {
         bytes = {{'\0', '\0', '\0', '\0'}};
     }
 
-    uint8_t lead() const noexcept { return bytes[0]; }
+    constexpr uint8_t lead() const noexcept { return bytes[0]; }
 
     std::array<uint8_t, Length::LMAX> bytes = {{'\0', '\0', '\0', '\0'}};
 };

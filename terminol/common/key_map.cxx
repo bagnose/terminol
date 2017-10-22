@@ -27,7 +27,7 @@ struct Map {
     uint8_t      code   = 0;
 };
 
-const Map MAP_NORMAL[] = {
+constexpr Map MAP_NORMAL[] = {
     { XKB_KEY_Left,  1, '[', 'D' },
     { XKB_KEY_Right, 1, '[', 'C' },
     { XKB_KEY_Up,    1, '[', 'A' },
@@ -37,7 +37,7 @@ const Map MAP_NORMAL[] = {
     { 0, 0, 0, 0 }
 };
 
-const Map MAP_APPLICATION[] = {
+constexpr Map MAP_APPLICATION[] = {
     { XKB_KEY_Left,         1, 'O', 'D' },
     { XKB_KEY_Right,        1, 'O', 'C' },
     { XKB_KEY_Up,           1, 'O', 'A' },

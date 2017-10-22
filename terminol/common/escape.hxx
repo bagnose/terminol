@@ -29,7 +29,7 @@ std::ostream & operator << (std::ostream & ost, const SimpleEsc & esc);
 struct CsiEsc {
     CsiEsc() : priv('\0'), args(), inters(), mode('\0') {}
 
-    // SGR - Select Graphic Recognition.
+    // SGR - Select Graphic Rendition
     enum class StockSGR {
         RESET_ALL,          // (normal)
 
@@ -88,6 +88,8 @@ struct CsiEsc {
         BG_BRIGHT_MAGENTA,
         BG_BRIGHT_CYAN,
         BG_BRIGHT_WHITE,
+
+        NUM_SGR
     };
 
     // SGR - Select Graphic Rendition.
