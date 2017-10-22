@@ -117,6 +117,7 @@ protected:
         iter1->second = new_size;
 
         _dispatch = true;
+        ScopeGuard dispatchGuard([this] () { _dispatch = false; });
 
         if (iter2 == _fontSets.end()) {
             auto fontSet = new FontSet(_config, _basics, new_size);
@@ -126,8 +127,6 @@ protected:
         else {
             client->useFontSet(iter2->second, total_delta);
         }
-
-        _dispatch = false;
     }
 
     void purgeUnusedFonts() {
