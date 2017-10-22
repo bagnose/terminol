@@ -39,10 +39,31 @@ T clamp(T val, T min, T max) {
 std::optional<std::vector<std::string>> split(const std::string & line,
                                               const std::string & delim = "\t ") /*throw (ParseError)*/;
 
+namespace detail {
+
 template <typename T>
-std::string stringify(const T & t) {
+void to_ostream(std::ostream & ost, const T & v) {
+    ost << v;
+}
+
+inline void to_ostream(std::ostream & ost, const bool & v) {
+    std::ios_base::fmtflags flags = ost.flags(); // stash current format flags
+    ost << std::boolalpha << v;
+    ost.flags(flags); // reset to previous format flags
+}
+
+template <typename T, typename... Args>
+void to_ostream(std::ostream & ost, const T & first, const Args &... remaining) {
+    to_ostream(ost, first);
+    to_ostream(ost, remaining...);
+}
+
+} // namespace detail
+
+template <typename T, typename... Args>
+std::string stringify(const T & first, const Args &... remaining) {
     std::ostringstream ost;
-    ost << t;
+    detail::to_ostream(ost, first, remaining...);
     return ost.str();
 }
 
