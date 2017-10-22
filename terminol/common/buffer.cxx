@@ -1396,7 +1396,7 @@ void Buffer::dispatchBg(bool reverse, I_Renderer & renderer) const {
             auto   selected = selValid && isCellSelected(apos, selBegin, selEnd, wrap);
             auto & cell     = cells[col1];
             auto & attrs    = cell.style.attrs;
-            auto   swap     = XOR(reverse, attrs.get(Attr::INVERSE));
+            auto   swap     = exor(reverse, attrs.get(Attr::INVERSE));
             auto   bg1      = bg0; // About to be overridden.
 
             if (UNLIKELY(selected)) {
@@ -1465,7 +1465,7 @@ void Buffer::dispatchFg(bool reverse, I_Renderer & renderer) const {
             auto & cell     = cells[col1];
             auto   length   = utf8::leadLength(cell.seq.lead());
             auto & attrs1   = cell.style.attrs;
-            auto   swap     = XOR(reverse, attrs1.get(Attr::INVERSE));
+            auto   swap     = exor(reverse, attrs1.get(Attr::INVERSE));
             auto   fg1      = fg0; // About to be overridden.
 
             if (UNLIKELY(selected)) {
@@ -1533,10 +1533,10 @@ void Buffer::dispatchCursor(bool reverse, I_Renderer & renderer) const {
         auto   selected = selValid && isCellSelected(apos, selBegin, selEnd, wrap);
         auto & cell     = aline.cells[c1];
         auto & attrs    = cell.style.attrs;
-        auto   swap     = XOR(reverse, attrs.get(Attr::INVERSE));
+        auto   swap     = exor(reverse, attrs.get(Attr::INVERSE));
         auto   fg       = cell.style.fg;
         auto   bg       = cell.style.bg;
-        if (XOR(selected, swap)) { std::swap(fg, bg); }
+        if (exor(selected, swap)) { std::swap(fg, bg); }
 
         if (_config.customCursorFillColor) {
             fg = UColor::stock(UColor::Name::CURSOR_FILL);

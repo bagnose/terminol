@@ -170,7 +170,7 @@ std::string toBinaryString(T t) {
     return str;
 }
 
-inline bool XOR(bool a, bool b) noexcept {
+inline bool exor(bool a, bool b) noexcept {
     return a != b;
 }
 
