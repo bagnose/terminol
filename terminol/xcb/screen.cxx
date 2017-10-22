@@ -122,8 +122,14 @@ Screen::Screen(I_Observer         & observer,
 
     // Create the TTY and terminal.
 
-    _terminal = new Terminal(*this, _config, selector, deduper, destroyer,
-                             rows, cols, stringify(getWindow()), command);
+    _terminal = std::make_unique<Terminal>(static_cast<Terminal::I_Observer &>(*this),
+                                           _config,
+                                           selector,
+                                           deduper,
+                                           destroyer,
+                                           rows, cols,
+                                           stringify(getWindow()),
+                                           command);
     _open     = true;
 
     // Update the window title.
@@ -167,7 +173,7 @@ Screen::~Screen() {
 
     // Unwind constructor.
 
-    delete _terminal;
+    _terminal.reset();
 
     cookie = xcb_free_gc_checked(_basics.connection(), _gc);
     xcb_request_failed(_basics.connection(), cookie, "Failed to free GC.");

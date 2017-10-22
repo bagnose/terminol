@@ -23,23 +23,15 @@ public:
         virtual ~Handler() {}
     };
 
+    using HandlerPtr = std::unique_ptr<Handler>;
+
 private:
     struct Option {
-        Option(Handler           * handler_,
-               char                shortOpt_,
-               const std::string & longOpt_,
-               bool                mandatory_) :
-            handler(handler_),
-            shortOpt(shortOpt_),
-            longOpt(longOpt_),
-            mandatory(mandatory_)
-        {}
-
-        Handler     * handler;
-        char          shortOpt;
-        std::string   longOpt;
-        bool          mandatory;
-        bool          serviced = false;
+        HandlerPtr  handler;
+        char        shortOpt  = '\0';
+        std::string longOpt;
+        bool        mandatory = false;
+        bool        serviced  = false;
     };
 
     std::string                      _help;
@@ -59,13 +51,7 @@ public:
         _version(version),
         _delimiter(delimiter) {}
 
-    ~CmdLine() {
-        for (auto & o : _options) {
-            delete o.handler;
-        }
-    }
-
-    void add(Handler * handler,
+    void add(HandlerPtr && handler,
              char shortOpt,
              const std::string & longOpt,
              bool mandatory = false) {
@@ -73,15 +59,15 @@ public:
 
         if (!longOpt.empty()) {
             ENFORCE(_longToHandler.find(longOpt) == _longToHandler.end(), "");
-            _longToHandler.insert(std::make_pair(longOpt, handler));
+            _longToHandler.insert({longOpt, handler.get()});
         }
 
         if (shortOpt != '\0') {
             ENFORCE(_shortToHandler.find(shortOpt) == _shortToHandler.end(), "");
-            _shortToHandler.insert(std::make_pair(shortOpt, handler));
+            _shortToHandler.insert({shortOpt, handler.get()});
         }
 
-        _options.push_back(Option(handler, shortOpt, longOpt, mandatory));
+        _options.push_back(Option{std::move(handler), shortOpt, longOpt, mandatory});
     }
 
     std::vector<std::string> parse(int argc, const char ** argv) {

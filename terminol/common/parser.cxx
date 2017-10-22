@@ -18,7 +18,8 @@ class Parser : protected Uncopyable {
         virtual void handle(const std::string & value) = 0;
     };
 
-    using Handlers = std::unordered_map<std::string, Handler *>;
+    using HandlerPtr = std::unique_ptr<Handler>;
+    using HandlerMap = std::unordered_map<std::string, HandlerPtr>;
 
     //
 
@@ -51,25 +52,22 @@ class Parser : protected Uncopyable {
 
     //
 
-    Config   & _config;
-    Handlers   _handlers;
-    Actions    _actions;
+    Config     & _config;
+    HandlerMap   _handlers;
+    Actions      _actions;
 
     template <class T>
     void registerSimpleHandler(const std::string & name, T & value) {
-        auto handler = new SimpleHandler<T>(value);
-        _handlers.insert(std::make_pair(name, handler));
+        _handlers.insert({name, std::make_unique<SimpleHandler<T>>(value)});
     }
 
     template <class F>
     void registerGenericHandler(const std::string & name, F func) {
-        auto handler = new GenericHandler<F>(func);
-        _handlers.insert(std::make_pair(name, handler));
+        _handlers.insert({name, std::make_unique<GenericHandler<F>>(func)});
     }
 
 public:
     explicit Parser(Config & config);
-    ~Parser();
 
 protected:
     void parse();
@@ -238,13 +236,6 @@ Parser::Parser(Config & config) : _config(config) {
     parse();
 }
 
-Parser::~Parser() {
-    for (auto & t : _handlers) {
-        auto handler = t.second;
-        delete handler;
-    }
-}
-
 void Parser::parse() {
     const std::string conf = "/terminol/config";
 
@@ -335,7 +326,7 @@ void Parser::handleSet(const std::string & key, const std::string & value) {
         THROW(ConversionError("No such setting: '" + key + "'"));
     }
     else {
-        auto handler = iter->second;
+        auto & handler = iter->second;
         handler->handle(value);
     }
 }

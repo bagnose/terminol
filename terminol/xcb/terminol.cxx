@@ -207,15 +207,15 @@ int main(int argc, char * argv[]) try {
     parseConfig(config);
 
     CmdLine cmdLine(makeHelp(argv[0]), VERSION, "--execute");
-    cmdLine.add(new StringHandler(config.fontName), '\0', "font-name");
-    cmdLine.add(new IntHandler(config.fontSize),    '\0', "font-size");
-    cmdLine.add(new BoolHandler(config.traceTty),   '\0', "trace");
-    cmdLine.add(new BoolHandler(config.syncTty),    '\0', "sync");
-    cmdLine.add(new BoolHandler(config.traditionalWrapping), '\0', "traditional-wrapping");
-    cmdLine.add(new StringHandler(config.termName), '\0', "term-name");
-    cmdLine.add(new MiscHandler([&](const std::string & name) {
-                                    config.setColorScheme(name);
-                                }), '\0', "color-scheme");
+    cmdLine.add(std::make_unique<StringHandler>(config.fontName), '\0', "font-name");
+    cmdLine.add(std::make_unique<IntHandler>(config.fontSize),    '\0', "font-size");
+    cmdLine.add(std::make_unique<BoolHandler>(config.traceTty),   '\0', "trace");
+    cmdLine.add(std::make_unique<BoolHandler>(config.syncTty),    '\0', "sync");
+    cmdLine.add(std::make_unique<BoolHandler>(config.traditionalWrapping), '\0', "traditional-wrapping");
+    cmdLine.add(std::make_unique<StringHandler>(config.termName), '\0', "term-name");
+    cmdLine.add(std::make_unique<MiscHandler>([&](const std::string & name) {
+                                                  config.setColorScheme(name);
+                                              }), '\0', "color-scheme");
 
     auto command = cmdLine.parse(argc, const_cast<const char **>(argv));
     EventLoop eventLoop(config, command);

@@ -24,12 +24,14 @@ public:
     };
 
 private:
+    using FontSetPtr = std::unique_ptr<FontSet>;
+
     const Config              & _config;
     Basics                    & _basics;
 
     int                         _delta;     // Global delta
     std::map<I_Client *, int>   _clients;   // client->size
-    std::map<int, FontSet *>    _fontSets;  // size->font-set
+    std::map<int, FontSetPtr>   _fontSets;  // size->font-set
     bool                        _dispatch;  // used to disallow re-entrance
 
 public:
@@ -43,11 +45,6 @@ public:
 
     ~FontManager() {
         ASSERT(!_dispatch, "");
-
-        for (auto p : _fontSets) {
-            delete p.second;
-        }
-
         ASSERT(_clients.empty(), "Clients remain at destruction.");
     }
 
@@ -59,12 +56,11 @@ public:
         _clients.insert(std::make_pair(client, size));
         auto iter = _fontSets.find(size);
         if (iter == _fontSets.end()) {
-            auto fontSet = new FontSet(_config, _basics, size);
-            _fontSets.insert(std::make_pair(size, fontSet));
-            return fontSet;
+            iter = _fontSets.insert({size, std::make_unique<FontSet>(_config, _basics, size)}).first;
+            return iter->second.get();
         }
         else {
-            return iter->second;
+            return iter->second.get();
         }
     }
 
@@ -120,12 +116,11 @@ protected:
         ScopeGuard dispatchGuard([this] () { _dispatch = false; });
 
         if (iter2 == _fontSets.end()) {
-            auto fontSet = new FontSet(_config, _basics, new_size);
-            _fontSets.insert(std::make_pair(new_size, fontSet));
-            client->useFontSet(fontSet, total_delta);
+            iter2 = _fontSets.insert({new_size, std::make_unique<FontSet>(_config, _basics, new_size)}).first;
+            client->useFontSet(iter2->second.get(), total_delta);
         }
         else {
-            client->useFontSet(iter2->second, total_delta);
+            client->useFontSet(iter2->second.get(), total_delta);
         }
     }
 
@@ -144,7 +139,6 @@ protected:
         for (auto size : unused) {
             auto iter = _fontSets.find(size);
             ASSERT(iter != _fontSets.end(), "");
-            delete iter->second;
             _fontSets.erase(iter);
         }
     }

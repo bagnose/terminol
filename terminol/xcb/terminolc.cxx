@@ -32,8 +32,8 @@ int main(int argc, char * argv[]) try {
     bool shutdown = false;
 
     CmdLine cmdLine(makeHelp(argv[0]), VERSION);
-    cmdLine.add(new StringHandler(config.socketPath), '\0', "socket");
-    cmdLine.add(new BoolHandler(shutdown), '\0', "shutdown");
+    cmdLine.add(std::make_unique<StringHandler>(config.socketPath), '\0', "socket");
+    cmdLine.add(std::make_unique<BoolHandler>(shutdown), '\0', "shutdown");
 
     // Command line
 

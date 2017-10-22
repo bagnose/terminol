@@ -267,7 +267,7 @@ class Buffer {
     Cursor                       _cursor;           // Current cursor.
     SavedCursor                  _savedCursor;      // Saved cursor.
     CharSubArray                 _charSubs;
-    Search                     * _search;
+    std::unique_ptr<Search>      _search;
 
 public:
     class I_Renderer {
@@ -445,7 +445,7 @@ public:
 
     const CharSub * getCharSub(CharSet charSet) const;
 
-    bool isSearching() const { return _search; }
+    bool isSearching() const { return _search != nullptr; }
     void beginSearch(const std::string & pattern);
     const std::string & getSearchPattern() const;
     void setSearchPattern(const std::string & pattern);

@@ -147,10 +147,6 @@ Buffer::Buffer(const Config       & config,
 }
 
 Buffer::~Buffer() {
-    if (_search) {
-        delete _search;
-    }
-
     class Garbage : public I_Destroyer::Garbage {
     private:
         I_Deduper                & _deduper;
@@ -1156,7 +1152,7 @@ const CharSub * Buffer::getCharSub(CharSet charSet) const {
 
 void Buffer::beginSearch(const std::string & pattern) {
     ASSERT(!_search, "Already searching.");
-    _search = new Search(*this, pattern);
+    _search = std::make_unique<Search>(*this, pattern);
     _damage.back().damageAdd(0, getCols());
 
     auto & bufferIter = _search->iter;
@@ -1219,8 +1215,7 @@ void Buffer::prevSearch() {
 
 void Buffer::endSearch() {
     ASSERT(_search, "Not searching.");
-    delete _search;
-    _search = nullptr;
+    _search.reset();
 }
 
 void Buffer::dumpTags(std::ostream & ost) const {

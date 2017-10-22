@@ -37,6 +37,8 @@ public:
     };
 
 private:
+    using TerminalPtr = std::unique_ptr<Terminal>;
+
     I_Observer      & _observer;
     const Config    & _config;
     Basics          & _basics;
@@ -47,7 +49,7 @@ private:
     xcb_gcontext_t    _gc;
     xcb_rectangle_t   _geometry;            // Note x/y is wrt root window.
     xcb_rectangle_t   _deferredGeometry;    // Note x/y is wrt root window.
-    Terminal        * _terminal;
+    TerminalPtr       _terminal;
     bool              _open;
     Pos               _pointerPos;
 
