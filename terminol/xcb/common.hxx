@@ -4,17 +4,31 @@
 #ifndef XCB__COMMON__HXX
 #define XCB__COMMON__HXX
 
+#include "terminol/support/conv.hxx"
+
 #include <xcb/xcb.h>
 
 #include <string>
 
-#define xcb_request_failed(connection, cookie, err_msg) _xcb_request_failed(connection, cookie, err_msg, __FILE__, __LINE__)
+#define THROW_IF_XCB_REQUEST_FAILED(connection, cookie, message) \
+    do { \
+        auto error = xcb_request_check(connection, cookie); \
+        if (error) { \
+            ScopeGuard errorGuard([error]() { std::free(error); }); \
+            THROW(XError(stringify(message, " ", stringifyError(error)))); \
+        } \
+    } while (false)
 
-bool _xcb_request_failed(xcb_connection_t  * connection,
-                         xcb_void_cookie_t   cookie,
-                         const char        * err_msg,
-                         const char        * filename,
-                         int                 line);
+#define CHECK_XCB_REQUEST(connection, cookie, message) \
+    (__extension__ \
+        ({ bool rval_ = true; \
+           auto error = xcb_request_check(connection, cookie); \
+           if (error) { \
+               ScopeGuard errorGuard([error]() { std::free(error); }); \
+               ERROR(message << " " << stringifyError(error)); \
+               rval_ = false; \
+           } \
+           rval_; }))
 
 std::string stringifyEventType(uint8_t responseType);
 

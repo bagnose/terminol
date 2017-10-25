@@ -250,9 +250,7 @@ xcb_cursor_t Basics::loadNormalCursor() {
                                         font,
                                         fontName.size(),
                                         fontName.data());
-    if (xcb_request_failed(_connection, cookie, "Can't open font")) {
-        THROW(XError("Failed to open font: " + fontName));
-    }
+    THROW_IF_XCB_REQUEST_FAILED(_connection, cookie, "Failed to open font");
     ScopeGuard guard([&]() { xcb_close_font(_connection, font); });
 
     // Create the cursor:
@@ -265,9 +263,7 @@ xcb_cursor_t Basics::loadNormalCursor() {
                                     cursorId,
                                     cursorId + 1,
                                     0, 0, 0, max / 2, max / 2, max / 2);
-    if (xcb_request_failed(_connection, cookie, "couldn't create cursor")) {
-        THROW(XError("Failed to create cursor"));
-    }
+    THROW_IF_XCB_REQUEST_FAILED(_connection, cookie, "Failed to create cursor");
 
     return cursor;
 }
@@ -279,9 +275,7 @@ xcb_cursor_t Basics::loadInvisibleCursor() {
                                             pixmap,
                                             _screen->root,
                                             1, 1);
-    if (xcb_request_failed(_connection, cookie, "couldn't create pixmap")) {
-        THROW(XError("Failed to create pixmap"));
-    }
+    THROW_IF_XCB_REQUEST_FAILED(_connection, cookie, "Failed to create pixmap");
     ScopeGuard guard([&]() { xcb_free_pixmap(_connection, pixmap); });
 
     auto cursor = xcb_generate_id(_connection);
@@ -292,9 +286,7 @@ xcb_cursor_t Basics::loadInvisibleCursor() {
                                        0, 0, 0,
                                        0, 0, 0,
                                        1, 1);
-    if (xcb_request_failed(_connection, cookie, "couldn't create cursor")) {
-        THROW(XError("Failed to create cursor"));
-    }
+    THROW_IF_XCB_REQUEST_FAILED(_connection, cookie, "Couldn't create cursor");
 
     return cursor;
 }

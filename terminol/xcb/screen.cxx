@@ -72,7 +72,7 @@ Screen::Screen(I_Observer         & observer,
                                              32,
                                              1,
                                              &value);
-        xcb_request_failed(_basics.connection(), cookie, "Failed to set opacity.");
+        CHECK_XCB_REQUEST(_basics.connection(), cookie, "Failed to set opacity");
     }
 
     // Do the ICCC jive.
@@ -92,9 +92,7 @@ Screen::Screen(I_Observer         & observer,
                                    getWindow(),
                                    XCB_GC_FOREGROUND | XCB_GC_GRAPHICS_EXPOSURES,
                                    gcValues);
-    if (xcb_request_failed(_basics.connection(), cookie, "Failed to allocate GC")) {
-        THROW(XError("Failed to create GC"));
-    }
+    THROW_IF_XCB_REQUEST_FAILED(_basics.connection(), cookie, "Failed to allocate GC");
     ScopeGuard gcGuard([&]() { xcb_free_gc(_basics.connection(), getWindow()); });
 
     // Create the TTY and terminal.
@@ -116,9 +114,7 @@ Screen::Screen(I_Observer         & observer,
     // Map the window
 
     cookie = xcb_map_window_checked(_basics.connection(), getWindow());
-    if (xcb_request_failed(_basics.connection(), cookie, "Failed to map window")) {
-        THROW(XError("Failed to map window"));
-    }
+    THROW_IF_XCB_REQUEST_FAILED(_basics.connection(), cookie, "Failed to map window");
 
     // Flush our XCB calls
 
@@ -153,12 +149,12 @@ Screen::~Screen() {
     _terminal.reset();
 
     cookie = xcb_free_gc_checked(_basics.connection(), _gc);
-    xcb_request_failed(_basics.connection(), cookie, "Failed to free GC.");
+    CHECK_XCB_REQUEST(_basics.connection(), cookie, "Failed to free GC");
 
     // The window may have been destroyed exogenously.
     if (!_destroyed) {
         cookie = xcb_destroy_window_checked(_basics.connection(), getWindow());
-        xcb_request_failed(_basics.connection(), cookie, "Failed to destroy window.");
+        CHECK_XCB_REQUEST(_basics.connection(), cookie, "Failed to destroy window");
     }
 
     // Flush our XCB calls.
@@ -497,7 +493,7 @@ void Screen::selectionRequest(xcb_selection_request_event_t * event) {
                                                   32,
                                                   1,
                                                   &atomUtf8String);
-        xcb_request_failed(_basics.connection(), cookie, "Failed to change property.");
+        THROW_IF_XCB_REQUEST_FAILED(_basics.connection(), cookie, "Failed to change property");
         response.property = event->property;
     }
     else if (event->target == _basics.atomUtf8String()) {
@@ -521,7 +517,7 @@ void Screen::selectionRequest(xcb_selection_request_event_t * event) {
                                                   8,
                                                   text.length(),
                                                   text.data());
-        xcb_request_failed(_basics.connection(), cookie, "Failed to change property.");
+        THROW_IF_XCB_REQUEST_FAILED(_basics.connection(), cookie, "Failed to change property");
         response.property = event->property;
     }
 
@@ -530,7 +526,7 @@ void Screen::selectionRequest(xcb_selection_request_event_t * event) {
                                          event->requestor,
                                          0,
                                          reinterpret_cast<const char *>(&response));
-    xcb_request_failed(_basics.connection(), cookie, "Failed to send event.");
+    THROW_IF_XCB_REQUEST_FAILED(_basics.connection(), cookie, "Failed to send event");
 
     xcb_flush(_basics.connection());        // Required?
 }
@@ -763,7 +759,7 @@ void Screen::createPixmapAndSurface() {
                                             _basics.screen()->root,
                                             _geometry.width,
                                             _geometry.height);
-    xcb_request_failed(_basics.connection(), cookie, "Failed to create pixmap.");
+    THROW_IF_XCB_REQUEST_FAILED(_basics.connection(), cookie, "Failed to create pixmap");
 
     _surface = cairo_xcb_surface_create(_basics.connection(),
                                         _pixmap,
@@ -783,7 +779,7 @@ void Screen::destroySurfaceAndPixmap() {
     _surface = nullptr;
 
     auto cookie = xcb_free_pixmap_checked(_basics.connection(), _pixmap);
-    xcb_request_failed(_basics.connection(), cookie, "Failed to free pixmap");
+    THROW_IF_XCB_REQUEST_FAILED(_basics.connection(), cookie, "Failed to free pixmap");
     _pixmap = 0;
 }
 
@@ -1018,8 +1014,8 @@ void Screen::resizeToAccommodate(int16_t rows, int16_t cols, bool sync) {
                                            XCB_CONFIG_WINDOW_WIDTH |
                                            XCB_CONFIG_WINDOW_HEIGHT,
                                            values);
-        if (!xcb_request_failed(_basics.connection(), cookie,
-                               "Failed to configure window.")) {
+        if (!CHECK_XCB_REQUEST(_basics.connection(), cookie,
+                               "Failed to configure window")) {
             if (sync) {
                 xcb_flush(_basics.connection());
                 _deferralsAllowed = false;
@@ -1075,8 +1071,8 @@ void Screen::cursorVisibility(bool visible) {
                                                            getWindow(),
                                                            mask,
                                                            &values);
-        xcb_request_failed(_basics.connection(), cookie,
-                           "Failed to change window attributes.");
+        CHECK_XCB_REQUEST(_basics.connection(), cookie,
+                          "Failed to change window attributes");
 
         _cursorVisible = visible;
     }

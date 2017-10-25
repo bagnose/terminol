@@ -7,25 +7,6 @@
 #include <sstream>
 #include <cstdlib>
 
-bool _xcb_request_failed(xcb_connection_t  * connection,
-                         xcb_void_cookie_t   cookie,
-                         const char        * err_msg,
-                         const char        * filename,
-                         int                 line) {
-    auto error = xcb_request_check(connection, cookie);
-    if (error) {
-        std::cerr
-            << filename << ':' << line << ' ' << err_msg
-            << " Bad " << stringifyError(error) << '.'
-            << std::endl;
-        std::free(error);
-        return true;
-    }
-    else {
-        return false;
-    }
-}
-
 std::string stringifyEventType(uint8_t responseType) {
     switch (responseType) {
         case XCB_KEY_PRESS:

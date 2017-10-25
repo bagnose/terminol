@@ -62,9 +62,7 @@ Widget::Widget(I_Dispatcher & dispatcher,
                                         _basics.screen()->root_visual,
                                         winMask,
                                         winValues);
-    if (xcb_request_failed(_basics.connection(), cookie, "Failed to create window.")) {
-        THROW(XError("Failed to create window"));
-    }
+    THROW_IF_XCB_REQUEST_FAILED(_basics.connection(), cookie, "Failed to create window");
     ScopeGuard windowGuard([&]() { xcb_destroy_window(_basics.connection(), _window); });
 
     // Flush our XCB calls.
@@ -96,12 +94,10 @@ void Widget::resize(const xcb_rectangle_t & geometry) {
                                                XCB_CONFIG_WINDOW_WIDTH |
                                                XCB_CONFIG_WINDOW_HEIGHT,
                                                values);
-    xcb_request_failed(_basics.connection(), cookie, "Failed to set geometry.");
+    CHECK_XCB_REQUEST(_basics.connection(), cookie, "Failed to set geometry");
 }
 
 void Widget::map() {
     auto cookie = xcb_map_window_checked(_basics.connection(), _window);
-    if (xcb_request_failed(_basics.connection(), cookie, "Failed to map window")) {
-        THROW(XError("Failed to map window"));
-    }
+    THROW_IF_XCB_REQUEST_FAILED(_basics.connection(), cookie, "Failed to map window");
 }
