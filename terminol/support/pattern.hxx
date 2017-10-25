@@ -24,7 +24,7 @@ protected:
 // http://channel9.msdn.com/Shows/Going+Deep/C-and-Beyond-2012-Andrei-Alexandrescu-Systematic-Error-Handling-in-C
 //
 
-class ScopeGuard : private Uncopyable {
+class ScopeGuard final : private Uncopyable {
     using Function = std::function<void ()>;
 
     Function _function;

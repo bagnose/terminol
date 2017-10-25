@@ -9,7 +9,7 @@
 
 namespace {
 
-const Color COLOURS_LINUX[16] = {
+constexpr std::array<Color, 16> COLOURS_LINUX = {{
   { 0x00, 0x00, 0x00 },
   { 0xA8, 0x00, 0x00 },
   { 0x00, 0xA8, 0x00 },
@@ -26,9 +26,9 @@ const Color COLOURS_LINUX[16] = {
   { 0xFF, 0x57, 0xFF },
   { 0x57, 0xFF, 0xFF },
   { 0xFF, 0xFF, 0xFF }
-};
+}};
 
-const Color COLOURS_RXVT[16] = {
+constexpr std::array<Color, 16> COLOURS_RXVT = {{
   { 0x00, 0x00, 0x00 },
   { 0xCD, 0x00, 0x00 },
   { 0x00, 0xCD, 0x00 },
@@ -45,9 +45,9 @@ const Color COLOURS_RXVT[16] = {
   { 0xFF, 0x00, 0xFF },
   { 0x00, 0xFF, 0xFF },
   { 0xFF, 0xFF, 0xFF }
-};
+}};
 
-const Color COLOURS_TANGO[16] = {
+constexpr std::array<Color, 16> COLOURS_TANGO = {{
   { 0x2E, 0x34, 0x36 },
   { 0xCC, 0x00, 0x00 },
   { 0x4E, 0x9A, 0x06 },
@@ -64,9 +64,9 @@ const Color COLOURS_TANGO[16] = {
   { 0xAD, 0x7F, 0xA8 },
   { 0x34, 0xE2, 0xE2 },
   { 0xEE, 0xEE, 0xEC }
-};
+}};
 
-const Color COLOURS_XTERM[16] = {
+constexpr std::array<Color, 16> COLOURS_XTERM = {{
   { 0x00, 0x00, 0x00 },
   { 0xCD, 0x00, 0x00 },
   { 0x00, 0xCD, 0x00 },
@@ -83,9 +83,9 @@ const Color COLOURS_XTERM[16] = {
   { 0xFF, 0x00, 0xFF },
   { 0x00, 0xFF, 0xFF },
   { 0xFF, 0xFF, 0xFF }
-};
+}};
 
-const Color COLOURS_ZENBURN_DARK[16] = {
+constexpr std::array<Color, 16> COLOURS_ZENBURN_DARK = {{
   { 0x00, 0x00, 0x00 },
   { 0x9E, 0x18, 0x28 },
   { 0xAE, 0xCE, 0x92 },
@@ -102,9 +102,9 @@ const Color COLOURS_ZENBURN_DARK[16] = {
   { 0xCF, 0x9E, 0xBE },
   { 0x71, 0xBE, 0xBE },
   { 0xFF, 0xFF, 0xFF }
-};
+}};
 
-const Color COLOURS_ZENBURN[16] = {
+constexpr std::array<Color, 16> COLOURS_ZENBURN = {{
   { 0x3F, 0x3F, 0x3F },
   { 0x70, 0x50, 0x50 },
   { 0x60, 0xB4, 0x8A },
@@ -121,9 +121,9 @@ const Color COLOURS_ZENBURN[16] = {
   { 0xEC, 0x93, 0xD3 },
   { 0x93, 0xE0, 0xE3 },
   { 0xFF, 0xFF, 0xFF }
-};
+}};
 
-const Color COLOURS_SOLARIZED_DARK[16] = {
+constexpr std::array<Color, 16> COLOURS_SOLARIZED_DARK = {{
   { 0x07, 0x36, 0x42 },     //  0 base02
   { 0xDC, 0x32, 0x2F },     //  1 red
   { 0x85, 0x99, 0x00 },     //  2 green
@@ -140,9 +140,9 @@ const Color COLOURS_SOLARIZED_DARK[16] = {
   { 0x6C, 0x71, 0xC4 },     // 13 violet
   { 0x93, 0xA1, 0xA1 },     // 14 base1
   { 0xFD, 0xF6, 0xE3 }      // 15 base3
-};
+}};
 
-const Color COLOURS_SOLARIZED_LIGHT[16] = {
+constexpr std::array<Color, 16> COLOURS_SOLARIZED_LIGHT = {{
   { 0xEE, 0xE8, 0xD5 },
   { 0xDC, 0x32, 0x2F },
   { 0x85, 0x99, 0x00 },
@@ -159,7 +159,7 @@ const Color COLOURS_SOLARIZED_LIGHT[16] = {
   { 0x6C, 0x71, 0xC4 },
   { 0x58, 0x6E, 0x75 },
   { 0x00, 0x2B, 0x36 }
-};
+}};
 
 } // namespace {anonymous}
 
@@ -167,56 +167,7 @@ const Color COLOURS_SOLARIZED_LIGHT[16] = {
 //
 //
 
-Config::Config() :
-    fontName("Monospace"),
-    fontSize(12),
-    termName("xterm-256color"),
-    scrollWithHistory(false),
-    scrollOnTtyOutput(false),
-    scrollOnTtyKeyPress(true),
-    scrollOnResize(false),
-    scrollOnPaste(true),
-    title("terminol"),
-    icon("terminol"),
-    chdir(),
-    scrollBackHistory(1 * 1024 * 1024),
-    unlimitedScrollBack(true),
-    framesPerSecond(50),
-    traditionalWrapping(false),
-    //
-    traceTty(false),
-    syncTty(false),
-    //
-    initialX(-1),
-    initialY(-1),
-    initialRows(24),
-    initialCols(80),
-    //
-    customSelectBgColor(false),
-    customSelectFgColor(false),
-    customCursorFillColor(false),
-    customCursorTextColor(false),
-    //
-    scrollbarVisible(true),
-    scrollbarWidth(6),
-    //
-    borderThickness(1),
-    doubleClickTimeout(400),
-    //
-    serverFork(true),
-    bindings(),
-    cutChars("-A-Za-z0-9./?%&#_=+@~"),
-    autoHideCursor(true),
-    mapOnBell(false),
-    urgentOnBell(false),
-    audibleBell(false),
-    visualBell(false),
-    audibleBellVolume(100),
-    visualBellDuration(25),
-    x11PseudoTransparency(false),
-    x11CompositedTransparency(false),
-    x11TransparencyValue(0.1)
-{
+Config::Config() {
     setColorScheme("rxvt");
 
     auto user = static_cast<const char *>(::getenv("USER"));
@@ -229,50 +180,43 @@ Config::Config() :
 
 void Config::setColorScheme(const std::string & name) {
     if (name == "rxvt") {
-        std::copy(COLOURS_RXVT, COLOURS_RXVT + 16, systemColors);
-
+        systemColors = COLOURS_RXVT;
         normalFgColor = systemColors[7];
         normalBgColor = systemColors[0];
     }
     else if (name == "linux") {
-        std::copy(COLOURS_LINUX, COLOURS_LINUX + 16, systemColors);
+        std::copy(COLOURS_LINUX.begin(), COLOURS_LINUX.end(), systemColors.begin());
 
         normalFgColor = systemColors[7];
         normalBgColor = systemColors[0];
     }
     else if (name == "tango") {
-        std::copy(COLOURS_TANGO, COLOURS_TANGO + 16, systemColors);
-
+        systemColors = COLOURS_TANGO;
         normalFgColor = systemColors[7];
         normalBgColor = systemColors[0];
     }
     else if (name == "xterm") {
-        std::copy(COLOURS_XTERM, COLOURS_XTERM + 16, systemColors);
-
+        systemColors = COLOURS_XTERM;
         normalFgColor = systemColors[7];
         normalBgColor = systemColors[0];
     }
     else if (name == "zenburn-dark") {
-        std::copy(COLOURS_ZENBURN_DARK, COLOURS_ZENBURN_DARK + 16, systemColors);
-
+        systemColors = COLOURS_ZENBURN_DARK;
         normalFgColor = systemColors[7];
         normalBgColor = systemColors[0];
     }
     else if (name == "zenburn") {
-        std::copy(COLOURS_ZENBURN, COLOURS_ZENBURN + 16, systemColors);
-
+        systemColors = COLOURS_ZENBURN;
         normalFgColor = systemColors[7];
         normalBgColor = systemColors[0];
     }
     else if (name == "solarized-dark") {
-        std::copy(COLOURS_SOLARIZED_DARK, COLOURS_SOLARIZED_DARK + 16, systemColors);
-
+        systemColors = COLOURS_SOLARIZED_DARK;
         normalFgColor = systemColors[12];
         normalBgColor = systemColors[8];
     }
     else if (name == "solarized-light") {
-        std::copy(COLOURS_SOLARIZED_LIGHT, COLOURS_SOLARIZED_LIGHT + 16, systemColors);
-
+        systemColors = COLOURS_SOLARIZED_LIGHT;
         normalFgColor = systemColors[12];
         normalBgColor = systemColors[8];
     }

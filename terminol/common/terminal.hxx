@@ -74,31 +74,29 @@ public:
     enum class ScrollDir { UP, DOWN };
 
 private:
-    I_Observer          & _observer;
-
-    const Config        & _config;
-    const I_Deduper     & _deduper;
-
-    Buffer                _priBuffer;
-    Buffer                _altBuffer;
-    Buffer              * _buffer;
-
-    ModeSet               _modes;
-
     enum class Press { NONE, SELECT, REPORT };
 
-    Press                 _press;
-    Button                _button;
-    Pos                   _pointerPos;
-    bool                  _focused;
+    I_Observer      & _observer;
 
-    utf8::Seq             _lastSeq;
+    const Config    & _config;
+    const I_Deduper & _deduper;
 
-    //
+    Buffer            _priBuffer;
+    Buffer            _altBuffer;
+    Buffer          * _buffer;
 
-    utf8::Machine         _utf8Machine;
-    VtStateMachine        _vtMachine;
-    Tty                   _tty;
+    ModeSet           _modes;
+
+    Press             _press       = Press::NONE;
+    Button            _button      = Button::LEFT;
+    Pos               _pointerPos;
+    bool              _focused     = true;
+
+    utf8::Seq         _lastSeq;
+
+    utf8::Machine     _utf8Machine;
+    VtStateMachine    _vtMachine;
+    Tty               _tty;
 
 public:
     Terminal(I_Observer         & observer,
@@ -139,7 +137,7 @@ public:
 
     bool     hasSubprocess() const;
 
-protected:
+private:
     enum class Trigger { TTY, FOCUS, CLIENT, OTHER };
 
     bool     handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers);

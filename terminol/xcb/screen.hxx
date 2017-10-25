@@ -39,51 +39,51 @@ public:
 private:
     using TerminalPtr = std::unique_ptr<Terminal>;
 
-    I_Observer      & _observer;
-    const Config    & _config;
-    Basics          & _basics;
-    const ColorSet  & _colorSet;
-    FontManager     & _fontManager;
-    FontSet         * _fontSet;
-    bool              _destroyed;
-    xcb_gcontext_t    _gc;
-    xcb_rectangle_t   _geometry;            // Note x/y is wrt root window.
-    xcb_rectangle_t   _deferredGeometry;    // Note x/y is wrt root window.
-    TerminalPtr       _terminal;
-    bool              _open;
-    Pos               _pointerPos;
-
-    // If the window is mapped then _pixmap and _surface are be valid. Otherwise not.
-    bool              _mapped;
-    xcb_pixmap_t      _pixmap;              // Created when mapped, destroyed when unmapped.
-    cairo_surface_t * _surface;             // Ditto.
-
-    cairo_t         * _cr;                  // Cairo drawing context. Created only as required.
-
     enum class Entitlement {
         PERMANENT,
         TRANSIENT,
         PENDING
     };
 
-    Entitlement       _entitlement;
+    I_Observer      & _observer;
+    const Config    & _config;
+    Basics          & _basics;
+    const ColorSet  & _colorSet;
+    FontManager     & _fontManager;
+    FontSet         * _fontSet            = nullptr;
+    bool              _destroyed          = false;
+    xcb_gcontext_t    _gc                 = 0;
+    xcb_rectangle_t   _geometry           = {0, 0, 0, 0}; // Note x/y is wrt root window.
+    xcb_rectangle_t   _deferredGeometry   = {0, 0, 0, 0}; // Note x/y is wrt root window.
+    TerminalPtr       _terminal;
+    bool              _open               = false;
+    Pos               _pointerPos         = Pos::invalid();
+
+    // If the window is mapped then _pixmap and _surface are be valid. Otherwise not.
+    bool              _mapped             = false;
+    xcb_pixmap_t      _pixmap             = 0;            // Created when mapped, destroyed when unmapped.
+    cairo_surface_t * _surface            = nullptr;      // Ditto.
+
+    cairo_t         * _cr                 = nullptr;      // Cairo drawing context. Created only as required.
+
+    Entitlement       _entitlement        = Entitlement::PERMANENT;
     std::string       _title;
     std::string       _icon;
 
     std::string       _primarySelection;
     std::string       _clipboardSelection;
 
-    bool              _pressed;         // Is there an active button press?
-    int               _pressCount;      // single, double, triple-click, etc
-    xcb_timestamp_t   _lastPressTime;
-    xcb_button_t      _button;
+    bool              _pressed            = false;        // Is there an active button press?
+    int               _pressCount         = 0;            // single, double, triple-click, etc
+    xcb_timestamp_t   _lastPressTime      = 0;
+    xcb_button_t      _button             = XCB_BUTTON_INDEX_ANY;
 
-    bool              _cursorVisible;
+    bool              _cursorVisible      = true;
 
-    bool              _deferralsAllowed;
-    bool              _deferred;
+    bool              _deferralsAllowed   = true;
+    bool              _deferred           = false;
 
-    bool              _hadDeleteRequest;
+    bool              _hadDeleteRequest   = false;
 
 public:
     Screen(I_Observer         & observer,

@@ -29,29 +29,8 @@ Screen::Screen(I_Observer         & observer,
     _basics(basics),
     _colorSet(colorSet),
     _fontManager(fontManager),
-    _fontSet(nullptr),
-    _destroyed(false),
-    _gc(0),
-    _geometry({0, 0, 0, 0}),
-    _deferredGeometry({0, 0, 0, 0}),
-    _terminal(nullptr),
-    _open(false),
-    _pointerPos(Pos::invalid()),
-    _mapped(false),
-    _pixmap(0),
-    _surface(nullptr),
-    _cr(nullptr),
-    _entitlement(Entitlement::PERMANENT),
     _title(_config.title),
-    _icon(_config.icon),
-    _pressed(false),
-    _pressCount(0),
-    _lastPressTime(0),
-    _button(XCB_BUTTON_INDEX_ANY),
-    _cursorVisible(true),
-    _deferralsAllowed(true),
-    _deferred(false),
-    _hadDeleteRequest(false)
+    _icon(_config.icon)
 {
     // Register our object with the font manager.
 
@@ -130,22 +109,22 @@ Screen::Screen(I_Observer         & observer,
                                            command);
     _open     = true;
 
-    // Update the window title.
+    // Update the window title
 
     setTitle(_title, true);
 
-    // Map the window.
+    // Map the window
 
     cookie = xcb_map_window_checked(_basics.connection(), getWindow());
     if (xcb_request_failed(_basics.connection(), cookie, "Failed to map window")) {
         THROW(XError("Failed to map window"));
     }
 
-    // Flush our XCB calls.
+    // Flush our XCB calls
 
     xcb_flush(_basics.connection());
 
-    // Dismiss the guards.
+    // Dismiss the guards
 
     gcGuard.dismiss();
     fontGuard.dismiss();

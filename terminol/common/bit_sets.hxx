@@ -11,8 +11,11 @@
 #include <cstdint>
 
 template <typename T, typename I>
-class BitSet {
+class BitSet final {
+    static_assert(std::is_unsigned_v<I>);
+
     I _bits = 0;
+
     static I bit(T t) {
         auto shift = static_cast<unsigned int>(t);
         ASSERT(shift < sizeof(T) * 8, "Overflow.");

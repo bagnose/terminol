@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <memory>
 
-class Parser : protected Uncopyable {
+class Parser final : protected Uncopyable {
     class Handler {
     public:
         virtual ~Handler() {}
@@ -18,8 +18,7 @@ class Parser : protected Uncopyable {
         virtual void handle(const std::string & value) = 0;
     };
 
-    using HandlerPtr = std::unique_ptr<Handler>;
-    using HandlerMap = std::unordered_map<std::string, HandlerPtr>;
+    using HandlerMap = std::unordered_map<std::string, std::unique_ptr<Handler>>;
 
     //
 
@@ -27,7 +26,7 @@ class Parser : protected Uncopyable {
     class SimpleHandler final : public Handler {
         T & _t;
     public:
-        SimpleHandler(T & t) : _t(t) {}
+        explicit SimpleHandler(T & t) : _t(t) {}
 
         void handle(const std::string & value) override {
             _t = unstringify<T>(value);
@@ -40,7 +39,7 @@ class Parser : protected Uncopyable {
     class GenericHandler final : public Handler {
         F _func;
     public:
-        GenericHandler(F func) : _func(func) {}
+        explicit GenericHandler(F func) : _func(func) {}
         void handle(const std::string & value) override {
             _func(value);
         }
@@ -69,7 +68,7 @@ class Parser : protected Uncopyable {
 public:
     explicit Parser(Config & config);
 
-protected:
+private:
     void parse();
     bool tryPath(const std::string & path);
     void interpretTokens(const std::vector<std::string> & tokens);
@@ -96,12 +95,10 @@ Parser::Parser(Config & config) : _config(config) {
     registerSimpleHandler("chdir", _config.icon);
 
     registerGenericHandler("scroll-back-history",
-                           [&](const std::string & value)
-                           {
-                           _config.unlimitedScrollBack = false;
-                           _config.scrollBackHistory = unstringify<size_t>(value);
-                           }
-                          );
+                           [&](const std::string & value) {
+                               _config.unlimitedScrollBack = false;
+                               _config.scrollBackHistory = unstringify<size_t>(value);
+                           });
 
     registerSimpleHandler("unlimited-scroll-back", _config.unlimitedScrollBack);
     registerSimpleHandler("frames-per-second", _config.framesPerSecond);
@@ -117,36 +114,28 @@ Parser::Parser(Config & config) : _config(config) {
     registerSimpleHandler("normal-bg-color", _config.normalBgColor);
 
     registerGenericHandler("select-fg-color",
-                           [&](const std::string & value)
-                           {
-                           _config.customSelectFgColor = true;
-                           _config.selectFgColor       = unstringify<Color>(value);
-                           }
-                          );
+                           [&](const std::string & value) {
+                               _config.customSelectFgColor = true;
+                               _config.selectFgColor       = unstringify<Color>(value);
+                           });
 
     registerGenericHandler("select-bg-color",
-                           [&](const std::string & value)
-                           {
-                           _config.customSelectBgColor = true;
-                           _config.selectBgColor       = unstringify<Color>(value);
-                           }
-                          );
+                           [&](const std::string & value) {
+                               _config.customSelectBgColor = true;
+                               _config.selectBgColor       = unstringify<Color>(value);
+                           });
 
     registerGenericHandler("cursor-fill-color",
-                           [&](const std::string & value)
-                           {
-                           _config.customCursorFillColor = true;
-                           _config.cursorFillColor      = unstringify<Color>(value);
-                           }
-                          );
+                           [&](const std::string & value) {
+                               _config.customCursorFillColor = true;
+                               _config.cursorFillColor      = unstringify<Color>(value);
+                           });
 
     registerGenericHandler("cursor-text-color",
-                           [&](const std::string & value)
-                           {
-                           _config.customCursorTextColor = true;
-                           _config.cursorTextColor      = unstringify<Color>(value);
-                           }
-                          );
+                           [&](const std::string & value) {
+                               _config.customCursorTextColor = true;
+                               _config.cursorTextColor      = unstringify<Color>(value);
+                           });
 
     registerSimpleHandler("scrollbar-fg-color", _config.scrollbarFgColor);
     registerSimpleHandler("scrollbar-bg-color", _config.scrollbarBgColor);
@@ -161,11 +150,9 @@ Parser::Parser(Config & config) : _config(config) {
     registerSimpleHandler("double-click-timeout", _config.doubleClickTimeout);
 
     registerGenericHandler("color-scheme",
-                           [&](const std::string & value)
-                           {
-                           _config.setColorScheme(value);
-                           }
-                          );
+                           [&](const std::string & value) {
+                               _config.setColorScheme(value);
+                           });
 
     registerSimpleHandler("server-fork", _config.serverFork);
 

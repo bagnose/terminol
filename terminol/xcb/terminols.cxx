@@ -52,36 +52,21 @@ class EventLoop final :
         std::unique_ptr<Screen>>   _screens;
     std::set<Screen *>             _deferrals;
     std::vector<Screen *>          _exits;
-    bool                           _finished;
+    bool                           _finished = false;
 
     static EventLoop             * _singleton;
 
 public:
-    struct Error {
-        explicit Error(const std::string & message_) : message(message_) {}
-        std::string message;
-    };
-
     EventLoop(const Config       & config,
               const Tty::Command & command) :
         _config(config),
         _command(command),
-        _selector(),
-        _pipe(),
-        _deduper(),
-        _asyncInvoker(),
-        _basics(),
         _server(*this, _selector, config),
         _colorSet(config, _basics),
         _fontManager(config, _basics),
-        _dispatcher(_selector, _basics.connection() /* XXX */),
-        _screens(),
-        _deferrals(),
-        _exits(),
-        _finished(false)
+        _dispatcher(_selector, _basics.connection() /* XXX */)
     {
-        ASSERT(!_singleton, "");
-        _singleton = this;
+        ENFORCE(std::exchange(_singleton, this) == nullptr, "");
 
         if (config.serverFork) {
             THROW_IF_SYSCALL_FAILS(::daemon(1, 1), "Failed to daemonise");
@@ -99,7 +84,7 @@ public:
     }
 
     ~EventLoop() {
-        _singleton = nullptr;
+        ENFORCE(std::exchange(_singleton, nullptr) == this, "");
     }
 
 protected:
@@ -115,12 +100,14 @@ protected:
     }
 
     void loop() {
-        auto oldHandler = signal(SIGCHLD, &staticSignalHandler);
+        ASSERT(!_finished, "");
+
+        auto oldHandler = ::signal(SIGCHLD, &staticSignalHandler);
 
         _selector.addReadable(_pipe.readFd(), this);
         _dispatcher.add(_basics.screen()->root, this);
 
-        while (!_finished) {
+        do {
             _selector.animate();
 
             // Poll for X11 events that may not have shown up on the descriptor.
@@ -142,7 +129,7 @@ protected:
             // Perform the deferrals.
             for (auto screen : _deferrals) { screen->deferral(); }
             _deferrals.clear();
-        }
+        } while (!_finished);
 
         _dispatcher.remove(_basics.screen()->root);
         _selector.removeReadable(_pipe.readFd());
@@ -151,12 +138,11 @@ protected:
     }
 
     void death() {
-        char buf[BUFSIZ];
-        auto size = sizeof buf;
+        std::array<char, BUFSIZ> buf;
 
         // It doesn't matter if we read more than one 'death byte' off the pipe
         // because we are going to try to reap *all* the children.
-        THROW_IF_SYSCALL_FAILS(::read(_pipe.readFd(), static_cast<void *>(buf), size), "read()");
+        THROW_IF_SYSCALL_FAILS(::read(_pipe.readFd(), static_cast<void *>(buf.data()), buf.size()), "read()");
 
         for (auto & p : _screens) {
             auto & s = p.second;
@@ -219,8 +205,7 @@ protected:
                     static_cast<Screen::I_Observer &>(*this),
                     _config, _selector, _deduper, _asyncInvoker,
                     _dispatcher, _basics, _colorSet, _fontManager, _command);
-            auto id = screen->getWindowId();
-            _screens.insert({id, std::move(screen)});
+            _screens.insert({screen->getWindowId(), std::move(screen)});
         }
         catch (const Exception & error) {
             ERROR("Failed to create screen: " << error.what());
@@ -231,7 +216,6 @@ protected:
         for (auto & pair : _screens) {
             pair.second->killReap();
         }
-
         _finished = true;
     }
 };

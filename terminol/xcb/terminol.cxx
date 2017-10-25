@@ -41,8 +41,8 @@ class EventLoop final :
     FontManager        _fontManager;
     Dispatcher         _dispatcher;
     Screen             _screen;
-    bool               _deferral;
-    bool               _exited;
+    bool               _deferral = false;
+    bool               _exited   = false;
 
     static EventLoop * _singleton;
 
@@ -50,11 +50,6 @@ public:
     EventLoop(const Config       & config,
               const Tty::Command & command) :
         _config(config),
-        _selector(),
-        _pipe(),
-        _deduper(),
-        _asyncInvoker(),
-        _basics(),
         _colorSet(config, _basics),
         _fontManager(config, _basics),
         _dispatcher(_selector, _basics.connection() /* XXX */),
@@ -67,12 +62,9 @@ public:
                 _basics,
                 _colorSet,
                 _fontManager,
-                command),
-        _deferral(false),
-        _exited(false)
+                command)
     {
-        ASSERT(!_singleton, "");
-        _singleton = this;
+        ENFORCE(std::exchange(_singleton, this) == nullptr, "");
 
         if (_config.x11PseudoTransparency) {
             uint32_t mask = XCB_EVENT_MASK_PROPERTY_CHANGE;
@@ -86,7 +78,7 @@ public:
     }
 
     ~EventLoop() {
-        _singleton = nullptr;
+        ENFORCE(std::exchange(_singleton, nullptr) == this, "");
     }
 
 protected:
@@ -102,7 +94,7 @@ protected:
     }
 
     void loop() {
-        auto oldHandler = signal(SIGCHLD, &staticSignalHandler);
+        auto oldHandler = ::signal(SIGCHLD, &staticSignalHandler);
 
         _selector.addReadable(_pipe.readFd(), this);
         _dispatcher.add(_basics.screen()->root, this);
@@ -120,15 +112,12 @@ protected:
         _dispatcher.remove(_basics.screen()->root);
         _selector.removeReadable(_pipe.readFd());
 
-        signal(SIGCHLD, oldHandler);
+        ::signal(SIGCHLD, oldHandler);
     }
 
     void death() {
-        char buf[BUFSIZ];
-        auto size = sizeof buf;
-
-        THROW_IF_SYSCALL_FAILS(::read(_pipe.readFd(), static_cast<void *>(buf), size), "read()");
-
+        std::array<char, BUFSIZ> buf;
+        THROW_IF_SYSCALL_FAILS(::read(_pipe.readFd(), static_cast<void *>(buf.data()), buf.size()), "read()");
         _screen.tryReap(); // XXX We should assert that this succeeds. Why bother with screenReaped?
     }
 

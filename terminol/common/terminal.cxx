@@ -93,18 +93,12 @@ Terminal::Terminal(I_Observer         & observer,
                CharSubArray{{{&CS_US, &CS_SPECIAL, &CS_US, &CS_US}}}),
     _buffer(&_priBuffer),
     //
-    _press(Press::NONE),
-    _button(Button::LEFT),
-    _focused(true),
-    //
-    _utf8Machine(),
     _vtMachine(*this, _config),
     _tty(*this, selector, config, rows, cols, windowId, command)
 {
-    _modes.set(Mode::AUTO_WRAP);
-    _modes.set(Mode::SHOW_CURSOR);
-    _modes.set(Mode::AUTO_REPEAT);
-    _modes.set(Mode::ALT_SENDS_ESC);
+    for (auto mode : {Mode::AUTO_WRAP, Mode::SHOW_CURSOR, Mode::AUTO_REPEAT, Mode::ALT_SENDS_ESC}) {
+        _modes.set(mode);
+    }
 }
 
 void Terminal::resize(int16_t rows, int16_t cols) {
