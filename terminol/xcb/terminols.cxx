@@ -66,7 +66,7 @@ public:
         _fontManager(config, _basics),
         _dispatcher(_selector, _basics.connection() /* XXX */)
     {
-        ENFORCE(std::exchange(_singleton, this) == nullptr, "");
+        ENFORCE(std::exchange(_singleton, this) == nullptr, );
 
         if (config.serverFork) {
             THROW_IF_SYSCALL_FAILS(::daemon(1, 1), "Failed to daemonise");
@@ -84,12 +84,12 @@ public:
     }
 
     ~EventLoop() {
-        ENFORCE(std::exchange(_singleton, nullptr) == this, "");
+        ENFORCE(std::exchange(_singleton, nullptr) == this, );
     }
 
 protected:
     static void staticSignalHandler(int sigNum) {
-        ASSERT(_singleton, "");
+        ASSERT(_singleton, );
         _singleton->signalHandler(sigNum);
     }
 
@@ -100,7 +100,7 @@ protected:
     }
 
     void loop() {
-        ASSERT(!_finished, "");
+        ASSERT(!_finished, );
 
         auto oldHandler = ::signal(SIGCHLD, &staticSignalHandler);
 
@@ -120,7 +120,7 @@ protected:
                     if (iter1 != _deferrals.end()) { _deferrals.erase(iter1); }
 
                     auto iter2 = _screens.find(screen->getWindowId());
-                    ASSERT(iter2 != _screens.end(), "");
+                    ASSERT(iter2 != _screens.end(), );
                     _screens.erase(iter2);
                 }
                 _exits.clear();
@@ -153,7 +153,7 @@ protected:
     // I_Selector::I_ReadHandler implementation:
 
     void handleRead(int fd) override {
-        ASSERT(fd == _pipe.readFd(), "Bad fd.");
+        ASSERT(fd == _pipe.readFd(), );
         death();
     }
 
@@ -177,7 +177,7 @@ protected:
     }
 
     void screenReaped(Screen * screen, int UNUSED(status)) override {
-        ASSERT(std::find(_exits.begin(), _exits.end(), screen) == _exits.end(), "");
+        ASSERT(std::find(_exits.begin(), _exits.end(), screen) == _exits.end(), );
         _exits.push_back(screen);
     }
 

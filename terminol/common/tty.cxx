@@ -25,7 +25,7 @@ namespace {
 
 // TODO consolidate this function
 std::string nthToken(const std::string & str, size_t n) {
-    ASSERT(n > 0, "n must be positive.");
+    ASSERT(n > 0, );
 
     size_t i = 0;
     size_t j = 0;
@@ -62,12 +62,12 @@ Tty::Tty(I_Observer        & observer,
     _suspended(false)
 {
     openPty(rows, cols, windowId, command);
-    ASSERT(_pid != 0, "Expected non-zero PID.");
-    ASSERT(_fd != -1, "Expected valid file-descriptor.");
+    ASSERT(_pid != 0, );
+    ASSERT(_fd != -1, );
 }
 
 Tty::~Tty() {
-    ASSERT(_pid == 0, "Child not reaped.");
+    ASSERT(_pid == 0, << "Child not reaped.");
 
     if (_fd != -1) {
         close();
@@ -75,7 +75,7 @@ Tty::~Tty() {
 }
 
 void Tty::tryReap() {
-    ASSERT(_pid != 0, "Child already reaped.");
+    ASSERT(_pid != 0, << "Child already reaped.");
     int status;
     if (pollReap(0, status)) {
         _observer.ttyReaped(status);
@@ -111,14 +111,14 @@ void Tty::resize(uint16_t rows, uint16_t cols) {
         return;
     }
 
-    ASSERT(_fd != -1, "PTY already closed.");
-    ASSERT(_pid != 0, "Child already reaped.");
+    ASSERT(_fd != -1, << "PTY already closed.");
+    ASSERT(_pid != 0, << "Child already reaped.");
     const struct winsize winsize = { rows, cols, 0, 0 };
     THROW_IF_SYSCALL_FAILS(::ioctl(_fd, TIOCSWINSZ, &winsize), "");
 }
 
 void Tty::write(const uint8_t * data, size_t size) {
-    ASSERT(!_suspended, "");
+    ASSERT(!_suspended, );
 
     if (_dumpWrites) {
         return;
@@ -130,7 +130,7 @@ void Tty::write(const uint8_t * data, size_t size) {
         return;
     }
 
-    ASSERT(size != 0, "");
+    ASSERT(size != 0, );
 
     while (size != 0) {
         auto rval =
@@ -150,7 +150,7 @@ void Tty::write(const uint8_t * data, size_t size) {
             }
         }
         else if (rval == 0) {
-            FATAL("Zero length write.");
+            FATAL(<< "Zero length write");
         }
         else {
             data += rval;
@@ -174,29 +174,29 @@ bool Tty::hasSubprocess() const {
         return pid != _pid;
     }
     catch (const ConversionError & error) {
-        ERROR(error.what());
+        ERROR(<< error.what());
         return false;
     }
 }
 
 void Tty::suspend() {
-    ASSERT(_fd != -1, "");
-    ASSERT(!_suspended, "");
+    ASSERT(_fd != -1, );
+    ASSERT(!_suspended, );
 
     _selector.removeReadable(_fd);
     _suspended = true;
 }
 
 void Tty::resume() {
-    ASSERT(_fd != -1, "");
-    ASSERT(_suspended, "");
+    ASSERT(_fd != -1, );
+    ASSERT(_suspended, );
 
     _selector.addReadable(_fd, this);
     _suspended = false;
 }
 
 void Tty::close() {
-    ASSERT(_fd != -1, "");
+    ASSERT(_fd != -1, );
 
     if (!_suspended) {
         _selector.removeReadable(_fd);
@@ -210,7 +210,7 @@ void Tty::openPty(uint16_t            rows,
                   uint16_t            cols,
                   const std::string & windowId,
                   const Command     & command) {
-    ASSERT(_fd == -1, "");
+    ASSERT(_fd == -1, );
 
     int master, slave;
     struct winsize winsize = { rows, cols, 0, 0 };
@@ -313,15 +313,15 @@ void Tty::execShell(const std::string & windowId,
 }
 
 bool Tty::pollReap(int msec, int & status) {
-    ASSERT(_pid != 0, "");
-    ASSERT(msec >= 0, "");
+    ASSERT(_pid != 0, );
+    ASSERT(msec >= 0, );
 
     for (;;) {
         int   stat;
         pid_t pid;
         pid = THROW_IF_SYSCALL_FAILS(::waitpid(_pid, &stat, WNOHANG), "waitpid()");
         if (pid != 0) {
-            ASSERT(pid == _pid, "pid mismatch");
+            ASSERT(pid == _pid, );
             _pid = 0;
             status = WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
             return true;
@@ -339,12 +339,12 @@ bool Tty::pollReap(int msec, int & status) {
 }
 
 int Tty::waitReap() {
-    ASSERT(_pid != 0, "");
+    ASSERT(_pid != 0, );
 
     int  stat;
     pid_t pid;
     pid = THROW_IF_SYSCALL_FAILS(::waitpid(_pid, &stat, 0), "waitpid()");
-    ASSERT(pid == _pid, "pid mismatch");
+    ASSERT(pid == _pid, );
     _pid = 0;
     return WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
 }
@@ -358,8 +358,8 @@ void Tty::handleRead(int fd) {
         return;
     }
 
-    ASSERT(_fd != -1, "");
-    ASSERT(_fd == fd, "");
+    ASSERT(_fd != -1, );
+    ASSERT(_fd == fd, );
 
     // It's possible to be invoked to handle read even though we are suspended
     // if the suspend() call came during a Selector::animate() when we were

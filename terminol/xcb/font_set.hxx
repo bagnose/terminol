@@ -32,7 +32,7 @@ public:
             case 2: return _italic;
             case 3: return _italicBold;
         }
-        FATAL("Unreachable");
+        FATAL();
     }
 
     uint16_t getWidth()  const { return _width;  }

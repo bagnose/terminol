@@ -55,15 +55,15 @@ public:
              char shortOpt,
              const std::string & longOpt,
              bool mandatory = false) {
-        ENFORCE(!longOpt.empty() || shortOpt != '\0', "");
+        ENFORCE(!longOpt.empty() || shortOpt != '\0', );
 
         if (!longOpt.empty()) {
-            ENFORCE(_longToHandler.find(longOpt) == _longToHandler.end(), "");
+            ENFORCE(_longToHandler.find(longOpt) == _longToHandler.end(), );
             _longToHandler.insert({longOpt, handler.get()});
         }
 
         if (shortOpt != '\0') {
-            ENFORCE(_shortToHandler.find(shortOpt) == _shortToHandler.end(), "");
+            ENFORCE(_shortToHandler.find(shortOpt) == _shortToHandler.end(), );
             _shortToHandler.insert({shortOpt, handler.get()});
         }
 
@@ -74,7 +74,7 @@ public:
         std::vector<std::string> arguments;
         bool ignore = false;
 
-        ASSERT(argc >= 1, "");
+        ASSERT(argc >= 1, );
         for (int i = 1; i != argc; ++i) {
             std::string str = argv[i];
 
@@ -159,7 +159,7 @@ public:
                     }
                 }
                 else {
-                    ENFORCE(false, "Unreachable");
+                    ENFORCE(false, );
                 }
             }
         }

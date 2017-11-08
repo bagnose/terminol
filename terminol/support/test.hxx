@@ -26,7 +26,7 @@ class Test {
     }
 
     void pop() {
-        ASSERT(!_names.empty(), "Too many pops.");
+        ASSERT(!_names.empty(), << "Too many pops");
         _names.pop_back();
     }
 
@@ -60,7 +60,7 @@ public:
     ~Test() {
         if (!std::uncaught_exception()) {
             pop();
-            ASSERT(_names.empty(), "Insufficient pops");
+            ASSERT(_names.empty(), << "Insufficient pops");
 
             if (_failures > 0) {
                 std::terminate();

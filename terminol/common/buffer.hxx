@@ -100,12 +100,12 @@ class Buffer {
         ALine(std::vector<Cell> && cells_, bool cont_, int16_t wrap_, int16_t cols) :
             cells(std::move(cells_)), cont(cont_), wrap(wrap_)
         {
-            ASSERT(wrap_ <= cols, "");
+            ASSERT(wrap_ <= cols, );
             cells.resize(cols, Cell::blank());
         }
 
         void resize(int16_t cols) {
-            ASSERT(cols > 0, "cols not positive.");
+            ASSERT(cols > 0, );
             cont = false;
             wrap = std::min(wrap, cols);
             cells.resize(cols, Cell::blank());
@@ -132,7 +132,7 @@ class Buffer {
 
         // Explicitly specify the damage.
         void damageSet(int16_t begin_, int16_t end_) {
-            ASSERT(begin_ <= end_, "");
+            ASSERT(begin_ <= end_, );
 
             begin = begin_;
             end   = end_;
@@ -140,7 +140,7 @@ class Buffer {
 
         // Accumulate more damage.
         void damageAdd(int16_t begin_, int16_t end_) {
-            ASSERT(begin_ <= end_, "");
+            ASSERT(begin_ <= end_, );
 
             if (begin_ == end_) {
                 // Do nothing.
@@ -212,7 +212,7 @@ class Buffer {
         BufferIter(const Buffer & buffer, int32_t row);
 
         ParaIter getParaIter() const {
-            ASSERT(_valid, "Invalid.");
+            ASSERT(_valid, );
             return ParaIter(_buffer, APos(_row, 0));
         }
 

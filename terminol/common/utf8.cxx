@@ -35,7 +35,7 @@ Length leadLength(uint8_t lead) noexcept {
         return Length::L4;
     }
     else {
-        FATAL("Cannot determine lead length: " << toBinaryString(lead));
+        FATAL(<< "Cannot determine lead length: " << toBinaryString(lead));
     }
 }
 

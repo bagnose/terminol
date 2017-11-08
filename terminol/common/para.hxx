@@ -26,7 +26,7 @@ public:
     uint32_t getLength() const { return static_cast<uint32_t>(_styles.size()); }
 
     Style getStyle(uint32_t offset) const {
-        ASSERT(offset < getLength(), "");
+        ASSERT(offset < getLength(), );
         return _styles[offset];
     }
 

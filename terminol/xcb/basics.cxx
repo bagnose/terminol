@@ -231,7 +231,7 @@ xcb_atom_t Basics::lookupAtom(const std::string & name,
     std::free(reply);
 
     if (atom == XCB_ATOM_NONE) {
-        ASSERT(!create, "");
+        ASSERT(!create, );
         THROW(ConversionError("Atom not found: " + name));
     }
     else {

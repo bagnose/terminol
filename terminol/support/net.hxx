@@ -116,7 +116,7 @@ protected:
                 TEMP_FAILURE_RETRY(::close(fd));
             }
             else {
-                ASSERT(rval > 0, "");
+                ASSERT(rval > 0, );
                 _observer.serverReceived(fd, buf, rval);
             }
         }
@@ -198,8 +198,8 @@ protected:
     // I_Selector::I_Writer implementation:
 
     void handleWrite(int fd) override {
-        ASSERT(fd == _fd, "");
-        ASSERT(!_queue.empty(), "");
+        ASSERT(fd == _fd, );
+        ASSERT(!_queue.empty(), );
 
         ssize_t rval = THROW_IF_SYSCALL_FAILS(::send(fd, &_queue.front(), _queue.size(), MSG_NOSIGNAL),
                                               "send()");

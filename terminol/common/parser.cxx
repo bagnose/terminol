@@ -284,7 +284,7 @@ bool Parser::tryPath(const std::string & path) {
 }
 
 void Parser::interpretTokens(const std::vector<std::string> & tokens) {
-    ASSERT(!tokens.empty(), "No tokens!");
+    ASSERT(!tokens.empty(), );
 
     if (tokens[0] == "set") {
         if (tokens.size() == 3) {

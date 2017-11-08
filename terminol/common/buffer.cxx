@@ -14,7 +14,7 @@ Buffer::ParaIter::ParaIter(const Buffer & buffer, APos pos) :
 }
 
 void Buffer::ParaIter::moveForward() {
-    ASSERT(_valid, "Invalid");
+    ASSERT(_valid, );
 
     ++_pos.col;
 
@@ -23,7 +23,7 @@ void Buffer::ParaIter::moveForward() {
         _pos.col = 0;
 
         if (_cont) {
-            ASSERT(_pos.row < _buffer.getRows(), "");
+            ASSERT(_pos.row < _buffer.getRows(), );
             _buffer.getLine(_pos.row, _cells, _cont, _wrap);
             _valid = _pos.col < _wrap;
         }
@@ -37,7 +37,7 @@ void Buffer::ParaIter::moveForward() {
 }
 
 void Buffer::ParaIter::moveBackward() {
-    ASSERT(_valid, "Invalid");
+    ASSERT(_valid, );
 
     if (_pos.col == 0) {
         --_pos.row;
@@ -194,8 +194,8 @@ void Buffer::delimitSelection(Pos pos, bool initial) {
         if (col < 0)          { col += getCols(); --row; }
         if (col >= getCols()) { col -= getCols(); ++row; }
 
-        ASSERT(col >= 0, "Column is not positive.");
-        ASSERT(col < getCols(), "Column exceeds maximum.");
+        ASSERT(col >= 0, );
+        ASSERT(col < getCols(), );
 
         APos centre(row, col);
 
@@ -436,9 +436,9 @@ void Buffer::write(utf8::Seq seq, bool autoWrap, bool insert) {
         }
 
         ASSERT(_cursor.pos.col == _cols - 1,
-               "col=" << _cursor.pos.col << ", _cols-1=" << _cols - 1);
+               << "col=" << _cursor.pos.col << ", _cols-1=" << _cols - 1);
         ASSERT(line.wrap == _cols,
-               "wrap=" << line.wrap << ", _cols=" << _cols);
+               << "wrap=" << line.wrap << ", _cols=" << _cols);
 
         if (_cursor.pos.row == _marginEnd - 1) {
             addLine();      // invalidates line reference
@@ -469,11 +469,11 @@ void Buffer::write(utf8::Seq seq, bool autoWrap, bool insert) {
     }
 
     ASSERT(line.wrap <= getCols(),
-           "line.wrap=" << line.wrap << " getCols()=" << getCols());
+           << "line.wrap=" << line.wrap << " getCols()=" << getCols());
     ASSERT(_cursor.pos.col < getCols(),
-           "_cursor.pos.cos=" << _cursor.pos.col << " getCols()=" << getCols());
+           << "_cursor.pos.cos=" << _cursor.pos.col << " getCols()=" << getCols());
     line.wrap = std::max<int16_t>(line.wrap, _cursor.pos.col + 1);
-    ASSERT(line.wrap <= getCols(), "");
+    ASSERT(line.wrap <= getCols(), );
 
     if (_cursor.pos.col == getCols() - 1) {
         _cursor.wrapNext = true;
@@ -609,16 +609,16 @@ void Buffer::restoreCursor() {
         _charSubs.set(_cursor.charSet, _savedCursor.charSub);
     }
 
-    ASSERT(_cursor.pos.row < getRows(), "");
-    ASSERT(_cursor.pos.col < getCols(), "");
+    ASSERT(_cursor.pos.row < getRows(), );
+    ASSERT(_cursor.pos.col < getCols(), );
 
     damageCell();
 }
 
 void Buffer::resizeClip(int16_t rows, int16_t cols) {
-    ASSERT(rows > 0 && cols > 0, "");
-    ASSERT(_cursor.pos.row >= 0 && _cursor.pos.row < getRows(), "");
-    ASSERT(_cursor.pos.col >= 0 && _cursor.pos.col < getCols(), "");
+    ASSERT(rows > 0 && cols > 0, );
+    ASSERT(_cursor.pos.row >= 0 && _cursor.pos.row < getRows(), );
+    ASSERT(_cursor.pos.col >= 0 && _cursor.pos.col < getCols(), );
 
     clearSelection();
 
@@ -637,7 +637,7 @@ void Buffer::resizeClip(int16_t rows, int16_t cols) {
 
     _cols = cols;
 
-    ASSERT(getRows() == rows && getCols() == cols, "");
+    ASSERT(getRows() == rows && getCols() == cols, );
 
     _active.shrink_to_fit();
 
@@ -658,13 +658,13 @@ void Buffer::resizeClip(int16_t rows, int16_t cols) {
 }
 
 void Buffer::resizeReflow(int16_t rows, int16_t cols) {
-    ASSERT(rows > 0 && cols > 0, "");
-    ASSERT(_cursor.pos.row >= 0 && _cursor.pos.row < getRows(), "");
-    ASSERT(_cursor.pos.col >= 0 && _cursor.pos.col < getCols(), "");
+    ASSERT(rows > 0 && cols > 0, );
+    ASSERT(_cursor.pos.row >= 0 && _cursor.pos.row < getRows(), );
+    ASSERT(_cursor.pos.col >= 0 && _cursor.pos.col < getCols(), );
 
     clearSelection();
 
-    ASSERT(!_active.back().cont, "");
+    ASSERT(!_active.back().cont, );
 
     // Remove blank lines from the back, stopping if we hit the cursor.
     while (getRows() > rows &&
@@ -705,9 +705,9 @@ void Buffer::resizeReflow(int16_t rows, int16_t cols) {
             _cursor.wrapNext = false;
         }
 
-        ASSERT(doneCursor, "");
-        ASSERT(!_tags.empty(), "");
-        ASSERT(_pending.empty(), "");
+        ASSERT(doneCursor, );
+        ASSERT(!_tags.empty(), );
+        ASSERT(_pending.empty(), );
 
         _cols = cols;       // Must set before calling rebuildHistory().
         rebuildHistory();
@@ -742,7 +742,7 @@ void Buffer::resizeReflow(int16_t rows, int16_t cols) {
             unbump();
         }
 
-        ASSERT(_cursor.pos.col >= 0, "");
+        ASSERT(_cursor.pos.col >= 0, );
 
         if (!doneCursor) {
             _cursor.pos.row = 0;
@@ -754,8 +754,8 @@ void Buffer::resizeReflow(int16_t rows, int16_t cols) {
             _active.resize(rows, ALine(cols));
         }
 
-        ASSERT(_active.size() == static_cast<size_t>(rows), "");
-        ASSERT(_active.front().cells.size() == static_cast<size_t>(cols), "");
+        ASSERT(_active.size() == static_cast<size_t>(rows), );
+        ASSERT(_active.front().cells.size() == static_cast<size_t>(cols), );
     }
     else {
         if (getRows() < rows) {
@@ -779,9 +779,9 @@ void Buffer::resizeReflow(int16_t rows, int16_t cols) {
         }
     }
 
-    ASSERT(getRows() == rows && getCols() == cols, "rows=" << getRows() << ", cols=" << getCols());
-    ASSERT(_cursor.pos.row >= 0, "");
-    ASSERT(_cursor.pos.col >= 0, "");
+    ASSERT(getRows() == rows && getCols() == cols, << "rows=" << getRows() << ", cols=" << getCols());
+    ASSERT(_cursor.pos.row >= 0, );
+    ASSERT(_cursor.pos.col >= 0, );
 
     _active.shrink_to_fit();
 
@@ -857,17 +857,17 @@ void Buffer::setMargins(int16_t begin, int16_t end) {
 }
 
 void Buffer::insertCells(uint16_t n) {
-    ASSERT(n > 0, "n is not positive.");
+    ASSERT(n > 0, );
 
     testClearSelection(APos(_cursor.pos, 0),
                        APos(Pos(_cursor.pos.row, getCols()), 0));
 
     n = std::min<uint16_t>(n, getCols() - _cursor.pos.col);
-    ASSERT(n > 0, "n is not positive.");
+    ASSERT(n > 0, );
 
     auto & line = _active[_cursor.pos.row];
     line.wrap = std::min<int16_t>(getCols(), line.wrap + n);
-    ASSERT(line.wrap <= getCols(), "");
+    ASSERT(line.wrap <= getCols(), );
     std::copy_backward(line.cells.begin() + _cursor.pos.col,
                        line.cells.end() - n,
                        line.cells.end());
@@ -878,7 +878,7 @@ void Buffer::insertCells(uint16_t n) {
     damageColumns(_cursor.pos.col, getCols());
 
     ASSERT(!line.cont || line.wrap == _cols,
-           "line.cont=" << std::boolalpha << line.cont <<
+           << "line.cont=" << std::boolalpha << line.cont <<
            ", line.wrap=" << line.wrap <<
            ", _cols=" << _cols);
 
@@ -886,7 +886,7 @@ void Buffer::insertCells(uint16_t n) {
 }
 
 void Buffer::eraseCells(uint16_t n) {
-    ASSERT(n > 0, "n is not positive.");
+    ASSERT(n > 0, );
 
     testClearSelection(APos(_cursor.pos, 0),
                        APos(Pos(_cursor.pos.row, getCols()), 0));
@@ -896,7 +896,7 @@ void Buffer::eraseCells(uint16_t n) {
     auto & line = _active[_cursor.pos.row];
     line.cont = false;
     line.wrap = std::max<int16_t>(0, line.wrap - n);
-    ASSERT(line.wrap <= getCols(), "");
+    ASSERT(line.wrap <= getCols(), );
     std::copy(line.cells.begin() + _cursor.pos.col + n,
               line.cells.end(),
               line.cells.begin() + _cursor.pos.col);
@@ -907,7 +907,7 @@ void Buffer::eraseCells(uint16_t n) {
     damageColumns(_cursor.pos.col, getCols());
 
     ASSERT(!line.cont || line.wrap == _cols,
-           "line.cont=" << std::boolalpha << line.cont <<
+           << "line.cont=" << std::boolalpha << line.cont <<
            ", line.wrap=" << line.wrap <<
            ", _cols=" << _cols);
 
@@ -915,7 +915,7 @@ void Buffer::eraseCells(uint16_t n) {
 }
 
 void Buffer::blankCells(uint16_t n) {
-    ASSERT(n > 0, "n is not positive.");
+    ASSERT(n > 0, );
 
     testClearSelection(APos(_cursor.pos, 0),
                        APos(Pos(_cursor.pos.row, _cursor.pos.col + n), 0));
@@ -945,7 +945,7 @@ void Buffer::clearLine() {
     damageColumns(0, getCols());
 
     ASSERT(!line.cont || line.wrap == _cols,
-           "line.cont=" << std::boolalpha << line.cont <<
+           << "line.cont=" << std::boolalpha << line.cont <<
            ", line.wrap=" << line.wrap <<
            ", _cols=" << _cols);
 
@@ -965,7 +965,7 @@ void Buffer::clearLineLeft() {
     damageColumns(0, _cursor.pos.col + 1);
 
     ASSERT(!line.cont || line.wrap == _cols,
-           "line.cont=" << std::boolalpha << line.cont <<
+           << "line.cont=" << std::boolalpha << line.cont <<
            ", line.wrap=" << line.wrap <<
            ", _cols=" << _cols);
 
@@ -981,14 +981,14 @@ void Buffer::clearLineRight() {
     line.cont = false;
     _cursor.wrapNext = false;
     line.wrap = std::min(line.wrap, _cursor.pos.col);
-    ASSERT(line.wrap <= getCols(), "");
+    ASSERT(line.wrap <= getCols(), );
     std::fill(line.cells.begin() + _cursor.pos.col,
               line.cells.end(),
               Cell::blank(_cursor.style));
     damageColumns(_cursor.pos.col, line.cells.size());
 
     ASSERT(!line.cont || line.wrap == _cols,
-           "line.cont=" << std::boolalpha << line.cont <<
+           << "line.cont=" << std::boolalpha << line.cont <<
            ", line.wrap=" << line.wrap <<
            ", _cols=" << _cols);
 
@@ -1141,7 +1141,7 @@ const CharSub * Buffer::getCharSub(CharSet charSet) const {
 }
 
 void Buffer::beginSearch(const std::string & pattern) {
-    ASSERT(!_search, "Already searching.");
+    ASSERT(!_search, );
     _search = std::make_unique<Search>(*this, pattern);
     _damage.back().damageAdd(0, getCols());
 
@@ -1183,28 +1183,28 @@ void Buffer::beginSearch(const std::string & pattern) {
 }
 
 const std::string & Buffer::getSearchPattern() const {
-    ASSERT(_search, "Not searching.");
+    ASSERT(_search, );
     return _search->pattern;
 }
 
 void Buffer::setSearchPattern(const std::string & pattern) {
-    ASSERT(_search, "Not searching.");
+    ASSERT(_search, );
     _search->pattern = pattern;
     // TODO
 }
 
 void Buffer::nextSearch() {
-    ASSERT(_search, "Not searching.");
-    NYI("");
+    ASSERT(_search, );
+    NYI();
 }
 
 void Buffer::prevSearch() {
-    ASSERT(_search, "Not searching.");
-    NYI("");
+    ASSERT(_search, );
+    NYI();
 }
 
 void Buffer::endSearch() {
-    ASSERT(_search, "Not searching.");
+    ASSERT(_search, );
     _search.reset();
 }
 
@@ -1269,7 +1269,7 @@ void Buffer::dumpHistory(std::ostream & ost) const {
             _deduper.lookupSegment(tag, offset, getCols(), cells, cont, wrap);
         }
 
-        ASSERT(wrap <= getCols(), "");
+        ASSERT(wrap <= getCols(), );
 
         for (uint16_t o = 0; o != wrap; ++o) {
             auto c = offset + o;
@@ -1623,8 +1623,8 @@ bool Buffer::normaliseSelection(APos & begin, APos & end) const {
 }
 
 void Buffer::insertLinesAt(int16_t row, uint16_t n) {
-    ASSERT(row >= _marginBegin && row < _marginEnd, "");
-    ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n <<
+    ASSERT(row >= _marginBegin && row < _marginEnd, );
+    ASSERT(row + n <= _marginEnd, << "row=" << row << ", n=" << n <<
            ", margin-end=" << _marginEnd);
 
     APos begin, end;
@@ -1656,8 +1656,9 @@ void Buffer::insertLinesAt(int16_t row, uint16_t n) {
 }
 
 void Buffer::eraseLinesAt(int16_t row, uint16_t n) {
-    ASSERT(row >= _marginBegin && row < _marginEnd, "");
-    ASSERT(row + n <= _marginEnd, "row=" << row << ", n=" << n <<
+    ASSERT(row >= _marginBegin && row < _marginEnd, );
+    ASSERT(row + n <= _marginEnd,
+           << "row=" << row << ", n=" << n <<
            ", margin-end=" << _marginEnd);
 
     APos begin, end;
@@ -1682,7 +1683,7 @@ void Buffer::eraseLinesAt(int16_t row, uint16_t n) {
 
     damageRows(row, _marginEnd);
 
-    ASSERT(!_active.back().cont, "");
+    ASSERT(!_active.back().cont, );
 }
 
 bool Buffer::marginsSet() const {
@@ -1698,9 +1699,9 @@ void Buffer::damageCell() {
 }
 
 void Buffer::damageColumns(int16_t begin, int16_t end) {
-    ASSERT(begin <= end, "");
-    ASSERT(begin >= 0, "");
-    ASSERT(end   <= getCols(), "");
+    ASSERT(begin <= end, );
+    ASSERT(begin >= 0, );
+    ASSERT(end   <= getCols(), );
 
     auto damageRow = _scrollOffset + static_cast<uint32_t>(_cursor.pos.row);
 
@@ -1710,7 +1711,7 @@ void Buffer::damageColumns(int16_t begin, int16_t end) {
 }
 
 void Buffer::damageRows(int16_t begin, int16_t end) {
-    ASSERT(begin <= end, "");
+    ASSERT(begin <= end, );
 
     for (auto i = begin; i != end; ++i) {
         auto damageRow = _scrollOffset + static_cast<uint32_t>(i);
@@ -1791,7 +1792,7 @@ void Buffer::bump() {
     auto & aline = _active.front();
 
     ASSERT(!aline.cont || aline.wrap == _cols,
-           "aline.cont=" << std::boolalpha << aline.cont <<
+           << "aline.cont=" << std::boolalpha << aline.cont <<
            ", aline.wrap=" << aline.wrap <<
            ", _cols=" << _cols);
 
@@ -1801,22 +1802,22 @@ void Buffer::bump() {
 
     if (_pending.empty()) {
         // This line is not a continuation of a previous line.
-        ASSERT(_tags.empty() || _tags.back() != I_Deduper::invalidTag(), "");
-        ASSERT(_history.empty() || _history.back().index - _lostTags == _tags.size() - 1, "");
+        ASSERT(_tags.empty() || _tags.back() != I_Deduper::invalidTag(), );
+        ASSERT(_history.empty() || _history.back().index - _lostTags == _tags.size() - 1, );
 
         if (cont) {
             // This line is continued on the next line so it can't be stored
             // for dedupe yet.
             _pending = std::move(cells);
-            ASSERT(cells.empty(), "Not stolen by move constructor?");
+            ASSERT(cells.empty(), );
             _tags.push_back(I_Deduper::invalidTag());
         }
         else {
             // This line is completely standalone. Immediately dedupe it.
-            ASSERT(static_cast<size_t>(wrap) <= cells.size(), "");
+            ASSERT(static_cast<size_t>(wrap) <= cells.size(), );
             cells.erase(cells.begin() + wrap, cells.end());
             auto tag = _deduper.store(cells);
-            ASSERT(tag != I_Deduper::invalidTag(), "");
+            ASSERT(tag != I_Deduper::invalidTag(), );
             _tags.push_back(tag);
         }
 
@@ -1825,12 +1826,12 @@ void Buffer::bump() {
     else {
         // This line is a continuation of the previous line.
         // Copy its contents into _pending.
-        ASSERT(!_tags.empty(), "");
-        ASSERT(_tags.back() == I_Deduper::invalidTag(), "");
-        ASSERT(!_history.empty(), "");
-        ASSERT(_history.back().index - _lostTags == _tags.size() - 1, "");
+        ASSERT(!_tags.empty(), );
+        ASSERT(_tags.back() == I_Deduper::invalidTag(), );
+        ASSERT(!_history.empty(), );
+        ASSERT(_history.back().index - _lostTags == _tags.size() - 1, );
         auto oldSize = _pending.size();
-        ASSERT(oldSize % _cols == 0, "");
+        ASSERT(oldSize % _cols == 0, );
 
         _pending.resize(oldSize + wrap, Cell::blank());
         std::copy(cells.begin(), cells.begin() + wrap, _pending.begin() + oldSize);
@@ -1840,54 +1841,54 @@ void Buffer::bump() {
             // This line is not itself continued.
             // Store _pending and the tag.
             auto tag = _deduper.store(_pending);
-            ASSERT(tag != I_Deduper::invalidTag(), "");
+            ASSERT(tag != I_Deduper::invalidTag(), );
             _pending.clear();
-            ASSERT(_tags.back() == I_Deduper::invalidTag(), "");
+            ASSERT(_tags.back() == I_Deduper::invalidTag(), );
             _tags.back() = tag;
         }
     }
 
-    ASSERT(!_history.empty() && _history.back().index - _lostTags == _tags.size() - 1, "");
+    ASSERT(!_history.empty() && _history.back().index - _lostTags == _tags.size() - 1, );
 
     _active.pop_front();        // This invalidates 'aline'.
 }
 
 void Buffer::unbump() {
-    ASSERT(!_tags.empty(), "");
-    ASSERT(!_history.empty(), "");
+    ASSERT(!_tags.empty(), );
+    ASSERT(!_history.empty(), );
 
     auto & hline = _history.back();
-    ASSERT(hline.index - _lostTags == _tags.size() - 1, "");
+    ASSERT(hline.index - _lostTags == _tags.size() - 1, );
 
     bool cont;
 
     if (_pending.empty()) {
         cont = false;
         auto tag = _tags.back();
-        ASSERT(tag != I_Deduper::invalidTag(), "");
+        ASSERT(tag != I_Deduper::invalidTag(), );
         _deduper.lookup(tag, _pending);
         _deduper.remove(tag);
         _tags.back() = I_Deduper::invalidTag();
     }
     else {
         cont = true;
-        ASSERT(_tags.back() == I_Deduper::invalidTag(), "");
+        ASSERT(_tags.back() == I_Deduper::invalidTag(), );
     }
 
     size_t offset = hline.seqnum * _cols;
-    ASSERT(offset <= _pending.size(), "");
+    ASSERT(offset <= _pending.size(), );
     std::vector<Cell> cells(_pending.begin() + offset, _pending.end());
     _pending.erase(_pending.begin() + offset, _pending.end());
 
     _active.emplace_front(std::move(cells), cont, cells.size(), _cols);
-    ASSERT(cells.empty(), "Not stolen by move constructor?");
-    ASSERT(_active.front().wrap <= _cols, "");
+    ASSERT(cells.empty(), );
+    ASSERT(_active.front().wrap <= _cols, );
 
     _history.pop_back();
 
     if (_history.empty() || _history.back().index - _lostTags != _tags.size() - 1) {
         _tags.pop_back();
-        ASSERT(_pending.empty(), "");
+        ASSERT(_pending.empty(), );
     }
 }
 

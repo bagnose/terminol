@@ -35,7 +35,7 @@ Screen::Screen(I_Observer         & observer,
     // Register our object with the font manager.
 
     _fontSet = _fontManager.addClient(this);
-    ASSERT(_fontSet, "Null font-set.");
+    ASSERT(_fontSet, );
     ScopeGuard fontGuard([&]() { _fontManager.removeClient(this); });
 
     // Calculate what our initial geometry should be. Though the WM
@@ -130,14 +130,14 @@ Screen::Screen(I_Observer         & observer,
 
 Screen::~Screen() {
     if (_mapped) {
-        ASSERT(_pixmap, "Null pixmap.");
-        ASSERT(_surface, "Null surface.");
+        ASSERT(_pixmap, );
+        ASSERT(_surface, );
 
         destroySurfaceAndPixmap();
     }
     else {
-        ASSERT(!_surface, "Surface not null.");
-        ASSERT(!_pixmap, "Pixmap not null.");
+        ASSERT(!_surface, );
+        ASSERT(!_pixmap, );
     }
 
     // A generic cookie for all subsequent checked XCB calls.
@@ -169,7 +169,7 @@ Screen::~Screen() {
 // Events:
 
 void Screen::keyPress(xcb_key_press_event_t * event) {
-    ASSERT(event->event == getWindow(), "Unexpected window.");
+    ASSERT(event->event == getWindow(), );
 
     if (_config.autoHideCursor) {
         // Key presses hide the cursor.
@@ -203,7 +203,7 @@ void Screen::keyRelease(xcb_key_release_event_t * UNUSED(event)) {
 }
 
 void Screen::buttonPress(xcb_button_press_event_t * event) {
-    ASSERT(event->event == getWindow(), "Unexpected window.");
+    ASSERT(event->event == getWindow(), );
 
     if (_config.autoHideCursor) {
         // Button presses show the cursor.
@@ -229,7 +229,7 @@ void Screen::buttonPress(xcb_button_press_event_t * event) {
     }
 
     if (_pressed) {
-        ASSERT(event->detail != _button, "This button is already pressed.");
+        ASSERT(event->detail != _button, << "This button is already pressed");
         return;
     }
 
@@ -264,7 +264,7 @@ void Screen::buttonPress(xcb_button_press_event_t * event) {
 }
 
 void Screen::buttonRelease(xcb_button_release_event_t * event) {
-    ASSERT(event->event == getWindow(), "Unexpected window.");
+    ASSERT(event->event == getWindow(), );
 
     if (_config.autoHideCursor) {
         // Button releases show the cursor.
@@ -283,7 +283,7 @@ void Screen::buttonRelease(xcb_button_release_event_t * event) {
 }
 
 void Screen::motionNotify(xcb_motion_notify_event_t * event) {
-    ASSERT(event->event == getWindow(), "Unexpected window.");
+    ASSERT(event->event == getWindow(), );
 
     if (_config.autoHideCursor) {
         // Pointer motion show the cursor.
@@ -326,14 +326,14 @@ void Screen::motionNotify(xcb_motion_notify_event_t * event) {
 }
 
 void Screen::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
-    ASSERT(!_mapped, "Received map notification, but already mapped.");
+    ASSERT(!_mapped, << "Received map notification, but already mapped");
 
     _mapped = true;
     createPixmapAndSurface();
 }
 
 void Screen::unmapNotify(xcb_unmap_notify_event_t * UNUSED(event)) {
-    ASSERT(_mapped, "Received unmap notification, but not mapped.");
+    ASSERT(_mapped, << "Received unmap notification, but not mapped");
 
     _mapped = false;
     destroySurfaceAndPixmap();
@@ -343,18 +343,18 @@ void Screen::expose(xcb_expose_event_t * event) {
     // If there is a deferral then our pixmap won't be valid.
     if (_deferred) { return; }
 
-    ASSERT(event->window == getWindow(), "Unexpected window.");
-    ASSERT(_mapped, "Received expose event, but not mapped.");
+    ASSERT(event->window == getWindow(), );
+    ASSERT(_mapped, << "Received expose event, but not mapped");
 
     if (_mapped) {
-        ASSERT(_pixmap, "Null pixmap.");
-        ASSERT(_surface, "Null surface.");
+        ASSERT(_pixmap, );
+        ASSERT(_surface, );
         copyPixmapToWindow(event->x, event->y, event->width, event->height);
     }
 }
 
 void Screen::configureNotify(xcb_configure_notify_event_t * event) {
-    ASSERT(event->window == getWindow(), "Unexpected window.");
+    ASSERT(event->window == getWindow(), );
 
     // Note, once we've had a deferral we don't apply the
     // optimisation: no transparency and just a move -> no-op.
@@ -426,7 +426,7 @@ void Screen::leaveNotify(xcb_leave_notify_event_t * event) {
 }
 
 void Screen::destroyNotify(xcb_destroy_notify_event_t * event) {
-    ASSERT(event->window == getWindow(), "Unexpected window.");
+    ASSERT(event->window == getWindow(), );
 
     _terminal->killReap();
     _open      = false;
@@ -473,7 +473,7 @@ void Screen::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
 }
 
 void Screen::selectionRequest(xcb_selection_request_event_t * event) {
-    ASSERT(event->owner == getWindow(), "Unexpected window.");
+    ASSERT(event->owner == getWindow(), );
 
     xcb_selection_notify_event_t response;
     response.response_type = XCB_SELECTION_NOTIFY;
@@ -545,8 +545,8 @@ void Screen::clientMessage(xcb_client_message_event_t * event) {
 
 void Screen::redraw() {
     if (_mapped) {
-        ASSERT(_pixmap, "");
-        ASSERT(_surface, "");
+        ASSERT(_pixmap, );
+        ASSERT(_surface, );
         renderPixmap();
         copyPixmapToWindow(0, 0, _geometry.width, _geometry.height);
     }
@@ -565,7 +565,7 @@ void Screen::clearSelection() {
 }
 
 void Screen::deferral() {
-    ASSERT(_deferred, "");
+    ASSERT(_deferred, );
     _deferred = false;
     handleConfigure();
 }
@@ -645,8 +645,8 @@ void Screen::icccmConfigure() {
 }
 
 void Screen::pos2XY(Pos pos, int & x, int & y) const {
-    ASSERT(pos.row <= _terminal->getRows(), "pos.row=" << pos.row << ", getRows()=" << _terminal->getRows());
-    ASSERT(pos.col <= _terminal->getCols(), "pos.col=" << pos.col << ", getCols()=" << _terminal->getCols());
+    ASSERT(pos.row <= _terminal->getRows(), << "pos.row=" << pos.row << ", getRows()=" << _terminal->getRows());
+    ASSERT(pos.col <= _terminal->getCols(), << "pos.col=" << pos.col << ", getCols()=" << _terminal->getCols());
 
     auto border_thickness = _config.borderThickness;
 
@@ -674,7 +674,7 @@ bool Screen::xy2Pos(int x, int y, Pos & pos, Hand & hand) const {
         pos.col = xx / fontWidth;
         hand    = xx % fontWidth > halfFontWidth ? Hand::RIGHT : Hand::LEFT;
         ASSERT(pos.col <= _terminal->getCols(),
-               "col is: " << pos.col << ", getCols() is: " <<
+               << "col is: " << pos.col << ", getCols() is: " <<
                _terminal->getCols());
     }
     else {
@@ -693,7 +693,7 @@ bool Screen::xy2Pos(int x, int y, Pos & pos, Hand & hand) const {
         auto yy = y - border_thickness;
         pos.row = yy / fontHeight;
         ASSERT(pos.row < _terminal->getRows(),
-               "row is: " << pos.row << ", getRows() is: " <<
+               << "row is: " << pos.row << ", getRows() is: " <<
                _terminal->getRows());
     }
     else {
@@ -731,7 +731,7 @@ void Screen::setTitle(const std::string & title, bool prependGeometry) {
 }
 
 void Screen::setIcon(const std::string & icon) {
-    ASSERT(_terminal, "Null terminal.");
+    ASSERT(_terminal, );
 
 #if 1
     xcb_icccm_set_wm_icon_name(_basics.connection(),
@@ -766,9 +766,9 @@ void Screen::createPixmapAndSurface() {
                                         _basics.visual(),
                                         _geometry.width,
                                         _geometry.height);
-    ASSERT(_surface, "Failed to create surface.");
+    ASSERT(_surface, << "Failed to create surface.");
     ASSERT(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS,
-           "Bad cairo surface status.");
+           << "Bad cairo surface status.");
 
     renderPixmap();
 }
@@ -784,21 +784,21 @@ void Screen::destroySurfaceAndPixmap() {
 }
 
 void Screen::renderPixmap() {
-    ASSERT(_mapped, "");
-    ASSERT(_pixmap, "");
-    ASSERT(_surface, "");
+    ASSERT(_mapped, );
+    ASSERT(_pixmap, );
+    ASSERT(_surface, );
     _cr = cairo_create(_surface);
     cairo_set_line_width(_cr, 1.0);
 
     cairo_save(_cr); {
         ASSERT(cairo_status(_cr) == 0,
-               "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
+               << "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
 
         drawBorder();
         _terminal->redraw();
 
         ASSERT(cairo_status(_cr) == 0,
-               "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
+               << "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
 
     } cairo_restore(_cr);
     cairo_destroy(_cr);
@@ -806,7 +806,7 @@ void Screen::renderPixmap() {
 
     cairo_surface_flush(_surface);      // Useful?
     ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS,
-            "Bad cairo surface status.");
+            << "Bad cairo surface status.");
 }
 
 void Screen::drawBorder() {
@@ -911,8 +911,8 @@ void Screen::drawBorder() {
 }
 
 void Screen::copyPixmapToWindow(int x, int y, int w, int h) {
-    ASSERT(_mapped, "");
-    ASSERT(_pixmap, "");
+    ASSERT(_mapped, );
+    ASSERT(_pixmap, );
     // Copy the buffer region and flush.
     xcb_copy_area(_basics.connection(),
                   _pixmap,
@@ -957,8 +957,8 @@ void Screen::handleResize() {
     }
 
     if (_mapped) {
-        ASSERT(_pixmap, "Null pixmap.");
-        ASSERT(_surface, "Null surface.");
+        ASSERT(_pixmap, );
+        ASSERT(_surface, );
 
         destroySurfaceAndPixmap();
         createPixmapAndSurface();
@@ -988,13 +988,13 @@ void Screen::handleResize() {
 }
 
 void Screen::handleMove() {
-    ASSERT(_config.x11PseudoTransparency, "");
+    ASSERT(_config.x11PseudoTransparency, );
 
     _geometry = _deferredGeometry;
 
     if (_mapped) {
-        ASSERT(_pixmap, "");
-        ASSERT(_surface, "");
+        ASSERT(_pixmap, );
+        ASSERT(_surface, );
         renderPixmap();
         copyPixmapToWindow(0, 0, _geometry.width, _geometry.height);
     }
@@ -1046,7 +1046,7 @@ void Screen::sizeToRowsCols(int16_t & rows, int16_t & cols) const {
         rows = cols = 1;
     }
 
-    ASSERT(rows > 0 && cols > 0, "Rows or cols not positive.");
+    ASSERT(rows > 0 && cols > 0, );
 }
 
 void Screen::handleDelete() {
@@ -1062,7 +1062,7 @@ void Screen::handleDelete() {
 }
 
 void Screen::cursorVisibility(bool visible) {
-    ASSERT(_config.autoHideCursor, "");
+    ASSERT(_config.autoHideCursor, );
 
     if (_cursorVisible != visible) {
         auto mask   = XCB_CW_CURSOR;
@@ -1178,8 +1178,8 @@ void Screen::terminalBell() {
 
     if (_config.visualBell) {
         if (_mapped) {
-            ASSERT(_pixmap, "Null pixmap.");
-            ASSERT(_surface, "Null surface.");
+            ASSERT(_pixmap, );
+            ASSERT(_surface, );
 
             // Fill the window with a solid colour.
 
@@ -1203,7 +1203,7 @@ void Screen::terminalBell() {
 }
 
 void Screen::terminalResizeBuffer(int16_t rows, int16_t cols) {
-    ASSERT(rows > 0 && cols > 0, "Rows or cols not positive.");
+    ASSERT(rows > 0 && cols > 0, );
     resizeToAccommodate(rows, cols, true);
 }
 
@@ -1212,8 +1212,8 @@ bool Screen::terminalFixDamageBegin() {
     // It's possible for the pixmap to be valid (because the window was mapped)
     // but not current (because we haven't received an expose event yet).
     if (!_deferred && _mapped) {
-        ASSERT(_pixmap, "Null pixmap.");
-        ASSERT(_surface, "Null surface.");
+        ASSERT(_pixmap, );
+        ASSERT(_surface, );
         _cr = cairo_create(_surface);
         cairo_set_line_width(_cr, 1.0);
         return true;
@@ -1242,7 +1242,7 @@ void Screen::terminalDrawBg(Pos     pos,
                       w, h);
     }
 
-    ASSERT(_cr, "");
+    ASSERT(_cr, );
     cairo_save(_cr); {
         auto alpha =
             _config.x11PseudoTransparency ?
@@ -1256,7 +1256,7 @@ void Screen::terminalDrawBg(Pos     pos,
         cairo_fill(_cr);
 
         ASSERT(cairo_status(_cr) == 0,
-               "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
+               << "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
     } cairo_restore(_cr);
 }
 
@@ -1266,8 +1266,8 @@ void Screen::terminalDrawFg(Pos             pos,
                             AttrSet         attrs,
                             const uint8_t * str,
                             size_t          size) {
-    ASSERT(_cr, "");
-    ASSERT(pos.col + count <= _terminal->getCols(), "");
+    ASSERT(_cr, );
+    ASSERT(pos.col + count <= _terminal->getCols(), );
 
     cairo_save(_cr); {
         auto layout = pango_cairo_create_layout(_cr);
@@ -1300,7 +1300,7 @@ void Screen::terminalDrawFg(Pos             pos,
         pango_cairo_show_layout(_cr, layout);
 
         ASSERT(cairo_status(_cr) == 0,
-               "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
+               << "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
     } cairo_restore(_cr);
 }
 
@@ -1312,7 +1312,7 @@ void Screen::terminalDrawCursor(Pos             pos,
                                 size_t          size,
                                 bool            wrapNext,
                                 bool            focused) {
-    ASSERT(_cr, "");
+    ASSERT(_cr, );
 
     cairo_save(_cr); {
         auto layout = pango_cairo_create_layout(_cr);
@@ -1361,15 +1361,15 @@ void Screen::terminalDrawCursor(Pos             pos,
         pango_cairo_show_layout(_cr, layout);
 
         ASSERT(cairo_status(_cr) == 0,
-               "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
+               << "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
     } cairo_restore(_cr);
 }
 
 void Screen::terminalDrawScrollbar(size_t  totalRows,
                                    size_t  historyOffset,
                                    int16_t visibleRows) {
-    ASSERT(_cr, "");
-    ASSERT(_config.scrollbarVisible, "");
+    ASSERT(_cr, );
+    ASSERT(_config.scrollbarVisible, );
 
     const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
 
@@ -1428,7 +1428,7 @@ void Screen::terminalDrawScrollbar(size_t  totalRows,
 
 void Screen::terminalFixDamageEnd(const Region & damage,
                                   bool           scrollBar) {
-    ASSERT(_cr, "");
+    ASSERT(_cr, );
 
     cairo_destroy(_cr);
     _cr = nullptr;
@@ -1473,8 +1473,8 @@ void Screen::useFontSet(FontSet * fontSet, int delta) {
     }
 
     if (_mapped) {
-        ASSERT(_pixmap, "");
-        ASSERT(_surface, "");
+        ASSERT(_pixmap, );
+        ASSERT(_surface, );
         renderPixmap();
         copyPixmapToWindow(0, 0, _geometry.width, _geometry.height);
     }

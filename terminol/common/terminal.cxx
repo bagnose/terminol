@@ -105,7 +105,7 @@ void Terminal::resize(int16_t rows, int16_t cols) {
     // Special exception, resizes can occur during dispatch to support
     // font size changes.
 
-    ASSERT(rows > 0 && cols > 0, "Rows or cols not positive.");
+    ASSERT(rows > 0 && cols > 0, );
 
     _priBuffer.resizeReflow(rows, cols);
     _altBuffer.resizeClip(rows, cols);
@@ -157,7 +157,7 @@ bool Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
 
 void Terminal::buttonPress(Button button, int count, ModifierSet modifiers,
                            bool UNUSED(within), Pos pos, Hand hand) {
-    ASSERT(_press == Press::NONE, "Received button press but already got one.");
+    ASSERT(_press == Press::NONE, << "Received button press but already got one");
 
     Pos adjPos(pos.row, pos.col + (hand == Hand::RIGHT ? 1 : 0));
 
@@ -195,7 +195,7 @@ select:
     _button     = button;
     _pointerPos = pos;
 
-    ASSERT(_press != Press::NONE, "Button press should be recorded.");
+    ASSERT(_press != Press::NONE, << "Button press should be recorded");
 }
 
 void Terminal::pointerMotion(ModifierSet modifiers, bool within, Pos pos, Hand hand) {
@@ -244,7 +244,7 @@ void Terminal::pointerMotion(ModifierSet modifiers, bool within, Pos pos, Hand h
 }
 
 void Terminal::buttonRelease(bool UNUSED(broken), ModifierSet modifiers) {
-    ASSERT(_press != Press::NONE, "Received button release but have no press.");
+    ASSERT(_press != Press::NONE, << "Received button release but have no press");
 
     if (_press == Press::SELECT) {
         std::string text;
@@ -290,7 +290,7 @@ report:
         }
     }
     else {
-        FATAL("Unreachable.");
+        FATAL();
     }
 
     _press = Press::NONE;
@@ -681,7 +681,7 @@ void Terminal::processChar(utf8::Seq seq, utf8::Length length) {
 }
 
 void Terminal::processAttributes(const std::vector<int32_t> & args) {
-    ASSERT(!args.empty(), "Empty args.");
+    ASSERT(!args.empty(), );
 
     for (size_t i = 0; i != args.size(); ++i) {
         auto v = args[i];
@@ -713,7 +713,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                 _buffer->setAttr(Attr::CONCEAL);
                 break;
             case 10: // Primary (default) font
-                NYI("Primary (default) font");
+                NYI(<< "Primary (default) font");
                 break;
             case 11: // 1st alternative font
             case 12:
@@ -724,7 +724,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
             case 17:
             case 18:
             case 19: // 9th alternative font
-                NYI(nthStr(v - 10) << " alternative font");
+                NYI(<< nthStr(v - 10) << " alternative font");
                 break;
             case 22: // Normal color or intensity (neither bold nor faint)
                 _buffer->unsetAttr(Attr::BOLD);
@@ -752,10 +752,10 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                     i += 1;
                     switch (args[i]) {
                         case 0:
-                            NYI("User defined foreground");
+                            NYI(<< "User defined foreground");
                             break;
                         case 1:
-                            NYI("Transparent foreground");
+                            NYI(<< "Transparent foreground");
                             break;
                         case 2:
                             if (i + 3 < args.size()) {
@@ -765,13 +765,13 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                                 i += 3;
                             }
                             else {
-                                ERROR("Insufficient args");
+                                ERROR(<< "Insufficient args");
                                 i = args.size() - 1;
                             }
                             break;
                         case 3:
                             if (i + 3 < args.size()) {
-                                NYI("24-bit CMY foreground");
+                                NYI(<< "24-bit CMY foreground");
                                 i += 3;
                             }
                             else {
@@ -781,7 +781,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                             break;
                         case 4:
                             if (i + 4 < args.size()) {
-                                NYI("24-bit CMYK foreground");
+                                NYI(<< "24-bit CMYK foreground");
                                 i += 4;
                             }
                             else {
@@ -806,7 +806,7 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                             }
                             break;
                         default:
-                            NYI("Unknown?");
+                            NYI(<< "Unknown?");
                     }
                 }
                 break;
@@ -820,10 +820,10 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                     i += 1;
                     switch (args[i]) {
                         case 0:
-                            NYI("User defined background");
+                            NYI(<< "User defined background");
                             break;
                         case 1:
-                            NYI("Transparent background");
+                            NYI(<< "Transparent background");
                             break;
                         case 2:
                             if (i + 3 < args.size()) {
@@ -833,27 +833,27 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                                 i += 3;
                             }
                             else {
-                                ERROR("Insufficient args");
+                                ERROR(<< "Insufficient args");
                                 i = args.size() - 1;
                             }
                             break;
                         case 3:
                             if (i + 3 < args.size()) {
-                                NYI("24-bit CMY background");
+                                NYI(<< "24-bit CMY background");
                                 i += 3;
                             }
                             else {
-                                ERROR("Insufficient args");
+                                ERROR(<< "Insufficient args");
                                 i = args.size() - 1;
                             }
                             break;
                         case 4:
                             if (i + 4 < args.size()) {
-                                NYI("24-bit CMYK background");
+                                NYI(<< "24-bit CMYK background");
                                 i += 4;
                             }
                             else {
-                                ERROR("Insufficient args");
+                                ERROR(<< "Insufficient args");
                                 i = args.size() - 1;
                             }
                             break;
@@ -865,16 +865,16 @@ void Terminal::processAttributes(const std::vector<int32_t> & args) {
                                     _buffer->setBg(UColor::indexed(v2));
                                 }
                                 else {
-                                    ERROR("Colour out of range: " << v2);
+                                    ERROR(<< "Colour out of range: " << v2);
                                 }
                             }
                             else {
-                                ERROR("Insufficient args");
+                                ERROR(<< "Insufficient args");
                                 i = args.size() - 1;
                             }
                             break;
                         default:
-                            NYI("Unknown?");
+                            NYI(<< "Unknown?");
                     }
                 }
                 break;
@@ -928,7 +928,7 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     _modes.setTo(Mode::APPCURSOR, set);
                     break;
                 case 2: // DECANM - ANSI/VT52 Mode
-                    NYI("DECANM: " << set);
+                    NYI(<< "DECANM: " << set);
                     /*
                     _cursor.g0 = CS_US;
                     _cursor.g1 = CS_US;
@@ -949,7 +949,7 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     }
                     break;
                 case 4: // DECSCLM - Scroll Mode - Smooth / Jump (IGNORED)
-                    //NYI("DECSCLM: " << set);
+                    //NYI(<< "DECSCLM: " << set);
                     break;
                 case 5: // DECSCNM - Screen Mode - Reverse / Normal
                     if (_modes.get(Mode::REVERSE) != set) {
@@ -968,14 +968,14 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     _modes.setTo(Mode::AUTO_REPEAT, set);
                     break;
                 case 9: // Mouse X10
-                    NYI("X10 mouse");
+                    NYI(<< "X10 mouse");
                     break;
                 case 12: // CVVIS/att610 - Cursor Very Visible.
-                    //NYI("CVVIS/att610: " << set);
+                    //NYI(<< "CVVIS/att610: " << set);
                     break;
                 case 18: // DECPFF - Printer feed (IGNORED)
                 case 19: // DECPEX - Printer extent (IGNORED)
-                    NYI("DECPFF/DECPEX: " << set);
+                    NYI(<< "DECPFF/DECPEX: " << set);
                     break;
                 case 25: // DECTCEM - Text Cursor Enable Mode
                     _modes.setTo(Mode::SHOW_CURSOR, set);
@@ -984,7 +984,7 @@ void Terminal::processModes(uint8_t priv, bool set, const std::vector<int32_t> &
                     // Allow column
                     break;
                 case 42: // DECNRCM - National characters (IGNORED)
-                    //NYI("Ignored: "  << a << ", " << set);
+                    //NYI(<< "Ignored: "  << a << ", " << set);
                     break;
                 case 47: {
                     auto newBuffer = set ? &_altBuffer : &_priBuffer;
@@ -1129,26 +1129,26 @@ const CharSub * Terminal::lookupCharSub(uint8_t code) {
         case '0': // set specg1
             return &CS_SPECIAL;
         case '1': // set altg1
-            NYI("Alternate Character rom");
+            NYI(<< "Alternate Character rom");
             return nullptr;
         case '2': // set alt specg1
-            NYI("Alternate Special Character rom");
+            NYI(<< "Alternate Special Character rom");
             return nullptr;
         case 'A': // set ukg0
             return &CS_UK;
         case 'B': // set usg0
             return &CS_US;
         case '<': // Multinational character set
-            NYI("Multinational character set");
+            NYI(<< "Multinational character set");
             return nullptr;
         case '5': // Finnish
-            NYI("Finnish 1");
+            NYI(<< "Finnish 1");
             return nullptr;
         case 'C': // Finnish
-            NYI("Finnish 2");
+            NYI(<< "Finnish 2");
             return nullptr;
         case 'K': // German
-            NYI("German");
+            NYI(<< "German");
             return nullptr;
         default:
             WARNING("Unknown character set: " << Char{code});
@@ -1224,10 +1224,10 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) {
                 _buffer->reverseIndex();
                 break;
             case 'N':   // SS2 - Set Single Shift 2
-                NYI("SS2");     // Use G2 for next char only
+                NYI(<< "SS2");     // Use G2 for next char only
                 break;
             case 'O':   // SS3 - Set Single Shift 3
-                NYI("SS3");     // Use G3 for next char only
+                NYI(<< "SS3");     // Use G3 for next char only
                 break;
             case 'Z':   // DECID - Identify Terminal
                 write(reinterpret_cast<const uint8_t *>("\x1B[?6c"), 5);
@@ -1251,15 +1251,15 @@ void Terminal::machineSimpleEsc(const SimpleEsc & esc) {
             case '#':
                 switch (esc.code) {
                     case '3': // DECDHL - Double height/width (top half of char)
-                        NYI("Double height (top)");
+                        NYI(<< "Double height (top)");
                         break;
                     case '4': // DECDHL - Double height/width (bottom half of char)
-                        NYI("Double height (bottom)");
+                        NYI(<< "Double height (bottom)");
                         break;
                     case '5': // DECSWL - Single height/width
                         break;
                     case '6': // DECDWL - Double width
-                        NYI("Double width");
+                        NYI(<< "Double width");
                         break;
                     case '8': // DECALN - Alignment
                         _buffer->testPattern();
@@ -1467,7 +1467,7 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) {
                 if (esc.args.empty()) {
                     // QDC - Query Device Code
                     // RDC - Report Device Code: <ESC>[{code}0c
-                    NYI("What code should I send?");
+                    NYI(<< "What code should I send?");
                 }
                 else {
                     switch (nthArg(esc.args, 0)) {
@@ -1514,11 +1514,11 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) {
                             break;
                         }
                         case 25: {
-                            NYI("UDK status");
+                            NYI(<< "UDK status");
                             break;
                         }
                         case 26: {
-                            NYI("Keyboard status");
+                            NYI(<< "Keyboard status");
                             break;
                         }
                         default:
@@ -1530,7 +1530,7 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) {
             case 'p':
                 if (esc.priv == '!') {
                     // DECSTR - Soft Terminal Reset
-                    NYI("DECSTR");
+                    NYI(<< "DECSTR");
                 }
                 else {
                     // XXX vttest gives soft-reset without priv == '!'
@@ -1539,7 +1539,7 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) {
                 break;
             case 'q': // DECSCA - Select Character Protection Attribute
                 // OR IS THIS DECLL0/DECLL1/etc
-                NYI("DECSCA");
+                NYI(<< "DECSCA");
                 break;
             case 'r': // DECSTBM - Set Top and Bottom Margins (scrolling)
                 if (esc.priv) {
@@ -1567,13 +1567,13 @@ void Terminal::machineCsiEsc(const CsiEsc & esc) {
                 break;
             case 't': // window ops?
                 // FIXME see 'Window Operations' in man 7 urxvt.
-                NYI("Window ops");
+                NYI(<< "Window ops");
                 break;
             case 'u': // restore cursor
                 _buffer->restoreCursor();
                 break;
             case 'y': // DECTST
-                NYI("DECTST");
+                NYI(<< "DECTST");
                 break;
 default_:
             default:
@@ -1631,7 +1631,7 @@ void Terminal::machineOscEsc(const OscEsc & esc) {
                     }
                     break;
                 case 55:
-                    NYI("Log history to file");
+                    NYI(<< "Log history to file");
                     break;
                 case 112:
                     // tmux gives us this...
@@ -1652,7 +1652,7 @@ void Terminal::machineOscEsc(const OscEsc & esc) {
             }
         }
         catch (const ConversionError & error) {
-            ERROR(error.what());
+            ERROR(<< error.what());
         }
     }
 }
@@ -1708,7 +1708,7 @@ std::ostream & operator << (std::ostream & ost, Terminal::Button button) {
             return ost << "right";
     }
 
-    FATAL("Unreachable.");
+    FATAL();
 }
 
 std::ostream & operator << (std::ostream & ost, Terminal::ScrollDir dir) {
@@ -1719,5 +1719,5 @@ std::ostream & operator << (std::ostream & ost, Terminal::ScrollDir dir) {
             return ost << "down";
     }
 
-    FATAL("Unreachable.");
+    FATAL();
 }

@@ -240,7 +240,7 @@ const std::array<const char *, 0x80 - 0x40> CSI_STR = {{
 
 std::string SimpleEsc::str() const {
     ASSERT(code >= 0x30 && code < 0x7F,
-           "Simple escape code out of range: " <<
+           << "Simple escape code out of range: " <<
            std::hex << static_cast<int>(code));
 
     std::ostringstream ost;
@@ -282,7 +282,7 @@ std::ostream & operator << (std::ostream & ost, const SimpleEsc & esc) {
 //
 
 CsiEsc CsiEsc::SGR(StockSGR sgr) {
-    ASSERT(sgr != StockSGR::NUM_SGR, "");
+    ASSERT(sgr != StockSGR::NUM_SGR, );
     CsiEsc esc;
     esc.args.push_back(SGR_TABLE[static_cast<size_t>(sgr)]);
     esc.mode = 'm';
@@ -291,7 +291,7 @@ CsiEsc CsiEsc::SGR(StockSGR sgr) {
 
 std::string CsiEsc::str() const {
     ASSERT(mode >= 0x40 && mode < 0x80,
-           "CSI Escape mode out of range: " <<
+           << "CSI Escape mode out of range: " <<
            std::hex << static_cast<int>(mode));
 
     std::ostringstream ost;
@@ -329,7 +329,7 @@ std::string CsiEsc::str() const {
 
 std::ostream & operator << (std::ostream & ost, const CsiEsc & esc) {
     ASSERT(esc.mode >= 0x40 && esc.mode < 0x80,
-           "CSI Escape mode out of range: " <<
+           << "CSI Escape mode out of range: " <<
            std::hex << static_cast<int>(esc.mode));
 
     // CSI initiator

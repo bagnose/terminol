@@ -64,7 +64,7 @@ public:
                 _fontManager,
                 command)
     {
-        ENFORCE(std::exchange(_singleton, this) == nullptr, "");
+        ENFORCE(std::exchange(_singleton, this) == nullptr, );
 
         if (_config.x11PseudoTransparency) {
             uint32_t mask = XCB_EVENT_MASK_PROPERTY_CHANGE;
@@ -78,12 +78,12 @@ public:
     }
 
     ~EventLoop() {
-        ENFORCE(std::exchange(_singleton, nullptr) == this, "");
+        ENFORCE(std::exchange(_singleton, nullptr) == this, );
     }
 
 protected:
     static void staticSignalHandler(int sigNum) {
-        ASSERT(_singleton, "");
+        ASSERT(_singleton, );
         _singleton->signalHandler(sigNum);
     }
 
@@ -124,7 +124,7 @@ protected:
     // I_Selector::I_ReadHandler implementation:
 
     void handleRead(int fd) override {
-        ASSERT(fd == _pipe.readFd(), "Bad fd.");
+        ASSERT(fd == _pipe.readFd(), );
         death();
     }
 
@@ -135,7 +135,7 @@ protected:
     }
 
     void screenDefer(Screen * screen) override {
-        ASSERT(screen == &_screen, "");
+        ASSERT(screen == &_screen, );
         _deferral = true;
     }
 
@@ -144,7 +144,7 @@ protected:
     }
 
     void screenReaped(Screen * screen, int UNUSED(status)) override {
-        ASSERT(screen == &_screen, "");
+        ASSERT(screen == &_screen, );
         _exited = true;
     }
 

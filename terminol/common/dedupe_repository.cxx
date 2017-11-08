@@ -54,7 +54,7 @@ auto DedupeRepository::retrieve(Tag tag) const -> Entry {
 
     auto & dedupeEntry = _entries.at(tag);
     auto entry = decode(dedupeEntry.bytes);
-    ASSERT(entry.styles.size() == dedupeEntry.length, "");
+    ASSERT(entry.styles.size() == dedupeEntry.length, );
     return entry;
 }
 

@@ -18,7 +18,7 @@ class BitSet final {
 
     static I bit(T t) {
         auto shift = static_cast<unsigned int>(t);
-        ASSERT(shift < sizeof(T) * 8, "Overflow.");
+        ASSERT(shift < sizeof(T) * 8, << "Overflow");
         return 1 << shift;
     }
 

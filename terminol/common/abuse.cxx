@@ -142,7 +142,7 @@ int main(int argc, char * argv[]) {
                 std::cout << ESC << ']' << "667" << '\a';
                 break;
             default:
-                FATAL("Out of range.");
+                FATAL();
         }
     }
 

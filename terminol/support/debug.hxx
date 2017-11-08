@@ -24,11 +24,18 @@ TerminateHandler getTerminate() noexcept;
 #   define TEMP_FAILURE_RETRY(a) (a)
 #endif
 
+struct DebugDummyInserter {
+};
+inline std::ostream & operator<<(std::ostream & ost,
+                                 const DebugDummyInserter &) {
+    return ost;
+}
+
 #define PRINT(output) \
     do { \
         std::cout \
             << __FILE__ << ":" << __LINE__ << " " \
-            << output \
+            output \
             << std::endl; \
     } while (false)
 
@@ -36,7 +43,7 @@ TerminateHandler getTerminate() noexcept;
     do { \
         std::cerr \
             << __FILE__ << ":" << __LINE__ << " " \
-            << output  \
+            output  \
             << std::endl; \
     } while (false)
 
@@ -44,7 +51,7 @@ TerminateHandler getTerminate() noexcept;
     do { \
         std::cerr \
             << __FILE__ << ":" << __LINE__ << " " \
-            << output  \
+            output  \
             << std::endl; \
     } while (false)
 
@@ -52,7 +59,7 @@ TerminateHandler getTerminate() noexcept;
     do { \
         std::cerr \
             << __FILE__ << ":" << __LINE__ << " " \
-            << output  \
+            << DebugDummyInserter() output  \
             << std::endl; \
         terminate(); \
     } while (false)
@@ -72,7 +79,7 @@ TerminateHandler getTerminate() noexcept;
     do { \
         std::cerr \
             << __FILE__ << ":" << __LINE__ << " " \
-            << "NYI: " << output  \
+            << "NYI: " << DebugDummyInserter() output  \
             << std::endl; \
     } while (false)
 #else
@@ -81,7 +88,7 @@ TerminateHandler getTerminate() noexcept;
         do { \
             std::cerr \
                 << __FILE__ << ":" << __LINE__ << " " \
-                << "NYI: " << output  \
+                << "NYI: " << DebugDummyInserter() output  \
                 << std::endl; \
         } while (false) \
     )
@@ -93,7 +100,7 @@ TerminateHandler getTerminate() noexcept;
         if (!LIKELY(condition)) { \
             std::cerr \
                 << __FILE__ << ":" << __LINE__ << " " \
-                << output  \
+                << DebugDummyInserter() output  \
                 << "  (("#condition"))" \
                 << std::endl; \
             terminate(); \
@@ -107,7 +114,7 @@ TerminateHandler getTerminate() noexcept;
         if (!LIKELY(condition)) { \
             std::cerr \
                 << __FILE__ << ":" << __LINE__ << " " \
-                << output  \
+                << DebugDummyInserter() output  \
                 << "  (("#condition"))" \
                 << std::endl; \
             terminate(); \

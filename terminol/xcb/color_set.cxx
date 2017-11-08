@@ -42,7 +42,7 @@ ColorSet::ColorSet(const Config & config,
         _indexedColors[index++] = DColor{v / 23.0, v / 23.0, v / 23.0};
     }
 
-    ASSERT(index == 0, "");
+    ASSERT(index == 0, );
 
     _normalFgColor = convert(_config.normalFgColor);
     _normalBgColor = convert(_config.normalBgColor);
@@ -74,7 +74,7 @@ uint32_t ColorSet::alloc_color(const Color & color) {
                                   _basics.screen()->default_colormap,
                                   r, g, b);
     auto reply  = xcb_alloc_color_reply(_basics.connection(), cookie, nullptr);
-    ENFORCE(reply, "");
+    ENFORCE(reply, );
     auto pixel = reply->pixel;
     std::free(reply);
 

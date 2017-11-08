@@ -37,8 +37,8 @@ int main() {
         cmdLine.add(std::make_unique<BoolHandler>(goTrue),  '\0', "bool1", true);
         cmdLine.add(std::make_unique<BoolHandler>(goFalse), '\0', "bool2", true);
         parse(&cmdLine, "dummy", "--bool1", "--no-bool2", nullptr);
-        ENFORCE(goTrue,   "");
-        ENFORCE(!goFalse, "");
+        ENFORCE(goTrue, );
+        ENFORCE(!goFalse, );
     }
 
     {
@@ -46,7 +46,7 @@ int main() {
         std::string str;
         cmdLine.add(std::make_unique<IStreamHandler<std::string>>(str), '\0', "str", true);
         parse(&cmdLine, "dummy", "--str=foo", nullptr);
-        ENFORCE(str == "foo", "");
+        ENFORCE(str == "foo", );
     }
 
     return 0;

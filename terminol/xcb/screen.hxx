@@ -216,7 +216,7 @@ private:
                         return _colorSet.getCursorTextColor();
                 }
 
-                FATAL("Unreachable");
+                FATAL();
             case UColor::Type::INDEXED:
                 return _colorSet.getIndexedColor(ucolor.index);
             case UColor::Type::DIRECT:
@@ -225,7 +225,7 @@ private:
                 return DColor{v.r / d, v.g / d, v.b / d};
         }
 
-        FATAL("Unreachable");
+        FATAL();
     }
 };
 

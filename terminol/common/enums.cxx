@@ -26,7 +26,7 @@ std::ostream & operator << (std::ostream & ost, Control control) {
             return ost << "SI";
     }
 
-    FATAL("Invalid control: " << static_cast<int>(control));
+    FATAL(<< "Invalid control: " << static_cast<int>(control));
 }
 
 std::ostream & operator << (std::ostream & ost, Modifier modifier) {
@@ -49,7 +49,7 @@ std::ostream & operator << (std::ostream & ost, Modifier modifier) {
             return ost << "MODE_SWITCH";
     }
 
-    FATAL("Invalid modifier: " << static_cast<int>(modifier));
+    FATAL(<< "Invalid modifier: " << static_cast<int>(modifier));
 }
 
 std::ostream & operator << (std::ostream & ost, Mode mode) {
@@ -98,7 +98,7 @@ std::ostream & operator << (std::ostream & ost, Mode mode) {
             return ost << "FOCUS";
     }
 
-    FATAL("Invalid mode: " << static_cast<int>(mode));
+    FATAL(<< "Invalid mode: " << static_cast<int>(mode));
 }
 
 std::ostream & operator << (std::ostream & ost, Attr attr) {
@@ -119,7 +119,7 @@ std::ostream & operator << (std::ostream & ost, Attr attr) {
             return ost << "CONCEAL";
     }
 
-    FATAL("Invalid attr: " << static_cast<int>(attr));
+    FATAL(<< "Invalid attr: " << static_cast<int>(attr));
 }
 
 std::ostream & operator << (std::ostream & ost, Hand hand) {
@@ -130,5 +130,5 @@ std::ostream & operator << (std::ostream & ost, Hand hand) {
             return ost << "RIGHT";
     }
 
-    FATAL("Invalid hand: " << static_cast<int>(hand));
+    FATAL(<< "Invalid hand: " << static_cast<int>(hand));
 }

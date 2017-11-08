@@ -40,12 +40,12 @@ public:
         _basics(basics) {}
 
     ~FontManager() {
-        ASSERT(!_dispatch, "");
-        ASSERT(_clients.empty(), "Clients remain at destruction.");
+        ASSERT(!_dispatch, );
+        ASSERT(_clients.empty(), << "Clients remain at destruction");
     }
 
     FontSet * addClient(I_Client * client) {
-        ASSERT(!_dispatch, "");
+        ASSERT(!_dispatch, );
 
         auto size = std::max(1, _config.fontSize + _delta);
 
@@ -61,10 +61,10 @@ public:
     }
 
     void removeClient(I_Client * client) {
-        ASSERT(!_dispatch, "");
+        ASSERT(!_dispatch, );
 
         auto iter = _clients.find(client);
-        ASSERT(iter != _clients.end(), "");
+        ASSERT(iter != _clients.end(), );
         _clients.erase(iter);
 
         purgeUnusedFonts();
@@ -73,7 +73,7 @@ public:
     void localDelta(I_Client * client, int delta) {
         if (_dispatch) { return; }
 
-        ASSERT(_clients.find(client) != _clients.end(), "");
+        ASSERT(_clients.find(client) != _clients.end(), );
         resizeClient(client, delta);
         purgeUnusedFonts();
     }
@@ -98,7 +98,7 @@ public:
 protected:
     void resizeClient(I_Client * client, int delta) {
         auto iter1       = _clients.find(client);
-        ASSERT(iter1 != _clients.end(), "");
+        ASSERT(iter1 != _clients.end(), );
         auto old_size    = iter1->second;
         auto new_size    = delta == 0 ? _config.fontSize : old_size + delta;
         auto iter2       = _fontSets.find(new_size);
@@ -134,7 +134,7 @@ protected:
 
         for (auto size : unused) {
             auto iter = _fontSets.find(size);
-            ASSERT(iter != _fontSets.end(), "");
+            ASSERT(iter != _fontSets.end(), );
             _fontSets.erase(iter);
         }
     }

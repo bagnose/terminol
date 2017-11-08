@@ -98,12 +98,12 @@ public:
     Machine() noexcept = default;
 
     Length length() const noexcept {
-        ASSERT(_state == State::ACCEPT, "");
+        ASSERT(_state == State::ACCEPT, );
         return static_cast<Length>(_index);
     }
 
     Seq seq() const noexcept {
-        ASSERT(_state == State::ACCEPT, "");
+        ASSERT(_state == State::ACCEPT, );
         return _seq;
     }
 

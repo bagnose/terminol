@@ -175,6 +175,6 @@ void Dispatcher::dispatch(uint8_t responseType, xcb_generic_event_t * event) {
 // I_Selector::I_ReadHandler overrides:
 
 void Dispatcher::handleRead(int fd) {
-    ASSERT(fd == xcb_get_file_descriptor(_connection), "");
+    ASSERT(fd == xcb_get_file_descriptor(_connection), );
     poll();
 }

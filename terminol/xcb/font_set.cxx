@@ -13,7 +13,7 @@ FontSet::FontSet(const Config & config,
     _config(config),
     _basics(basics)
 {
-    ASSERT(size > 0, "");
+    ASSERT(size > 0, );
     auto & name = _config.fontName;
 
     _normal = load(name, size, true, false, false);

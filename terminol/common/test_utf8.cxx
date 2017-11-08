@@ -86,22 +86,22 @@ void forwardReverse(CodePoint cp) {
     std::cout << toHexString(cp2) << std::endl;
     std::cout << toBinaryString(cp2) << std::endl << std::endl;
 
-    ENFORCE(cp == cp2, cp << " = " << cp2);
+    ENFORCE(cp == cp2, << cp << " = " << cp2);
 }
 
 } // namespace {anonymous}
 
 int main() {
-    ENFORCE(leadLength(B1) == Length::L1, "");
-    ENFORCE(leadLength(B1 | B2) == Length::L1, "");
-    ENFORCE(leadLength(static_cast<uint8_t>(~B7)) == Length::L1, "");
-    ENFORCE(leadLength('a') == Length::L1, "");
-    ENFORCE(leadLength('z') == Length::L1, "");
-    ENFORCE(leadLength('\x7F') == Length::L1, "");
+    ENFORCE(leadLength(B1) == Length::L1, );
+    ENFORCE(leadLength(B1 | B2) == Length::L1, );
+    ENFORCE(leadLength(static_cast<uint8_t>(~B7)) == Length::L1, );
+    ENFORCE(leadLength('a') == Length::L1, );
+    ENFORCE(leadLength('z') == Length::L1, );
+    ENFORCE(leadLength('\x7F') == Length::L1, );
 
-    ENFORCE(leadLength(B7 | B6) == Length::L2, "");
-    ENFORCE(leadLength(B7 | B6 | B5) == Length::L3, "");
-    ENFORCE(leadLength(B7 | B6 | B5 | B4) == Length::L4, "");
+    ENFORCE(leadLength(B7 | B6) == Length::L2, );
+    ENFORCE(leadLength(B7 | B6 | B5) == Length::L3, );
+    ENFORCE(leadLength(B7 | B6 | B5 | B4) == Length::L4, );
 
     // 1 byte sequence
     forwardReverse(0x00);

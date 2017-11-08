@@ -46,7 +46,7 @@ int32_t write(Text & text, const std::string & str, int16_t & row, int16_t & col
             seq.bytes[i] = *iter++;
         }
 
-        ASSERT(row < text.getRows() && col < text.getCols(), "row/col out of range.");
+        ASSERT(row < text.getRows() && col < text.getCols(), );
 
         if (seq.lead() == '\n') {
             if (row + 1 == text.getRows()) {

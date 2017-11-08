@@ -13,7 +13,7 @@ int main () {
     decltype(input) output;
     rleDecode(is, output);
 
-    ENFORCE(input == output, "");
+    ENFORCE(input == output, );
 
   return 0;
 }

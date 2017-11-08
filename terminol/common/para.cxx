@@ -15,7 +15,7 @@ Para::Para(std::vector<Style>   styles,
 {
     _indices.reserve(_styles.size() + 1);
     int32_t index = 0;
-    ASSERT(_string.size() <= std::numeric_limits<decltype(index)>::max(), "");
+    ASSERT(_string.size() <= std::numeric_limits<decltype(index)>::max(), );
 
     for (auto iter = _string.begin(); iter != _string.end(); /* */) {
         _indices.push_back(index);
@@ -25,7 +25,7 @@ Para::Para(std::vector<Style>   styles,
     }
     _indices.push_back(index);
 
-    ASSERT(_indices.size() == _styles.size() + 1, "");
+    ASSERT(_indices.size() == _styles.size() + 1, );
 }
 
 const uint8_t * Para::getStringAtOffset(uint32_t offset) const {

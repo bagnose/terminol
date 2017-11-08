@@ -214,7 +214,7 @@ std::string modifierToName(Modifier modifier) {
             return "mode_switch";
     }
 
-    FATAL("Unreachable.");
+    FATAL();
 }
 
 Modifier nameToModifier(const std::string & name) {

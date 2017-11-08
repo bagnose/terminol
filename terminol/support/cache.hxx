@@ -38,7 +38,7 @@ class Cache : protected Uncopyable {
 
         bool single() const noexcept {
             if (prev == next) {
-                ASSERT(prev == this, "Invalid link.");
+                ASSERT(prev == this, << "Invalid link.");
                 return true;
             }
             else {
@@ -230,7 +230,7 @@ public:
 
     iterator insert(const Key & key, T && t) {
         auto pair = _map.emplace(key, Entry(t));
-        ASSERT(pair.second, "Duplicate key.");
+        ASSERT(pair.second, << "Duplicate key.");
 
         auto & entry = pair.first->second;
         _sentinel.insert(entry.link);

@@ -26,7 +26,7 @@ Text::Text(I_Repository & repository,
     _cols(cols),
     _historyTagLimit(historyLimit)
 {
-    ASSERT(rows > 0 && cols > 0, "Rows and cols must be positive.");
+    ASSERT(rows > 0 && cols > 0, );
     for (int16_t r = 0; r != rows; ++r) {
         _currentLines.emplace_back(r, 0, false);
     }
@@ -74,7 +74,7 @@ int16_t Text::getCols() const {
 }
 
 void Text::setCell(int16_t row, int16_t col, const Cell & cell) {
-    ASSERT(row < getRows() && col < getCols(), "");
+    ASSERT(row < getRows() && col < getCols(), );
 
     auto   & line    = _currentLines[row + _straddlingLines];
     auto   & para    = _currentParas[line.getIndex() - _poppedCurrentParas];
@@ -83,7 +83,7 @@ void Text::setCell(int16_t row, int16_t col, const Cell & cell) {
 }
 
 void Text::insertCell(int16_t row, int16_t col, const Cell & cell) {
-    ASSERT(row < getRows() && col < getCols(), "");
+    ASSERT(row < getRows() && col < getCols(), );
     auto   & line    = _currentLines[row + _straddlingLines];
     auto   & para    = _currentParas[line.getIndex() - _poppedCurrentParas];
     uint32_t baseCol = _cols * line.getSeqnum();
@@ -98,9 +98,9 @@ Cell Text::getCell(int16_t row, int16_t col) const {
 }
 
 void Text::scrollDown(int16_t rowBegin, int16_t rowEnd, int16_t n) {
-    ASSERT(rowBegin >= 0 && rowEnd <= getRows(), "");
-    ASSERT(rowBegin + n <= rowEnd, "");
-    ASSERT(n > 0, "");
+    ASSERT(rowBegin >= 0 && rowEnd <= getRows(), );
+    ASSERT(rowBegin + n <= rowEnd, );
+    ASSERT(n > 0, );
 
     // The text moves down (the viewport moves up).
 
@@ -140,9 +140,9 @@ void Text::scrollDown(int16_t rowBegin, int16_t rowEnd, int16_t n) {
 }
 
 void Text::scrollUp(int16_t rowBegin, int16_t rowEnd, int16_t n) {
-    ASSERT(rowBegin >= 0 && rowEnd <= getRows(), "");
-    ASSERT(rowBegin + n <= rowEnd, "");
-    ASSERT(n > 0, "");
+    ASSERT(rowBegin >= 0 && rowEnd <= getRows(), );
+    ASSERT(rowBegin + n <= rowEnd, );
+    ASSERT(n > 0, );
 
     // The text moves up (the viewport moves down).
 
@@ -204,7 +204,7 @@ void Text::addLine(bool continuation) {
 }
 
 void Text::makeContinued(int16_t row) {
-    ASSERT(0 <= row && row < getRows() - 1, "Row out of range.");
+    ASSERT(0 <= row && row < getRows() - 1, );
 
     if (!_currentLines[row + _straddlingLines].isContinued())
     {
@@ -221,7 +221,7 @@ void Text::makeContinued(int16_t row) {
         thisLine.setContinued(true);
 
         auto & nextLine = _currentLines[row + _straddlingLines + 1];
-        ASSERT(!nextLine.isContinued(), "");
+        ASSERT(!nextLine.isContinued(), );
 
         auto & thisPara = _currentParas[thisLine.getIndex()];
         auto & nextPara = _currentParas[nextLine.getIndex()];
@@ -245,7 +245,7 @@ void Text::makeContinued(int16_t row) {
 }
 
 void Text::makeUncontinued(int16_t row) {
-    ASSERT(0 <= row && row < getRows() - 1, "Row out of range.");
+    ASSERT(0 <= row && row < getRows() - 1, );
 
     if (_currentLines[row + _straddlingLines].isContinued()) {
         // This line is continued, so there is something to do.
@@ -261,7 +261,7 @@ void Text::makeUncontinued(int16_t row) {
         _currentParas.insert(_currentParas.begin() + thisLine.getIndex() + 1, Para());
 
         auto & nextLine = _currentLines[row + _straddlingLines + 1];
-        ASSERT(!nextLine.isContinued(), "");
+        ASSERT(!nextLine.isContinued(), );
         nextLine.setIndexSeqnum(thisLine.getIndex() + 1, 0);
 
         auto & thisPara = _currentParas[thisLine.getIndex()];
@@ -288,7 +288,7 @@ void Text::makeUncontinued(int16_t row) {
 }
 
 void Text::resizeClip(int16_t rows, int16_t cols, const std::vector<Marker *> & points) {
-    ASSERT(rows > 0 && cols > 0, "");
+    ASSERT(rows > 0 && cols > 0, );
 
     if (cols != getCols()) {
     }
@@ -385,7 +385,7 @@ void Text::dumpDetail(std::ostream & ost, bool UNUSED(blah)) {
 }
 
 auto Text::rfind(const Regex & regex, Marker & marker, bool & ongoing) -> std::vector<Match> {
-    ASSERT(marker._valid, "Invalid marker.");
+    ASSERT(marker._valid, );
 
     std::vector<Match> matches;
 
@@ -425,8 +425,8 @@ auto Text::rfind(const Regex & regex, Marker & marker, bool & ongoing) -> std::v
 
 #if DEBUG
     auto & line = marker._current ? _currentLines[marker._row] : _currentLines[marker._row];
-    ASSERT(line.getIndex()  == marker._index, "Indices don't match.");
-    ASSERT(line.getSeqnum() == 0, "Expected zero seqnum.");
+    ASSERT(line.getIndex()  == marker._index, << "Indices don't match.");
+    ASSERT(line.getSeqnum() == 0, << "Expected zero seqnum.");
 #endif
 
     auto substrs = regex.matchOffsets(para.getString());

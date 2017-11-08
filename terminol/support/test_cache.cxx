@@ -13,14 +13,14 @@ void enforceKeys(Cache<Key, T> & cache, std::initializer_list<Key> keys) {
 
     while (iter1 != cache.end() && iter2 != keys.end()) {
         //std::cout << iter1->first << " " << *iter2 << std::endl;
-        ENFORCE(iter1->first == *iter2, "Key mismatch.");
+        ENFORCE(iter1->first == *iter2, << "Key mismatch");
 
         ++iter1;
         ++iter2;
     }
 
-    ENFORCE(iter1 == cache.end(), "More keys than expected.");
-    ENFORCE(iter2 == keys.end(), "Fewer keys than expected.");
+    ENFORCE(iter1 == cache.end(), << "More keys than expected");
+    ENFORCE(iter2 == keys.end(), << "Fewer keys than expected");
 }
 
 template <typename Key, typename T>
@@ -30,7 +30,7 @@ void enforceIteration(Cache<Key, T> & cache) {
 
     while (iter != cache.end()) {
         --rIter;
-        ENFORCE(iter->first == rIter->first, "Match.");
+        ENFORCE(iter->first == rIter->first, << "Match");
         ++iter;
     }
 }

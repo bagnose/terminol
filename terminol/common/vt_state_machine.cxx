@@ -546,7 +546,7 @@ void VtStateMachine::processControl(uint8_t c) {
 }
 
 void VtStateMachine::processEsc(const std::vector<uint8_t> & seq) {
-    ASSERT(!seq.empty(), "");
+    ASSERT(!seq.empty(), );
 
     SimpleEsc esc;
     esc.inters.insert(esc.inters.begin(), seq.begin(), seq.end() - 1);
@@ -562,7 +562,7 @@ void VtStateMachine::processEsc(const std::vector<uint8_t> & seq) {
 }
 
 void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
-    ASSERT(seq.size() >= 1, "");
+    ASSERT(seq.size() >= 1, );
 
     size_t i = 0;
     CsiEsc esc;
@@ -603,7 +603,7 @@ void VtStateMachine::processCsi(const std::vector<uint8_t> & seq) {
         ++i;
     }
 
-    ASSERT(i == seq.size() - 1, "");
+    ASSERT(i == seq.size() - 1, );
 
     // Mode:
 

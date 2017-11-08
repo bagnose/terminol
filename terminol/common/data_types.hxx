@@ -91,7 +91,7 @@ inline bool operator == (UColor lhs, UColor rhs) {
             case UColor::Type::DIRECT:
                 return lhs.values == rhs.values;
         }
-        FATAL("Unreachable");
+        FATAL();
     }
 }
 

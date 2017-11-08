@@ -77,7 +77,7 @@ auto SimpleDeduper::store(const std::vector<Cell> & cells) -> Tag {
     auto tag = makeTag(bytes);
 
 again:
-    ASSERT(tag != invalidTag(), "");
+    ASSERT(tag != invalidTag(), );
     auto iter = _entries.find(tag);
 
     if (iter == _entries.end()) {
@@ -93,7 +93,7 @@ again:
                       << "%" << std::endl;
 #endif
 
-            ENFORCE(static_cast<Tag>(_entries.size()) != invalidTag(), "No dedupe room left.");
+            ENFORCE(static_cast<Tag>(_entries.size()) != invalidTag(), << "No dedupe room left");
 
             ++tag;
             if (tag == invalidTag()) { ++tag; }
@@ -112,7 +112,7 @@ void SimpleDeduper::lookup(Tag tag, std::vector<Cell> & cells) const {
     std::unique_lock<std::mutex> lock(_mutex);
 
     auto iter = _entries.find(tag);
-    ASSERT(iter != _entries.end(), "");
+    ASSERT(iter != _entries.end(), );
 
     auto & bytes = iter->second.bytes;
     decode(bytes, cells);
@@ -123,7 +123,7 @@ void SimpleDeduper::lookupSegment(Tag tag, uint32_t offset, int16_t max_size,
     std::unique_lock<std::mutex> lock(_mutex);
 
     auto iter = _entries.find(tag);
-    ASSERT(iter != _entries.end(), "");
+    ASSERT(iter != _entries.end(), );
 
     auto & bytes = iter->second.bytes;
     std::vector<Cell> tmp_cells;
@@ -141,16 +141,16 @@ size_t SimpleDeduper::lookupLength(Tag tag) const {
     std::unique_lock<std::mutex> lock(_mutex);
 
     auto iter = _entries.find(tag);
-    ASSERT(iter != _entries.end(), "");
+    ASSERT(iter != _entries.end(), );
     return iter->second.length;
 }
 
 void SimpleDeduper::remove(Tag tag) {
     std::unique_lock<std::mutex> lock(_mutex);
 
-    ASSERT(tag != invalidTag(), "");
+    ASSERT(tag != invalidTag(), );
     auto iter = _entries.find(tag);
-    ASSERT(iter != _entries.end(), "");
+    ASSERT(iter != _entries.end(), );
     auto & entry = iter->second;
 
     if (--entry.refs == 0) {

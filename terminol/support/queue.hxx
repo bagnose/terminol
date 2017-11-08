@@ -19,14 +19,14 @@ public:
 
     void add(const T & t) {
         std::unique_lock<std::mutex> lock(_mutex);
-        ASSERT(!_finalised, "Add after finalised.");
+        ASSERT(!_finalised, << "Add after finalised");
         _queue.push(t);
         _condition.notify_one();
     }
 
     void add(T && t) {
         std::unique_lock<std::mutex> lock(_mutex);
-        ASSERT(!_finalised, "Add after finalised.");
+        ASSERT(!_finalised, << "Add after finalised");
         _queue.push(std::move(t));
         _condition.notify_one();
     }

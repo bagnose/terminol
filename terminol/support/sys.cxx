@@ -10,7 +10,7 @@
 
 // Set FD_CLOEXEC
 void fdCloseExec(int fd) {
-    ASSERT(fd != -1, "");
+    ASSERT(fd != -1, );
     int flags = THROW_IF_SYSCALL_FAILS(::fcntl(fd, F_GETFD), "fcntl()");
     flags |= FD_CLOEXEC;
     THROW_IF_SYSCALL_FAILS(::fcntl(fd, F_SETFD, flags), "fcntl()");
@@ -18,7 +18,7 @@ void fdCloseExec(int fd) {
 
 // Set O_NONBLOCK
 void fdNonBlock(int fd) {
-    ASSERT(fd != -1, "");
+    ASSERT(fd != -1, );
     int flags;
     THROW_IF_SYSCALL_FAILS((flags = ::fcntl(fd, F_GETFL)), "fcntl()");
     flags |= O_NONBLOCK;

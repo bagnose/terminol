@@ -253,7 +253,7 @@ public:
     }
 
     void animate() {
-        ASSERT(!_readRegs.empty() || !_writeRegs.empty(), "");
+        ASSERT(!_readRegs.empty() || !_writeRegs.empty(), );
 
         const int MAX_EVENTS = 8;
         struct epoll_event event_array[MAX_EVENTS];
@@ -274,7 +274,7 @@ public:
         }
 
         if (n == 0) {
-            ASSERT(!_timeoutRegs.empty(), "");
+            ASSERT(!_timeoutRegs.empty(), );
 
             auto now = Clock::now();
 
@@ -304,14 +304,14 @@ public:
 
                 if (events & (EPOLLHUP | EPOLLIN)) {
                     auto iter = _readRegs.find(fd);
-                    ASSERT(iter != _readRegs.end(), "");
+                    ASSERT(iter != _readRegs.end(), );
                     auto handler = iter->second;
                     handler->handleRead(fd);
                 }
 
                 if (events & EPOLLOUT) {
                     auto iter = _writeRegs.find(fd);
-                    ASSERT(iter != _writeRegs.end(), "");
+                    ASSERT(iter != _writeRegs.end(), );
                     auto handler = iter->second;
                     handler->handleWrite(fd);
                 }
@@ -322,7 +322,7 @@ public:
     // I_Selector implementation:
 
     void addReadable(int fd, I_ReadHandler * handler) override {
-        ASSERT(_readRegs.find(fd) == _readRegs.end(), "");
+        ASSERT(_readRegs.find(fd) == _readRegs.end(), );
 
         struct epoll_event event;
         std::memset(&event, 0, sizeof event);
@@ -342,7 +342,7 @@ public:
 
     void removeReadable(int fd) override {
         auto iter = _readRegs.find(fd);
-        ASSERT(iter != _readRegs.end(), "");
+        ASSERT(iter != _readRegs.end(), );
 
         if (_writeRegs.find(fd) == _writeRegs.end()) {
             THROW_IF_SYSCALL_FAILS(::epoll_ctl(_fd, EPOLL_CTL_DEL, fd, nullptr), "epoll_ctl()");
@@ -359,7 +359,7 @@ public:
     }
 
     void addWriteable(int fd, I_WriteHandler * handler) override {
-        ASSERT(_writeRegs.find(fd) == _writeRegs.end(), "");
+        ASSERT(_writeRegs.find(fd) == _writeRegs.end(), );
 
         struct epoll_event event;
         std::memset(&event, 0, sizeof event);
@@ -379,7 +379,7 @@ public:
 
     void removeWriteable(int fd) override {
         auto iter = _writeRegs.find(fd);
-        ASSERT(iter != _writeRegs.end(), "");
+        ASSERT(iter != _writeRegs.end(), );
 
         if (_readRegs.find(fd) == _readRegs.end()) {
             THROW_IF_SYSCALL_FAILS(::epoll_ctl(_fd, EPOLL_CTL_DEL, fd, nullptr), "");
@@ -398,7 +398,7 @@ public:
     void addTimeoutable(I_TimeoutHandler * handler, int milliseconds) override {
 #if DEBUG
         for (auto & reg : _timeoutRegs) {
-            ASSERT(reg.handler != handler, "Handler already registered.");
+            ASSERT(reg.handler != handler, << "Handler already registered.");
         }
 #endif
         Clock::time_point scheduled =
@@ -425,7 +425,7 @@ public:
             }
         }
 
-        FATAL("Handler not registered.");
+        FATAL(<< "Handler not registered.");
     }
 };
 

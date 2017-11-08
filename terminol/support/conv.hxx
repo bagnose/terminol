@@ -15,7 +15,7 @@
 
 template <typename T>
 T clamp(T val, T min, T max) {
-    ASSERT(min <= max, "");
+    ASSERT(min <= max, );
     if      (val < min) { return min; }
     else if (val > max) { return max; }
     else                { return val; }
@@ -113,7 +113,7 @@ std::string nthStr(T t) {
 }
 
 inline char nibbleToHex(uint8_t nibble) {
-    ASSERT(nibble < 0x10, "");
+    ASSERT(nibble < 0x10, );
     if (nibble < 0xA) { return '0' +  nibble;       }
     else              { return 'A' + (nibble - 10); }
 }
