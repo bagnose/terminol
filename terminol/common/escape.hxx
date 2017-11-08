@@ -20,7 +20,7 @@ struct SimpleEsc {
     std::string str() const;
 };
 
-std::ostream & operator << (std::ostream & ost, const SimpleEsc & esc);
+std::ostream & operator<<(std::ostream & ost, const SimpleEsc & esc);
 
 //
 // Control Sequence Initiator.
@@ -31,23 +31,23 @@ struct CsiEsc {
 
     // SGR - Select Graphic Rendition
     enum class StockSGR {
-        RESET_ALL,          // (normal)
+        RESET_ALL, // (normal)
 
-        BOLD,               // or increased intensity
-        FAINT,              // (decreased intensity)
+        BOLD,  // or increased intensity
+        FAINT, // (decreased intensity)
         ITALIC,
         UNDERLINE,
         BLINK_SLOW,
         BLINK_RAPID,
-        INVERSE,            // (negative)
+        INVERSE, // (negative)
         CONCEAL,
 
-        RESET_WEIGHT,       // remove bold/faint
-        RESET_SLANT,        // remove italic
+        RESET_WEIGHT, // remove bold/faint
+        RESET_SLANT,  // remove italic
         RESET_UNDERLINE,
         RESET_BLINK,
-        RESET_INVERSE,      // (positive)
-        RESET_CONCEAL,      // (reveal)
+        RESET_INVERSE, // (positive)
+        RESET_CONCEAL, // (reveal)
 
         FG_BLACK,
         FG_RED,
@@ -133,7 +133,7 @@ struct CsiEsc {
     uint8_t              mode;
 };
 
-std::ostream & operator << (std::ostream & ost, const CsiEsc & esc);
+std::ostream & operator<<(std::ostream & ost, const CsiEsc & esc);
 
 //
 // Device Control Sequence.
@@ -146,7 +146,7 @@ struct DcsEsc {
     std::string str() const;
 };
 
-std::ostream & operator << (std::ostream & ost, const DcsEsc & esc);
+std::ostream & operator<<(std::ostream & ost, const DcsEsc & esc);
 
 //
 // Operating System Command.
@@ -159,6 +159,6 @@ struct OscEsc {
     std::string str() const;
 };
 
-std::ostream & operator << (std::ostream & ost, const OscEsc & esc);
+std::ostream & operator<<(std::ostream & ost, const OscEsc & esc);
 
 #endif // SUPPORT__ESCAPE__HXX

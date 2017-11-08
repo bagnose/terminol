@@ -3,12 +3,11 @@
 
 #include "terminol/support/conv.hxx"
 
-std::optional<std::vector<std::string>> split(const std::string & line,
-                                              const std::string & delim) {
+std::optional<std::vector<std::string>> split(const std::string & line, const std::string & delim) {
     auto i = line.find_first_not_of(delim);
 
-    if (i == std::string::npos) { return std::nullopt; }   // blank line
-    if (line[i] == '#')         { return std::nullopt; }   // comment
+    if (i == std::string::npos) { return std::nullopt; } // blank line
+    if (line[i] == '#') { return std::nullopt; }         // comment
 
     std::vector<std::string> tokens;
 
@@ -19,9 +18,7 @@ std::optional<std::vector<std::string>> split(const std::string & line,
         if (quote) { ++i; }
 
         if (j == std::string::npos) {
-            if (quote) {
-                THROW(ConversionError("Unterminated quote"));
-            }
+            if (quote) { THROW(ConversionError("Unterminated quote")); }
             else {
                 j = line.size();
             }

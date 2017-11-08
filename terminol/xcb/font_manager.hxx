@@ -26,18 +26,16 @@ public:
 private:
     using FontSetPtr = std::unique_ptr<FontSet>;
 
-    const Config              & _config;
-    Basics                    & _basics;
+    const Config & _config;
+    Basics &       _basics;
 
-    int                         _delta = 0;        // Global delta
-    std::map<I_Client *, int>   _clients;          // client->size
-    std::map<int, FontSetPtr>   _fontSets;         // size->font-set
-    bool                        _dispatch = false; // used to disallow re-entrance
+    int                       _delta = 0;        // Global delta
+    std::map<I_Client *, int> _clients;          // client->size
+    std::map<int, FontSetPtr> _fontSets;         // size->font-set
+    bool                      _dispatch = false; // used to disallow re-entrance
 
 public:
-    FontManager(const Config & config, Basics & basics) :
-        _config(config),
-        _basics(basics) {}
+    FontManager(const Config & config, Basics & basics) : _config(config), _basics(basics) {}
 
     ~FontManager() {
         ASSERT(!_dispatch, );
@@ -52,7 +50,8 @@ public:
         _clients.insert({client, size});
         auto iter = _fontSets.find(size);
         if (iter == _fontSets.end()) {
-            iter = _fontSets.insert({size, std::make_unique<FontSet>(_config, _basics, size)}).first;
+            iter = _fontSets.insert({size, std::make_unique<FontSet>(_config, _basics, size)})
+                       .first;
             return iter->second.get();
         }
         else {
@@ -81,15 +80,11 @@ public:
     void globalDelta(int delta) {
         if (_dispatch) { return; }
 
-        for (auto & p : _clients) {
-            resizeClient(p.first, delta);
-        }
+        for (auto & p : _clients) { resizeClient(p.first, delta); }
 
         purgeUnusedFonts();
 
-        if (delta == 0) {
-            _delta = 0;
-        }
+        if (delta == 0) { _delta = 0; }
         else {
             _delta += delta;
         }
@@ -97,7 +92,7 @@ public:
 
 protected:
     void resizeClient(I_Client * client, int delta) {
-        auto iter1       = _clients.find(client);
+        auto iter1 = _clients.find(client);
         ASSERT(iter1 != _clients.end(), );
         auto old_size    = iter1->second;
         auto new_size    = delta == 0 ? _config.fontSize : old_size + delta;
@@ -109,10 +104,12 @@ protected:
         iter1->second = new_size;
 
         _dispatch = true;
-        ScopeGuard dispatchGuard([this] () { _dispatch = false; });
+        ScopeGuard dispatchGuard([this]() { _dispatch = false; });
 
         if (iter2 == _fontSets.end()) {
-            iter2 = _fontSets.insert({new_size, std::make_unique<FontSet>(_config, _basics, new_size)}).first;
+            iter2 = _fontSets
+                        .insert({new_size, std::make_unique<FontSet>(_config, _basics, new_size)})
+                        .first;
             client->useFontSet(iter2->second.get(), total_delta);
         }
         else {
@@ -127,9 +124,7 @@ protected:
 
         std::set<int> unused;
         for (auto & p : _fontSets) {
-            if (used.find(p.first) == used.end()) {
-                unused.insert(p.first);
-            }
+            if (used.find(p.first) == used.end()) { unused.insert(p.first); }
         }
 
         for (auto size : unused) {

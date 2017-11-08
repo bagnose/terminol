@@ -23,17 +23,17 @@ class Cache : protected Uncopyable {
 
         // After this call, link->next==this
         void insert(Link & link) noexcept {
-            link.next = this;
-            link.prev = prev;
+            link.next  = this;
+            link.prev  = prev;
             prev->next = &link;
-            prev = &link;
+            prev       = &link;
         }
 
         void extract() noexcept {
             prev->next = next;
             next->prev = prev;
-            next = this;
-            prev = this;
+            next       = this;
+            prev       = this;
         }
 
         bool single() const noexcept {
@@ -55,24 +55,24 @@ class Cache : protected Uncopyable {
     };
 
     static Entry & linkToEntry(Link & link) noexcept {
-        auto linkOffset = offsetof(Entry, link);
-        auto bytePtr    = reinterpret_cast<uint8_t *>(&link);
-        auto & entry    = *reinterpret_cast<Entry *>(bytePtr - linkOffset);
+        auto   linkOffset = offsetof(Entry, link);
+        auto   bytePtr    = reinterpret_cast<uint8_t *>(&link);
+        auto & entry      = *reinterpret_cast<Entry *>(bytePtr - linkOffset);
         return entry;
     }
 
     static Key & entryToKey(Entry & entry) noexcept {
-        using Pair = typename Map::value_type;
-        auto keyOffset   = offsetof(Pair, first);
-        auto entryOffset = offsetof(Pair, second);
-        auto bytePtr     = reinterpret_cast<uint8_t *>(&entry);
-        auto & key       = *reinterpret_cast<Key *>(bytePtr - (entryOffset - keyOffset));
+        using Pair         = typename Map::value_type;
+        auto   keyOffset   = offsetof(Pair, first);
+        auto   entryOffset = offsetof(Pair, second);
+        auto   bytePtr     = reinterpret_cast<uint8_t *>(&entry);
+        auto & key         = *reinterpret_cast<Key *>(bytePtr - (entryOffset - keyOffset));
         return key;
     }
 
     using Map = std::unordered_map<Key, Entry>;
 
-    Link _sentinel;       // next is oldest, prev is newest
+    Link _sentinel; // next is oldest, prev is newest
     Map  _map;
 
 public:
@@ -103,45 +103,43 @@ public:
 
         explicit iterator(Link * link) noexcept : _link(link) {}
 
-        pointer operator -> () noexcept {
+        pointer operator->() noexcept {
             Key & key = entryToKey(linkToEntry(*_link));
             return reinterpret_cast<pointer>(&key);
         }
 
-        reference operator * () noexcept {
+        reference operator*() noexcept {
             Key & key = entryToKey(linkToEntry(*_link));
             return reinterpret_cast<reference>(key);
         }
 
-        iterator & operator ++ () noexcept {
+        iterator & operator++() noexcept {
             _link = _link->next;
             return *this;
         }
 
-        iterator operator ++ (int) noexcept {
+        iterator operator++(int)noexcept {
             iterator rval(*this);
-            operator++();
+                     operator++();
             return rval;
         }
 
-        iterator & operator -- () noexcept {
+        iterator & operator--() noexcept {
             _link = _link->prev;
             return *this;
         }
 
-        iterator operator -- (int) noexcept {
+        iterator operator--(int)noexcept {
             iterator rval(*this);
-            operator--();
+                     operator--();
             return rval;
         }
 
-        friend bool operator == (iterator lhs, iterator rhs) noexcept {
+        friend bool operator==(iterator lhs, iterator rhs) noexcept {
             return lhs._link == rhs._link;
         }
 
-        friend bool operator != (iterator lhs, iterator rhs) noexcept {
-            return !(lhs == rhs);
-        }
+        friend bool operator!=(iterator lhs, iterator rhs) noexcept { return !(lhs == rhs); }
     };
 
     //
@@ -166,41 +164,37 @@ public:
             return iter;
         }
 
-        pointer operator -> () noexcept {
-            return _iterator.operator->();
-        }
+        pointer operator->() noexcept { return _iterator.operator->(); }
 
-        reference operator * () noexcept {
-            return _iterator.operator*();
-        }
+        reference operator*() noexcept { return _iterator.operator*(); }
 
         reverse_iterator & operator++() noexcept {
             --_iterator;
             return *this;
         }
 
-        reverse_iterator operator ++ (int) noexcept {
+        reverse_iterator operator++(int)noexcept {
             iterator rval(*this);
-            operator++();
+                     operator++();
             return rval;
         }
 
-        reverse_iterator & operator -- () noexcept {
+        reverse_iterator & operator--() noexcept {
             ++_iterator;
             return *this;
         }
 
-        reverse_iterator operator -- (int) noexcept {
+        reverse_iterator operator--(int)noexcept {
             iterator rval(*this);
-            operator--();
+                     operator--();
             return rval;
         }
 
-        friend bool operator == (reverse_iterator lhs, reverse_iterator rhs) noexcept {
+        friend bool operator==(reverse_iterator lhs, reverse_iterator rhs) noexcept {
             return lhs._link == rhs._link;
         }
 
-        friend bool operator != (reverse_iterator lhs, reverse_iterator rhs) noexcept {
+        friend bool operator!=(reverse_iterator lhs, reverse_iterator rhs) noexcept {
             return !(lhs == rhs);
         }
     };
@@ -209,23 +203,15 @@ public:
     //
     //
 
-    iterator begin() noexcept {
-        return iterator(_sentinel.next);
-    }
+    iterator begin() noexcept { return iterator(_sentinel.next); }
 
-    iterator end() noexcept {
-        return iterator(&_sentinel);
-    }
+    iterator end() noexcept { return iterator(&_sentinel); }
 
-    reverse_iterator rbegin() noexcept {
-        return reverse_iterator(_sentinel.prev);
-    }
+    reverse_iterator rbegin() noexcept { return reverse_iterator(_sentinel.prev); }
 
-    reverse_iterator rend() noexcept {
-        return reverse_iterator(&_sentinel);
-    }
+    reverse_iterator rend() noexcept { return reverse_iterator(&_sentinel); }
 
-    Cache() = default;
+    Cache()                  = default;
     Cache(Cache &&) noexcept = default;
 
     iterator insert(const Key & key, T && t) {
@@ -248,9 +234,7 @@ public:
     iterator find(const Key & key) noexcept {
         auto iter = _map.find(key);
 
-        if (iter == _map.end()) {
-            return end();
-        }
+        if (iter == _map.end()) { return end(); }
         else {
             auto & entry = iter->second;
             entry.link.extract();
@@ -265,13 +249,9 @@ public:
         return iter->second;
     }
 
-    bool empty() const noexcept {
-        return _map.empty();
-    }
+    bool empty() const noexcept { return _map.empty(); }
 
-    size_t size() const noexcept {
-        return _map.size();
-    }
+    size_t size() const noexcept { return _map.size(); }
 };
 
 #endif // SUPPORT__CACHE__HXX

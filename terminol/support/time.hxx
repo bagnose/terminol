@@ -17,12 +17,10 @@ class Timer {
     Clock::time_point _endTime;
 
 public:
-    explicit Timer(uint32_t milliseconds) :
-        _endTime(Clock::now() + std::chrono::duration<int,std::milli>(milliseconds)) {}
+    explicit Timer(uint32_t milliseconds)
+        : _endTime(Clock::now() + std::chrono::duration<int, std::milli>(milliseconds)) {}
 
-    bool expired() const {
-        return std::chrono::steady_clock::now() > _endTime;
-    }
+    bool expired() const { return std::chrono::steady_clock::now() > _endTime; }
 };
 
 #endif // COMMON__TIME__HXX

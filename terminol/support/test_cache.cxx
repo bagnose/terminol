@@ -12,7 +12,7 @@ void enforceKeys(Cache<Key, T> & cache, std::initializer_list<Key> keys) {
     auto iter2 = keys.begin();
 
     while (iter1 != cache.end() && iter2 != keys.end()) {
-        //std::cout << iter1->first << " " << *iter2 << std::endl;
+        // std::cout << iter1->first << " " << *iter2 << std::endl;
         ENFORCE(iter1->first == *iter2, << "Key mismatch");
 
         ++iter1;

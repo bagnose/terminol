@@ -26,12 +26,10 @@ void rleEncode(const std::vector<Item> & items, OutStream & stream) {
 
     for (auto & next : items) {
         if (initial || next != item || count == std::numeric_limits<Count>::max()) {
-            if (initial) {
-                initial = false;
-            }
+            if (initial) { initial = false; }
             else {
                 stream.writeAll(&count, sizeof count, 1);
-                stream.writeAll(&item,  sizeof item,  1);
+                stream.writeAll(&item, sizeof item, 1);
             }
             item  = next;
             count = 0;
@@ -42,7 +40,7 @@ void rleEncode(const std::vector<Item> & items, OutStream & stream) {
 
     if (!initial) {
         stream.writeAll(&count, sizeof count, 1);
-        stream.writeAll(&item,  sizeof item,  1);
+        stream.writeAll(&item, sizeof item, 1);
         count = 0;
     }
 
@@ -67,9 +65,7 @@ void rleDecode(InStream & stream, std::vector<Item> & items) {
         Item item;
         stream.readAll(&item, sizeof item, 1);
 
-        for (Count i = 0; i != count; ++i) {
-            items.push_back(item);
-        }
+        for (Count i = 0; i != count; ++i) { items.push_back(item); }
     }
 }
 

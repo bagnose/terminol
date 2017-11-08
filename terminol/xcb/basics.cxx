@@ -20,11 +20,9 @@ Basics::Basics() {
 #else
     char h[255 + 1];
 #endif
-    if (::gethostname(h, sizeof h) == 0) {
-        _hostname = h;
-    }
+    if (::gethostname(h, sizeof h) == 0) { _hostname = h; }
 
-    auto d = ::getenv("DISPLAY");
+    auto d       = ::getenv("DISPLAY");
     _displayName = d ? d : ":0";
 
     _connection = xcb_connect(_displayName.c_str(), &_screenNum);
@@ -33,18 +31,14 @@ Basics::Basics() {
 
     auto setup      = xcb_get_setup(_connection);
     auto screenIter = xcb_setup_roots_iterator(setup);
-    for (auto i = 0; i != _screenNum; ++i) {
-        xcb_screen_next(&screenIter);
-    }
+    for (auto i = 0; i != _screenNum; ++i) { xcb_screen_next(&screenIter); }
     _screen = screenIter.data;
 
     _visual = nullptr;
-    for (auto depthIter = xcb_screen_allowed_depths_iterator(_screen);
-         depthIter.rem; xcb_depth_next(&depthIter))
-    {
-        for (auto visual_iter = xcb_depth_visuals_iterator(depthIter.data);
-             visual_iter.rem; xcb_visualtype_next(&visual_iter))
-        {
+    for (auto depthIter = xcb_screen_allowed_depths_iterator(_screen); depthIter.rem;
+         xcb_depth_next(&depthIter)) {
+        for (auto visual_iter = xcb_depth_visuals_iterator(depthIter.data); visual_iter.rem;
+             xcb_visualtype_next(&visual_iter)) {
             if (_screen->root_visual == visual_iter.data->visual_id) {
                 _visual = visual_iter.data;
                 break;
@@ -65,12 +59,13 @@ Basics::Basics() {
 
     THROW_UNLESS(xcb_ewmh_init_atoms_replies(&_ewmhConnection,
                                              xcb_ewmh_init_atoms(_connection, &_ewmhConnection),
-                                             nullptr) != 0,
-            XError("Failed to initialise EWMH atoms"));
-    ScopeGuard ewmhConnectionGuard([&]() { xcb_ewmh_connection_wipe(&_ewmhConnection); } );
+                                             nullptr)
+                     != 0,
+                 XError("Failed to initialise EWMH atoms"));
+    ScopeGuard ewmhConnectionGuard([&]() { xcb_ewmh_connection_wipe(&_ewmhConnection); });
 
-    _atomPrimary        = XCB_ATOM_PRIMARY;
-    _atomClipboard      = lookupAtom("CLIPBOARD", true);
+    _atomPrimary   = XCB_ATOM_PRIMARY;
+    _atomClipboard = lookupAtom("CLIPBOARD", true);
     try {
         _atomUtf8String = lookupAtom("UTF8_STRING", false);
     }
@@ -83,7 +78,10 @@ Basics::Basics() {
     _atomWmDeleteWindow     = lookupAtom("WM_DELETE_WINDOW", true);
     _atomXRootPixmapId      = lookupAtom("_XROOTPMAP_ID", true);
     _atomESetRootPmapId     = lookupAtom("ESETROOT_PMAP_ID", true);
-    _atomNetWmWindowOpacity = lookupAtom("_NET_WM_WINDOW_OPACITY", true); // FIXME need a wrapper method that throws if atom doesn't exist. getAtom() -> lookupAtom()
+    _atomNetWmWindowOpacity = lookupAtom("_NET_WM_WINDOW_OPACITY",
+                                         true); // FIXME need a wrapper method that throws if
+                                                // atom doesn't exist. getAtom() ->
+                                                // lookupAtom()
 
     try {
         _rootPixmap = getRootPixmap(_atomXRootPixmapId);
@@ -120,8 +118,10 @@ Basics::~Basics() {
 // Copyright © 2008-2009 Julien Danjou <julien@danjou.info>
 // Copyright © 2008 Pierre Habouzit <madcoder@debian.org>
 
-bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
-                       xcb_keysym_t & keySym, ModifierSet & modifiers) const {
+bool Basics::getKeySym(xcb_keycode_t  keyCode,
+                       uint8_t        state,
+                       xcb_keysym_t & keySym,
+                       ModifierSet &  modifiers) const {
     modifiers = convertState(state);
 
     xcb_keysym_t k0, k1;
@@ -141,16 +141,14 @@ bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
     }
 
     // If the second column does not exists use the first one.
-    if (k1 == XCB_NO_SYMBOL) {
-        k1 = k0;
-    }
+    if (k1 == XCB_NO_SYMBOL) { k1 = k0; }
 
     // The numlock modifier is on and the second KeySym is a keypad KeySym.
     if (modifiers.get(Modifier::NUM_LOCK) && xcb_is_keypad_key(k1)) {
         // The Shift modifier is on, or if the Lock modifier is on and
         // is interpreted as ShiftLock, use the first KeySym.
-        if ((state & XCB_MOD_MASK_SHIFT) ||
-            ((state & XCB_MOD_MASK_LOCK) && (state & _maskShiftLock))) {
+        if ((state & XCB_MOD_MASK_SHIFT)
+            || ((state & XCB_MOD_MASK_LOCK) && (state & _maskShiftLock))) {
             keySym = k0;
             return true;
         }
@@ -166,8 +164,8 @@ bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
     }
     // The Shift modifier is off and the Lock modifier is on and is
     // interpreted as CapsLock.
-    else if (!(state & XCB_MOD_MASK_SHIFT) &&
-             (state & XCB_MOD_MASK_LOCK) && (state & _maskCapsLock)) {
+    else if (!(state & XCB_MOD_MASK_SHIFT) && (state & XCB_MOD_MASK_LOCK)
+             && (state & _maskCapsLock)) {
         // The first Keysym is used but if that KeySym is lowercase
         // alphabetic, then the corresponding uppercase KeySym is used
         // instead.
@@ -176,8 +174,8 @@ bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
     }
     // The Shift modifier is on, and the Lock modifier is on and is
     // interpreted as CapsLock.
-    else if ((state & XCB_MOD_MASK_SHIFT) && (state & XCB_MOD_MASK_LOCK) &&
-             (state & _maskCapsLock)) {
+    else if ((state & XCB_MOD_MASK_SHIFT) && (state & XCB_MOD_MASK_LOCK)
+             && (state & _maskCapsLock)) {
         // The second Keysym is used but if that KeySym is lowercase
         // alphabetic, then the corresponding uppercase KeySym is used
         // instead.
@@ -186,8 +184,8 @@ bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
     }
     // The Shift modifier is on, or the Lock modifier is on and is
     // interpreted as ShiftLock, or both.
-    else if ((state & XCB_MOD_MASK_SHIFT) ||
-             ((state & XCB_MOD_MASK_LOCK) && (state & _maskShiftLock))) {
+    else if ((state & XCB_MOD_MASK_SHIFT)
+             || ((state & XCB_MOD_MASK_LOCK) && (state & _maskShiftLock))) {
         keySym = k1;
         return true;
     }
@@ -199,13 +197,13 @@ bool Basics::getKeySym(xcb_keycode_t keyCode, uint8_t state,
 ModifierSet Basics::convertState(uint8_t state) const {
     ModifierSet modifiers;
 
-    if (state & _maskShift)      { modifiers.set(Modifier::SHIFT); }
-    if (state & _maskAlt)        { modifiers.set(Modifier::ALT); }
-    if (state & _maskControl)    { modifiers.set(Modifier::CONTROL); }
-    if (state & _maskSuper)      { modifiers.set(Modifier::SUPER); }
-    if (state & _maskNumLock)    { modifiers.set(Modifier::NUM_LOCK); }
-    if (state & _maskShiftLock)  { modifiers.set(Modifier::SHIFT_LOCK); }
-    if (state & _maskCapsLock)   { modifiers.set(Modifier::CAPS_LOCK); }
+    if (state & _maskShift) { modifiers.set(Modifier::SHIFT); }
+    if (state & _maskAlt) { modifiers.set(Modifier::ALT); }
+    if (state & _maskControl) { modifiers.set(Modifier::CONTROL); }
+    if (state & _maskSuper) { modifiers.set(Modifier::SUPER); }
+    if (state & _maskNumLock) { modifiers.set(Modifier::NUM_LOCK); }
+    if (state & _maskShiftLock) { modifiers.set(Modifier::SHIFT_LOCK); }
+    if (state & _maskCapsLock) { modifiers.set(Modifier::CAPS_LOCK); }
     if (state & _maskModeSwitch) { modifiers.set(Modifier::MODE_SWITCH); }
 
     return modifiers;
@@ -220,8 +218,7 @@ void Basics::updateRootPixmap() {
     }
 }
 
-xcb_atom_t Basics::lookupAtom(const std::string & name,
-                              bool create) {
+xcb_atom_t Basics::lookupAtom(const std::string & name, bool create) {
     auto cookie = xcb_intern_atom(_connection, create ? 0 : 1, name.length(), name.data());
     auto reply  = xcb_intern_atom_reply(_connection, cookie, nullptr);
 
@@ -240,16 +237,13 @@ xcb_atom_t Basics::lookupAtom(const std::string & name,
 }
 
 xcb_cursor_t Basics::loadNormalCursor() {
-    uint16_t          cursorId = 152;    // XC_xterm
+    uint16_t          cursorId = 152; // XC_xterm
     const std::string fontName = "cursor";
 
     // Load the font:
 
     auto font   = xcb_generate_id(_connection);
-    auto cookie = xcb_open_font_checked(_connection,
-                                        font,
-                                        fontName.size(),
-                                        fontName.data());
+    auto cookie = xcb_open_font_checked(_connection, font, fontName.size(), fontName.data());
     THROW_IF_XCB_REQUEST_FAILED(_connection, cookie, "Failed to open font");
     ScopeGuard guard([&]() { xcb_close_font(_connection, font); });
 
@@ -262,7 +256,12 @@ xcb_cursor_t Basics::loadNormalCursor() {
                                     font,
                                     cursorId,
                                     cursorId + 1,
-                                    0, 0, 0, max / 2, max / 2, max / 2);
+                                    0,
+                                    0,
+                                    0,
+                                    max / 2,
+                                    max / 2,
+                                    max / 2);
     THROW_IF_XCB_REQUEST_FAILED(_connection, cookie, "Failed to create cursor");
 
     return cursor;
@@ -270,22 +269,12 @@ xcb_cursor_t Basics::loadNormalCursor() {
 
 xcb_cursor_t Basics::loadInvisibleCursor() {
     auto pixmap = xcb_generate_id(_connection);
-    auto cookie = xcb_create_pixmap_checked(_connection,
-                                            1,
-                                            pixmap,
-                                            _screen->root,
-                                            1, 1);
+    auto cookie = xcb_create_pixmap_checked(_connection, 1, pixmap, _screen->root, 1, 1);
     THROW_IF_XCB_REQUEST_FAILED(_connection, cookie, "Failed to create pixmap");
     ScopeGuard guard([&]() { xcb_free_pixmap(_connection, pixmap); });
 
     auto cursor = xcb_generate_id(_connection);
-    cookie = xcb_create_cursor_checked(_connection,
-                                       cursor,
-                                       pixmap,
-                                       pixmap,
-                                       0, 0, 0,
-                                       0, 0, 0,
-                                       1, 1);
+    cookie = xcb_create_cursor_checked(_connection, cursor, pixmap, pixmap, 0, 0, 0, 0, 0, 0, 1, 1);
     THROW_IF_XCB_REQUEST_FAILED(_connection, cookie, "Couldn't create cursor");
 
     return cursor;
@@ -293,7 +282,7 @@ xcb_cursor_t Basics::loadInvisibleCursor() {
 
 xcb_pixmap_t Basics::getRootPixmap(xcb_atom_t atom) {
     auto cookie = xcb_get_property(_connection,
-                                   0,     // delete
+                                   0, // delete
                                    _screen->root,
                                    atom,
                                    XCB_ATOM_PIXMAP,
@@ -316,21 +305,19 @@ xcb_pixmap_t Basics::getRootPixmap(xcb_atom_t atom) {
 
 namespace {
 
-void resolveCode(uint8_t             & mask,
-                 const xcb_keycode_t * codes,
-                 xcb_keycode_t         kcode,
-                 uint8_t               bit) {
-    if (mask == 0 && codes) {
-        for (auto ktest = codes; *ktest; ++ktest) {
-            if (*ktest == kcode) {
-                mask = (1 << bit);
-                break;
+    void
+    resolveCode(uint8_t & mask, const xcb_keycode_t * codes, xcb_keycode_t kcode, uint8_t bit) {
+        if (mask == 0 && codes) {
+            for (auto ktest = codes; *ktest; ++ktest) {
+                if (*ktest == kcode) {
+                    mask = (1 << bit);
+                    break;
+                }
             }
         }
     }
-}
 
-} // namespace {anonymous}
+} // namespace
 
 void Basics::determineMasks() {
     // Note, xcb_key_symbols_get_keycode() may return nullptr.
@@ -344,36 +331,36 @@ void Basics::determineMasks() {
     auto modeSwitchCodes = xcb_key_symbols_get_keycode(_keySymbols, XKB_KEY_Mode_switch);
 
     ScopeGuard guard([&]() {
-                         if (modeSwitchCodes) { std::free(modeSwitchCodes); }
-                         if (capsLockCodes)   { std::free(capsLockCodes); }
-                         if (shiftLockCodes)  { std::free(shiftLockCodes); }
-                         if (numLockCodes)    { std::free(numLockCodes); }
-                         if (superCodes)      { std::free(superCodes); }
-                         if (controlCodes)    { std::free(controlCodes); }
-                         if (altCodes)        { std::free(altCodes); }
-                         if (shiftCodes)      { std::free(shiftCodes); }
-                     });
+        if (modeSwitchCodes) { std::free(modeSwitchCodes); }
+        if (capsLockCodes) { std::free(capsLockCodes); }
+        if (shiftLockCodes) { std::free(shiftLockCodes); }
+        if (numLockCodes) { std::free(numLockCodes); }
+        if (superCodes) { std::free(superCodes); }
+        if (controlCodes) { std::free(controlCodes); }
+        if (altCodes) { std::free(altCodes); }
+        if (shiftCodes) { std::free(shiftCodes); }
+    });
 
     auto cookie      = xcb_get_modifier_mapping(_connection);
     auto modmapReply = xcb_get_modifier_mapping_reply(_connection, cookie, nullptr);
     THROW_UNLESS(modmapReply, XError("Couldn't determine masks"));
-    auto modmap      = xcb_get_modifier_mapping_keycodes(modmapReply);
+    auto modmap = xcb_get_modifier_mapping_keycodes(modmapReply);
 
     // Clear the masks.
-    _maskShift = _maskAlt = _maskControl = _maskSuper =
-        _maskNumLock = _maskShiftLock = _maskCapsLock = _maskModeSwitch = 0;
+    _maskShift = _maskAlt = _maskControl = _maskSuper = _maskNumLock = _maskShiftLock =
+        _maskCapsLock = _maskModeSwitch = 0;
 
     for (uint8_t i = 0; i != 8; ++i) {
         for (uint8_t j = 0; j != modmapReply->keycodes_per_modifier; ++j) {
             auto kcode = modmap[i * modmapReply->keycodes_per_modifier + j];
 
-            resolveCode(_maskShift,      shiftCodes,      kcode, i);
-            resolveCode(_maskAlt,        altCodes,        kcode, i);
-            resolveCode(_maskControl,    controlCodes,    kcode, i);
-            resolveCode(_maskSuper,      superCodes,      kcode, i);
-            resolveCode(_maskNumLock,    numLockCodes,    kcode, i);
-            resolveCode(_maskShiftLock,  shiftLockCodes,  kcode, i);
-            resolveCode(_maskCapsLock,   capsLockCodes,   kcode, i);
+            resolveCode(_maskShift, shiftCodes, kcode, i);
+            resolveCode(_maskAlt, altCodes, kcode, i);
+            resolveCode(_maskControl, controlCodes, kcode, i);
+            resolveCode(_maskSuper, superCodes, kcode, i);
+            resolveCode(_maskNumLock, numLockCodes, kcode, i);
+            resolveCode(_maskShiftLock, shiftLockCodes, kcode, i);
+            resolveCode(_maskCapsLock, capsLockCodes, kcode, i);
             resolveCode(_maskModeSwitch, modeSwitchCodes, kcode, i);
         }
     }

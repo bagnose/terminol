@@ -7,7 +7,7 @@
 
 int main() {
     auto strCol = "#3142BD";
-    auto color = unstringify<Color>(strCol);
+    auto color  = unstringify<Color>(strCol);
     ENFORCE(color.r == 0x31, );
     ENFORCE(color.g == 0x42, );
     ENFORCE(color.b == 0xBD, );

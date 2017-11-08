@@ -7,7 +7,7 @@ int main() {
     std::vector<uint8_t> bytes;
 
     OutMemoryStream os(bytes);
-    InMemoryStream is(bytes);
+    InMemoryStream  is(bytes);
 
     return 0;
 }

@@ -7,13 +7,11 @@
 
 namespace {
 
-void defaultTerminate() {
-    std::terminate();
-}
+    void defaultTerminate() { std::terminate(); }
 
-TerminateHandler terminateHandler = &defaultTerminate;
+    TerminateHandler terminateHandler = &defaultTerminate;
 
-} // namespace {anonymous}
+} // namespace
 
 void terminate() {
     terminateHandler();
@@ -23,7 +21,7 @@ void terminate() {
 }
 
 TerminateHandler setTerminate(TerminateHandler f) noexcept {
-    auto oldHandler = terminateHandler;
+    auto oldHandler  = terminateHandler;
     terminateHandler = f;
     return oldHandler;
 }

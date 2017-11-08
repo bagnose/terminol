@@ -9,20 +9,19 @@
 
 namespace {
 
-std::string makeHelp(const std::string & progName) {
-    std::ostringstream ost;
-    ost << "terminolc " << VERSION << std::endl
-        << "Usage: " << progName << " [OPTION]..." << std::endl
-        << std::endl
-        << "Options:" << std::endl
-        << "  --help" << std::endl
-        << "  --socket=SOCKET" << std::endl
-        << "  --shutdown" << std::endl
-        ;
-    return ost.str();
-}
+    std::string makeHelp(const std::string & progName) {
+        std::ostringstream ost;
+        ost << "terminolc " << VERSION << std::endl
+            << "Usage: " << progName << " [OPTION]..." << std::endl
+            << std::endl
+            << "Options:" << std::endl
+            << "  --help" << std::endl
+            << "  --socket=SOCKET" << std::endl
+            << "  --shutdown" << std::endl;
+        return ost.str();
+    }
 
-} // namespace {anonymous}
+} // namespace
 
 int main(int argc, char * argv[]) try {
     Config config;
@@ -43,9 +42,7 @@ int main(int argc, char * argv[]) try {
 
     Client client(selector, config, shutdown);
 
-    do {
-        selector.animate();
-    } while (!client.isFinished());
+    do { selector.animate(); } while (!client.isFinished());
 
     return 0;
 }

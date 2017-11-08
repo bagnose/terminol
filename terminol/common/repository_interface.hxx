@@ -12,19 +12,19 @@
 // Implementations must be thread safe.
 class I_Repository {
 public:
-    using Tag = uint32_t;       // Note, can use smaller tag sizes to cause collisions, etc.
+    using Tag = uint32_t; // Note, can use smaller tag sizes to cause collisions, etc.
 
     struct Entry {
         std::vector<Style>   styles;
         std::vector<uint8_t> string;
     };
 
-    virtual Tag      store(const Entry & entry) = 0;
-    virtual Entry    retrieve(Tag tag) const = 0;
-    virtual uint32_t length(Tag tag) const = 0;
+    virtual Tag      store(const Entry & entry)                               = 0;
+    virtual Entry    retrieve(Tag tag) const                                  = 0;
+    virtual uint32_t length(Tag tag) const                                    = 0;
     virtual bool     match(Tag tag, const std::vector<Regex> & regexes) const = 0;
-    virtual void     discard(Tag tag) = 0;
-    virtual void     dump(std::ostream & ost) const = 0;
+    virtual void     discard(Tag tag)                                         = 0;
+    virtual void     dump(std::ostream & ost) const                           = 0;
 
 protected:
     ~I_Repository() = default;

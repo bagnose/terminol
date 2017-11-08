@@ -11,16 +11,15 @@
 class Para {
     std::vector<Style>   _styles;
     std::vector<uint8_t> _string;
-    std::vector<int32_t> _indices;  // Index of each code point in _string.
+    std::vector<int32_t> _indices; // Index of each code point in _string.
 
 public:
     Para();
 
     // Pass-by-value because we are taking a copy.
-    Para(std::vector<Style>   styles,
-         std::vector<uint8_t> string);
+    Para(std::vector<Style> styles, std::vector<uint8_t> string);
 
-    const std::vector<Style>   & getStyles() const { return _styles; }
+    const std::vector<Style> &   getStyles() const { return _styles; }
     const std::vector<uint8_t> & getString() const { return _string; }
 
     uint32_t getLength() const { return static_cast<uint32_t>(_styles.size()); }

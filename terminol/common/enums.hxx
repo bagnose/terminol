@@ -7,19 +7,9 @@
 #include <iosfwd>
 #include <cstdint>
 
-enum class Control {
-    BEL,
-    BS,
-    HT,
-    LF,
-    VT,
-    FF,
-    CR,
-    SO,
-    SI
-};
+enum class Control { BEL, BS, HT, LF, VT, FF, CR, SO, SI };
 
-std::ostream & operator << (std::ostream & ost, Control control);
+std::ostream & operator<<(std::ostream & ost, Control control);
 
 //
 //
@@ -37,7 +27,7 @@ enum class Modifier {
     LAST = MODE_SWITCH
 };
 
-std::ostream & operator << (std::ostream & ost, Modifier);
+std::ostream & operator<<(std::ostream & ost, Modifier);
 
 //
 //
@@ -68,34 +58,22 @@ enum class Mode {
     LAST = FOCUS
 };
 
-std::ostream & operator << (std::ostream & ost, Mode mode);
+std::ostream & operator<<(std::ostream & ost, Mode mode);
 
 //
 //
 //
 
-enum class Attr {
-    BOLD,
-    FAINT,
-    ITALIC,
-    UNDERLINE,
-    BLINK,
-    INVERSE,
-    CONCEAL,
-    LAST = CONCEAL
-};
+enum class Attr { BOLD, FAINT, ITALIC, UNDERLINE, BLINK, INVERSE, CONCEAL, LAST = CONCEAL };
 
-std::ostream & operator << (std::ostream & ost, Attr attr);
+std::ostream & operator<<(std::ostream & ost, Attr attr);
 
 //
 //
 //
 
-enum class Hand {
-    LEFT,
-    RIGHT
-};
+enum class Hand { LEFT, RIGHT };
 
-std::ostream & operator << (std::ostream & ost, Hand hand);
+std::ostream & operator<<(std::ostream & ost, Hand hand);
 
 #endif // COMMON__ENUMS_HXX

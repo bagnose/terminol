@@ -15,10 +15,8 @@ struct KeyCombo {
     ModifierSet  modifiers;
 };
 
-inline bool operator < (const KeyCombo & lhs, const KeyCombo & rhs) {
-    if (lhs.key < rhs.key) {
-        return true;
-    }
+inline bool operator<(const KeyCombo & lhs, const KeyCombo & rhs) {
+    if (lhs.key < rhs.key) { return true; }
     else if (rhs.key < lhs.key) {
         return false;
     }
@@ -27,7 +25,7 @@ inline bool operator < (const KeyCombo & lhs, const KeyCombo & rhs) {
     }
 }
 
-std::ostream & operator << (std::ostream & ost, const KeyCombo & keyCombo);
+std::ostream & operator<<(std::ostream & ost, const KeyCombo & keyCombo);
 
 //
 //
@@ -64,7 +62,7 @@ enum class Action {
     DEBUG_STATS2
 };
 
-std::ostream & operator << (std::ostream & ost, Action action);
+std::ostream & operator<<(std::ostream & ost, Action action);
 
 //
 //

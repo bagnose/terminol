@@ -5,10 +5,10 @@
 #include "terminol/support/debug.hxx"
 #include "terminol/support/conv.hxx"
 
-//const uint8_t B0 = 1 << 0;
+// const uint8_t B0 = 1 << 0;
 const uint8_t B1 = 1 << 1;
 const uint8_t B2 = 1 << 2;
-//const uint8_t B3 = 1 << 3;
+// const uint8_t B3 = 1 << 3;
 const uint8_t B4 = 1 << 4;
 const uint8_t B5 = 1 << 5;
 const uint8_t B6 = 1 << 6;
@@ -18,78 +18,79 @@ using namespace utf8;
 
 namespace {
 
-std::ostream & showCodePointBits(std::ostream & ost, CodePoint cp) {
-    size_t s     = sizeof cp;
-    bool  active = false;
-    bool  space  = false;
+    std::ostream & showCodePointBits(std::ostream & ost, CodePoint cp) {
+        size_t s      = sizeof cp;
+        bool   active = false;
+        bool   space  = false;
 
-    for (size_t i = 0; i != s; ++i) {
-        if (space) { ost << " "; }
-        uint8_t byte = static_cast<uint8_t>(cp >> (8 * (3 - i)));
-        active = active || (byte != 0) || i == s - 1;
-        if (active) {
-            ost << toBinaryString(byte);
-            //showBits(ost, byte);
+        for (size_t i = 0; i != s; ++i) {
+            if (space) { ost << " "; }
+            uint8_t byte = static_cast<uint8_t>(cp >> (8 * (3 - i)));
+            active       = active || (byte != 0) || i == s - 1;
+            if (active) {
+                ost << toBinaryString(byte);
+                // showBits(ost, byte);
+            }
+            space = active;
         }
-        space = active;
+
+        return ost;
     }
 
-    return ost;
-}
+    std::ostream & showSeqBytes(std::ostream & ost, const uint8_t * seq) {
+        Length l     = leadLength(seq[0]);
+        bool   space = false;
 
-std::ostream & showSeqBytes(std::ostream & ost, const uint8_t * seq) {
-    Length l = leadLength(seq[0]);
-    bool space = false;
+        for (size_t i = 0; i != l; ++i) {
+            if (space) { ost << " "; }
+            uint8_t byte = seq[i];
+            ost << nibbleToHex(byte >> 4) << nibbleToHex(byte & 0x0F);
+            space = true;
+        }
 
-    for (size_t i = 0; i != l; ++i) {
-        if (space) { ost << " "; }
-        uint8_t byte = seq[i];
-        ost << nibbleToHex(byte >> 4) << nibbleToHex(byte & 0x0F);
-        space = true;
+        return ost;
     }
 
-    return ost;
-}
+    std::ostream & showSeqBits(std::ostream & ost, const uint8_t * seq) {
+        Length l     = leadLength(seq[0]);
+        bool   space = false;
 
-std::ostream & showSeqBits(std::ostream & ost, const uint8_t * seq) {
-    Length l = leadLength(seq[0]);
-    bool space = false;
+        for (size_t i = 0; i != l; ++i) {
+            if (space) { ost << " "; }
+            else {
+                space = true;
+            }
+            uint8_t byte = seq[i];
+            ost << toBinaryString(byte);
+        }
 
-    for (size_t i = 0; i != l; ++i) {
-        if (space) { ost << " "; }
-        else       { space = true; }
-        uint8_t byte = seq[i];
-        ost << toBinaryString(byte);
+        return ost;
     }
 
-    return ost;
-}
+    void forwardReverse(CodePoint cp) {
+        std::cout << "Original code point: ";
+        std::cout << toHexString(cp) << std::endl;
+        std::cout << toBinaryString(cp) << std::endl;
 
-void forwardReverse(CodePoint cp) {
-    std::cout << "Original code point: ";
-    std::cout << toHexString(cp) << std::endl;
-    std::cout << toBinaryString(cp) << std::endl;
+        uint8_t seq[LMAX];
+        encode(cp, seq);
 
-    uint8_t seq[LMAX];
-    encode(cp, seq);
+        std::cout << "Converted to sequence: ";
+        showSeqBytes(std::cout, seq) << std::endl;
+        showSeqBits(std::cout, seq) << std::endl;
+        std::cout << "Sequence is: '" << std::string(seq, seq + leadLength(seq[0])) << "'"
+                  << std::endl;
 
-    std::cout << "Converted to sequence: ";
-    showSeqBytes(std::cout, seq) << std::endl;
-    showSeqBits(std::cout, seq) << std::endl;
-    std::cout
-        << "Sequence is: '" << std::string(seq, seq + leadLength(seq[0])) << "'"
-        << std::endl;
+        CodePoint cp2 = decode(seq);
 
-    CodePoint cp2 = decode(seq);
+        std::cout << "Back to code point: ";
+        std::cout << toHexString(cp2) << std::endl;
+        std::cout << toBinaryString(cp2) << std::endl << std::endl;
 
-    std::cout << "Back to code point: ";
-    std::cout << toHexString(cp2) << std::endl;
-    std::cout << toBinaryString(cp2) << std::endl << std::endl;
+        ENFORCE(cp == cp2, << cp << " = " << cp2);
+    }
 
-    ENFORCE(cp == cp2, << cp << " = " << cp2);
-}
-
-} // namespace {anonymous}
+} // namespace
 
 int main() {
     ENFORCE(leadLength(B1) == Length::L1, );

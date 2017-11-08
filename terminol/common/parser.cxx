@@ -25,12 +25,11 @@ class Parser final : protected Uncopyable {
     template <class T>
     class SimpleHandler final : public Handler {
         T & _t;
+
     public:
         explicit SimpleHandler(T & t) : _t(t) {}
 
-        void handle(const std::string & value) override {
-            _t = unstringify<T>(value);
-        }
+        void handle(const std::string & value) override { _t = unstringify<T>(value); }
     };
 
     //
@@ -38,11 +37,10 @@ class Parser final : protected Uncopyable {
     template <class F>
     class GenericHandler final : public Handler {
         F _func;
+
     public:
         explicit GenericHandler(F func) : _func(func) {}
-        void handle(const std::string & value) override {
-            _func(value);
-        }
+        void handle(const std::string & value) override { _func(value); }
     };
 
     //
@@ -51,9 +49,9 @@ class Parser final : protected Uncopyable {
 
     //
 
-    Config     & _config;
-    HandlerMap   _handlers;
-    Actions      _actions;
+    Config &   _config;
+    HandlerMap _handlers;
+    Actions    _actions;
 
     template <class T>
     void registerSimpleHandler(const std::string & name, T & value) {
@@ -94,11 +92,10 @@ Parser::Parser(Config & config) : _config(config) {
     registerSimpleHandler("icon", _config.icon);
     registerSimpleHandler("chdir", _config.icon);
 
-    registerGenericHandler("scroll-back-history",
-                           [&](const std::string & value) {
-                               _config.unlimitedScrollBack = false;
-                               _config.scrollBackHistory = unstringify<size_t>(value);
-                           });
+    registerGenericHandler("scroll-back-history", [&](const std::string & value) {
+        _config.unlimitedScrollBack = false;
+        _config.scrollBackHistory   = unstringify<size_t>(value);
+    });
 
     registerSimpleHandler("unlimited-scroll-back", _config.unlimitedScrollBack);
     registerSimpleHandler("frames-per-second", _config.framesPerSecond);
@@ -113,29 +110,25 @@ Parser::Parser(Config & config) : _config(config) {
     registerSimpleHandler("normal-fg-color", _config.normalFgColor);
     registerSimpleHandler("normal-bg-color", _config.normalBgColor);
 
-    registerGenericHandler("select-fg-color",
-                           [&](const std::string & value) {
-                               _config.customSelectFgColor = true;
-                               _config.selectFgColor       = unstringify<Color>(value);
-                           });
+    registerGenericHandler("select-fg-color", [&](const std::string & value) {
+        _config.customSelectFgColor = true;
+        _config.selectFgColor       = unstringify<Color>(value);
+    });
 
-    registerGenericHandler("select-bg-color",
-                           [&](const std::string & value) {
-                               _config.customSelectBgColor = true;
-                               _config.selectBgColor       = unstringify<Color>(value);
-                           });
+    registerGenericHandler("select-bg-color", [&](const std::string & value) {
+        _config.customSelectBgColor = true;
+        _config.selectBgColor       = unstringify<Color>(value);
+    });
 
-    registerGenericHandler("cursor-fill-color",
-                           [&](const std::string & value) {
-                               _config.customCursorFillColor = true;
-                               _config.cursorFillColor      = unstringify<Color>(value);
-                           });
+    registerGenericHandler("cursor-fill-color", [&](const std::string & value) {
+        _config.customCursorFillColor = true;
+        _config.cursorFillColor       = unstringify<Color>(value);
+    });
 
-    registerGenericHandler("cursor-text-color",
-                           [&](const std::string & value) {
-                               _config.customCursorTextColor = true;
-                               _config.cursorTextColor      = unstringify<Color>(value);
-                           });
+    registerGenericHandler("cursor-text-color", [&](const std::string & value) {
+        _config.customCursorTextColor = true;
+        _config.cursorTextColor       = unstringify<Color>(value);
+    });
 
     registerSimpleHandler("scrollbar-fg-color", _config.scrollbarFgColor);
     registerSimpleHandler("scrollbar-bg-color", _config.scrollbarBgColor);
@@ -150,9 +143,7 @@ Parser::Parser(Config & config) : _config(config) {
     registerSimpleHandler("double-click-timeout", _config.doubleClickTimeout);
 
     registerGenericHandler("color-scheme",
-                           [&](const std::string & value) {
-                               _config.setColorScheme(value);
-                           });
+                           [&](const std::string & value) { _config.setColorScheme(value); });
 
     registerSimpleHandler("server-fork", _config.serverFork);
 
@@ -191,34 +182,34 @@ Parser::Parser(Config & config) : _config(config) {
     //
     //
 
-    _actions.insert({"search",               Action::SEARCH});
-    _actions.insert({"window-narrower",      Action::WINDOW_NARROWER});
-    _actions.insert({"window-wider",         Action::WINDOW_WIDER});
-    _actions.insert({"window-shorter",       Action::WINDOW_SHORTER});
-    _actions.insert({"window-taller",        Action::WINDOW_TALLER});
-    _actions.insert({"local-font-reset",     Action::LOCAL_FONT_RESET});
-    _actions.insert({"local-font-smaller",   Action::LOCAL_FONT_SMALLER});
-    _actions.insert({"local-font-bigger",    Action::LOCAL_FONT_BIGGER});
-    _actions.insert({"global-font-reset",    Action::GLOBAL_FONT_RESET});
-    _actions.insert({"global-font-smaller",  Action::GLOBAL_FONT_SMALLER});
-    _actions.insert({"global-font-bigger",   Action::GLOBAL_FONT_BIGGER});
-    _actions.insert({"copy-to-clipboard",    Action::COPY_TO_CLIPBOARD});
+    _actions.insert({"search", Action::SEARCH});
+    _actions.insert({"window-narrower", Action::WINDOW_NARROWER});
+    _actions.insert({"window-wider", Action::WINDOW_WIDER});
+    _actions.insert({"window-shorter", Action::WINDOW_SHORTER});
+    _actions.insert({"window-taller", Action::WINDOW_TALLER});
+    _actions.insert({"local-font-reset", Action::LOCAL_FONT_RESET});
+    _actions.insert({"local-font-smaller", Action::LOCAL_FONT_SMALLER});
+    _actions.insert({"local-font-bigger", Action::LOCAL_FONT_BIGGER});
+    _actions.insert({"global-font-reset", Action::GLOBAL_FONT_RESET});
+    _actions.insert({"global-font-smaller", Action::GLOBAL_FONT_SMALLER});
+    _actions.insert({"global-font-bigger", Action::GLOBAL_FONT_BIGGER});
+    _actions.insert({"copy-to-clipboard", Action::COPY_TO_CLIPBOARD});
     _actions.insert({"paste-from-clipboard", Action::PASTE_FROM_CLIPBOARD});
-    _actions.insert({"scroll-up-line",       Action::SCROLL_UP_LINE});
-    _actions.insert({"scroll-down-line",     Action::SCROLL_DOWN_LINE});
-    _actions.insert({"scroll-up-page",       Action::SCROLL_UP_PAGE});
-    _actions.insert({"scroll-down-page",     Action::SCROLL_DOWN_PAGE});
-    _actions.insert({"scroll-top",           Action::SCROLL_TOP});
-    _actions.insert({"scroll-bottom",        Action::SCROLL_BOTTOM});
-    _actions.insert({"clear-history",        Action::CLEAR_HISTORY});
-    _actions.insert({"debug-global-tags",    Action::DEBUG_GLOBAL_TAGS});
-    _actions.insert({"debug-local-tags",     Action::DEBUG_LOCAL_TAGS});
-    _actions.insert({"debug-history",        Action::DEBUG_HISTORY});
-    _actions.insert({"debug-active",         Action::DEBUG_ACTIVE});
-    _actions.insert({"debug-modes",          Action::DEBUG_MODES});
-    _actions.insert({"debug-selection",      Action::DEBUG_SELECTION});
-    _actions.insert({"debug-stats",          Action::DEBUG_STATS});
-    _actions.insert({"debug-stats2",         Action::DEBUG_STATS2});
+    _actions.insert({"scroll-up-line", Action::SCROLL_UP_LINE});
+    _actions.insert({"scroll-down-line", Action::SCROLL_DOWN_LINE});
+    _actions.insert({"scroll-up-page", Action::SCROLL_UP_PAGE});
+    _actions.insert({"scroll-down-page", Action::SCROLL_DOWN_PAGE});
+    _actions.insert({"scroll-top", Action::SCROLL_TOP});
+    _actions.insert({"scroll-bottom", Action::SCROLL_BOTTOM});
+    _actions.insert({"clear-history", Action::CLEAR_HISTORY});
+    _actions.insert({"debug-global-tags", Action::DEBUG_GLOBAL_TAGS});
+    _actions.insert({"debug-local-tags", Action::DEBUG_LOCAL_TAGS});
+    _actions.insert({"debug-history", Action::DEBUG_HISTORY});
+    _actions.insert({"debug-active", Action::DEBUG_ACTIVE});
+    _actions.insert({"debug-modes", Action::DEBUG_MODES});
+    _actions.insert({"debug-selection", Action::DEBUG_SELECTION});
+    _actions.insert({"debug-stats", Action::DEBUG_STATS});
+    _actions.insert({"debug-stats2", Action::DEBUG_STATS2});
 
     parse();
 }
@@ -229,9 +220,7 @@ void Parser::parse() {
     auto xdg_config_home = static_cast<const char *>(::getenv("XDG_CONFIG_HOME"));
 
     if (xdg_config_home) {
-        if (tryPath(xdg_config_home + conf)) {
-            return;
-        }
+        if (tryPath(xdg_config_home + conf)) { return; }
     }
 
     auto xdg_config_dirs = static_cast<const char *>(::getenv("XDG_CONFIG_DIRS"));
@@ -239,9 +228,7 @@ void Parser::parse() {
     if (xdg_config_dirs) {
         if (auto dirs = split(xdg_config_dirs, ":")) {
             for (auto & d : *dirs) {
-                if (tryPath(d + conf)) {
-                    return;
-                }
+                if (tryPath(d + conf)) { return; }
             }
         }
     }
@@ -249,9 +236,7 @@ void Parser::parse() {
     auto home = static_cast<const char *>(::getenv("HOME"));
 
     if (home) {
-        if (tryPath(home + std::string("/.config") + conf)) {
-            return;
-        }
+        if (tryPath(home + std::string("/.config") + conf)) { return; }
     }
 
     std::cerr << "No configuration file found." << std::endl;
@@ -262,15 +247,13 @@ bool Parser::tryPath(const std::string & path) {
     ifs.open(path.c_str());
 
     if (ifs.good()) {
-        size_t num = 0;
+        size_t      num = 0;
         std::string line;
         while (getline(ifs, line).good()) {
             ++num;
 
             try {
-                if (auto tokens = split(line)) {
-                    interpretTokens(*tokens);
-                }
+                if (auto tokens = split(line)) { interpretTokens(*tokens); }
             }
             catch (const ConversionError & error) {
                 std::cerr << path << ":" << num << ": " << error.what() << std::endl;
@@ -287,17 +270,13 @@ void Parser::interpretTokens(const std::vector<std::string> & tokens) {
     ASSERT(!tokens.empty(), );
 
     if (tokens[0] == "set") {
-        if (tokens.size() == 3) {
-            handleSet(tokens[1], tokens[2]);
-        }
+        if (tokens.size() == 3) { handleSet(tokens[1], tokens[2]); }
         else {
             THROW(ConversionError("Syntax: 'set NAME VALUE'"));
         }
     }
     else if (tokens[0] == "bindsym") {
-        if (tokens.size() == 3) {
-            handleBindSym(tokens[1], tokens[2]);
-        }
+        if (tokens.size() == 3) { handleBindSym(tokens[1], tokens[2]); }
         else {
             THROW(ConversionError("Syntax: 'bindsym KEY ACTION'"));
         }
@@ -309,9 +288,7 @@ void Parser::interpretTokens(const std::vector<std::string> & tokens) {
 
 void Parser::handleSet(const std::string & key, const std::string & value) {
     auto iter = _handlers.find(key);
-    if (iter == _handlers.end()) {
-        THROW(ConversionError("No such setting: '" + key + "'"));
-    }
+    if (iter == _handlers.end()) { THROW(ConversionError("No such setting: '" + key + "'")); }
     else {
         auto & handler = iter->second;
         handler->handle(value);
@@ -320,7 +297,8 @@ void Parser::handleSet(const std::string & key, const std::string & value) {
 
 void Parser::handleBindSym(const std::string & sym, const std::string & action) {
     if (auto tokens = split(sym, "+")) {
-        auto key = tokens->back(); tokens->pop_back();
+        auto key = tokens->back();
+        tokens->pop_back();
 
         ModifierSet modifiers;
 
@@ -334,9 +312,7 @@ void Parser::handleBindSym(const std::string & sym, const std::string & action) 
         KeyCombo keyCombo{keySym, modifiers};
 
         auto iter = _actions.find(action);
-        if (iter == _actions.end()) {
-            THROW(ConversionError("Bad action: '" + action + "'"));
-        }
+        if (iter == _actions.end()) { THROW(ConversionError("Bad action: '" + action + "'")); }
         else {
             auto resolvedAction = iter->second;
             _config.bindings.insert({keyCombo, resolvedAction});

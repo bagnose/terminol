@@ -23,44 +23,43 @@
 
 namespace {
 
-// TODO consolidate this function
-std::string nthToken(const std::string & str, size_t n) {
-    ASSERT(n > 0, );
+    // TODO consolidate this function
+    std::string nthToken(const std::string & str, size_t n) {
+        ASSERT(n > 0, );
 
-    size_t i = 0;
-    size_t j = 0;
+        size_t i = 0;
+        size_t j = 0;
 
-    do {
-        THROW_UNLESS(j != std::string::npos, ConversionError(""));
-        i = str.find_first_not_of(" \t", j);
-        THROW_UNLESS(i != std::string::npos, ConversionError(""));
-        j = str.find_first_of(" \t", i);
-        --n;
-    } while (n != 0);
+        do {
+            THROW_UNLESS(j != std::string::npos, ConversionError(""));
+            i = str.find_first_not_of(" \t", j);
+            THROW_UNLESS(i != std::string::npos, ConversionError(""));
+            j = str.find_first_of(" \t", i);
+            --n;
+        } while (n != 0);
 
-    if (j == std::string::npos) { j = str.size(); }
-    THROW_UNLESS(i != j, ConversionError(""));
+        if (j == std::string::npos) { j = str.size(); }
+        THROW_UNLESS(i != j, ConversionError(""));
 
-    return str.substr(i, j - i);
-}
+        return str.substr(i, j - i);
+    }
 
-} // namespace {anonymous}
+} // namespace
 
-Tty::Tty(I_Observer        & observer,
-         I_Selector        & selector,
-         const Config      & config,
+Tty::Tty(I_Observer &        observer,
+         I_Selector &        selector,
+         const Config &      config,
          uint16_t            rows,
          uint16_t            cols,
          const std::string & windowId,
-         const Command     & command) :
-    _observer(observer),
-    _selector(selector),
-    _config(config),
-    _pid(0),
-    _fd(-1),
-    _dumpWrites(false),
-    _suspended(false)
-{
+         const Command &     command)
+    : _observer(observer)
+    , _selector(selector)
+    , _config(config)
+    , _pid(0)
+    , _fd(-1)
+    , _dumpWrites(false)
+    , _suspended(false) {
     openPty(rows, cols, windowId, command);
     ASSERT(_pid != 0, );
     ASSERT(_fd != -1, );
@@ -69,9 +68,7 @@ Tty::Tty(I_Observer        & observer,
 Tty::~Tty() {
     ASSERT(_pid == 0, << "Child not reaped.");
 
-    if (_fd != -1) {
-        close();
-    }
+    if (_fd != -1) { close(); }
 }
 
 void Tty::tryReap() {
@@ -113,16 +110,14 @@ void Tty::resize(uint16_t rows, uint16_t cols) {
 
     ASSERT(_fd != -1, << "PTY already closed.");
     ASSERT(_pid != 0, << "Child already reaped.");
-    const struct winsize winsize = { rows, cols, 0, 0 };
+    const struct winsize winsize = {rows, cols, 0, 0};
     THROW_IF_SYSCALL_FAILS(::ioctl(_fd, TIOCSWINSZ, &winsize), "");
 }
 
 void Tty::write(const uint8_t * data, size_t size) {
     ASSERT(!_suspended, );
 
-    if (_dumpWrites) {
-        return;
-    }
+    if (_dumpWrites) { return; }
 
     if (_fd == -1) {
         // This can happen if we read EOF but the user inputs data before
@@ -133,20 +128,16 @@ void Tty::write(const uint8_t * data, size_t size) {
     ASSERT(size != 0, );
 
     while (size != 0) {
-        auto rval =
-            TEMP_FAILURE_RETRY(::write(_fd, static_cast<const void *>(data), size));
+        auto rval = TEMP_FAILURE_RETRY(::write(_fd, static_cast<const void *>(data), size));
 
         if (rval == -1) {
             switch (errno) {
-                case EAGAIN:
-                    WARNING("Dropping: " << size << " bytes");
-                    goto done;
-                case EIO:
-                    // Don't close the PTY, wait for handleRead() to error.
-                    _dumpWrites = true;
-                    goto done;
-                default:
-                    THROW_SYSTEM_ERROR(errno, "write()");
+            case EAGAIN: WARNING("Dropping: " << size << " bytes"); goto done;
+            case EIO:
+                // Don't close the PTY, wait for handleRead() to error.
+                _dumpWrites = true;
+                goto done;
+            default: THROW_SYSTEM_ERROR(errno, "write()");
             }
         }
         else if (rval == 0) {
@@ -158,8 +149,9 @@ void Tty::write(const uint8_t * data, size_t size) {
         }
     }
 
-done:                   // FIXME write a utility function for read()/write()
-    ;
+done
+    : // FIXME write a utility function for read()/write()
+      ;
 }
 
 bool Tty::hasSubprocess() const {
@@ -198,9 +190,7 @@ void Tty::resume() {
 void Tty::close() {
     ASSERT(_fd != -1, );
 
-    if (!_suspended) {
-        _selector.removeReadable(_fd);
-    }
+    if (!_suspended) { _selector.removeReadable(_fd); }
 
     THROW_IF_SYSCALL_FAILS(::close(_fd), "");
     _fd = -1;
@@ -209,17 +199,18 @@ void Tty::close() {
 void Tty::openPty(uint16_t            rows,
                   uint16_t            cols,
                   const std::string & windowId,
-                  const Command     & command) {
+                  const Command &     command) {
     ASSERT(_fd == -1, );
 
-    int master, slave;
-    struct winsize winsize = { rows, cols, 0, 0 };
+    int            master, slave;
+    struct winsize winsize = {rows, cols, 0, 0};
 
-    THROW_IF_SYSCALL_FAILS(::openpty(&master, &slave, nullptr, nullptr, &winsize), "openpty() failed");
+    THROW_IF_SYSCALL_FAILS(::openpty(&master, &slave, nullptr, nullptr, &winsize),
+                           "openpty() failed");
     ScopeGuard guard([&]() {
-                         TEMP_FAILURE_RETRY(::close(master));
-                         TEMP_FAILURE_RETRY(::close(slave));
-                     });
+        TEMP_FAILURE_RETRY(::close(master));
+        TEMP_FAILURE_RETRY(::close(slave));
+    });
 
     _pid = THROW_IF_SYSCALL_FAILS(::fork(), "fork() failed");
 
@@ -262,18 +253,17 @@ void Tty::openPty(uint16_t            rows,
     }
 }
 
-void Tty::execShell(const std::string & windowId,
-                    const Command     & command) {
+void Tty::execShell(const std::string & windowId, const Command & command) {
     ::unsetenv("COLUMNS");
     ::unsetenv("LINES");
     ::unsetenv("TERMCAP");
 
     auto passwd = static_cast<const struct passwd *>(::getpwuid(::getuid()));
     if (passwd) {
-        ::setenv("LOGNAME", passwd->pw_name,  1);
-        ::setenv("USER",    passwd->pw_name,  1);
-        ::setenv("SHELL",   passwd->pw_shell, 0);
-        ::setenv("HOME",    passwd->pw_dir,   0);
+        ::setenv("LOGNAME", passwd->pw_name, 1);
+        ::setenv("USER", passwd->pw_name, 1);
+        ::setenv("SHELL", passwd->pw_shell, 0);
+        ::setenv("HOME", passwd->pw_dir, 0);
     }
 
     ::setenv("WINDOWID", windowId.c_str(), 1);
@@ -281,8 +271,8 @@ void Tty::execShell(const std::string & windowId,
     ::setenv("XTERM_256_COLORS", "1", 1);
 
     ::signal(SIGCHLD, SIG_DFL);
-    ::signal(SIGHUP,  SIG_DFL);
-    ::signal(SIGINT,  SIG_DFL);
+    ::signal(SIGHUP, SIG_DFL);
+    ::signal(SIGINT, SIG_DFL);
     ::signal(SIGQUIT, SIG_DFL);
     ::signal(SIGTERM, SIG_DFL);
     ::signal(SIGALRM, SIG_DFL);
@@ -299,9 +289,7 @@ void Tty::execShell(const std::string & windowId,
         args.push_back("-i");
     }
     else {
-        for (auto & a : command) {
-            args.push_back(a.c_str());
-        }
+        for (auto & a : command) { args.push_back(a.c_str()); }
     }
 
     args.push_back(nullptr);
@@ -322,17 +310,15 @@ bool Tty::pollReap(int msec, int & status) {
         pid = THROW_IF_SYSCALL_FAILS(::waitpid(_pid, &stat, WNOHANG), "waitpid()");
         if (pid != 0) {
             ASSERT(pid == _pid, );
-            _pid = 0;
+            _pid   = 0;
             status = WIFEXITED(stat) ? WEXITSTATUS(stat) : EXIT_FAILURE;
             return true;
         }
 
-        if (msec == 0) {
-            break;
-        }
+        if (msec == 0) { break; }
 
         --msec;
-        ::usleep(1000);     // 1ms
+        ::usleep(1000); // 1ms
     }
 
     return false;
@@ -341,7 +327,7 @@ bool Tty::pollReap(int msec, int & status) {
 int Tty::waitReap() {
     ASSERT(_pid != 0, );
 
-    int  stat;
+    int   stat;
     pid_t pid;
     pid = THROW_IF_SYSCALL_FAILS(::waitpid(_pid, &stat, 0), "waitpid()");
     ASSERT(pid == _pid, );
@@ -368,7 +354,7 @@ void Tty::handleRead(int fd) {
     if (_suspended) { return; }
 
     Timer   timer(1000 / _config.framesPerSecond);
-    uint8_t buf[BUFSIZ];          // 8192 last time I looked.
+    uint8_t buf[BUFSIZ]; // 8192 last time I looked.
     auto    size = _config.syncTty ? 1 : sizeof buf;
 
     do {
@@ -376,15 +362,14 @@ void Tty::handleRead(int fd) {
 
         if (rval == -1) {
             switch (errno) {
-                case EAGAIN:
-                    // Our non-blocking fd has no more data.
-                    goto done;
-                case EIO:
-                    // The other end of the PTY is gone.
-                    close();
-                    goto done;
-                default:
-                    THROW_SYSTEM_ERROR(errno, "read()");
+            case EAGAIN:
+                // Our non-blocking fd has no more data.
+                goto done;
+            case EIO:
+                // The other end of the PTY is gone.
+                close();
+                goto done;
+            default: THROW_SYSTEM_ERROR(errno, "read()");
             }
         }
         else if (rval == 0) {

@@ -21,9 +21,7 @@ class Test {
 
     bool common(bool success, const std::string & message);
 
-    void push(const std::string & name) {
-        _names.push_back(name);
-    }
+    void push(const std::string & name) { _names.push_back(name); }
 
     void pop() {
         ASSERT(!_names.empty(), << "Too many pops");
@@ -32,8 +30,7 @@ class Test {
 
     std::string getPath() const {
         std::ostringstream ost;
-        std::copy(_names.begin(), _names.end(),
-                  std::ostream_iterator<std::string>(ost, "/"));
+        std::copy(_names.begin(), _names.end(), std::ostream_iterator<std::string>(ost, "/"));
         return ost.str();
     }
 
@@ -53,23 +50,19 @@ class Test {
     }
 
 public:
-    explicit Test(const std::string & name) {
-        push(name);
-    }
+    explicit Test(const std::string & name) { push(name); }
 
     ~Test() {
         if (!std::uncaught_exception()) {
             pop();
             ASSERT(_names.empty(), << "Insufficient pops");
 
-            if (_failures > 0) {
-                std::terminate();
-            }
+            if (_failures > 0) { std::terminate(); }
         }
     }
 
     template <typename Func, typename... Args>
-    void run(const std::string & name, Func && func, Args &&...args) {
+    void run(const std::string & name, Func && func, Args &&... args) {
         push(name);
         func(*this, std::forward<Args>(args)...);
         pop();
@@ -80,15 +73,11 @@ public:
     }
 
     template <typename T>
-    bool enforceEqual(const T & lhs, const T & rhs,
-                      const std::string & description) {
-        auto equal = (lhs == rhs);
+    bool enforceEqual(const T & lhs, const T & rhs, const std::string & description) {
+        auto               equal = (lhs == rhs);
         std::ostringstream sst;
-        sst << "("
-            << stringify(lhs, equal)
-            << " == "
-            << stringify(rhs, equal)
-            << ") " << description;
+        sst << "(" << stringify(lhs, equal) << " == " << stringify(rhs, equal) << ") "
+            << description;
         return common(equal, sst.str());
     }
 };

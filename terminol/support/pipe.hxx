@@ -11,7 +11,7 @@ public:
     Pipe();
     ~Pipe();
 
-    int readFd()  { return _fds[0]; }
+    int readFd() { return _fds[0]; }
     int writeFd() { return _fds[1]; }
 
 private:

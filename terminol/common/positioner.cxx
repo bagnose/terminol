@@ -11,7 +11,6 @@ int main(int argc, char * argv[]) {
         return 0;
     }
 
-    std::cout << CsiEsc::CUP(unstringify<int>(argv[1]),
-                             unstringify<int>(argv[2]));
+    std::cout << CsiEsc::CUP(unstringify<int>(argv[1]), unstringify<int>(argv[2]));
     return 0;
 }

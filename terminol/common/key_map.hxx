@@ -15,24 +15,24 @@
 
 namespace xkb {
 
-std::string symToName(xkb_keysym_t keySym);
+    std::string symToName(xkb_keysym_t keySym);
 
-xkb_keysym_t nameToSym(const std::string & name);
+    xkb_keysym_t nameToSym(const std::string & name);
 
-std::string modifierToName(Modifier modifier);
+    std::string modifierToName(Modifier modifier);
 
-Modifier nameToModifier(const std::string & name);
+    Modifier nameToModifier(const std::string & name);
 
-bool isPotent(xkb_keysym_t keySym);
+    bool isPotent(xkb_keysym_t keySym);
 
-bool composeInput(xkb_keysym_t keySym,
-                  ModifierSet modifiers,
-                  bool appKeypad,
-                  bool appCursor,
-                  bool crOnLf,
-                  bool deleteSendsDel,
-                  bool altSendsEsc,
-                  std::vector<uint8_t> & input);
+    bool composeInput(xkb_keysym_t           keySym,
+                      ModifierSet            modifiers,
+                      bool                   appKeypad,
+                      bool                   appCursor,
+                      bool                   crOnLf,
+                      bool                   deleteSendsDel,
+                      bool                   altSendsEsc,
+                      std::vector<uint8_t> & input);
 
 } // namespace xkb
 

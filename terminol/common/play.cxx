@@ -12,18 +12,16 @@ using namespace std;
 
 namespace {
 
-void fillChar(int rows, int cols, char c) {
-    for (int i = 0; i != rows; ++i) {
-        cout << CsiEsc::CUP(i + 1, 1);
+    void fillChar(int rows, int cols, char c) {
+        for (int i = 0; i != rows; ++i) {
+            cout << CsiEsc::CUP(i + 1, 1);
 
-        for (int j = 0; j != cols; ++j) {
-            cout << c;
+            for (int j = 0; j != cols; ++j) { cout << c; }
         }
+        cout << flush;
     }
-    cout << flush;
-}
 
-} // namespace {anonymous}
+} // namespace
 
 int main() {
     cout << CsiEsc::DECCOLM(CsiEsc::Cols::_80);

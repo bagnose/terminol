@@ -5,11 +5,10 @@
 
 namespace {
 
-thread_local const char * global_file = nullptr;
-thread_local int          global_line = 0;
+    thread_local const char * global_file = nullptr;
+    thread_local int          global_line = 0;
 
-} // namespace {anonymous}
-
+} // namespace
 
 void Exception::set_thread_location(const char * file, int line) {
     ASSERT(file && line != 0, );

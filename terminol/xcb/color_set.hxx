@@ -21,7 +21,7 @@ struct DColor {
 
 class ColorSet {
     const Config & _config;
-    Basics       & _basics;
+    Basics &       _basics;
     DColor         _cursorFgColor;
     DColor         _cursorBgColor;
     DColor         _selectFgColor;
@@ -41,18 +41,18 @@ public:
     ColorSet(const Config & config, Basics & basics);
     ~ColorSet();
 
-    const DColor & getCursorFillColor()  const { return _cursorFillColor; }
-    const DColor & getCursorTextColor()  const { return _cursorTextColor; }
-    const DColor & getSelectFgColor()    const { return _selectFgColor; }
-    const DColor & getSelectBgColor()    const { return _selectBgColor; }
-    const DColor & getBorderColor()      const { return _borderColor; }
+    const DColor & getCursorFillColor() const { return _cursorFillColor; }
+    const DColor & getCursorTextColor() const { return _cursorTextColor; }
+    const DColor & getSelectFgColor() const { return _selectFgColor; }
+    const DColor & getSelectBgColor() const { return _selectBgColor; }
+    const DColor & getBorderColor() const { return _borderColor; }
     const DColor & getScrollBarFgColor() const { return _scrollBarFgColor; }
     const DColor & getScrollBarBgColor() const { return _scrollBarBgColor; }
     const DColor & getIndexedColor(uint8_t index) const { return _indexedColors[index]; }
-    const DColor & getNormalFgColor()    const { return _normalFgColor; }
-    const DColor & getNormalBgColor()    const { return _normalBgColor; }
-    uint32_t       getBackgroundPixel()  const { return _backgroundPixel; }
-    uint32_t       getVisualBellPixel()  const { return _visualBellPixel; }
+    const DColor & getNormalFgColor() const { return _normalFgColor; }
+    const DColor & getNormalBgColor() const { return _normalBgColor; }
+    uint32_t       getBackgroundPixel() const { return _backgroundPixel; }
+    uint32_t       getVisualBellPixel() const { return _visualBellPixel; }
 
 private:
     uint32_t alloc_color(const Color & color);

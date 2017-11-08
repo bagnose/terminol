@@ -18,7 +18,8 @@ again:
     auto iter = _entries.find(tag);
 
     if (iter == _entries.end()) {
-        _entries.insert({tag, DedupeEntry{static_cast<uint32_t>(entry.styles.size()), std::move(bytes)}});
+        _entries.insert(
+            {tag, DedupeEntry{static_cast<uint32_t>(entry.styles.size()), std::move(bytes)}});
     }
     else {
         auto & dedupeEntry = iter->second;
@@ -53,7 +54,7 @@ auto DedupeRepository::retrieve(Tag tag) const -> Entry {
     std::unique_lock<std::mutex> lock(_mutex);
 
     auto & dedupeEntry = _entries.at(tag);
-    auto entry = decode(dedupeEntry.bytes);
+    auto   entry       = decode(dedupeEntry.bytes);
     ASSERT(entry.styles.size() == dedupeEntry.length, );
     return entry;
 }
@@ -61,14 +62,14 @@ auto DedupeRepository::retrieve(Tag tag) const -> Entry {
 uint32_t DedupeRepository::length(Tag tag) const {
     std::unique_lock<std::mutex> lock(_mutex);
 
-    auto & entry =_entries.at(tag);
+    auto & entry = _entries.at(tag);
     return entry.length;
 }
 
 bool DedupeRepository::match(Tag tag, const std::vector<Regex> & regexes) const {
     std::unique_lock<std::mutex> lock(_mutex);
 
-    auto & entry = _entries.at(tag);
+    auto &   entry = _entries.at(tag);
     uint32_t size;
 
     {
@@ -80,9 +81,7 @@ bool DedupeRepository::match(Tag tag, const std::vector<Regex> & regexes) const 
     auto str2 = reinterpret_cast<const char *>(str);
 
     for (auto & regex : regexes) {
-        if (regex.matchTest(str2, size)) {
-            return true;
-        }
+        if (regex.matchTest(str2, size)) { return true; }
     }
 
     return false;
@@ -97,9 +96,7 @@ void DedupeRepository::discard(Tag tag) {
 
     auto & entry = iter->second;
 
-    if (--entry.refs == 0) {
-        _entries.erase(iter);
-    }
+    if (--entry.refs == 0) { _entries.erase(iter); }
 
     --_totalRefs;
 }
@@ -114,9 +111,7 @@ void DedupeRepository::dump(std::ostream & ost) const {
 
         ost << tag << "(" << dedupe_entry.refs << "): ";
 
-        for (auto byte : entry.string) {
-            ost << byte;
-        }
+        for (auto byte : entry.string) { ost << byte; }
 
         ost << std::endl;
     }
@@ -124,7 +119,7 @@ void DedupeRepository::dump(std::ostream & ost) const {
 
 std::vector<uint8_t> DedupeRepository::encode(const Entry & entry) {
     std::vector<uint8_t> bytes;
-    OutMemoryStream os(bytes);
+    OutMemoryStream      os(bytes);
 
     // Write the size of the string followed by the string content.
     uint32_t size = entry.string.size();
@@ -138,7 +133,7 @@ std::vector<uint8_t> DedupeRepository::encode(const Entry & entry) {
 }
 
 auto DedupeRepository::decode(const std::vector<uint8_t> & bytes) -> Entry {
-    Entry entry;
+    Entry          entry;
     InMemoryStream is(bytes);
 
     // Read the size of the string followed by the string content.

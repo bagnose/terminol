@@ -7,22 +7,16 @@
 
 class MyWidget final : public Widget {
 public:
-    explicit MyWidget(Dispatcher     & dispatcher,
-                      Basics         & basics,
-                      const ColorSet & color_set) :
-        Widget(dispatcher, basics,
-               color_set.getBackgroundPixel(), 0  -1, -1, 100, 100)
-    {
+    explicit MyWidget(Dispatcher & dispatcher, Basics & basics, const ColorSet & color_set)
+        : Widget(dispatcher, basics, color_set.getBackgroundPixel(), 0 - 1, -1, 100, 100) {
         map();
     }
 
 protected:
-    void expose(xcb_expose_event_t * UNUSED(event)) override {
-        PRINT("Expose");
-    }
+    void expose(xcb_expose_event_t * UNUSED(event)) override { PRINT("Expose"); }
 };
 
-int main(int, char *[]) {
+int main(int, char * []) {
     Config config;
 
     parseConfig(config);
@@ -33,7 +27,5 @@ int main(int, char *[]) {
     Dispatcher dispatcher(selector, basics.connection());
     MyWidget   widget(dispatcher, basics, color_set);
 
-    for (;;) {
-        selector.animate();
-    }
+    for (;;) { selector.animate(); }
 }

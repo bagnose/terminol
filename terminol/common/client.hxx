@@ -8,15 +8,12 @@
 #include "terminol/common/config.hxx"
 
 class Client final : protected SocketClient::I_Observer {
-    SocketClient   _socket;
-    bool           _finished = false;
+    SocketClient _socket;
+    bool         _finished = false;
 
 public:
-    Client(I_Selector   & selector,
-           const Config & config,
-           bool           shutdown) :
-        _socket(*this, selector, config.socketPath)
-    {
+    Client(I_Selector & selector, const Config & config, bool shutdown)
+        : _socket(*this, selector, config.socketPath) {
         uint8_t byte = shutdown ? 0xFF : 0;
         _socket.send(&byte, 1);
     }
@@ -24,7 +21,6 @@ public:
     bool isFinished() const { return _finished; }
 
 protected:
-
     // SocketClient::I_Observer implementation:
 
     void clientDisconnected() override {
@@ -32,9 +28,7 @@ protected:
         _finished = true;
     }
 
-    void clientQueueEmpty() override {
-        _finished = true;
-    }
+    void clientQueueEmpty() override { _finished = true; }
 };
 
 #endif // COMMON__CLIENT__HXX

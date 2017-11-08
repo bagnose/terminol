@@ -9,9 +9,7 @@ auto SimpleRepository::store(const Entry & entry) -> Tag {
     for (;;) {
         auto pair = _entries.insert({_nextTag, entry});
 
-        if (pair.second) {
-            return _nextTag++;
-        }
+        if (pair.second) { return _nextTag++; }
 
         ++_nextTag;
     }
@@ -50,9 +48,7 @@ void SimpleRepository::dump(std::ostream & ost) const {
 
         ost << tag << ": ";
 
-        for (auto byte : entry.string) {
-            ost << byte;
-        }
+        for (auto byte : entry.string) { ost << byte; }
 
         ost << std::endl;
     }

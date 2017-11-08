@@ -7,12 +7,8 @@
 #include <cairo/cairo-xcb.h>
 #include <pango/pangocairo.h>
 
-FontSet::FontSet(const Config & config,
-                 Basics       & basics,
-                 int            size) :
-    _config(config),
-    _basics(basics)
-{
+FontSet::FontSet(const Config & config, Basics & basics, int size)
+    : _config(config), _basics(basics) {
     ASSERT(size > 0, );
     auto & name = _config.fontName;
 
@@ -66,11 +62,8 @@ FontSet::~FontSet() {
     unload(_normal);
 }
 
-PangoFontDescription * FontSet::load(const std::string & family,
-                                     int                 size,
-                                     bool                master,
-                                     bool                bold,
-                                     bool                italic) {
+PangoFontDescription *
+FontSet::load(const std::string & family, int size, bool master, bool bold, bool italic) {
 #if 0
     {
         PangoFontMap * fontmap = pango_cairo_font_map_get_default();
@@ -91,17 +84,13 @@ PangoFontDescription * FontSet::load(const std::string & family,
     }
 #endif
 
-    auto desc = pango_font_description_new();
+    auto       desc = pango_font_description_new();
     ScopeGuard descGuard([&]() { pango_font_description_free(desc); });
     pango_font_description_set_family(desc, family.c_str());
-    //pango_font_description_set_size(desc, size * PANGO_SCALE);
+    // pango_font_description_set_size(desc, size * PANGO_SCALE);
     pango_font_description_set_absolute_size(desc, size * PANGO_SCALE);
-    pango_font_description_set_weight(desc,
-                                      bold ? PANGO_WEIGHT_BOLD :
-                                      PANGO_WEIGHT_NORMAL);
-    pango_font_description_set_style(desc,
-                                     italic ? PANGO_STYLE_OBLIQUE :
-                                     PANGO_STYLE_NORMAL);
+    pango_font_description_set_weight(desc, bold ? PANGO_WEIGHT_BOLD : PANGO_WEIGHT_NORMAL);
+    pango_font_description_set_style(desc, italic ? PANGO_STYLE_OBLIQUE : PANGO_STYLE_NORMAL);
 
     /*
     auto str = pango_font_description_to_string(desc);
@@ -121,9 +110,8 @@ PangoFontDescription * FontSet::load(const std::string & family,
     else if (_width != width || _height != height) {
         // A non-master (subsequent) font doesn't conform with the
         // master font's metrics.
-        THROW(GenericError(stringify("Size mismatch: ",
-                                     (bold ? "bold" : ""), " ",
-                                     (italic ? "italic" : ""))));
+        THROW(GenericError(
+            stringify("Size mismatch: ", (bold ? "bold" : ""), " ", (italic ? "italic" : ""))));
     }
 
     descGuard.dismiss();
@@ -136,22 +124,23 @@ void FontSet::unload(PangoFontDescription * desc) {
 }
 
 void FontSet::measure(PangoFontDescription * desc, uint16_t & width, uint16_t & height) {
-    auto surface = cairo_xcb_surface_create(_basics.connection(),
+    auto       surface = cairo_xcb_surface_create(_basics.connection(),
                                             _basics.screen()->root,
                                             _basics.visual(),
-                                            1, 1);
+                                            1,
+                                            1);
     ScopeGuard surfaceGuard([&]() { cairo_surface_destroy(surface); });
 
-    auto cr = cairo_create(surface);
+    auto       cr = cairo_create(surface);
     ScopeGuard crGuard([&]() { cairo_destroy(cr); });
 
-    auto layout = pango_cairo_create_layout(cr);
+    auto       layout = pango_cairo_create_layout(cr);
     ScopeGuard layoutGuard([&]() { g_object_unref(layout); });
 
     pango_layout_set_font_description(layout, desc);
 
     pango_layout_set_text(layout, "M", -1);
-    pango_cairo_update_layout(cr, layout);  // Required?
+    pango_cairo_update_layout(cr, layout); // Required?
 
     PangoRectangle inkRect, logicalRect;
     pango_layout_get_extents(layout, &inkRect, &logicalRect);

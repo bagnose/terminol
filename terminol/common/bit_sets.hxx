@@ -25,24 +25,22 @@ class BitSet final {
 public:
     BitSet() = default;
 
-    void clear()        { _bits  =  I(0);        }
-    void set(T t)       { _bits |=  bit(t);      }
-    void unset(T t)     { _bits &= ~bit(t);      }
+    void clear() { _bits = I(0); }
+    void set(T t) { _bits |= bit(t); }
+    void unset(T t) { _bits &= ~bit(t); }
     bool get(T t) const { return _bits & bit(t); }
-    I    bits()   const { return _bits;          }
+    I    bits() const { return _bits; }
 
     void setTo(T t, bool to) {
-        if (to) { set(t);   }
-        else    { unset(t); }
+        if (to) { set(t); }
+        else {
+            unset(t);
+        }
     }
 
-    friend inline bool operator == (BitSet lhs, BitSet rhs) {
-        return lhs._bits == rhs._bits;
-    }
+    friend inline bool operator==(BitSet lhs, BitSet rhs) { return lhs._bits == rhs._bits; }
 
-    friend inline bool operator != (BitSet lhs, BitSet rhs) {
-        return !(lhs == rhs);
-    }
+    friend inline bool operator!=(BitSet lhs, BitSet rhs) { return !(lhs == rhs); }
 };
 
 //
@@ -50,12 +48,12 @@ public:
 //
 
 using ModifierSet = BitSet<Modifier, uint8_t>;
-std::ostream & operator << (std::ostream & ost, ModifierSet modifierSet);
+std::ostream & operator<<(std::ostream & ost, ModifierSet modifierSet);
 
 using AttrSet = BitSet<Attr, uint8_t>;
-std::ostream & operator << (std::ostream & ost, AttrSet attrSet);
+std::ostream & operator<<(std::ostream & ost, AttrSet attrSet);
 
 using ModeSet = BitSet<Mode, uint32_t>;
-std::ostream & operator << (std::ostream & ost, ModeSet modeSet);
+std::ostream & operator<<(std::ostream & ost, ModeSet modeSet);
 
 #endif // COMMON__BIT_SETS__HXX

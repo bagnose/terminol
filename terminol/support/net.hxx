@@ -22,39 +22,34 @@ class SocketServer final : protected I_Selector::I_ReadHandler {
 public:
     class I_Observer {
     public:
-        virtual void serverConnected(int id) = 0;
+        virtual void serverConnected(int id)                                   = 0;
         virtual void serverReceived(int id, const uint8_t * data, size_t size) = 0;
-        virtual void serverDisconnected(int id) = 0;
+        virtual void serverDisconnected(int id)                                = 0;
 
     protected:
         ~I_Observer() = default;
     };
 
 private:
-    I_Observer    & _observer;
-    I_Selector    & _selector;
-    std::string     _path;
-    int             _fd;
-    std::set<int>   _connections;
+    I_Observer &  _observer;
+    I_Selector &  _selector;
+    std::string   _path;
+    int           _fd;
+    std::set<int> _connections;
 
 public:
-    SocketServer(I_Observer        & observer,
-                 I_Selector        & selector,
-                 const std::string & path) :
-        _observer(observer),
-        _selector(selector),
-        _path(path)
-    {
+    SocketServer(I_Observer & observer, I_Selector & selector, const std::string & path)
+        : _observer(observer), _selector(selector), _path(path) {
         _fd = THROW_IF_SYSCALL_FAILS(::socket(PF_UNIX, SOCK_SEQPACKET, 0), "socket()");
-        ScopeGuard fdGuard([this] () { TEMP_FAILURE_RETRY(::close(_fd)); });
+        ScopeGuard fdGuard([this]() { TEMP_FAILURE_RETRY(::close(_fd)); });
 
         fdCloseExec(_fd);
 
         struct sockaddr_un address;
         ::memset(&address, 0, sizeof address);
-        address.sun_family  = AF_UNIX;
+        address.sun_family = AF_UNIX;
 #ifdef __linux__
-        address.sun_path[0] = '\0';     // First byte nul for abstract.
+        address.sun_path[0] = '\0'; // First byte nul for abstract.
         ::snprintf(address.sun_path + 1, sizeof address.sun_path - 1, "%s", path.c_str());
 #else
         ::snprintf(address.sun_path, sizeof address.sun_path, "%s", path.c_str());
@@ -97,7 +92,8 @@ protected:
 
             // XXX Can't this fail if the client vanishes during the connect?
             int conFd = THROW_IF_SYSCALL_FAILS(::accept(fd,
-                                                        reinterpret_cast<struct sockaddr *>(&address),
+                                                        reinterpret_cast<struct sockaddr *>(
+                                                            &address),
                                                         &length),
                                                "accept()");
 
@@ -132,37 +128,33 @@ public:
     class I_Observer {
     public:
         virtual void clientDisconnected() = 0;
-        virtual void clientQueueEmpty() = 0;
+        virtual void clientQueueEmpty()   = 0;
 
     protected:
         ~I_Observer() = default;
     };
 
 private:
-    I_Observer           & _observer;
-    I_Selector           & _selector;
-    int                    _fd;
-    std::vector<uint8_t>   _queue;
+    I_Observer &         _observer;
+    I_Selector &         _selector;
+    int                  _fd;
+    std::vector<uint8_t> _queue;
 
 public:
-    SocketClient(I_Observer        & observer,
-                 I_Selector        & selector,
-                 const std::string & path) :
-        _observer(observer),
-        _selector(selector)
-    {
+    SocketClient(I_Observer & observer, I_Selector & selector, const std::string & path)
+        : _observer(observer), _selector(selector) {
         // FIXME We are using SOCK_SEQPACKET yet _queue collapses the "datagrams"...
         _fd = THROW_IF_SYSCALL_FAILS(::socket(PF_UNIX, SOCK_SEQPACKET, 0), "socket()");
-        ScopeGuard fdGuard([this] () { TEMP_FAILURE_RETRY(::close(_fd)); });
+        ScopeGuard fdGuard([this]() { TEMP_FAILURE_RETRY(::close(_fd)); });
 
         fdCloseExec(_fd);
         fdNonBlock(_fd);
 
         struct sockaddr_un address;
         ::memset(&address, 0, sizeof address);
-        address.sun_family  = AF_UNIX;
+        address.sun_family = AF_UNIX;
 #ifdef __linux__
-        address.sun_path[0] = '\0';     // First byte nul for abstract.
+        address.sun_path[0] = '\0'; // First byte nul for abstract.
         ::snprintf(address.sun_path + 1, sizeof address.sun_path - 1, "%s", path.c_str());
 #else
         ::snprintf(address.sun_path, sizeof address.sun_path, "%s", path.c_str());
@@ -178,16 +170,12 @@ public:
     }
 
     ~SocketClient() {
-        if (!_queue.empty()) {
-            _selector.removeWriteable(_fd);
-        }
+        if (!_queue.empty()) { _selector.removeWriteable(_fd); }
         TEMP_FAILURE_RETRY(::close(_fd));
     }
 
     void send(const uint8_t * data, size_t size) {
-        if (_queue.empty()) {
-            _selector.addWriteable(_fd, this);
-        }
+        if (_queue.empty()) { _selector.addWriteable(_fd, this); }
 
         auto oldSize = _queue.size();
         _queue.resize(oldSize + size);
@@ -201,7 +189,10 @@ protected:
         ASSERT(fd == _fd, );
         ASSERT(!_queue.empty(), );
 
-        ssize_t rval = THROW_IF_SYSCALL_FAILS(::send(fd, &_queue.front(), _queue.size(), MSG_NOSIGNAL),
+        ssize_t rval = THROW_IF_SYSCALL_FAILS(::send(fd,
+                                                     &_queue.front(),
+                                                     _queue.size(),
+                                                     MSG_NOSIGNAL),
                                               "send()");
 
         _queue.erase(_queue.begin(), _queue.begin() + rval);

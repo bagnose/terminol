@@ -11,7 +11,7 @@ int main() {
     SimpleRepository   repository;
     const CharSub      CS_US;
     const CharSubArray charSubArray{{{&CS_US, &CS_US, &CS_US, &CS_US}}};
-    Buffer2 buffer(repository, 25, 80, 0, charSubArray);
+    Buffer2            buffer(repository, 25, 80, 0, charSubArray);
 
     return 0;
 }

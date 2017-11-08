@@ -21,18 +21,18 @@ struct Color {
     uint8_t b = 0;
 };
 
-inline bool operator == (Color lhs, Color rhs) {
+inline bool operator==(Color lhs, Color rhs) {
     return lhs.r == rhs.r && lhs.g == rhs.g && lhs.b == rhs.b;
 }
 
-inline bool operator != (Color lhs, Color rhs) {
+inline bool operator!=(Color lhs, Color rhs) {
     return !(lhs == rhs);
 }
 
 static_assert(sizeof(Color) == 3, "Color should be 3 bytes.");
 
-std::ostream & operator << (std::ostream & ost, Color   color);
-std::istream & operator >> (std::istream & ist, Color & color);
+std::ostream & operator<<(std::ostream & ost, Color color);
+std::istream & operator>>(std::istream & ist, Color & color);
 
 //
 // Unified (hybrid) color.
@@ -42,12 +42,12 @@ struct UColor {
     enum class Type : uint8_t { STOCK, INDEXED, DIRECT };
     enum class Name : uint8_t { TEXT_FG, TEXT_BG, SELECT_FG, SELECT_BG, CURSOR_FILL, CURSOR_TEXT };
 
-    Type type;              // 1 byte
+    Type type; // 1 byte
 
     union {
-        Name    name;       // 1 byte
-        uint8_t index;      // 1 byte
-        Color   values;     // 3 bytes
+        Name    name;   // 1 byte
+        uint8_t index;  // 1 byte
+        Color   values; // 3 bytes
 
         uint8_t _init[3] = {0, 0, 0};
     };
@@ -78,24 +78,21 @@ private:
 
 static_assert(sizeof(UColor) == 4, "UColor should be 4 bytes.");
 
-inline bool operator == (UColor lhs, UColor rhs) {
-    if (lhs.type != rhs.type) {
-        return false;
-    }
+inline bool operator==(UColor lhs, UColor rhs) {
+    if (lhs.type != rhs.type) { return false; }
     else {
         switch (lhs.type) {
-            case UColor::Type::STOCK:
-                return lhs.name == rhs.name;
-            case UColor::Type::INDEXED:
-                return lhs.index == rhs.index;
-            case UColor::Type::DIRECT:
-                return lhs.values == rhs.values;
+        case UColor::Type::STOCK: return lhs.name == rhs.name;
+        case UColor::Type::INDEXED: return lhs.index == rhs.index;
+        case UColor::Type::DIRECT: return lhs.values == rhs.values;
         }
         FATAL();
     }
 }
 
-inline bool operator != (UColor lhs, UColor rhs) { return !(lhs == rhs); }
+inline bool operator!=(UColor lhs, UColor rhs) {
+    return !(lhs == rhs);
+}
 
 //
 // Style (of a Cell).
@@ -109,14 +106,11 @@ struct Style {
 
 static_assert(sizeof(Style) == 9, "Style should be 9 bytes.");
 
-inline bool operator == (const Style & lhs, const Style & rhs) {
-    return
-        lhs.attrs == rhs.attrs &&
-        lhs.fg    == rhs.fg    &&
-        lhs.bg    == rhs.bg;
+inline bool operator==(const Style & lhs, const Style & rhs) {
+    return lhs.attrs == rhs.attrs && lhs.fg == rhs.fg && lhs.bg == rhs.bg;
 }
 
-inline bool operator != (const Style & lhs, const Style & rhs) {
+inline bool operator!=(const Style & lhs, const Style & rhs) {
     return !(lhs == rhs);
 }
 
@@ -125,36 +119,30 @@ inline bool operator != (const Style & lhs, const Style & rhs) {
 //
 
 struct Cell {
-    Style     style;        // 9 bytes
-    utf8::Seq seq;          // 4 bytes
+    Style     style; // 9 bytes
+    utf8::Seq seq;   // 4 bytes
 
-    static Cell blank(const Style & style = Style()) {
-        return Cell(style, utf8::Seq(SPACE));
-    }
+    static Cell blank(const Style & style = Style()) { return Cell(style, utf8::Seq(SPACE)); }
 
     static Cell ascii(uint8_t a, const Style & style = Style()) {
         return Cell(style, utf8::Seq(a));
     }
 
-    static Cell utf8(utf8::Seq seq, const Style & style = Style()) {
-        return Cell(style, seq);
-    }
+    static Cell utf8(utf8::Seq seq, const Style & style = Style()) { return Cell(style, seq); }
 
 private:
-    Cell(const Style & style_, utf8::Seq seq_) :
-        style(style_),
-        seq(seq_) {}
+    Cell(const Style & style_, utf8::Seq seq_) : style(style_), seq(seq_) {}
 };
 
 static_assert(sizeof(Cell) == 13, "Incorrect size of Cell.");
 
-inline bool operator == (const Cell & lhs, const Cell & rhs) {
-    return
-        lhs.seq   == rhs.seq &&
-        lhs.style == rhs.style;
+inline bool operator==(const Cell & lhs, const Cell & rhs) {
+    return lhs.seq == rhs.seq && lhs.style == rhs.style;
 }
 
-inline bool operator != (const Cell & lhs, const Cell & rhs) { return !(lhs == rhs); }
+inline bool operator!=(const Cell & lhs, const Cell & rhs) {
+    return !(lhs == rhs);
+}
 
 //
 // A screen-relative position.
@@ -170,13 +158,15 @@ struct Pos {
     static Pos invalid() { return Pos(-1, -1); }
 };
 
-inline bool operator == (Pos lhs, Pos rhs) {
+inline bool operator==(Pos lhs, Pos rhs) {
     return lhs.row == rhs.row && lhs.col == rhs.col;
 }
 
-inline bool operator != (Pos lhs, Pos rhs) { return !(lhs == rhs); }
+inline bool operator!=(Pos lhs, Pos rhs) {
+    return !(lhs == rhs);
+}
 
-inline std::ostream & operator << (std::ostream & ost, Pos pos) {
+inline std::ostream & operator<<(std::ostream & ost, Pos pos) {
     return ost << pos.row << 'x' << pos.col;
 }
 
@@ -190,9 +180,7 @@ struct Region {
 
     void clear() { *this = Region(); }
 
-    void accommodateCell(Pos pos) {
-        accommodateRow(pos.row, pos.col, pos.col + 1);
-    }
+    void accommodateCell(Pos pos) { accommodateRow(pos.row, pos.col, pos.col + 1); }
 
     void accommodateRow(int16_t row, int16_t colBegin, int16_t colEnd) {
         if (begin.col == end.col) {
@@ -201,7 +189,7 @@ struct Region {
         }
         else {
             begin.col = std::min(begin.col, colBegin);
-            end.col   = std::max(end.col,   colEnd);
+            end.col   = std::max(end.col, colEnd);
         }
 
         int16_t rowBegin = row;
@@ -213,12 +201,12 @@ struct Region {
         }
         else {
             begin.row = std::min(begin.row, rowBegin);
-            end.row   = std::max(end.row,   rowEnd);
+            end.row   = std::max(end.row, rowEnd);
         }
     }
 };
 
-inline std::ostream & operator << (std::ostream & ost, const Region & region) {
+inline std::ostream & operator<<(std::ostream & ost, const Region & region) {
     return ost << "begin: " << region.begin << ", end: " << region.end;
 }
 

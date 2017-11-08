@@ -11,26 +11,21 @@
 
 namespace {
 
-void encode(const std::vector<Cell> & cells,
-            std::vector<uint8_t>    & bytes) {
-    OutMemoryStream os(bytes);
+    void encode(const std::vector<Cell> & cells, std::vector<uint8_t> & bytes) {
+        OutMemoryStream os(bytes);
 
-    // RLE encode the styles.
-    std::vector<Style> styles;
-    for (auto & cell : cells) {
-        styles.push_back(cell.style);
-    }
-    rleEncode(styles, os);
+        // RLE encode the styles.
+        std::vector<Style> styles;
+        for (auto & cell : cells) { styles.push_back(cell.style); }
+        rleEncode(styles, os);
 
-    // Pack the string.
-    std::vector<uint8_t> string;
-    for (auto & cell : cells) {
-        auto length = utf8::leadLength(cell.seq.lead());
-        for (uint8_t i = 0; i != length; ++i) {
-            string.push_back(cell.seq.bytes[i]);
+        // Pack the string.
+        std::vector<uint8_t> string;
+        for (auto & cell : cells) {
+            auto length = utf8::leadLength(cell.seq.lead());
+            for (uint8_t i = 0; i != length; ++i) { string.push_back(cell.seq.bytes[i]); }
         }
-    }
-    os.writeAll(&string.front(), 1, string.size());
+        os.writeAll(&string.front(), 1, string.size());
 
 #if 0
     auto before = cells.size() * sizeof(Cell);
@@ -42,32 +37,30 @@ void encode(const std::vector<Cell> & cells,
     }
     std::cout << std::endl;
 #endif
-}
-
-void decode(const std::vector<uint8_t> & bytes, std::vector<Cell> & cells) {
-    InMemoryStream is(bytes);
-
-    // RLE decode the styles
-    std::vector<Style> styles;
-    rleDecode(is, styles);
-
-    for (auto & style : styles) {
-        uint8_t b[4] = { 0 };
-
-        is.readAll(&b[0], 1, 1);
-
-        auto length = utf8::leadLength(b[0]);
-
-        for (uint8_t i = 1; i != length; ++i) {
-            is.readAll(&b[i], 1, 1);
-        }
-
-        utf8::Seq seq(b[0], b[1], b[2], b[3]);
-        cells.push_back(Cell::utf8(seq, style));
     }
-}
 
-} // namespace {anonymous}
+    void decode(const std::vector<uint8_t> & bytes, std::vector<Cell> & cells) {
+        InMemoryStream is(bytes);
+
+        // RLE decode the styles
+        std::vector<Style> styles;
+        rleDecode(is, styles);
+
+        for (auto & style : styles) {
+            uint8_t b[4] = {0};
+
+            is.readAll(&b[0], 1, 1);
+
+            auto length = utf8::leadLength(b[0]);
+
+            for (uint8_t i = 1; i != length; ++i) { is.readAll(&b[i], 1, 1); }
+
+            utf8::Seq seq(b[0], b[1], b[2], b[3]);
+            cells.push_back(Cell::utf8(seq, style));
+        }
+    }
+
+} // namespace
 
 auto SimpleDeduper::store(const std::vector<Cell> & cells) -> Tag {
     std::unique_lock<std::mutex> lock(_mutex);
@@ -80,17 +73,15 @@ again:
     ASSERT(tag != invalidTag(), );
     auto iter = _entries.find(tag);
 
-    if (iter == _entries.end()) {
-        _entries.insert({tag, Entry(cells.size(), std::move(bytes))});
-    }
+    if (iter == _entries.end()) { _entries.insert({tag, Entry(cells.size(), std::move(bytes))}); }
     else {
         auto & entry = iter->second;
 
         if (bytes != entry.bytes) {
 #if DEBUG
-            std::cout << "Hash collision: " << tag
-                      << ", fullness: " << static_cast<double>(_entries.size()) / invalidTag() * 100.0
-                      << "%" << std::endl;
+            std::cout << "Hash collision: " << tag << ", fullness: "
+                      << static_cast<double>(_entries.size()) / invalidTag() * 100.0 << "%"
+                      << std::endl;
 #endif
 
             ENFORCE(static_cast<Tag>(_entries.size()) != invalidTag(), << "No dedupe room left");
@@ -118,14 +109,18 @@ void SimpleDeduper::lookup(Tag tag, std::vector<Cell> & cells) const {
     decode(bytes, cells);
 }
 
-void SimpleDeduper::lookupSegment(Tag tag, uint32_t offset, int16_t max_size,
-                                  std::vector<Cell> & cells, bool & cont, int16_t & wrap) const {
+void SimpleDeduper::lookupSegment(Tag                 tag,
+                                  uint32_t            offset,
+                                  int16_t             max_size,
+                                  std::vector<Cell> & cells,
+                                  bool &              cont,
+                                  int16_t &           wrap) const {
     std::unique_lock<std::mutex> lock(_mutex);
 
     auto iter = _entries.find(tag);
     ASSERT(iter != _entries.end(), );
 
-    auto & bytes = iter->second.bytes;
+    auto &            bytes = iter->second.bytes;
     std::vector<Cell> tmp_cells;
     decode(bytes, tmp_cells);
 
@@ -153,9 +148,7 @@ void SimpleDeduper::remove(Tag tag) {
     ASSERT(iter != _entries.end(), );
     auto & entry = iter->second;
 
-    if (--entry.refs == 0) {
-        _entries.erase(iter);
-    }
+    if (--entry.refs == 0) { _entries.erase(iter); }
 
     --_totalRefs;
 }
@@ -171,7 +164,7 @@ void SimpleDeduper::getByteStats(size_t & uniqueBytes, size_t & totalBytes) cons
     std::unique_lock<std::mutex> lock(_mutex);
 
     uniqueBytes = 0;
-    totalBytes = 0;
+    totalBytes  = 0;
 
     for (auto & l : _entries) {
         auto & entry = l.second;
@@ -179,7 +172,7 @@ void SimpleDeduper::getByteStats(size_t & uniqueBytes, size_t & totalBytes) cons
         size_t size = entry.bytes.size();
 
         uniqueBytes += size;
-        totalBytes  += entry.refs * size;
+        totalBytes += entry.refs * size;
     }
 }
 

@@ -9,7 +9,7 @@
 
 template <typename T>
 class Consumer {
-    Queue<T>  & _queue;
+    Queue<T> &  _queue;
     std::thread _thread;
 
     void consume() {
@@ -19,18 +19,14 @@ class Consumer {
     }
 
 public:
-    Consumer(Queue<T> & queue) :
-        _queue(queue),
-        _thread(&Consumer::consume, this) {}
+    Consumer(Queue<T> & queue) : _queue(queue), _thread(&Consumer::consume, this) {}
 
-    ~Consumer() {
-        _thread.join();
-    }
+    ~Consumer() { _thread.join(); }
 };
 
 template <typename T>
 class Producer {
-    Queue<T>  & _queue;
+    Queue<T> &  _queue;
     std::thread _thread;
 
     void produce() {
@@ -41,13 +37,9 @@ class Producer {
     }
 
 public:
-    Producer(Queue<T> & queue) :
-        _queue(queue),
-        _thread(&Producer::produce, this) {}
+    Producer(Queue<T> & queue) : _queue(queue), _thread(&Producer::produce, this) {}
 
-    ~Producer() {
-        _thread.join();
-    }
+    ~Producer() { _thread.join(); }
 };
 
 int main() {

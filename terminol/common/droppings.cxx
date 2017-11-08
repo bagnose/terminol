@@ -38,9 +38,7 @@ int main() {
             std::cout << ESC << ']' << 666 << BEL << std::flush;
 
             ++ascii;
-            if (ascii == DEL) {
-                ascii = SPACE;
-            }
+            if (ascii == DEL) { ascii = SPACE; }
         }
     }
 

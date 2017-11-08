@@ -41,12 +41,12 @@ public:
         ~I_TimeoutHandler() = default;
     };
 
-    virtual void addReadable(int fd, I_ReadHandler * handler) = 0;
-    virtual void removeReadable(int fd) = 0;
-    virtual void addWriteable(int fd, I_WriteHandler * handler) = 0;
-    virtual void removeWriteable(int fd) = 0;
+    virtual void addReadable(int fd, I_ReadHandler * handler)                 = 0;
+    virtual void removeReadable(int fd)                                       = 0;
+    virtual void addWriteable(int fd, I_WriteHandler * handler)               = 0;
+    virtual void removeWriteable(int fd)                                      = 0;
     virtual void addTimeoutable(I_TimeoutHandler * handler, int milliseconds) = 0;
-    virtual void removeTimeoutable(I_TimeoutHandler * handler) = 0;
+    virtual void removeTimeoutable(I_TimeoutHandler * handler)                = 0;
 
 protected:
     ~I_Selector() = default;
@@ -64,8 +64,8 @@ class SelectSelector final : public I_Selector {
     using Clock = std::chrono::steady_clock;
 
     struct TimeEntry {
-        Clock::time_point   time;
-        I_TimeoutHandler  * handler = nullptr;
+        Clock::time_point  time;
+        I_TimeoutHandler * handler = nullptr;
     };
 
     std::map<int, I_ReadHandler *>  _readRegs;
@@ -85,7 +85,7 @@ public:
 
         fd_set readFds;
         fd_set writeFds;
-        int max = -1;
+        int    max = -1;
 
         FD_ZERO(&readFds);
         FD_ZERO(&writeFds);
@@ -110,15 +110,17 @@ public:
 
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(next - now);
 
-            const int A_MILLION = 1'000'000;
+            const int      A_MILLION = 1'000'000;
             struct timeval tv;
             tv.tv_sec  = duration.count() / A_MILLION;
             tv.tv_usec = duration.count() % A_MILLION;
 
-            n = THROW_IF_SYSCALL_FAILS(::select(max + 1, &readFds, &writeFds, nullptr, &tv), "select()");
+            n = THROW_IF_SYSCALL_FAILS(::select(max + 1, &readFds, &writeFds, nullptr, &tv),
+                                       "select()");
         }
         else {
-            n = THROW_IF_SYSCALL_FAILS(::select(max + 1, &readFds, &writeFds, nullptr, nullptr), "select()");
+            n = THROW_IF_SYSCALL_FAILS(::select(max + 1, &readFds, &writeFds, nullptr, nullptr),
+                                       "select()");
         }
 
         if (n == 0) {
@@ -129,12 +131,10 @@ public:
             while (!_timeoutRegs.empty()) {
                 auto & reg = _timeoutRegs.back();
 
-                if (now < reg.time) {
-                    break;
-                }
+                if (now < reg.time) { break; }
 
                 auto handler = reg.handler;
-                _timeoutRegs.pop_back();    // Invalidates reg reference.
+                _timeoutRegs.pop_back(); // Invalidates reg reference.
 
                 handler->handleTimeout();
             }
@@ -145,9 +145,7 @@ public:
                 auto handler = iter->second;
                 ++iter;
 
-                if (FD_ISSET(fd, &readFds)) {
-                    handler->handleRead(fd);
-                }
+                if (FD_ISSET(fd, &readFds)) { handler->handleRead(fd); }
             }
 
             for (auto iter = _writeRegs.begin(); iter != _writeRegs.end(); /**/) {
@@ -155,9 +153,7 @@ public:
                 auto handler = iter->second;
                 ++iter;
 
-                if (FD_ISSET(fd, &writeFds)) {
-                    handler->handleWrite(fd);
-                }
+                if (FD_ISSET(fd, &writeFds)) { handler->handleWrite(fd); }
             }
         }
     }
@@ -192,15 +188,13 @@ public:
             ASSERT(reg.handler != handler, "Handler already registered.");
         }
 #endif
-        Clock::time_point scheduled =
-            Clock::now() + std::chrono::duration<int, std::milli>(milliseconds);
+        Clock::time_point scheduled = Clock::now()
+                                      + std::chrono::duration<int, std::milli>(milliseconds);
 
         auto iter = _timeoutRegs.begin();
 
         while (iter != _timeoutRegs.end()) {
-            if (iter->time < scheduled) {
-                break;
-            }
+            if (iter->time < scheduled) { break; }
 
             ++iter;
         }
@@ -234,8 +228,8 @@ class EPollSelector final : public I_Selector {
     using Clock = std::chrono::steady_clock;
 
     struct TimeEntry {
-        Clock::time_point   time;
-        I_TimeoutHandler  * handler = nullptr;
+        Clock::time_point  time;
+        I_TimeoutHandler * handler = nullptr;
     };
 
     int                             _fd;
@@ -244,18 +238,14 @@ class EPollSelector final : public I_Selector {
     std::vector<TimeEntry>          _timeoutRegs;
 
 public:
-    EPollSelector() {
-        _fd = THROW_IF_SYSCALL_FAILS(::epoll_create1(EPOLL_CLOEXEC), "");
-    }
+    EPollSelector() { _fd = THROW_IF_SYSCALL_FAILS(::epoll_create1(EPOLL_CLOEXEC), ""); }
 
-    ~EPollSelector() {
-        TEMP_FAILURE_RETRY(::close(_fd));
-    }
+    ~EPollSelector() { TEMP_FAILURE_RETRY(::close(_fd)); }
 
     void animate() {
         ASSERT(!_readRegs.empty() || !_writeRegs.empty(), );
 
-        const int MAX_EVENTS = 8;
+        const int          MAX_EVENTS = 8;
         struct epoll_event event_array[MAX_EVENTS];
 
         int n;
@@ -267,10 +257,12 @@ public:
             auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(next - now);
             auto timeout  = duration.count();
 
-            n = THROW_IF_SYSCALL_FAILS(::epoll_wait(_fd, event_array, MAX_EVENTS, timeout), "epoll_wait()");
+            n = THROW_IF_SYSCALL_FAILS(::epoll_wait(_fd, event_array, MAX_EVENTS, timeout),
+                                       "epoll_wait()");
         }
         else {
-            n = THROW_IF_SYSCALL_FAILS(::epoll_wait(_fd, event_array, MAX_EVENTS, -1), "epoll_wait()");
+            n = THROW_IF_SYSCALL_FAILS(::epoll_wait(_fd, event_array, MAX_EVENTS, -1),
+                                       "epoll_wait()");
         }
 
         if (n == 0) {
@@ -281,12 +273,10 @@ public:
             while (!_timeoutRegs.empty()) {
                 auto & reg = _timeoutRegs.back();
 
-                if (now < reg.time) {
-                    break;
-                }
+                if (now < reg.time) { break; }
 
                 auto handler = reg.handler;
-                _timeoutRegs.pop_back();    // Invalidates reg reference.
+                _timeoutRegs.pop_back(); // Invalidates reg reference.
 
                 handler->handleTimeout();
             }
@@ -298,9 +288,7 @@ public:
                 auto fd     = event.data.fd;
                 auto events = event.events;
 
-                if (events & EPOLLERR) {
-                    ERROR("Error on fd: " << fd);
-                }
+                if (events & EPOLLERR) { ERROR("Error on fd: " << fd); }
 
                 if (events & (EPOLLHUP | EPOLLIN)) {
                     auto iter = _readRegs.find(fd);
@@ -350,7 +338,7 @@ public:
         else {
             struct epoll_event event;
             std::memset(&event, 0, sizeof event);
-            event.events = EPOLLOUT;
+            event.events  = EPOLLOUT;
             event.data.fd = fd;
             THROW_IF_SYSCALL_FAILS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event), "epoll_ctl()");
         }
@@ -387,7 +375,7 @@ public:
         else {
             struct epoll_event event;
             std::memset(&event, 0, sizeof event);
-            event.events = EPOLLIN;
+            event.events  = EPOLLIN;
             event.data.fd = fd;
             THROW_IF_SYSCALL_FAILS(::epoll_ctl(_fd, EPOLL_CTL_MOD, fd, &event), "");
         }
@@ -401,15 +389,13 @@ public:
             ASSERT(reg.handler != handler, << "Handler already registered.");
         }
 #endif
-        Clock::time_point scheduled =
-            Clock::now() + std::chrono::duration<int,std::milli>(milliseconds);
+        Clock::time_point scheduled = Clock::now()
+                                      + std::chrono::duration<int, std::milli>(milliseconds);
 
         auto iter = _timeoutRegs.begin();
 
         while (iter != _timeoutRegs.end()) {
-            if (iter->time < scheduled) {
-                break;
-            }
+            if (iter->time < scheduled) { break; }
 
             ++iter;
         }

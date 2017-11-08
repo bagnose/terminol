@@ -13,25 +13,30 @@
 
 #include <unistd.h>
 
-Screen::Screen(I_Observer         & observer,
-               const Config       & config,
-               I_Selector         & selector,
-               I_Deduper          & deduper,
-               AsyncInvoker       & asyncInvoker,
-               I_Dispatcher       & dispatcher,
-               Basics             & basics,
-               const ColorSet     & colorSet,
-               FontManager        & fontManager,
-               const Tty::Command & command) :
-    Widget(dispatcher, basics, colorSet.getBackgroundPixel(), config.initialX, config.initialY, -1, -1),
-    _observer(observer),
-    _config(config),
-    _basics(basics),
-    _colorSet(colorSet),
-    _fontManager(fontManager),
-    _title(_config.title),
-    _icon(_config.icon)
-{
+Screen::Screen(I_Observer &         observer,
+               const Config &       config,
+               I_Selector &         selector,
+               I_Deduper &          deduper,
+               AsyncInvoker &       asyncInvoker,
+               I_Dispatcher &       dispatcher,
+               Basics &             basics,
+               const ColorSet &     colorSet,
+               FontManager &        fontManager,
+               const Tty::Command & command)
+    : Widget(dispatcher,
+             basics,
+             colorSet.getBackgroundPixel(),
+             config.initialX,
+             config.initialY,
+             -1,
+             -1)
+    , _observer(observer)
+    , _config(config)
+    , _basics(basics)
+    , _colorSet(colorSet)
+    , _fontManager(fontManager)
+    , _title(_config.title)
+    , _icon(_config.icon) {
     // Register our object with the font manager.
 
     _fontSet = _fontManager.addClient(this);
@@ -102,7 +107,8 @@ Screen::Screen(I_Observer         & observer,
                                            selector,
                                            deduper,
                                            asyncInvoker,
-                                           rows, cols,
+                                           rows,
+                                           cols,
                                            stringify(getWindow()),
                                            command);
     _open     = true;
@@ -220,12 +226,12 @@ void Screen::buttonPress(xcb_button_press_event_t * event) {
     auto within = xy2Pos(event->event_x, event->event_y, pos, hand);
 
     switch (event->detail) {
-        case XCB_BUTTON_INDEX_4:
-            _terminal->scrollWheel(Terminal::ScrollDir::UP, modifiers, within, pos);
-            return;
-        case XCB_BUTTON_INDEX_5:
-            _terminal->scrollWheel(Terminal::ScrollDir::DOWN, modifiers, within, pos);
-            return;
+    case XCB_BUTTON_INDEX_4:
+        _terminal->scrollWheel(Terminal::ScrollDir::UP, modifiers, within, pos);
+        return;
+    case XCB_BUTTON_INDEX_5:
+        _terminal->scrollWheel(Terminal::ScrollDir::DOWN, modifiers, within, pos);
+        return;
     }
 
     if (_pressed) {
@@ -235,9 +241,7 @@ void Screen::buttonPress(xcb_button_press_event_t * event) {
 
     _pressed = true;
 
-    if (_button != event->detail ||
-        event->time - _lastPressTime > _config.doubleClickTimeout)
-    {
+    if (_button != event->detail || event->time - _lastPressTime > _config.doubleClickTimeout) {
         _pressCount = 1;
     }
     else {
@@ -248,18 +252,15 @@ void Screen::buttonPress(xcb_button_press_event_t * event) {
     _lastPressTime = event->time;
 
     switch (event->detail) {
-        case XCB_BUTTON_INDEX_1:
-            _terminal->buttonPress(Terminal::Button::LEFT, _pressCount,
-                                   modifiers, within, pos, hand);
-            return;
-        case XCB_BUTTON_INDEX_2:
-            _terminal->buttonPress(Terminal::Button::MIDDLE, _pressCount,
-                                   modifiers, within, pos, hand);
-            return;
-        case XCB_BUTTON_INDEX_3:
-            _terminal->buttonPress(Terminal::Button::RIGHT, _pressCount,
-                                   modifiers, within, pos, hand);
-            return;
+    case XCB_BUTTON_INDEX_1:
+        _terminal->buttonPress(Terminal::Button::LEFT, _pressCount, modifiers, within, pos, hand);
+        return;
+    case XCB_BUTTON_INDEX_2:
+        _terminal->buttonPress(Terminal::Button::MIDDLE, _pressCount, modifiers, within, pos, hand);
+        return;
+    case XCB_BUTTON_INDEX_3:
+        _terminal->buttonPress(Terminal::Button::RIGHT, _pressCount, modifiers, within, pos, hand);
+        return;
     }
 }
 
@@ -273,7 +274,6 @@ void Screen::buttonRelease(xcb_button_release_event_t * event) {
 
     if (!_open) { return; }
     if (event->detail < XCB_BUTTON_INDEX_1 || event->detail > XCB_BUTTON_INDEX_5) { return; }
-
 
     if (_pressed && _button == event->detail) {
         auto modifiers = _basics.convertState(event->state);
@@ -292,7 +292,7 @@ void Screen::motionNotify(xcb_motion_notify_event_t * event) {
 
     if (!_open) { return; }
 
-    int16_t x, y;
+    int16_t  x, y;
     uint16_t mask;
 
     if (event->detail == XCB_MOTION_HINT) {
@@ -317,12 +317,11 @@ void Screen::motionNotify(xcb_motion_notify_event_t * event) {
     Hand hand;
     auto within = xy2Pos(x, y, pos, hand);
 
-    //if (_pointerPos != pos) {
-        auto modifiers = _basics.convertState(mask);
-        _pointerPos = pos;
-        _terminal->pointerMotion(modifiers, within, pos, hand);
+    // if (_pointerPos != pos) {
+    auto modifiers = _basics.convertState(mask);
+    _pointerPos    = pos;
+    _terminal->pointerMotion(modifiers, within, pos, hand);
     //}
-
 }
 
 void Screen::mapNotify(xcb_map_notify_event_t * UNUSED(event)) {
@@ -361,16 +360,17 @@ void Screen::configureNotify(xcb_configure_notify_event_t * event) {
     // This is because we might have a resize followed by a move, for example.
     if (!_deferred && !_config.x11PseudoTransparency) {
         // We are only interested in size changes (not moves).
-        if (_geometry.width == event->width && _geometry.height == event->height) {
-            return;
-        }
+        if (_geometry.width == event->width && _geometry.height == event->height) { return; }
     }
 
     _deferredGeometry.width  = event->width;
     _deferredGeometry.height = event->height;
 
-    auto cookie = xcb_translate_coordinates(_basics.connection(), getWindow(),
-                                            _basics.screen()->root, 0, 0);
+    auto cookie = xcb_translate_coordinates(_basics.connection(),
+                                            getWindow(),
+                                            _basics.screen()->root,
+                                            0,
+                                            0);
     auto reply  = xcb_translate_coordinates_reply(_basics.connection(), cookie, nullptr);
     if (reply) {
         _deferredGeometry.x = reply->dst_x;
@@ -393,19 +393,15 @@ void Screen::configureNotify(xcb_configure_notify_event_t * event) {
 }
 
 void Screen::focusIn(xcb_focus_in_event_t * event) {
-    if (event->detail != XCB_NOTIFY_DETAIL_INFERIOR &&
-        event->detail != XCB_NOTIFY_DETAIL_POINTER &&
-        event->mode   != XCB_NOTIFY_MODE_GRAB)
-    {
+    if (event->detail != XCB_NOTIFY_DETAIL_INFERIOR && event->detail != XCB_NOTIFY_DETAIL_POINTER
+        && event->mode != XCB_NOTIFY_MODE_GRAB) {
         _terminal->focusChange(true);
     }
 }
 
 void Screen::focusOut(xcb_focus_out_event_t * event) {
-    if (event->detail != XCB_NOTIFY_DETAIL_INFERIOR &&
-        event->detail != XCB_NOTIFY_DETAIL_POINTER &&
-        event->mode   != XCB_NOTIFY_MODE_GRAB)
-    {
+    if (event->detail != XCB_NOTIFY_DETAIL_INFERIOR && event->detail != XCB_NOTIFY_DETAIL_POINTER
+        && event->mode != XCB_NOTIFY_MODE_GRAB) {
         _terminal->focusChange(false);
     }
 }
@@ -441,11 +437,11 @@ void Screen::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
     if (!_open) { return; }
 
     std::vector<uint8_t> content;
-    uint32_t             offset = 0;        // 32-bit quantities
+    uint32_t             offset = 0; // 32-bit quantities
 
     for (;;) {
         auto cookie = xcb_get_property(_basics.connection(),
-                                       false,     // delete
+                                       false, // delete
                                        getWindow(),
                                        XCB_ATOM_PRIMARY,
                                        XCB_GET_PROPERTY_TYPE_ANY,
@@ -456,8 +452,8 @@ void Screen::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
         if (!reply) { break; }
 
         ScopeGuard guard([reply]() { std::free(reply); });
-        auto value  = static_cast<uint8_t *>(xcb_get_property_value(reply));
-        auto length = xcb_get_property_value_length(reply);
+        auto       value  = static_cast<uint8_t *>(xcb_get_property_value(reply));
+        auto       length = xcb_get_property_value_length(reply);
         if (length == 0) { break; }
 
         auto oldSize = content.size();
@@ -467,9 +463,7 @@ void Screen::selectionNotify(xcb_selection_notify_event_t * UNUSED(event)) {
         offset += (length + 3) / 4;
     }
 
-    if (!content.empty()) {
-        _terminal->paste(&content.front(), content.size());
-    }
+    if (!content.empty()) { _terminal->paste(&content.front(), content.size()); }
 }
 
 void Screen::selectionRequest(xcb_selection_request_event_t * event) {
@@ -481,11 +475,11 @@ void Screen::selectionRequest(xcb_selection_request_event_t * event) {
     response.requestor     = event->requestor;
     response.selection     = event->selection;
     response.target        = event->target;
-    response.property      = XCB_ATOM_NONE;        // reject by default
+    response.property      = XCB_ATOM_NONE; // reject by default
 
     if (event->target == _basics.atomTargets()) {
         auto atomUtf8String = _basics.atomUtf8String();
-        auto cookie = xcb_change_property_checked(_basics.connection(),
+        auto cookie         = xcb_change_property_checked(_basics.connection(),
                                                   XCB_PROP_MODE_REPLACE,
                                                   event->requestor,
                                                   event->property,
@@ -499,9 +493,7 @@ void Screen::selectionRequest(xcb_selection_request_event_t * event) {
     else if (event->target == _basics.atomUtf8String()) {
         std::string text;
 
-        if (event->selection == _basics.atomPrimary()) {
-            text = _primarySelection;
-        }
+        if (event->selection == _basics.atomPrimary()) { text = _primarySelection; }
         else if (event->selection == _basics.atomClipboard()) {
             text = _clipboardSelection;
         }
@@ -528,14 +520,12 @@ void Screen::selectionRequest(xcb_selection_request_event_t * event) {
                                          reinterpret_cast<const char *>(&response));
     THROW_IF_XCB_REQUEST_FAILED(_basics.connection(), cookie, "Failed to send event");
 
-    xcb_flush(_basics.connection());        // Required?
+    xcb_flush(_basics.connection()); // Required?
 }
 
 void Screen::clientMessage(xcb_client_message_event_t * event) {
     if (event->type == _basics.atomWmProtocols()) {
-        if (event->data.data32[0] == _basics.atomWmDeleteWindow()) {
-            handleDelete();
-        }
+        if (event->data.data32[0] == _basics.atomWmDeleteWindow()) { handleDelete(); }
     }
 }
 
@@ -589,11 +579,8 @@ void Screen::icccmConfigure() {
     // class
     //
 
-    std::string wm_class =
-        std::string("terminol") + '\0' +
-        std::string("Terminol") + '\0';
-    xcb_icccm_set_wm_class(_basics.connection(), getWindow(),
-                           wm_class.size(), wm_class.data());
+    std::string wm_class = std::string("terminol") + '\0' + std::string("Terminol") + '\0';
+    xcb_icccm_set_wm_class(_basics.connection(), getWindow(), wm_class.size(), wm_class.data());
 
     //
     // size
@@ -611,18 +598,12 @@ void Screen::icccmConfigure() {
     xcb_size_hints_t sizeHints;
     sizeHints.flags = 0;
     xcb_icccm_size_hints_set_min_size(&sizeHints,
-                                      base_width  + min_cols * _fontSet->getWidth(),
+                                      base_width + min_cols * _fontSet->getWidth(),
                                       base_height + min_rows * _fontSet->getHeight());
-    xcb_icccm_size_hints_set_base_size(&sizeHints,
-                                       base_width,
-                                       base_height);
-    xcb_icccm_size_hints_set_resize_inc(&sizeHints,
-                                        _fontSet->getWidth(),
-                                        _fontSet->getHeight());
+    xcb_icccm_size_hints_set_base_size(&sizeHints, base_width, base_height);
+    xcb_icccm_size_hints_set_resize_inc(&sizeHints, _fontSet->getWidth(), _fontSet->getHeight());
     xcb_icccm_size_hints_set_win_gravity(&sizeHints, XCB_GRAVITY_NORTH_WEST);
-    xcb_icccm_set_wm_normal_hints(_basics.connection(),
-                                  getWindow(),
-                                  &sizeHints);
+    xcb_icccm_set_wm_normal_hints(_basics.connection(), getWindow(), &sizeHints);
 
     //
     // wm?
@@ -631,7 +612,7 @@ void Screen::icccmConfigure() {
     xcb_icccm_wm_hints_t wmHints;
     wmHints.flags = 0;
     xcb_icccm_wm_hints_set_input(&wmHints, 1 /* What value? */);
-    //xcb_icccm_wm_hints_set_icon_pixmap
+    // xcb_icccm_wm_hints_set_icon_pixmap
     xcb_icccm_set_wm_hints(_basics.connection(), getWindow(), &wmHints);
 
     //
@@ -639,14 +620,18 @@ void Screen::icccmConfigure() {
     //
 
     xcb_atom_t wmDeleteWindow = _basics.atomWmDeleteWindow();
-    xcb_icccm_set_wm_protocols(_basics.connection(), getWindow(),
+    xcb_icccm_set_wm_protocols(_basics.connection(),
+                               getWindow(),
                                _basics.atomWmProtocols(),
-                               1, &wmDeleteWindow);
+                               1,
+                               &wmDeleteWindow);
 }
 
 void Screen::pos2XY(Pos pos, int & x, int & y) const {
-    ASSERT(pos.row <= _terminal->getRows(), << "pos.row=" << pos.row << ", getRows()=" << _terminal->getRows());
-    ASSERT(pos.col <= _terminal->getCols(), << "pos.col=" << pos.col << ", getCols()=" << _terminal->getCols());
+    ASSERT(pos.row <= _terminal->getRows(),
+           << "pos.row=" << pos.row << ", getRows()=" << _terminal->getRows());
+    ASSERT(pos.col <= _terminal->getCols(),
+           << "pos.col=" << pos.col << ", getCols()=" << _terminal->getCols());
 
     auto border_thickness = _config.borderThickness;
 
@@ -674,8 +659,7 @@ bool Screen::xy2Pos(int x, int y, Pos & pos, Hand & hand) const {
         pos.col = xx / fontWidth;
         hand    = xx % fontWidth > halfFontWidth ? Hand::RIGHT : Hand::LEFT;
         ASSERT(pos.col <= _terminal->getCols(),
-               << "col is: " << pos.col << ", getCols() is: " <<
-               _terminal->getCols());
+               << "col is: " << pos.col << ", getCols() is: " << _terminal->getCols());
     }
     else {
         pos.col = _terminal->getCols();
@@ -687,18 +671,17 @@ bool Screen::xy2Pos(int x, int y, Pos & pos, Hand & hand) const {
 
     if (y < border_thickness) {
         pos.row = 0;
-        within = false;
+        within  = false;
     }
     else if (y < border_thickness + fontHeight * _terminal->getRows()) {
         auto yy = y - border_thickness;
         pos.row = yy / fontHeight;
         ASSERT(pos.row < _terminal->getRows(),
-               << "row is: " << pos.row << ", getRows() is: " <<
-               _terminal->getRows());
+               << "row is: " << pos.row << ", getRows() is: " << _terminal->getRows());
     }
     else {
         pos.row = _terminal->getRows() - 1;
-        within = false;
+        within  = false;
     }
 
     return within;
@@ -721,10 +704,7 @@ void Screen::setTitle(const std::string & title, bool prependGeometry) {
                           fullTitle.size(),
                           fullTitle.data());
 #else
-    xcb_ewmh_set_wm_name(_basics.ewmhConnection(),
-                         getWindow(),
-                         fullTitle.size(),
-                         fullTitle.data());
+    xcb_ewmh_set_wm_name(_basics.ewmhConnection(), getWindow(), fullTitle.size(), fullTitle.data());
 #endif
 
     xcb_flush(_basics.connection());
@@ -741,10 +721,7 @@ void Screen::setIcon(const std::string & icon) {
                                icon.size(),
                                icon.data());
 #else
-    xcb_ewmh_set_wm_icon_name(_basics.ewmhConnection(),
-                              getWindow(),
-                              icon.size(),
-                              icon.data());
+    xcb_ewmh_set_wm_icon_name(_basics.ewmhConnection(), getWindow(), icon.size(), icon.data());
 #endif
 }
 
@@ -767,8 +744,7 @@ void Screen::createPixmapAndSurface() {
                                         _geometry.width,
                                         _geometry.height);
     ASSERT(_surface, << "Failed to create surface.");
-    ASSERT(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS,
-           << "Bad cairo surface status.");
+    ASSERT(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, << "Bad cairo surface status.");
 
     renderPixmap();
 }
@@ -790,7 +766,8 @@ void Screen::renderPixmap() {
     _cr = cairo_create(_surface);
     cairo_set_line_width(_cr, 1.0);
 
-    cairo_save(_cr); {
+    cairo_save(_cr);
+    {
         ASSERT(cairo_status(_cr) == 0,
                << "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
 
@@ -799,14 +776,13 @@ void Screen::renderPixmap() {
 
         ASSERT(cairo_status(_cr) == 0,
                << "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
-
-    } cairo_restore(_cr);
+    }
+    cairo_restore(_cr);
     cairo_destroy(_cr);
     _cr = nullptr;
 
-    cairo_surface_flush(_surface);      // Useful?
-    ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS,
-            << "Bad cairo surface status.");
+    cairo_surface_flush(_surface); // Useful?
+    ENFORCE(cairo_surface_status(_surface) == CAIRO_STATUS_SUCCESS, << "Bad cairo surface status.");
 }
 
 void Screen::drawBorder() {
@@ -832,46 +808,55 @@ void Screen::drawBorder() {
                       _basics.rootPixmap(),
                       _pixmap,
                       _gc,
-                      x + x0, y + y0,       // src
-                      x0, y0,               // dst
-                      x1 - x0, y3 - y0);    // w/h
+                      x + x0,
+                      y + y0, // src
+                      x0,
+                      y0, // dst
+                      x1 - x0,
+                      y3 - y0); // w/h
 
         // Top edge.
         xcb_copy_area(_basics.connection(),
                       _basics.rootPixmap(),
                       _pixmap,
                       _gc,
-                      x + x1, y + y0,       // src
-                      x1, y0,               // dst
-                      x2 - x1, y1 - y0);    // w/h
+                      x + x1,
+                      y + y0, // src
+                      x1,
+                      y0, // dst
+                      x2 - x1,
+                      y1 - y0); // w/h
 
         // Right edge.
         xcb_copy_area(_basics.connection(),
                       _basics.rootPixmap(),
                       _pixmap,
                       _gc,
-                      x + x2, y + y0,       // src
-                      x2, y0,               // dst
-                      x3 - x2, y3 - y0);    // w/h
+                      x + x2,
+                      y + y0, // src
+                      x2,
+                      y0, // dst
+                      x3 - x2,
+                      y3 - y0); // w/h
 
         // Bottom edge.
         xcb_copy_area(_basics.connection(),
                       _basics.rootPixmap(),
                       _pixmap,
                       _gc,
-                      x + x1, y + y2,       // src
-                      x1, y2,               // dst
-                      x2 - x1, y3 - y2);    // w/h
+                      x + x1,
+                      y + y2, // src
+                      x1,
+                      y2, // dst
+                      x2 - x1,
+                      y3 - y2); // w/h
 
         xcb_flush(_basics.connection());
     }
 
-
-    cairo_save(_cr); {
-        auto alpha =
-            _config.x11PseudoTransparency ?
-            1.0 - _config.x11TransparencyValue :
-            1.0;
+    cairo_save(_cr);
+    {
+        auto alpha = _config.x11PseudoTransparency ? 1.0 - _config.x11TransparencyValue : 1.0;
 
         auto & bg = _colorSet.getBorderColor();
         cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
@@ -907,7 +892,8 @@ void Screen::drawBorder() {
                         static_cast<double>(x2 - x1),
                         static_cast<double>(y3 - y2));
         cairo_fill(_cr);
-    } cairo_restore(_cr);
+    }
+    cairo_restore(_cr);
 }
 
 void Screen::copyPixmapToWindow(int x, int y, int w, int h) {
@@ -918,22 +904,22 @@ void Screen::copyPixmapToWindow(int x, int y, int w, int h) {
                   _pixmap,
                   getWindow(),
                   _gc,
-                  x, y,   // src
-                  x, y,   // dst
-                  w, h);
+                  x,
+                  y, // src
+                  x,
+                  y, // dst
+                  w,
+                  h);
     xcb_flush(_basics.connection());
 }
 
 void Screen::handleConfigure() {
-    if (_deferredGeometry.width != _geometry.width ||
-        _deferredGeometry.height != _geometry.height)
-    {
+    if (_deferredGeometry.width != _geometry.width
+        || _deferredGeometry.height != _geometry.height) {
         handleResize();
     }
     else {
-        if (_config.x11PseudoTransparency) {
-            handleMove();
-        }
+        if (_config.x11PseudoTransparency) { handleMove(); }
     }
 }
 
@@ -943,7 +929,7 @@ void Screen::handleResize() {
     int16_t rows, cols;
     sizeToRowsCols(rows, cols);
 
-    _terminal->resize(rows, cols);      // OK to resize if not open?
+    _terminal->resize(rows, cols); // OK to resize if not open?
 
     if (_hadDeleteRequest) {
         // Resizes clear delete requests that are waiting for confirmation.
@@ -974,17 +960,10 @@ void Screen::handleResize() {
 
     xcb_size_hints_t sizeHints;
     sizeHints.flags = 0;
-    xcb_icccm_size_hints_set_base_size(&sizeHints,
-                                       base_width,
-                                       base_height);
-    xcb_icccm_size_hints_set_resize_inc(&sizeHints,
-                                        _fontSet->getWidth(),
-                                        _fontSet->getHeight());
+    xcb_icccm_size_hints_set_base_size(&sizeHints, base_width, base_height);
+    xcb_icccm_size_hints_set_resize_inc(&sizeHints, _fontSet->getWidth(), _fontSet->getHeight());
     xcb_icccm_size_hints_set_win_gravity(&sizeHints, XCB_GRAVITY_NORTH_WEST);
-    xcb_icccm_set_wm_normal_hints(_basics.connection(),
-                                  getWindow(),
-                                  &sizeHints);
-
+    xcb_icccm_set_wm_normal_hints(_basics.connection(), getWindow(), &sizeHints);
 }
 
 void Screen::handleMove() {
@@ -1008,14 +987,12 @@ void Screen::resizeToAccommodate(int16_t rows, int16_t cols, bool sync) {
     uint16_t height = 2 * border_thickness + rows * _fontSet->getHeight();
 
     if (_geometry.width != width || _geometry.height != height) {
-        uint32_t values[] = { width, height };
-        auto cookie = xcb_configure_window(_basics.connection(),
+        uint32_t values[] = {width, height};
+        auto     cookie   = xcb_configure_window(_basics.connection(),
                                            getWindow(),
-                                           XCB_CONFIG_WINDOW_WIDTH |
-                                           XCB_CONFIG_WINDOW_HEIGHT,
+                                           XCB_CONFIG_WINDOW_WIDTH | XCB_CONFIG_WINDOW_HEIGHT,
                                            values);
-        if (!CHECK_XCB_REQUEST(_basics.connection(), cookie,
-                               "Failed to configure window")) {
+        if (!CHECK_XCB_REQUEST(_basics.connection(), cookie, "Failed to configure window")) {
             if (sync) {
                 xcb_flush(_basics.connection());
                 _deferralsAllowed = false;
@@ -1033,10 +1010,9 @@ void Screen::sizeToRowsCols(int16_t & rows, int16_t & cols) const {
     auto base_width  = 2 * border_thickness + scrollbar_width;
     auto base_height = 2 * border_thickness;
 
-    if (_geometry.width  >= static_cast<uint16_t>(base_width  + _fontSet->getWidth()) &&
-        _geometry.height >= static_cast<uint16_t>(base_height + _fontSet->getHeight()))
-    {
-        int16_t w = _geometry.width  - base_width;
+    if (_geometry.width >= static_cast<uint16_t>(base_width + _fontSet->getWidth())
+        && _geometry.height >= static_cast<uint16_t>(base_height + _fontSet->getHeight())) {
+        int16_t w = _geometry.width - base_width;
         int16_t h = _geometry.height - base_height;
 
         rows = h / _fontSet->getHeight();
@@ -1071,8 +1047,7 @@ void Screen::cursorVisibility(bool visible) {
                                                            getWindow(),
                                                            mask,
                                                            &values);
-        CHECK_XCB_REQUEST(_basics.connection(), cookie,
-                          "Failed to change window attributes");
+        CHECK_XCB_REQUEST(_basics.connection(), cookie, "Failed to change window attributes");
 
         _cursorVisible = visible;
     }
@@ -1090,14 +1065,14 @@ void Screen::terminalCopy(const std::string & text, Terminal::Selection selectio
     xcb_atom_t atom = XCB_ATOM_NONE;
 
     switch (selection) {
-        case Terminal::Selection::CLIPBOARD:
-            atom = _basics.atomClipboard();
-            _clipboardSelection = text;
-            break;
-        case Terminal::Selection::PRIMARY:
-            atom = _basics.atomPrimary();
-            _primarySelection = text;
-            break;
+    case Terminal::Selection::CLIPBOARD:
+        atom                = _basics.atomClipboard();
+        _clipboardSelection = text;
+        break;
+    case Terminal::Selection::PRIMARY:
+        atom              = _basics.atomPrimary();
+        _primarySelection = text;
+        break;
     }
 
     xcb_set_selection_owner(_basics.connection(), getWindow(), atom, XCB_CURRENT_TIME);
@@ -1108,12 +1083,8 @@ void Screen::terminalPaste(Terminal::Selection selection) {
     xcb_atom_t atom = XCB_ATOM_NONE;
 
     switch (selection) {
-        case Terminal::Selection::CLIPBOARD:
-            atom = _basics.atomClipboard();
-            break;
-        case Terminal::Selection::PRIMARY:
-            atom = _basics.atomPrimary();
-            break;
+    case Terminal::Selection::CLIPBOARD: atom = _basics.atomClipboard(); break;
+    case Terminal::Selection::PRIMARY: atom = _basics.atomPrimary(); break;
     }
 
     xcb_convert_selection(_basics.connection(),
@@ -1148,7 +1119,7 @@ void Screen::terminalSetWindowTitle(const std::string & str, bool transient) {
     }
     else {
         _entitlement = Entitlement::PERMANENT;
-        _title = str;
+        _title       = str;
         setTitle(_title, true);
     }
 }
@@ -1160,9 +1131,7 @@ void Screen::terminalSetIconName(const std::string & str) {
 
 void Screen::terminalBell() {
     if (_config.mapOnBell) {
-        if (!_mapped) {
-            xcb_map_window(_basics.connection(), getWindow());
-        }
+        if (!_mapped) { xcb_map_window(_basics.connection(), getWindow()); }
     }
 
     if (_config.urgentOnBell) {
@@ -1172,9 +1141,7 @@ void Screen::terminalBell() {
         xcb_icccm_set_wm_hints(_basics.connection(), getWindow(), &wmHints);
     }
 
-    if (_config.audibleBell) {
-        xcb_bell(_basics.connection(), _config.audibleBellVolume);
-    }
+    if (_config.audibleBell) { xcb_bell(_basics.connection(), _config.audibleBellVolume); }
 
     if (_config.visualBell) {
         if (_mapped) {
@@ -1183,12 +1150,8 @@ void Screen::terminalBell() {
 
             // Fill the window with a solid colour.
 
-            xcb_rectangle_t rect = { 0, 0, _geometry.width, _geometry.height };
-            xcb_poly_fill_rectangle(_basics.connection(),
-                                    getWindow(),
-                                    _gc,
-                                    1,
-                                    &rect);
+            xcb_rectangle_t rect = {0, 0, _geometry.width, _geometry.height};
+            xcb_poly_fill_rectangle(_basics.connection(), getWindow(), _gc, 1, &rect);
             xcb_flush(_basics.connection());
 
             // Wait a moment.
@@ -1223,9 +1186,7 @@ bool Screen::terminalFixDamageBegin() {
     }
 }
 
-void Screen::terminalDrawBg(Pos     pos,
-                            int16_t count,
-                            UColor  color) {
+void Screen::terminalDrawBg(Pos pos, int16_t count, UColor color) {
     int x, y;
     pos2XY(pos, x, y);
 
@@ -1237,17 +1198,18 @@ void Screen::terminalDrawBg(Pos     pos,
                       _basics.rootPixmap(),
                       _pixmap,
                       _gc,
-                      _geometry.x + x, _geometry.y + y,   // src
-                      x, y,                               // dst
-                      w, h);
+                      _geometry.x + x,
+                      _geometry.y + y, // src
+                      x,
+                      y, // dst
+                      w,
+                      h);
     }
 
     ASSERT(_cr, );
-    cairo_save(_cr); {
-        auto alpha =
-            _config.x11PseudoTransparency ?
-            1.0 - _config.x11TransparencyValue :
-            1.0;
+    cairo_save(_cr);
+    {
+        auto alpha = _config.x11PseudoTransparency ? 1.0 - _config.x11TransparencyValue : 1.0;
 
         auto bg = getColor(color);
         cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
@@ -1257,20 +1219,18 @@ void Screen::terminalDrawBg(Pos     pos,
 
         ASSERT(cairo_status(_cr) == 0,
                << "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
-    } cairo_restore(_cr);
+    }
+    cairo_restore(_cr);
 }
 
-void Screen::terminalDrawFg(Pos             pos,
-                            int16_t         count,
-                            UColor          color,
-                            AttrSet         attrs,
-                            const uint8_t * str,
-                            size_t          size) {
+void Screen::terminalDrawFg(
+    Pos pos, int16_t count, UColor color, AttrSet attrs, const uint8_t * str, size_t size) {
     ASSERT(_cr, );
     ASSERT(pos.col + count <= _terminal->getCols(), );
 
-    cairo_save(_cr); {
-        auto layout = pango_cairo_create_layout(_cr);
+    cairo_save(_cr);
+    {
+        auto       layout = pango_cairo_create_layout(_cr);
         ScopeGuard layoutGuard([&]() { g_object_unref(layout); });
 
         auto font = _fontSet->get(attrs.get(Attr::ITALIC), attrs.get(Attr::BOLD));
@@ -1301,7 +1261,8 @@ void Screen::terminalDrawFg(Pos             pos,
 
         ASSERT(cairo_status(_cr) == 0,
                << "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
-    } cairo_restore(_cr);
+    }
+    cairo_restore(_cr);
 }
 
 void Screen::terminalDrawCursor(Pos             pos,
@@ -1314,8 +1275,9 @@ void Screen::terminalDrawCursor(Pos             pos,
                                 bool            focused) {
     ASSERT(_cr, );
 
-    cairo_save(_cr); {
-        auto layout = pango_cairo_create_layout(_cr);
+    cairo_save(_cr);
+    {
+        auto       layout = pango_cairo_create_layout(_cr);
         ScopeGuard layoutGuard([&]() { g_object_unref(layout); });
 
         auto font = _fontSet->get(attrs.get(Attr::ITALIC), attrs.get(Attr::BOLD));
@@ -1330,9 +1292,7 @@ void Screen::terminalDrawCursor(Pos             pos,
         int x, y;
         pos2XY(pos, x, y);
 
-        if (focused) {
-            cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b);
-        }
+        if (focused) { cairo_set_source_rgb(_cr, bg.r, bg.g, bg.b); }
         else {
             cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
         }
@@ -1350,8 +1310,10 @@ void Screen::terminalDrawCursor(Pos             pos,
         }
         else {
             cairo_rectangle(_cr,
-                            x + 0.5, y + 0.5,
-                            _fontSet->getWidth() - 1.0, _fontSet->getHeight() - 1.0);
+                            x + 0.5,
+                            y + 0.5,
+                            _fontSet->getWidth() - 1.0,
+                            _fontSet->getHeight() - 1.0);
             cairo_stroke(_cr);
         }
 
@@ -1362,16 +1324,15 @@ void Screen::terminalDrawCursor(Pos             pos,
 
         ASSERT(cairo_status(_cr) == 0,
                << "Cairo error: " << cairo_status_to_string(cairo_status(_cr)));
-    } cairo_restore(_cr);
+    }
+    cairo_restore(_cr);
 }
 
-void Screen::terminalDrawScrollbar(size_t  totalRows,
-                                   size_t  historyOffset,
-                                   int16_t visibleRows) {
+void Screen::terminalDrawScrollbar(size_t totalRows, size_t historyOffset, int16_t visibleRows) {
     ASSERT(_cr, );
     ASSERT(_config.scrollbarVisible, );
 
-    const auto SCROLLBAR_WIDTH  = _config.scrollbarWidth;
+    const auto SCROLLBAR_WIDTH = _config.scrollbarWidth;
 
     auto x = _geometry.width - SCROLLBAR_WIDTH;
     auto y = 0;
@@ -1385,18 +1346,19 @@ void Screen::terminalDrawScrollbar(size_t  totalRows,
                       _basics.rootPixmap(),
                       _pixmap,
                       _gc,
-                      _geometry.x + x, _geometry.y + y,   // src
-                      x, y,                               // dst
-                      w, h);
+                      _geometry.x + x,
+                      _geometry.y + y, // src
+                      x,
+                      y, // dst
+                      w,
+                      h);
 
         xcb_flush(_basics.connection());
     }
 
-    cairo_save(_cr); {
-        auto alpha =
-            _config.x11PseudoTransparency ?
-            1.0 - _config.x11TransparencyValue :
-            1.0;
+    cairo_save(_cr);
+    {
+        auto alpha = _config.x11PseudoTransparency ? 1.0 - _config.x11TransparencyValue : 1.0;
 
         auto & bg = _colorSet.getScrollBarBgColor();
         cairo_set_source_rgba(_cr, bg.r, bg.g, bg.b, alpha);
@@ -1410,9 +1372,9 @@ void Screen::terminalDrawScrollbar(size_t  totalRows,
 
         // Draw the bar.
 
-        auto min  = 2.0;        // Minimum height we allow the scrollbar to be.
+        auto min  = 2.0; // Minimum height we allow the scrollbar to be.
         auto yBar = static_cast<double>(historyOffset) / static_cast<double>(totalRows) * (h - min);
-        auto hBar = static_cast<double>(visibleRows)   / static_cast<double>(totalRows) * (h - min);
+        auto hBar = static_cast<double>(visibleRows) / static_cast<double>(totalRows) * (h - min);
 
         auto & fg = _colorSet.getScrollBarFgColor();
         cairo_set_source_rgb(_cr, fg.r, fg.g, fg.b);
@@ -1423,17 +1385,17 @@ void Screen::terminalDrawScrollbar(size_t  totalRows,
                         static_cast<double>(w - 2),
                         hBar + min);
         cairo_fill(_cr);
-    } cairo_restore(_cr);
+    }
+    cairo_restore(_cr);
 }
 
-void Screen::terminalFixDamageEnd(const Region & damage,
-                                  bool           scrollBar) {
+void Screen::terminalFixDamageEnd(const Region & damage, bool scrollBar) {
     ASSERT(_cr, );
 
     cairo_destroy(_cr);
     _cr = nullptr;
 
-    cairo_surface_flush(_surface);      // Useful?
+    cairo_surface_flush(_surface); // Useful?
 
     int x0, y0;
     pos2XY(damage.begin, x0, y0);
@@ -1469,7 +1431,7 @@ void Screen::useFontSet(FontSet * fontSet, int delta) {
     sizeToRowsCols(rows, cols);
 
     if (rows != _terminal->getRows() || cols != _terminal->getCols()) {
-        _terminal->resize(rows, cols);      // Ok to resize if not open?
+        _terminal->resize(rows, cols); // Ok to resize if not open?
     }
 
     if (_mapped) {

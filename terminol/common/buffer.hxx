@@ -62,21 +62,17 @@ class Buffer {
         APos(Pos pos, uint32_t offset) : row(pos.row - offset), col(pos.col) {}
     };
 
-    friend bool operator == (const APos & lhs, const APos & rhs) {
+    friend bool operator==(const APos & lhs, const APos & rhs) {
         return lhs.row == rhs.row && lhs.col == rhs.col;
     }
 
-    friend bool operator != (const APos & lhs, const APos & rhs) {
-        return !(lhs == rhs);
+    friend bool operator!=(const APos & lhs, const APos & rhs) { return !(lhs == rhs); }
+
+    friend bool operator<(const APos & lhs, const APos & rhs) {
+        return (lhs.row < rhs.row) || (lhs.row == rhs.row && lhs.col < rhs.col);
     }
 
-    friend bool operator <  (const APos & lhs, const APos & rhs) {
-        return
-            (lhs.row <  rhs.row) ||
-            (lhs.row == rhs.row && lhs.col < rhs.col);
-    }
-
-    friend std::ostream & operator << (std::ostream & ost, const APos & pos) {
+    friend std::ostream & operator<<(std::ostream & ost, const APos & pos) {
         return ost << pos.row << 'x' << pos.col;
     }
 
@@ -90,16 +86,15 @@ class Buffer {
     // ALine (or Active-Line) represents a line of text in the active region.
     // An ALine directly contains its cells
     struct ALine {
-        std::vector<Cell> cells;        // active lines have a greater/equal capacity to their wrap/size
+        std::vector<Cell> cells; // active lines have a greater/equal capacity to their wrap/size
         bool              cont = false; // does this line continue on the next line?
         int16_t           wrap = 0;     // wrappable index, <= cells.size()
 
-        explicit ALine(int16_t cols, const Style & style = Style()) :
-            cells(cols, Cell::blank(style)) {}
+        explicit ALine(int16_t cols, const Style & style = Style())
+            : cells(cols, Cell::blank(style)) {}
 
-        ALine(std::vector<Cell> && cells_, bool cont_, int16_t wrap_, int16_t cols) :
-            cells(std::move(cells_)), cont(cont_), wrap(wrap_)
-        {
+        ALine(std::vector<Cell> && cells_, bool cont_, int16_t wrap_, int16_t cols)
+            : cells(std::move(cells_)), cont(cont_), wrap(wrap_) {
             ASSERT(wrap_ <= cols, );
             cells.resize(cols, Cell::blank());
         }
@@ -150,14 +145,12 @@ class Buffer {
             }
             else {
                 begin = std::min(begin, begin_);
-                end   = std::max(end,   end_);
+                end   = std::max(end, end_);
             }
         }
 
         // Reset to initial state.
-        void reset() {
-            *this = Damage();
-        }
+        void reset() { *this = Damage(); }
     };
 
     // Cursor encompasses the state associated with a VT cursor.
@@ -216,9 +209,7 @@ class Buffer {
             return ParaIter(_buffer, APos(_row, 0));
         }
 
-        bool valid() const {
-            return _valid;
-        }
+        bool valid() const { return _valid; }
 
         void moveForward();
 
@@ -233,9 +224,8 @@ class Buffer {
     //
 
     struct Search {
-        Search(const Buffer & buffer, const std::string & pattern_) :
-            iter(buffer, buffer.getRows() - 2),
-            pattern(pattern_) {}
+        Search(const Buffer & buffer, const std::string & pattern_)
+            : iter(buffer, buffer.getRows() - 2), pattern(pattern_) {}
 
         BufferIter                              iter;
         std::string                             pattern;
@@ -246,57 +236,54 @@ class Buffer {
     //
     //
 
-    const Config               & _config;
-    I_Deduper                  & _deduper;
-    AsyncInvoker               & _asyncInvoker;
-    std::deque<I_Deduper::Tag>   _tags;             // The paragraph history.
-    uint32_t                     _lostTags;         // Incremented for each _tags.pop_front().
-    std::vector<Cell>            _pending;          // Paragraph pending to become historical.
-    std::deque<HLine>            _history;          // Historical paragraph segments. Indexable.
-    std::deque<ALine>            _active;           // Active paragraph segments. Indexable.
-    std::vector<Damage>          _damage;           // Viewport-relative damage.
-    std::vector<bool>            _tabs;             // Column-indexable, true if tab stop exists.
-    uint32_t                     _scrollOffset;     // 0 -> scroll bottom
-    uint32_t                     _historyLimit;     // Maximum number of historical paragraphs to keep.
-    int16_t                      _cols;             // Current width of buffer.
-    int16_t                      _marginBegin;      // Index of first row in margin (inclusive).
-    int16_t                      _marginEnd;        // Index of last row in  margin (exclusive).
-    bool                         _barDamage;        // Has the scrollbar been invalidated?
-    APos                         _selectMark;       // Start of user selection.
-    APos                         _selectDelim;      // End of user selection.
-    Cursor                       _cursor;           // Current cursor.
-    SavedCursor                  _savedCursor;      // Saved cursor.
-    CharSubArray                 _charSubs;
-    std::unique_ptr<Search>      _search;
+    const Config &             _config;
+    I_Deduper &                _deduper;
+    AsyncInvoker &             _asyncInvoker;
+    std::deque<I_Deduper::Tag> _tags;         // The paragraph history.
+    uint32_t                   _lostTags;     // Incremented for each _tags.pop_front().
+    std::vector<Cell>          _pending;      // Paragraph pending to become historical.
+    std::deque<HLine>          _history;      // Historical paragraph segments. Indexable.
+    std::deque<ALine>          _active;       // Active paragraph segments. Indexable.
+    std::vector<Damage>        _damage;       // Viewport-relative damage.
+    std::vector<bool>          _tabs;         // Column-indexable, true if tab stop exists.
+    uint32_t                   _scrollOffset; // 0 -> scroll bottom
+    uint32_t                   _historyLimit; // Maximum number of historical paragraphs to keep.
+    int16_t                    _cols;         // Current width of buffer.
+    int16_t                    _marginBegin;  // Index of first row in margin (inclusive).
+    int16_t                    _marginEnd;    // Index of last row in  margin (exclusive).
+    bool                       _barDamage;    // Has the scrollbar been invalidated?
+    APos                       _selectMark;   // Start of user selection.
+    APos                       _selectDelim;  // End of user selection.
+    Cursor                     _cursor;       // Current cursor.
+    SavedCursor                _savedCursor;  // Saved cursor.
+    CharSubArray               _charSubs;
+    std::unique_ptr<Search>    _search;
 
 public:
     class I_Renderer {
     public:
-        virtual void bufferDrawBg(Pos     pos,
-                                  int16_t count,
-                                  UColor  color) = 0;
+        virtual void bufferDrawBg(Pos pos, int16_t count, UColor color) = 0;
         virtual void bufferDrawFg(Pos             pos,
                                   int16_t         count,
                                   UColor          color,
                                   AttrSet         attrs,
-                                  const uint8_t * str,       // nul-terminated
-                                  size_t          size) = 0;
+                                  const uint8_t * str, // nul-terminated
+                                  size_t          size)                          = 0;
         virtual void bufferDrawCursor(Pos             pos,
                                       UColor          fg,
                                       UColor          bg,
                                       AttrSet         attrs,
-                                      const uint8_t * str,    // nul-terminated, count 1
+                                      const uint8_t * str, // nul-terminated, count 1
                                       size_t          size,
-                                      bool            wrapNext) = 0;
+                                      bool            wrapNext)                    = 0;
 
     protected:
         ~I_Renderer() = default;
     };
 
-
-    Buffer(const Config       & config,
-           I_Deduper          & deduper,
-           AsyncInvoker       & asyncInvoker,
+    Buffer(const Config &       config,
+           I_Deduper &          deduper,
+           AsyncInvoker &       asyncInvoker,
            int16_t              rows,
            int16_t              cols,
            uint32_t             historyLimit,
@@ -304,8 +291,8 @@ public:
 
     ~Buffer();
 
-    int16_t  getRows() const { return static_cast<int16_t>(_active.size()); }
-    int16_t  getCols() const { return _cols; }
+    int16_t getRows() const { return static_cast<int16_t>(_active.size()); }
+    int16_t getCols() const { return _cols; }
 
     // How many _wrapped_ lines are there in the scroll-back history?
     uint32_t getHistoricalRows() const { return _history.size(); }
@@ -316,7 +303,7 @@ public:
     // How many rows is the viewport offset from the beginning of active?
     uint32_t getScrollOffset() const { return _scrollOffset; }
     // Is the bar damaged (does it need redrawing)?
-    bool     getBarDamage() const { return _barDamage; }
+    bool getBarDamage() const { return _barDamage; }
 
     void markSelection(Pos pos);
     void delimitSelection(Pos pos, bool initial);
@@ -354,8 +341,7 @@ public:
 
     void moveCursor(Pos pos, bool marginRelative = false);
 
-    void moveCursor2(bool rowRelative, int16_t row,
-                     bool colRelative, int16_t col);
+    void moveCursor2(bool rowRelative, int16_t row, bool colRelative, int16_t col);
 
     void saveCursor();
 
@@ -379,9 +365,7 @@ public:
     }
 
     void resetTabs() {
-        for (size_t i = 0; i != _tabs.size(); ++i) {
-            _tabs[i] = i % 8 == 0;
-        }
+        for (size_t i = 0; i != _tabs.size(); ++i) { _tabs[i] = i % 8 == 0; }
     }
 
     void resetCursor() {
@@ -445,13 +429,13 @@ public:
 
     const CharSub * getCharSub(CharSet charSet) const;
 
-    bool isSearching() const { return _search != nullptr; }
-    void beginSearch(const std::string & pattern);
+    bool                isSearching() const { return _search != nullptr; }
+    void                beginSearch(const std::string & pattern);
     const std::string & getSearchPattern() const;
-    void setSearchPattern(const std::string & pattern);
-    void nextSearch();
-    void prevSearch();
-    void endSearch();
+    void                setSearchPattern(const std::string & pattern);
+    void                nextSearch();
+    void                prevSearch();
+    void                endSearch();
 
     void dumpTags(std::ostream & ost) const;
     void dumpHistory(std::ostream & ost) const;
@@ -459,8 +443,7 @@ public:
     void dumpSelection(std::ostream & ost) const;
 
 protected:
-    void getLine(int32_t row, std::vector<Cell> & cells,
-                 bool & cont, int16_t & wrap) const;
+    void getLine(int32_t row, std::vector<Cell> & cells, bool & cont, int16_t & wrap) const;
 
     void dispatchBg(bool reverse, I_Renderer & renderer) const;
     void dispatchFg(bool reverse, I_Renderer & renderer) const;

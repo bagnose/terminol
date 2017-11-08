@@ -11,8 +11,8 @@
 #include <pango/pango-font.h>
 
 class FontSet : protected Uncopyable {
-    const Config         & _config;
-    Basics               & _basics;
+    const Config & _config;
+    Basics &       _basics;
 
     PangoFontDescription * _normal;
     PangoFontDescription * _bold;
@@ -27,20 +27,20 @@ public:
 
     PangoFontDescription * get(bool italic, bool bold) {
         switch ((italic ? 2 : 0) + (bold ? 1 : 0)) {
-            case 0: return _normal;
-            case 1: return _bold;
-            case 2: return _italic;
-            case 3: return _italicBold;
+        case 0: return _normal;
+        case 1: return _bold;
+        case 2: return _italic;
+        case 3: return _italicBold;
         }
         FATAL();
     }
 
-    uint16_t getWidth()  const { return _width;  }
+    uint16_t getWidth() const { return _width; }
     uint16_t getHeight() const { return _height; }
 
 protected:
-    PangoFontDescription * load(const std::string & family, int size, bool master,
-                                bool bold, bool italic);
+    PangoFontDescription *
+         load(const std::string & family, int size, bool master, bool bold, bool italic);
     void unload(PangoFontDescription * desc);
 
     void measure(PangoFontDescription * desc, uint16_t & width, uint16_t & height);

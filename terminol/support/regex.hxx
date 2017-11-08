@@ -17,36 +17,31 @@
 // r.match("foo bar");
 
 class Regex : protected Uncopyable {
-    pcre    * _pcre;
+    pcre *    _pcre;
     const int _maxMatches;
+
 public:
     struct Substr {
         int first = 0;
         int last  = 0;
     };
 
-    explicit Regex(const std::string & pattern, int maxMatches = 10) :
-        _maxMatches(maxMatches)
-    {
+    explicit Regex(const std::string & pattern, int maxMatches = 10) : _maxMatches(maxMatches) {
         const char * err       = nullptr;
         int          errOffset = 0;
 
-        _pcre = pcre_compile(pattern.c_str(),
-                             PCRE_UTF8,
-                             &err,
-                             &errOffset,
-                             nullptr);     // tableptr
+        _pcre = pcre_compile(pattern.c_str(), PCRE_UTF8, &err, &errOffset,
+                             nullptr); // tableptr
 
         if (!_pcre) {
-            THROW(GenericError("PCRE compilation of \"" + pattern + "\" "
-                               "failed at offset " + stringify(errOffset) +
-                               ", error: " + stringify(err)));
+            THROW(GenericError("PCRE compilation of \"" + pattern
+                               + "\" "
+                                 "failed at offset "
+                               + stringify(errOffset) + ", error: " + stringify(err)));
         }
     }
 
-    ~Regex() {
-        pcre_free(_pcre);
-    }
+    ~Regex() { pcre_free(_pcre); }
 
     // First element is "whole match", subsequent are "captures" (things in parentheses).
     std::vector<std::string> matchString(const std::string & text) const {
@@ -83,14 +78,10 @@ public:
     }
 
     // First element is "whole match", subsequent are "captures" (things in parentheses).
-    bool matchTest(const std::string & text) const {
-        return matchTest(text.data(), text.size());
-    }
+    bool matchTest(const std::string & text) const { return matchTest(text.data(), text.size()); }
 
     // First element is "whole match", subsequent are "captures" (things in parentheses).
-    bool matchTest(const char * text, size_t size) const {
-        return !common(text, size).empty();
-    }
+    bool matchTest(const char * text, size_t size) const { return !common(text, size).empty(); }
 
     std::vector<std::vector<Substr>> matchAllOffsets(const char * text, size_t size) const {
         std::vector<std::vector<Substr>> allOffsets;
@@ -100,16 +91,12 @@ public:
         for (;;) {
             auto offsets = common(text, size, static_cast<size_t>(offset));
 
-            if (offsets.empty()) {
-                break;
-            }
+            if (offsets.empty()) { break; }
             else {
                 offset = offsets.front().last;
                 allOffsets.push_back(std::move(offsets));
 
-                if (offset == size) {
-                    break;
-                }
+                if (offset == size) { break; }
             }
         }
 
@@ -130,23 +117,19 @@ protected:
         std::vector<Substr> substrs;
 
         auto rval = pcre_exec(_pcre,
-                              nullptr,          // study
-                              text,             // subject
-                              size,             // length of subject
-                              offset,           // offset into subject
-                              0,                // options
+                              nullptr, // study
+                              text,    // subject
+                              size,    // length of subject
+                              offset,  // offset into subject
+                              0,       // options
                               &offsets.front(),
                               offsets.size());
 
         if (rval < 0) {
             switch (rval) {
-                case PCRE_ERROR_NOMATCH:
-                    break;
-                case PCRE_ERROR_NULL:
-                    break;
-                default:
-                    ERROR("Unknown error matching: " << rval);
-                    break;
+            case PCRE_ERROR_NOMATCH: break;
+            case PCRE_ERROR_NULL: break;
+            default: ERROR("Unknown error matching: " << rval); break;
             }
         }
         else if (rval == 0) {

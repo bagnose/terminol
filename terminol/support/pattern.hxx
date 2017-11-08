@@ -13,10 +13,10 @@
 class Uncopyable {
 public:
     Uncopyable(const Uncopyable &) noexcept = delete;
-    Uncopyable & operator = (const Uncopyable &) noexcept = delete;
+    Uncopyable & operator=(const Uncopyable &) noexcept = delete;
 
 protected:
-    Uncopyable() noexcept = default;
+    Uncopyable() noexcept  = default;
     ~Uncopyable() noexcept = default;
 };
 
@@ -25,16 +25,15 @@ protected:
 //
 
 class ScopeGuard final : private Uncopyable {
-    using Function = std::function<void ()>;
+    using Function = std::function<void()>;
 
     Function _function;
 
 public:
     explicit ScopeGuard(Function function) : _function(std::move(function)) { ASSERT(_function, ); }
 
-    ScopeGuard(ScopeGuard && scope_guard) noexcept :
-        _function(std::exchange(scope_guard._function, nullptr))
-    {}
+    ScopeGuard(ScopeGuard && scope_guard) noexcept
+        : _function(std::exchange(scope_guard._function, nullptr)) {}
 
     ~ScopeGuard() {
         if (_function) { _function(); }

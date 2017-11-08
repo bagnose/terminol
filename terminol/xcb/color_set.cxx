@@ -6,11 +6,7 @@
 #include <algorithm>
 #include <limits>
 
-ColorSet::ColorSet(const Config & config,
-                   Basics       & basics) :
-    _config(config),
-    _basics(basics)
-{
+ColorSet::ColorSet(const Config & config, Basics & basics) : _config(config), _basics(basics) {
     _cursorFillColor  = convert(_config.cursorFillColor);
     _cursorTextColor  = convert(_config.cursorTextColor);
     _selectFgColor    = convert(_config.selectFgColor);
@@ -26,9 +22,7 @@ ColorSet::ColorSet(const Config & config,
 
     uint8_t index = 0;
 
-    for (; index != 16; ++index) {
-        _indexedColors[index] = convert(_config.systemColors[index]);
-    }
+    for (; index != 16; ++index) { _indexedColors[index] = convert(_config.systemColors[index]); }
 
     for (auto r = 0; r != 6; ++r) {
         for (auto g = 0; g != 6; ++g) {
@@ -56,13 +50,9 @@ ColorSet::ColorSet(const Config & config,
 }
 
 ColorSet::~ColorSet() {
-    uint32_t colors[2] = { _backgroundPixel, _visualBellPixel };
+    uint32_t colors[2] = {_backgroundPixel, _visualBellPixel};
     // Freeing the colour probably does nothing due to direct-color displays...
-    xcb_free_colors(_basics.connection(),
-                    _basics.screen()->default_colormap,
-                    0,
-                    2,
-                    colors);
+    xcb_free_colors(_basics.connection(), _basics.screen()->default_colormap, 0, 2, colors);
 }
 
 uint32_t ColorSet::alloc_color(const Color & color) {
@@ -72,7 +62,9 @@ uint32_t ColorSet::alloc_color(const Color & color) {
 
     auto cookie = xcb_alloc_color(_basics.connection(),
                                   _basics.screen()->default_colormap,
-                                  r, g, b);
+                                  r,
+                                  g,
+                                  b);
     auto reply  = xcb_alloc_color_reply(_basics.connection(), cookie, nullptr);
     ENFORCE(reply, );
     auto pixel = reply->pixel;
@@ -82,7 +74,5 @@ uint32_t ColorSet::alloc_color(const Color & color) {
 }
 
 DColor ColorSet::convert(const Color & color) {
-    return DColor{color.r / 255.0,
-                  color.g / 255.0,
-                  color.b / 255.0};
+    return DColor{color.r / 255.0, color.g / 255.0, color.b / 255.0};
 }

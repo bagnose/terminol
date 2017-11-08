@@ -32,8 +32,8 @@ public:
 
 private:
     static std::vector<uint8_t> encode(const Entry & entry);
-    static Entry decode(const std::vector<uint8_t> & bytes);
-    static Tag makeTag(const std::vector<uint8_t> & bytes);
+    static Entry                decode(const std::vector<uint8_t> & bytes);
+    static Tag                  makeTag(const std::vector<uint8_t> & bytes);
 };
 
 #endif // COMMON__DEDUPE_REPOSITORY__HXX

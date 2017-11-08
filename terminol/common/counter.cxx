@@ -7,13 +7,9 @@
 int main(int argc, char * argv[]) {
     size_t columns = 160;
 
-    if (argc > 1) {
-        columns = unstringify<size_t>(argv[1]);
-    }
+    if (argc > 1) { columns = unstringify<size_t>(argv[1]); }
 
-    for (size_t i = 0; i != columns; ++i) {
-        std::cout << i << std::endl;
-    }
+    for (size_t i = 0; i != columns; ++i) { std::cout << i << std::endl; }
 
     return 0;
 }

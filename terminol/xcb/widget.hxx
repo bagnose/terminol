@@ -10,15 +10,17 @@
 
 #include <xcb/xcb.h>
 
-class Widget :
-    protected I_Dispatcher::I_Observer,
-    protected Uncopyable
-{
+class Widget
+    : protected I_Dispatcher::I_Observer
+    , protected Uncopyable {
 protected:
     Widget(I_Dispatcher & dispatcher,
-           Basics       & basics,
+           Basics &       basics,
            uint32_t       background,
-           int16_t x, int16_t y, uint16_t width, uint16_t height);
+           int16_t        x,
+           int16_t        y,
+           uint16_t       width,
+           uint16_t       height);
 
     ~Widget();
 
@@ -30,9 +32,9 @@ protected:
     xcb_window_t getWindow() { return _window; }
 
 private:
-    I_Dispatcher  & _dispatcher;
-    Basics        & _basics;
-    xcb_window_t    _window;
+    I_Dispatcher & _dispatcher;
+    Basics &       _basics;
+    xcb_window_t   _window;
 };
 
 #endif // XCB__WIDGET__HXX

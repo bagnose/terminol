@@ -7,17 +7,17 @@
 #include <unistd.h>
 
 int main() {
-    std::cout << ESC << '[' << "?25l";      // hide cursor
+    std::cout << ESC << '[' << "?25l"; // hide cursor
 
-    const char values[] = { '|', '/', '-', '\\' };
+    const char values[] = {'|', '/', '-', '\\'};
 
-    for (int i = 0; ; ++i) {
+    for (int i = 0;; ++i) {
         auto c = values[i % 4];
         std::cout << '\r' << c << std::flush;
         usleep(50'000);
     }
 
-    std::cout << ESC << '[' << "?25h";      // show cursor
+    std::cout << ESC << '[' << "?25h"; // show cursor
 
     return 0;
 }

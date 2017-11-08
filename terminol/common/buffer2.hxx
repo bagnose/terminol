@@ -31,31 +31,29 @@ class Buffer2 {
     };
 
     Text         _text;
-    Cursor       _cursor;           // Current cursor.
-    SavedCursor  _savedCursor;      // Saved cursor.
+    Cursor       _cursor;      // Current cursor.
+    SavedCursor  _savedCursor; // Saved cursor.
     CharSubArray _charSubs;
-    //int16_t      _marginBegin = 0; // Index of first row in margin (inclusive).
-    int16_t      _marginEnd = 0;     // Index of last row in  margin (exclusive).
+    // int16_t      _marginBegin = 0; // Index of first row in margin (inclusive).
+    int16_t _marginEnd = 0; // Index of last row in  margin (exclusive).
 
 public:
     class I_Renderer {
     public:
-        virtual void bufferDrawBg(Pos     pos,
-                                  int16_t count,
-                                  UColor  color) = 0;
+        virtual void bufferDrawBg(Pos pos, int16_t count, UColor color) = 0;
         virtual void bufferDrawFg(Pos             pos,
                                   int16_t         count,
                                   UColor          color,
                                   AttrSet         attrs,
-                                  const uint8_t * str,       // nul-terminated
-                                  size_t          size) = 0;
+                                  const uint8_t * str, // nul-terminated
+                                  size_t          size)                          = 0;
         virtual void bufferDrawCursor(Pos             pos,
                                       UColor          fg,
                                       UColor          bg,
                                       AttrSet         attrs,
-                                      const uint8_t * str,    // nul-terminated, count 1
+                                      const uint8_t * str, // nul-terminated, count 1
                                       size_t          size,
-                                      bool            wrapNext) = 0;
+                                      bool            wrapNext)                    = 0;
 
     protected:
         ~I_Renderer() = default;
@@ -65,14 +63,12 @@ public:
     //
     //
 
-    Buffer2(I_Repository       & repository,
+    Buffer2(I_Repository &       repository,
             int16_t              rows,
             int16_t              cols,
             uint32_t             historyLimit,
-            const CharSubArray & charSubArray) :
-        _text(repository, rows, cols, historyLimit),
-        _charSubs(charSubArray)
-    {}
+            const CharSubArray & charSubArray)
+        : _text(repository, rows, cols, historyLimit), _charSubs(charSubArray) {}
 
     int16_t getRows() const { return _text.getRows(); }
     int16_t getCols() const { return _text.getCols(); }
@@ -93,12 +89,9 @@ public:
     }
 
 private:
-    const CharSub * getCharSub(CharSet charSet) const {
-        return _charSubs.get(charSet);
-    }
+    const CharSub * getCharSub(CharSet charSet) const { return _charSubs.get(charSet); }
 
-    void damageCell() {
-    }
+    void damageCell() {}
 };
 
 #endif // COMMON__BUFFER2__HXX

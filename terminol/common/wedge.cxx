@@ -7,14 +7,10 @@
 int main(int argc, char * argv[]) {
     size_t columns = 160;
 
-    if (argc > 1) {
-        columns = unstringify<size_t>(argv[1]);
-    }
+    if (argc > 1) { columns = unstringify<size_t>(argv[1]); }
 
     for (size_t i = 0; i != columns; ++i) {
-        for (size_t j = 0; j != i + 1; ++j) {
-            std::cout << (j == i ? '!' : '-');
-        }
+        for (size_t j = 0; j != i + 1; ++j) { std::cout << (j == i ? '!' : '-'); }
         std::cout << std::endl;
     }
 

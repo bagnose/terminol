@@ -45,7 +45,7 @@ public:
     };
 
     virtual void add(xcb_window_t window, I_Observer * observer) = 0;
-    virtual void remove(xcb_window_t window) = 0;
+    virtual void remove(xcb_window_t window)                     = 0;
 
 protected:
     ~I_Dispatcher() = default;
@@ -55,31 +55,24 @@ protected:
 //
 //
 
-class Dispatcher final :
-    public    I_Dispatcher,
-    protected I_Selector::I_ReadHandler
-{
+class Dispatcher final
+    : public I_Dispatcher
+    , protected I_Selector::I_ReadHandler {
 public:
-    Dispatcher(I_Selector & selector, xcb_connection_t * connection) :
-        _selector(selector),
-        _connection(connection)
-    {
+    Dispatcher(I_Selector & selector, xcb_connection_t * connection)
+        : _selector(selector), _connection(connection) {
         _selector.addReadable(xcb_get_file_descriptor(_connection), this);
     }
 
-    ~Dispatcher() {
-        _selector.removeReadable(xcb_get_file_descriptor(_connection));
-    }
+    ~Dispatcher() { _selector.removeReadable(xcb_get_file_descriptor(_connection)); }
 
     // I_Dispatcher overrides:
 
-    void add (xcb_window_t window, I_Observer * observer) override {
+    void add(xcb_window_t window, I_Observer * observer) override {
         _observers.insert({window, observer});
     }
 
-    void remove (xcb_window_t window) override {
-        _observers.erase(window);
-    }
+    void remove(xcb_window_t window) override { _observers.erase(window); }
 
     // This method is public so that X events can be processed in the
     // absence of the file descriptor becoming readable. Why the descriptor
@@ -89,7 +82,6 @@ public:
     void wait(uint8_t event_type);
 
 protected:
-
     void dispatch(uint8_t responseType, xcb_generic_event_t * event);
 
     // I_Selector::I_ReadHandler overrides:
@@ -99,10 +91,9 @@ protected:
 private:
     using Observers = std::unordered_map<xcb_window_t, I_Observer *>;
 
-    I_Selector       & _selector;
+    I_Selector &       _selector;
     xcb_connection_t * _connection;
     Observers          _observers;
 };
-
 
 #endif // XCB__DISPATCHER__HXX

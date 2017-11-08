@@ -19,17 +19,16 @@
 #include <xcb/xcb_keysyms.h>
 #include <cairo-xcb.h>
 
-class Screen final :
-    public    Widget,
-    protected Terminal::I_Observer,
-    protected FontManager::I_Client
-{
+class Screen final
+    : public Widget
+    , protected Terminal::I_Observer
+    , protected FontManager::I_Client {
 public:
     class I_Observer {
     public:
-        virtual void screenSync() = 0;
-        virtual void screenDefer(Screen * screen) = 0;
-        virtual void screenSelected(Screen * screen) = 0;
+        virtual void screenSync()                              = 0;
+        virtual void screenDefer(Screen * screen)              = 0;
+        virtual void screenSelected(Screen * screen)           = 0;
         virtual void screenReaped(Screen * screen, int status) = 0;
 
     protected:
@@ -39,62 +38,58 @@ public:
 private:
     using TerminalPtr = std::unique_ptr<Terminal>;
 
-    enum class Entitlement {
-        PERMANENT,
-        TRANSIENT,
-        PENDING
-    };
+    enum class Entitlement { PERMANENT, TRANSIENT, PENDING };
 
-    I_Observer      & _observer;
-    const Config    & _config;
-    Basics          & _basics;
-    const ColorSet  & _colorSet;
-    FontManager     & _fontManager;
-    FontSet         * _fontSet            = nullptr;
-    bool              _destroyed          = false;
-    xcb_gcontext_t    _gc                 = 0;
-    xcb_rectangle_t   _geometry           = {0, 0, 0, 0}; // Note x/y is wrt root window.
-    xcb_rectangle_t   _deferredGeometry   = {0, 0, 0, 0}; // Note x/y is wrt root window.
-    TerminalPtr       _terminal;
-    bool              _open               = false;
-    Pos               _pointerPos         = Pos::invalid();
+    I_Observer &     _observer;
+    const Config &   _config;
+    Basics &         _basics;
+    const ColorSet & _colorSet;
+    FontManager &    _fontManager;
+    FontSet *        _fontSet          = nullptr;
+    bool             _destroyed        = false;
+    xcb_gcontext_t   _gc               = 0;
+    xcb_rectangle_t  _geometry         = {0, 0, 0, 0}; // Note x/y is wrt root window.
+    xcb_rectangle_t  _deferredGeometry = {0, 0, 0, 0}; // Note x/y is wrt root window.
+    TerminalPtr      _terminal;
+    bool             _open       = false;
+    Pos              _pointerPos = Pos::invalid();
 
     // If the window is mapped then _pixmap and _surface are be valid. Otherwise not.
-    bool              _mapped             = false;
-    xcb_pixmap_t      _pixmap             = 0;            // Created when mapped, destroyed when unmapped.
-    cairo_surface_t * _surface            = nullptr;      // Ditto.
+    bool              _mapped  = false;
+    xcb_pixmap_t      _pixmap  = 0;       // Created when mapped, destroyed when unmapped.
+    cairo_surface_t * _surface = nullptr; // Ditto.
 
-    cairo_t         * _cr                 = nullptr;      // Cairo drawing context. Created only as required.
+    cairo_t * _cr = nullptr; // Cairo drawing context. Created only as required.
 
-    Entitlement       _entitlement        = Entitlement::PERMANENT;
-    std::string       _title;
-    std::string       _icon;
+    Entitlement _entitlement = Entitlement::PERMANENT;
+    std::string _title;
+    std::string _icon;
 
-    std::string       _primarySelection;
-    std::string       _clipboardSelection;
+    std::string _primarySelection;
+    std::string _clipboardSelection;
 
-    bool              _pressed            = false;        // Is there an active button press?
-    int               _pressCount         = 0;            // single, double, triple-click, etc
-    xcb_timestamp_t   _lastPressTime      = 0;
-    xcb_button_t      _button             = XCB_BUTTON_INDEX_ANY;
+    bool            _pressed       = false; // Is there an active button press?
+    int             _pressCount    = 0;     // single, double, triple-click, etc
+    xcb_timestamp_t _lastPressTime = 0;
+    xcb_button_t    _button        = XCB_BUTTON_INDEX_ANY;
 
-    bool              _cursorVisible      = true;
+    bool _cursorVisible = true;
 
-    bool              _deferralsAllowed   = true;
-    bool              _deferred           = false;
+    bool _deferralsAllowed = true;
+    bool _deferred         = false;
 
-    bool              _hadDeleteRequest   = false;
+    bool _hadDeleteRequest = false;
 
 public:
-    Screen(I_Observer         & observer,
-           const Config       & config,
-           I_Selector         & selector,
-           I_Deduper          & deduper,
-           AsyncInvoker       & asyncInvoker,
-           I_Dispatcher       & dispatcher,
-           Basics             & basics,
-           const ColorSet     & colorSet,
-           FontManager        & fontManager,
+    Screen(I_Observer &         observer,
+           const Config &       config,
+           I_Selector &         selector,
+           I_Deduper &          deduper,
+           AsyncInvoker &       asyncInvoker,
+           I_Dispatcher &       dispatcher,
+           Basics &             basics,
+           const ColorSet &     colorSet,
+           FontManager &        fontManager,
            const Tty::Command & command = Tty::Command());
 
     ~Screen();
@@ -148,9 +143,7 @@ protected:
     void terminalBell() override;
     void terminalResizeBuffer(int16_t rows, int16_t cols) override;
     bool terminalFixDamageBegin() override;
-    void terminalDrawBg(Pos     pos,
-                        int16_t count,
-                        UColor color) override;
+    void terminalDrawBg(Pos pos, int16_t count, UColor color) override;
     void terminalDrawFg(Pos             pos,
                         int16_t         count,
                         UColor          color,
@@ -165,11 +158,9 @@ protected:
                             size_t          size,
                             bool            wrapNext,
                             bool            focused) override;
-    void terminalDrawScrollbar(size_t  totalRows,
-                               size_t  historyOffset,
-                               int16_t visibleRows) override;
-    void terminalFixDamageEnd(const Region & damage,
-                              bool           scrollbar) override;
+    void
+         terminalDrawScrollbar(size_t totalRows, size_t historyOffset, int16_t visibleRows) override;
+    void terminalFixDamageEnd(const Region & damage, bool scrollbar) override;
     void terminalReaped(int exitStatus) override;
 
     // FontManager::I_Client implementation:
@@ -200,29 +191,22 @@ protected:
 private:
     DColor getColor(const UColor & ucolor) const {
         switch (ucolor.type) {
-            case UColor::Type::STOCK:
-                switch (ucolor.name) {
-                    case UColor::Name::TEXT_FG:
-                        return _colorSet.getNormalFgColor();
-                    case UColor::Name::TEXT_BG:
-                        return _colorSet.getNormalBgColor();
-                    case UColor::Name::SELECT_FG:
-                        return _colorSet.getSelectFgColor();
-                    case UColor::Name::SELECT_BG:
-                        return _colorSet.getSelectBgColor();
-                    case UColor::Name::CURSOR_FILL:
-                        return _colorSet.getCursorFillColor();
-                    case UColor::Name::CURSOR_TEXT:
-                        return _colorSet.getCursorTextColor();
-                }
+        case UColor::Type::STOCK:
+            switch (ucolor.name) {
+            case UColor::Name::TEXT_FG: return _colorSet.getNormalFgColor();
+            case UColor::Name::TEXT_BG: return _colorSet.getNormalBgColor();
+            case UColor::Name::SELECT_FG: return _colorSet.getSelectFgColor();
+            case UColor::Name::SELECT_BG: return _colorSet.getSelectBgColor();
+            case UColor::Name::CURSOR_FILL: return _colorSet.getCursorFillColor();
+            case UColor::Name::CURSOR_TEXT: return _colorSet.getCursorTextColor();
+            }
 
-                FATAL();
-            case UColor::Type::INDEXED:
-                return _colorSet.getIndexedColor(ucolor.index);
-            case UColor::Type::DIRECT:
-                auto v = ucolor.values;
-                auto d = 255.0;
-                return DColor{v.r / d, v.g / d, v.b / d};
+            FATAL();
+        case UColor::Type::INDEXED: return _colorSet.getIndexedColor(ucolor.index);
+        case UColor::Type::DIRECT:
+            auto v = ucolor.values;
+            auto d = 255.0;
+            return DColor{v.r / d, v.g / d, v.b / d};
         }
 
         FATAL();

@@ -9,7 +9,7 @@
 
 class I_Creator {
 public:
-    virtual void create() = 0;
+    virtual void create()   = 0;
     virtual void shutdown() = 0;
 
 protected:
@@ -21,31 +21,24 @@ protected:
 //
 
 class Server final : protected SocketServer::I_Observer {
-    I_Creator    & _creator;
-    SocketServer   _socket;
+    I_Creator &  _creator;
+    SocketServer _socket;
 
 public:
-    Server(I_Creator    & creator,
-           I_Selector   & selector,
-           const Config & config) :
-        _creator(creator),
-        _socket(*this, selector, config.socketPath)
-    {}
+    Server(I_Creator & creator, I_Selector & selector, const Config & config)
+        : _creator(creator), _socket(*this, selector, config.socketPath) {}
 
 protected:
-
     // SocketServer::I_Observer implementation:
 
     void serverConnected(int UNUSED(id)) override {
-        //PRINT("Server connected: " << id);
+        // PRINT("Server connected: " << id);
     }
 
     void serverReceived(int id, const uint8_t * data, size_t UNUSED(size)) override {
-        //PRINT("Server received bytes, " << id << ": " << size << "b");
+        // PRINT("Server received bytes, " << id << ": " << size << "b");
 
-        if (data[0] == 0xFF) {
-            _creator.shutdown();
-        }
+        if (data[0] == 0xFF) { _creator.shutdown(); }
         else {
             _creator.create();
         }
@@ -54,7 +47,7 @@ protected:
     }
 
     void serverDisconnected(int UNUSED(id)) override {
-        //PRINT("Server disconnected: " << id);
+        // PRINT("Server disconnected: " << id);
     }
 };
 

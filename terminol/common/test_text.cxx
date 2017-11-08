@@ -10,171 +10,163 @@
 
 namespace {
 
-std::string read(const Text & text, int32_t count, int16_t & row, int16_t & col) {
-    std::string result;
+    std::string read(const Text & text, int32_t count, int16_t & row, int16_t & col) {
+        std::string result;
 
-    for (int32_t i = 0; i != count; ++i) {
-        auto cell = text.getCell(row, col);
-        auto seq  = cell.seq;
+        for (int32_t i = 0; i != count; ++i) {
+            auto cell = text.getCell(row, col);
+            auto seq  = cell.seq;
 
-        std::copy(seq.bytes.begin(), seq.bytes.begin() + utf8::leadLength(seq.lead()),
-                  std::back_inserter(result));
-
-        ++col;
-
-        if (col == text.getCols()) {
-            ++row;
-            col = 0;
-        }
-    }
-
-    return result;
-}
-
-int32_t write(Text & text, const std::string & str, int16_t & row, int16_t & col) {
-    int32_t count = 0;
-    auto p = str;
-
-    auto iter = str.begin();
-
-    while (iter != str.end()) {
-        ++count;
-        utf8::Seq seq;
-
-        auto length = utf8::leadLength(*iter);
-        for (uint8_t i = 0; i != length; ++i) {
-            seq.bytes[i] = *iter++;
-        }
-
-        ASSERT(row < text.getRows() && col < text.getCols(), );
-
-        if (seq.lead() == '\n') {
-            if (row + 1 == text.getRows()) {
-                text.addLine(false);
-            }
-            else {
-                ++row;
-            }
-
-            col = 0;
-        }
-        else {
-            text.setCell(row, col, Cell::utf8(seq));
+            std::copy(seq.bytes.begin(),
+                      seq.bytes.begin() + utf8::leadLength(seq.lead()),
+                      std::back_inserter(result));
 
             ++col;
 
             if (col == text.getCols()) {
-                if (row + 1 == text.getRows()) {
-                    text.addLine(true);
-                }
+                ++row;
+                col = 0;
+            }
+        }
+
+        return result;
+    }
+
+    int32_t write(Text & text, const std::string & str, int16_t & row, int16_t & col) {
+        int32_t count = 0;
+        auto    p     = str;
+
+        auto iter = str.begin();
+
+        while (iter != str.end()) {
+            ++count;
+            utf8::Seq seq;
+
+            auto length = utf8::leadLength(*iter);
+            for (uint8_t i = 0; i != length; ++i) { seq.bytes[i] = *iter++; }
+
+            ASSERT(row < text.getRows() && col < text.getCols(), );
+
+            if (seq.lead() == '\n') {
+                if (row + 1 == text.getRows()) { text.addLine(false); }
                 else {
-                    text.makeContinued(row);
                     ++row;
                 }
 
                 col = 0;
             }
+            else {
+                text.setCell(row, col, Cell::utf8(seq));
+
+                ++col;
+
+                if (col == text.getCols()) {
+                    if (row + 1 == text.getRows()) { text.addLine(true); }
+                    else {
+                        text.makeContinued(row);
+                        ++row;
+                    }
+
+                    col = 0;
+                }
+            }
         }
+
+        return count;
     }
 
-    return count;
-}
+    void testBasics(Test & test) {
+        SimpleRepository repository;
+        Text             text(repository, 1, 8, 0);
+        std::string      input = "hello";
 
+        int16_t row = 0;
+        int16_t col = 0;
+        write(text, input.c_str(), row, col);
 
-void testBasics(Test & test) {
-    SimpleRepository repository;
-    Text text(repository, 1, 8, 0);
-    std::string input = "hello";
+        row         = 0;
+        col         = 0;
+        auto output = read(text, input.size(), row, col);
 
-    int16_t row = 0;
-    int16_t col = 0;
-    write(text, input.c_str(), row, col);
+        test.enforceEqual(input, output, "Write/read '" + input + "'.");
+    }
 
-    row = 0;
-    col = 0;
-    auto output = read(text, input.size(), row, col);
+    void testStraddlingPara(Test & test) {
+        SimpleRepository repository;
+        Text             text(repository, 1, 24, 0);
+        // Note, the dash in this string is utf-8.
+        std::string
+            input = "It was a dark and stormy night; the rain fell in torrents — except "
+                    "at occasional intervals, when it was checked by a violent gust of wind "
+                    "which swept up the streets (for it is in London that our scene lies), "
+                    "rattling along the housetops, and fiercely agitating the scanty flame "
+                    "of the lamps that struggled against the darkness.";
 
-    test.enforceEqual(input, output, "Write/read '" + input + "'.");
-}
+        int16_t row   = 0;
+        int16_t col   = 0;
+        int32_t count = write(text, input.c_str(), row, col);
 
-void testStraddlingPara(Test & test) {
-    SimpleRepository repository;
-    Text text(repository, 1, 24, 0);
-    // Note, the dash in this string is utf-8.
-    std::string input =
-        "It was a dark and stormy night; the rain fell in torrents — except " \
-        "at occasional intervals, when it was checked by a violent gust of wind " \
-        "which swept up the streets (for it is in London that our scene lies), " \
-        "rattling along the housetops, and fiercely agitating the scanty flame " \
-        "of the lamps that struggled against the darkness.";
+        row         = -count / text.getCols();
+        col         = 0;
+        auto output = read(text, count, row, col);
+        test.enforceEqual(input, output, "Straddling write/read.");
+    }
 
-    int16_t row = 0;
-    int16_t col = 0;
-    int32_t count = write(text, input.c_str(), row, col);
+    void testHistorical(Test & test) {
+        SimpleRepository repository;
+        Text             text(repository, 1, 24, 1);
+        int16_t          row = 0;
+        int16_t          col = 0;
+        write(text, "hello\nworld", row, col);
+        text.dumpHistory(std::cout, true);
+        text.dumpCurrent(std::cout, true);
+    }
 
-    row = -count / text.getCols();
-    col = 0;
-    auto output = read(text, count, row, col);
-    test.enforceEqual(input, output, "Straddling write/read.");
-}
+    void testRfind(Test & test) {
+        SimpleRepository repository;
+        Text             text(repository, 3, 10, 0);
 
-void testHistorical(Test & test) {
-    SimpleRepository repository;
-    Text text(repository, 1, 24, 1);
-    int16_t row = 0;
-    int16_t col = 0;
-    write(text, "hello\nworld", row, col);
-    text.dumpHistory(std::cout, true);
-    text.dumpCurrent(std::cout, true);
-}
+        int16_t row = 0;
+        int16_t col = 0;
+        write(text, "hello\nworld\n", row, col);
+        // text.dumpCurrent(std::cout, true);
 
-void testRfind(Test & test) {
-    SimpleRepository repository;
-    Text text(repository, 3, 10, 0);
+        Regex        regex("o");
+        Text::Marker marker = text.end();
+        bool         ongoing;
 
-    int16_t row = 0;
-    int16_t col = 0;
-    write(text, "hello\nworld\n", row, col);
-    //text.dumpCurrent(std::cout, true);
+        // 3rd line
+        auto matches = text.rfind(regex, marker, ongoing);
+        test.enforce(ongoing, "Ongoing (3rd line).");
+        test.enforce(matches.empty(), "No matches (3rd line).");
 
-    Regex        regex("o");
-    Text::Marker marker = text.end();
-    bool         ongoing;
+        // 2nd line
+        matches = text.rfind(regex, marker, ongoing);
+        test.enforce(ongoing, "Ongoing (2nd line).");
+        test.enforce(matches.size() == 1, "One match (2nd line).");
+        test.enforce(matches[0].row() == 1 && matches[0].col() == 1 && matches[0].length() == 1,
+                     "Match specifics (2nd line).");
 
-    // 3rd line
-    auto matches = text.rfind(regex, marker, ongoing);
-    test.enforce(ongoing, "Ongoing (3rd line).");
-    test.enforce(matches.empty(), "No matches (3rd line).");
+        // 1st line
+        matches = text.rfind(regex, marker, ongoing);
+        test.enforce(ongoing, "Ongoing (1st line).");
+        test.enforce(matches.size() == 1, "One match (1st line).");
+        test.enforce(matches[0].row() == 0 && matches[0].col() == 4 && matches[0].length() == 1,
+                     "Match specifics (1st line).");
 
-    // 2nd line
-    matches = text.rfind(regex, marker, ongoing);
-    test.enforce(ongoing, "Ongoing (2nd line).");
-    test.enforce(matches.size() == 1, "One match (2nd line).");
-    test.enforce(matches[0].row()    == 1 &&
-                matches[0].col()    == 1 &&
-                matches[0].length() == 1, "Match specifics (2nd line).");
+        // hit the end
+        matches = text.rfind(regex, marker, ongoing);
+        test.enforce(!ongoing, "Not ongoing.");
+    }
 
-    // 1st line
-    matches = text.rfind(regex, marker, ongoing);
-    test.enforce(ongoing, "Ongoing (1st line).");
-    test.enforce(matches.size() == 1, "One match (1st line).");
-    test.enforce(matches[0].row()    == 0 &&
-                matches[0].col()    == 4 &&
-                matches[0].length() == 1, "Match specifics (1st line).");
-
-    // hit the end
-    matches = text.rfind(regex, marker, ongoing);
-    test.enforce(!ongoing, "Not ongoing.");
-}
-
-} // namespace {anonymous}
+} // namespace
 
 int main() {
     Test test("common/text");
-    //test.run("basics", testBasics);
+    // test.run("basics", testBasics);
     test.run("historical", testHistorical);
-    //test.run("straddling-para", testStraddlingPara);
-    //test.run("rfind", testRfind);
+    // test.run("straddling-para", testStraddlingPara);
+    // test.run("rfind", testRfind);
 
     return 0;
 }

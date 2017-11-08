@@ -16,51 +16,46 @@
 
 #include <xkbcommon/xkbcommon.h>
 
-class Terminal final :
-    protected VtStateMachine::I_Observer,
-    protected Tty::I_Observer,
-    protected Buffer::I_Renderer,
-    protected Uncopyable
-{
+class Terminal final
+    : protected VtStateMachine::I_Observer
+    , protected Tty::I_Observer
+    , protected Buffer::I_Renderer
+    , protected Uncopyable {
 public:
     enum class Selection { PRIMARY, CLIPBOARD };
 
     class I_Observer {
     public:
-        virtual const std::string & terminalGetDisplayName() const = 0;
-        virtual void terminalCopy(const std::string & text, Selection selection) = 0;
-        virtual void terminalPaste(Selection selection) = 0;
-        virtual void terminalResizeLocalFont(int delta) = 0;
-        virtual void terminalResizeGlobalFont(int delta) = 0;
-        virtual void terminalResetTitleAndIcon() = 0;
-        virtual void terminalSetWindowTitle(const std::string & str, bool transient) = 0;
-        virtual void terminalSetIconName(const std::string & str) = 0;
-        virtual void terminalBell() = 0;
-        virtual void terminalResizeBuffer(int16_t rows, int16_t cols) = 0;
-        virtual bool terminalFixDamageBegin() = 0;
-        virtual void terminalDrawBg(Pos     pos,
-                                    int16_t count,
-                                    UColor  color) = 0;
+        virtual const std::string & terminalGetDisplayName() const                              = 0;
+        virtual void                terminalCopy(const std::string & text, Selection selection) = 0;
+        virtual void                terminalPaste(Selection selection)                          = 0;
+        virtual void                terminalResizeLocalFont(int delta)                          = 0;
+        virtual void                terminalResizeGlobalFont(int delta)                         = 0;
+        virtual void                terminalResetTitleAndIcon()                                 = 0;
+        virtual void terminalSetWindowTitle(const std::string & str, bool transient)            = 0;
+        virtual void terminalSetIconName(const std::string & str)                               = 0;
+        virtual void terminalBell()                                                             = 0;
+        virtual void terminalResizeBuffer(int16_t rows, int16_t cols)                           = 0;
+        virtual bool terminalFixDamageBegin()                                                   = 0;
+        virtual void terminalDrawBg(Pos pos, int16_t count, UColor color)                       = 0;
         virtual void terminalDrawFg(Pos             pos,
                                     int16_t         count,
                                     UColor          color,
                                     AttrSet         attrs,
-                                    const uint8_t * str,       // nul-terminated
-                                    size_t          size) = 0;
+                                    const uint8_t * str, // nul-terminated
+                                    size_t          size)                                                = 0;
         virtual void terminalDrawCursor(Pos             pos,
                                         UColor          fg,
                                         UColor          bg,
                                         AttrSet         attrs,
-                                        const uint8_t * str,    // nul-terminated, count 1
+                                        const uint8_t * str, // nul-terminated, count 1
                                         size_t          size,
                                         bool            wrapNext,
-                                        bool            focused) = 0;
-        virtual void terminalDrawScrollbar(size_t  totalRows,
-                                           size_t  historyOffset,
-                                           int16_t visibleRows) = 0;
-        virtual void terminalFixDamageEnd(const Region & damage,
-                                          bool           scrollbar) = 0;
-        virtual void terminalReaped(int status) = 0;
+                                        bool            focused)                                           = 0;
+        virtual void
+                     terminalDrawScrollbar(size_t totalRows, size_t historyOffset, int16_t visibleRows) = 0;
+        virtual void terminalFixDamageEnd(const Region & damage, bool scrollbar) = 0;
+        virtual void terminalReaped(int status)                                  = 0;
 
     protected:
         ~I_Observer() = default;
@@ -70,43 +65,43 @@ public:
     //
     //
 
-    enum class Button    { LEFT, MIDDLE, RIGHT };
+    enum class Button { LEFT, MIDDLE, RIGHT };
     enum class ScrollDir { UP, DOWN };
 
 private:
     enum class Press { NONE, SELECT, REPORT };
 
-    I_Observer      & _observer;
+    I_Observer & _observer;
 
-    const Config    & _config;
+    const Config &    _config;
     const I_Deduper & _deduper;
 
-    Buffer            _priBuffer;
-    Buffer            _altBuffer;
-    Buffer          * _buffer;
+    Buffer   _priBuffer;
+    Buffer   _altBuffer;
+    Buffer * _buffer;
 
-    ModeSet           _modes;
+    ModeSet _modes;
 
-    Press             _press       = Press::NONE;
-    Button            _button      = Button::LEFT;
-    Pos               _pointerPos;
-    bool              _focused     = true;
+    Press  _press  = Press::NONE;
+    Button _button = Button::LEFT;
+    Pos    _pointerPos;
+    bool   _focused = true;
 
-    utf8::Seq         _lastSeq;
+    utf8::Seq _lastSeq;
 
-    utf8::Machine     _utf8Machine;
-    VtStateMachine    _vtMachine;
-    Tty               _tty;
+    utf8::Machine  _utf8Machine;
+    VtStateMachine _vtMachine;
+    Tty            _tty;
 
 public:
-    Terminal(I_Observer         & observer,
-             const Config       & config,
-             I_Selector         & selector,
-             I_Deduper          & deduper,
-             AsyncInvoker       & asyncInvoker,
+    Terminal(I_Observer &         observer,
+             const Config &       config,
+             I_Selector &         selector,
+             I_Deduper &          deduper,
+             AsyncInvoker &       asyncInvoker,
              int16_t              rows,
              int16_t              cols,
-             const std::string  & windowId,
+             const std::string &  windowId,
              const Tty::Command & command);
 
     // Geometry:
@@ -116,87 +111,85 @@ public:
 
     // Events:
 
-    void     resize(int16_t rows, int16_t cols);
+    void resize(int16_t rows, int16_t cols);
 
-    void     redraw();
+    void redraw();
 
-    bool     keyPress(xkb_keysym_t keySym, ModifierSet modifiers);
-    void     buttonPress(Button button, int count, ModifierSet modifiers,
-                         bool within, Pos pos, Hand hand);
-    void     pointerMotion(ModifierSet modifiers, bool within, Pos pos, Hand hand);
-    void     buttonRelease(bool broken, ModifierSet modifiers);
-    void     scrollWheel(ScrollDir dir, ModifierSet modifiers, bool within, Pos pos);
+    bool keyPress(xkb_keysym_t keySym, ModifierSet modifiers);
+    void
+         buttonPress(Button button, int count, ModifierSet modifiers, bool within, Pos pos, Hand hand);
+    void pointerMotion(ModifierSet modifiers, bool within, Pos pos, Hand hand);
+    void buttonRelease(bool broken, ModifierSet modifiers);
+    void scrollWheel(ScrollDir dir, ModifierSet modifiers, bool within, Pos pos);
 
-    void     paste(const uint8_t * data, size_t size);
+    void paste(const uint8_t * data, size_t size);
 
-    void     tryReap();
-    void     killReap();
-    void     clearSelection();
+    void tryReap();
+    void killReap();
+    void clearSelection();
 
-    void     focusChange(bool focused);
+    void focusChange(bool focused);
 
-    bool     hasSubprocess() const;
+    bool hasSubprocess() const;
 
 private:
     enum class Trigger { TTY, FOCUS, CLIENT, OTHER };
 
-    bool     handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers);
+    bool handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers);
 
-    void     fixDamage(Trigger trigger);
+    void fixDamage(Trigger trigger);
 
-    void     draw(Trigger trigger, Region & damage, bool & scrollbar);
+    void draw(Trigger trigger, Region & damage, bool & scrollbar);
 
-    void     write(const uint8_t * data, size_t size);
-    void     echo(const uint8_t * data, size_t size);
+    void write(const uint8_t * data, size_t size);
+    void echo(const uint8_t * data, size_t size);
 
-    void     sendMouseButton(int num, ModifierSet modifiers, Pos pos);
+    void sendMouseButton(int num, ModifierSet modifiers, Pos pos);
 
-    void     resetAll();
+    void resetAll();
 
-    void     processRead(const uint8_t * data, size_t size);
-    void     processChar(utf8::Seq seq, utf8::Length length);
+    void processRead(const uint8_t * data, size_t size);
+    void processChar(utf8::Seq seq, utf8::Length length);
 
-    void     processAttributes(const std::vector<int32_t> & args);
-    void     processModes(uint8_t priv, bool set, const std::vector<int32_t> & args);
+    void processAttributes(const std::vector<int32_t> & args);
+    void processModes(uint8_t priv, bool set, const std::vector<int32_t> & args);
 
     static const CharSub * lookupCharSub(uint8_t code);
 
     // VtStateMachine::I_Observer implementation:
 
-    void     machineNormal(utf8::Seq seq, utf8::Length length) override;
-    void     machineControl(uint8_t control) override;
-    void     machineSimpleEsc(const SimpleEsc & esc) override;
-    void     machineCsiEsc(const CsiEsc & esc) override;
-    void     machineDcsEsc(const DcsEsc & esc) override;
-    void     machineOscEsc(const OscEsc & esc) override;
+    void machineNormal(utf8::Seq seq, utf8::Length length) override;
+    void machineControl(uint8_t control) override;
+    void machineSimpleEsc(const SimpleEsc & esc) override;
+    void machineCsiEsc(const CsiEsc & esc) override;
+    void machineDcsEsc(const DcsEsc & esc) override;
+    void machineOscEsc(const OscEsc & esc) override;
 
     // Tty::I_Observer implementation:
 
-    void     ttyData(const uint8_t * data, size_t size) override;
-    void     ttySync() override;
-    void     ttyReaped(int status) override;
+    void ttyData(const uint8_t * data, size_t size) override;
+    void ttySync() override;
+    void ttyReaped(int status) override;
 
     // Buffer::I_Renderer implementation:
 
-    void     bufferDrawBg(Pos     pos,
-                          int16_t count,
-                          UColor  color) override;
-    void     bufferDrawFg(Pos             pos,
-                          int16_t         count,
-                          UColor          color,
+    void bufferDrawBg(Pos pos, int16_t count, UColor color) override;
+    void bufferDrawFg(Pos             pos,
+                      int16_t         count,
+                      UColor          color,
+                      AttrSet         attrs,
+                      const uint8_t * str,
+                      size_t          size) override;
+    void bufferDrawCursor(Pos             pos,
+                          UColor          fg,
+                          UColor          bg,
                           AttrSet         attrs,
                           const uint8_t * str,
-                          size_t          size) override;
-    void     bufferDrawCursor(Pos             pos,
-                              UColor          fg,
-                              UColor          bg,
-                              AttrSet         attrs,
-                              const uint8_t * str,
-                              size_t          size,
-                              bool            wrapNext) override;
+                          size_t          size,
+                          bool            wrapNext) override;
 };
 
-std::ostream & operator << (std::ostream & ost, Terminal::Button button);
-std::ostream & operator << (std::ostream & ost, Terminal::ScrollDir dir);
+std::ostream & operator<<(std::ostream & ost, Terminal::Button button);
+std::ostream & operator<<(std::ostream & ost, Terminal::ScrollDir dir);
 
 #endif // COMMON__TERMINAL__HXX

@@ -7,7 +7,7 @@
 #include <thread>
 
 class AsyncInvoker final {
-    using Function      = std::function<void ()>;
+    using Function      = std::function<void()>;
     using FunctionQueue = Queue<Function>;
 
     FunctionQueue _queue;
@@ -22,15 +22,11 @@ public:
     }
 
     // Callable from multiple threads
-    void add(const Function & function) {
-        _queue.add(function);
-    }
+    void add(const Function & function) { _queue.add(function); }
 
 protected:
     void background() {
-        while (auto function = _queue.remove()) {
-            (*function)();
-        }
+        while (auto function = _queue.remove()) { (*function)(); }
     }
 };
 

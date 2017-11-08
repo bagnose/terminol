@@ -16,8 +16,8 @@ class CmdLine {
 public:
     class Handler {
     public:
-        virtual bool isNegatable() const = 0;
-        virtual bool wantsValue() const = 0;
+        virtual bool isNegatable() const                             = 0;
+        virtual bool wantsValue() const                              = 0;
         virtual void handle(bool negated, const std::string & value) = 0;
 
         virtual ~Handler() {}
@@ -28,33 +28,29 @@ public:
 private:
     struct Option {
         HandlerPtr  handler;
-        char        shortOpt  = '\0';
+        char        shortOpt = '\0';
         std::string longOpt;
         bool        mandatory = false;
         bool        serviced  = false;
     };
 
-    std::string                      _help;
-    std::string                      _version;
-    std::string                      _delimiter;
+    std::string _help;
+    std::string _version;
+    std::string _delimiter;
 
-    std::vector<Option>              _options;
+    std::vector<Option> _options;
 
-    std::map<char,        Handler *> _shortToHandler;
+    std::map<char, Handler *>        _shortToHandler;
     std::map<std::string, Handler *> _longToHandler;
 
 public:
     CmdLine(const std::string & help,
             const std::string & version,
-            const std::string & delimiter = "--") :
-        _help(help),
-        _version(version),
-        _delimiter(delimiter) {}
+            const std::string & delimiter = "--")
+        : _help(help), _version(version), _delimiter(delimiter) {}
 
-    void add(HandlerPtr && handler,
-             char shortOpt,
-             const std::string & longOpt,
-             bool mandatory = false) {
+    void
+    add(HandlerPtr && handler, char shortOpt, const std::string & longOpt, bool mandatory = false) {
         ENFORCE(!longOpt.empty() || shortOpt != '\0', );
 
         if (!longOpt.empty()) {
@@ -72,7 +68,7 @@ public:
 
     std::vector<std::string> parse(int argc, const char ** argv) {
         std::vector<std::string> arguments;
-        bool ignore = false;
+        bool                     ignore = false;
 
         ASSERT(argc >= 1, );
         for (int i = 1; i != argc; ++i) {
@@ -93,18 +89,16 @@ public:
                 continue;
             }
 
-            if (ignore || str.empty() || str.front() != '-') {
-                arguments.push_back(str);
-            }
+            if (ignore || str.empty() || str.front() != '-') { arguments.push_back(str); }
             else if (str == "--") {
                 ignore = true;
             }
             else {
                 // It must be an option
                 if (str.substr(0, 2) == "--") {
-                    size_t j = 2;
+                    size_t      j = 2;
                     std::string value;
-                    bool negated = false;
+                    bool        negated = false;
 
                     if (str.substr(j, 3) == "no-") {
                         negated = true;
@@ -116,13 +110,11 @@ public:
 
                     if (e == std::string::npos) {
                         // No value here
-                        auto opt = str.substr(j);
+                        auto opt     = str.substr(j);
                         auto handler = lookupLong(opt);
                         if (handler->wantsValue()) {
                             ++i;
-                            if (i == argc) {
-                                THROW(ConversionError("No value provided"));
-                            }
+                            if (i == argc) { THROW(ConversionError("No value provided")); }
                             value = argv[i];
                             handler->handle(negated, value);
                         }
@@ -131,13 +123,11 @@ public:
                         }
                     }
                     else {
-                        auto opt = str.substr(j, e - j);
-                        j = e + 1;
-                        value = str.substr(j);
+                        auto opt     = str.substr(j, e - j);
+                        j            = e + 1;
+                        value        = str.substr(j);
                         auto handler = lookupLong(opt);
-                        if (handler->wantsValue()) {
-                            handler->handle(negated, value);
-                        }
+                        if (handler->wantsValue()) { handler->handle(negated, value); }
                         else {
                             THROW(ConversionError("No value required for option."));
                         }
@@ -146,7 +136,7 @@ public:
                 else if (str.substr(0, 1) == "-") {
                     // Short option.
                     std::string value;
-                    bool negated = false;
+                    bool        negated = false;
 
                     for (size_t j = 1; j != str.size(); ++j) {
                         auto handler = lookupShort(str[j]);
@@ -187,25 +177,25 @@ protected:
 
 class BoolHandler : public CmdLine::Handler {
     bool & _value;
+
 public:
     explicit BoolHandler(bool & value) : _value(value) {}
 
     bool isNegatable() const override { return true; }
-    bool wantsValue()  const override { return false; }
+    bool wantsValue() const override { return false; }
 
-    void handle(bool negated, const std::string & UNUSED(value)) override {
-        _value = !negated;
-    }
+    void handle(bool negated, const std::string & UNUSED(value)) override { _value = !negated; }
 };
 
 template <class V>
 class IStreamHandler final : public CmdLine::Handler {
     V & _value;
+
 public:
     explicit IStreamHandler(V & value) : _value(value) {}
 
     bool isNegatable() const override { return false; }
-    bool wantsValue()  const override { return true; }
+    bool wantsValue() const override { return true; }
 
     void handle(bool UNUSED(negated), const std::string & value) override {
         _value = unstringify<V>(value);
@@ -216,15 +206,14 @@ using StringHandler = IStreamHandler<std::string>;
 using IntHandler    = IStreamHandler<int>;
 
 class MiscHandler final : public CmdLine::Handler {
-    using Function = std::function<void (const std::string &)>;
+    using Function = std::function<void(const std::string &)>;
     Function _func;
+
 public:
     explicit MiscHandler(const Function & func) : _func(func) {}
 
     bool isNegatable() const override { return false; }
-    bool wantsValue()  const override { return true; }
+    bool wantsValue() const override { return true; }
 
-    void handle(bool UNUSED(negated), const std::string & value) override {
-        _func(value);
-    }
+    void handle(bool UNUSED(negated), const std::string & value) override { _func(value); }
 };

@@ -45,9 +45,7 @@ public:
         std::unique_lock<std::mutex> lock(_mutex);
         _condition.wait(lock, [this]() { return _finalised || !_queue.empty(); });
 
-        if (_queue.empty()) {
-            return std::nullopt;
-        }
+        if (_queue.empty()) { return std::nullopt; }
         else {
             auto t = std::move(_queue.front());
             _queue.pop();

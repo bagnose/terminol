@@ -16,9 +16,13 @@
 template <typename T>
 T clamp(T val, T min, T max) {
     ASSERT(min <= max, );
-    if      (val < min) { return min; }
-    else if (val > max) { return max; }
-    else                { return val; }
+    if (val < min) { return min; }
+    else if (val > max) {
+        return max;
+    }
+    else {
+        return val;
+    }
 }
 
 std::optional<std::vector<std::string>> split(const std::string & line,
@@ -26,22 +30,22 @@ std::optional<std::vector<std::string>> split(const std::string & line,
 
 namespace detail {
 
-template <typename T>
-void to_ostream(std::ostream & ost, const T & v) {
-    ost << v;
-}
+    template <typename T>
+    void to_ostream(std::ostream & ost, const T & v) {
+        ost << v;
+    }
 
-inline void to_ostream(std::ostream & ost, const bool & v) {
-    std::ios_base::fmtflags flags = ost.flags(); // stash current format flags
-    ost << std::boolalpha << v;
-    ost.flags(flags); // reset to previous format flags
-}
+    inline void to_ostream(std::ostream & ost, const bool & v) {
+        std::ios_base::fmtflags flags = ost.flags(); // stash current format flags
+        ost << std::boolalpha << v;
+        ost.flags(flags); // reset to previous format flags
+    }
 
-template <typename T, typename... Args>
-void to_ostream(std::ostream & ost, const T & first, const Args &... remaining) {
-    to_ostream(ost, first);
-    to_ostream(ost, remaining...);
-}
+    template <typename T, typename... Args>
+    void to_ostream(std::ostream & ost, const T & first, const Args &... remaining) {
+        to_ostream(ost, first);
+        to_ostream(ost, remaining...);
+    }
 
 } // namespace detail
 
@@ -55,7 +59,7 @@ std::string stringify(const T & first, const Args &... remaining) {
 template <typename T>
 T unstringify(const std::string & str) {
     std::istringstream ist(str + '\n');
-    auto t = T{};
+    auto               t = T{};
     ist >> t;
     THROW_UNLESS(ist.good(), ConversionError("Failed to unstringify: '" + str + "'"));
     return t;
@@ -68,13 +72,13 @@ inline std::string unstringify<>(const std::string & str) {
 
 template <>
 inline bool unstringify<>(const std::string & str) {
-    if (str == "0" || str == "false") {
-        return false;
-    }
+    if (str == "0" || str == "false") { return false; }
     else if (str == "1" || str == "true") {
         return true;
     }
-    else { THROW(ConversionError("Failed to unstringify: " + str)); }
+    else {
+        THROW(ConversionError("Failed to unstringify: " + str));
+    }
 }
 
 template <typename T>
@@ -82,7 +86,9 @@ std::string explicitSign(T t) {
     static_assert(std::is_arithmetic_v<T>);
     std::ostringstream ost;
     if (t < 0) { ost << '-'; }
-    else       { ost << '+'; }
+    else {
+        ost << '+';
+    }
     ost << std::abs(t);
     return ost.str();
 }
@@ -93,35 +99,31 @@ std::string nthStr(T t) {
     std::ostringstream ost;
     ost << t;
     switch (t) {
-        case 0:
-            ost << "th";
-            break;
-        case 1:
-            ost << "st";
-            break;
-        case 2:
-            ost << "nd";
-            break;
-        case 3:
-            ost << "rd";
-            break;
-        default:
-            ost << "th";
-            break;
+    case 0: ost << "th"; break;
+    case 1: ost << "st"; break;
+    case 2: ost << "nd"; break;
+    case 3: ost << "rd"; break;
+    default: ost << "th"; break;
     }
     return ost.str();
 }
 
 inline char nibbleToHex(uint8_t nibble) {
     ASSERT(nibble < 0x10, );
-    if (nibble < 0xA) { return '0' +  nibble;       }
-    else              { return 'A' + (nibble - 10); }
+    if (nibble < 0xA) { return '0' + nibble; }
+    else {
+        return 'A' + (nibble - 10);
+    }
 }
 
 inline uint8_t hexToNibble(char hex) {
-    if      (hex >= '0' && hex <= '9') { return hex - '0'; }
-    else if (hex >= 'A' && hex <= 'F') { return 10 + hex - 'A'; }
-    else if (hex >= 'a' && hex <= 'f') { return 10 + hex - 'a'; }
+    if (hex >= '0' && hex <= '9') { return hex - '0'; }
+    else if (hex >= 'A' && hex <= 'F') {
+        return 10 + hex - 'A';
+    }
+    else if (hex >= 'a' && hex <= 'f') {
+        return 10 + hex - 'a';
+    }
     else {
         std::ostringstream ost;
         ost << "Illegal hex char: " << hex;
@@ -143,7 +145,7 @@ std::string toHexString(T t) {
     std::string str;
     for (size_t i = 0; i < sizeof(T); ++i) {
         str.push_back(nibbleToHex(t >> (8 * (sizeof(T) - i - 1) + 4) & 0x0F));
-        str.push_back(nibbleToHex(t >> (8 * (sizeof(T) - i - 1))     & 0x0F));
+        str.push_back(nibbleToHex(t >> (8 * (sizeof(T) - i - 1)) & 0x0F));
     }
     return str;
 }
@@ -162,15 +164,7 @@ inline bool exor(bool a, bool b) noexcept {
 }
 
 inline std::string humanSize(size_t bytes) {
-    const char * UNITS[] = {
-        "B",
-        "KB",
-        "MB",
-        "GB",
-        "PB",
-        "EB",
-        "ZB"
-    };
+    const char * UNITS[] = {"B", "KB", "MB", "GB", "PB", "EB", "ZB"};
 
     auto offset = 0;
     auto value  = bytes;

@@ -7,12 +7,8 @@
 
 Para::Para() : _styles(), _string(), _indices({0}) {}
 
-Para::Para(std::vector<Style>   styles,
-           std::vector<uint8_t> string) :
-    _styles(std::move(styles)),
-    _string(std::move(string)),
-    _indices()
-{
+Para::Para(std::vector<Style> styles, std::vector<uint8_t> string)
+    : _styles(std::move(styles)), _string(std::move(string)), _indices() {
     _indices.reserve(_styles.size() + 1);
     int32_t index = 0;
     ASSERT(_string.size() <= std::numeric_limits<decltype(index)>::max(), );
@@ -20,7 +16,7 @@ Para::Para(std::vector<Style>   styles,
     for (auto iter = _string.begin(); iter != _string.end(); /* */) {
         _indices.push_back(index);
         uint8_t length = utf8::leadLength(*iter);
-        iter  += length;
+        iter += length;
         index += length;
     }
     _indices.push_back(index);
@@ -29,7 +25,7 @@ Para::Para(std::vector<Style>   styles,
 }
 
 const uint8_t * Para::getStringAtOffset(uint32_t offset) const {
-    offset = std::min(offset, getLength());
+    offset         = std::min(offset, getLength());
     uint32_t index = _indices[offset];
     // Note, index can be out-of-range, in which case the result must not
     // be dereferenced.
@@ -91,9 +87,7 @@ void Para::insertCell(uint32_t offset, uint32_t end, const Cell & cell) {
 }
 
 Cell Para::getCell(uint32_t offset) const {
-    if (offset >= getLength()) {
-        return Cell::blank();
-    }
+    if (offset >= getLength()) { return Cell::blank(); }
     else {
         Cell cell = Cell::blank();
 
@@ -117,15 +111,11 @@ void Para::truncate(uint32_t length) {
 }
 
 void Para::dump(std::ostream & ost, bool decorate) const {
-    if (decorate) {
-        ost << std::setw(3) << "len=" << getLength() << " '";
-    }
+    if (decorate) { ost << std::setw(3) << "len=" << getLength() << " '"; }
 
     ost << std::string(_string.begin(), _string.end());
 
-    if (decorate) {
-        ost << "'";
-    }
+    if (decorate) { ost << "'"; }
 
     ost << std::endl;
 }
@@ -133,9 +123,7 @@ void Para::dump(std::ostream & ost, bool decorate) const {
 void Para::expand(uint32_t newSize) {
     auto oldSize = getLength();
 
-    if (newSize <= oldSize) {
-        return;
-    }
+    if (newSize <= oldSize) { return; }
 
     _styles.resize(newSize);
 

@@ -16,11 +16,11 @@ public:
     class I_Observer {
     public:
         virtual void machineNormal(utf8::Seq seq, utf8::Length length) = 0;
-        virtual void machineControl(uint8_t control) = 0;
-        virtual void machineSimpleEsc(const SimpleEsc & esc) = 0;
-        virtual void machineCsiEsc(const CsiEsc & esc) = 0;
-        virtual void machineDcsEsc(const DcsEsc & esc) = 0;
-        virtual void machineOscEsc(const OscEsc & esc) = 0;
+        virtual void machineControl(uint8_t control)                   = 0;
+        virtual void machineSimpleEsc(const SimpleEsc & esc)           = 0;
+        virtual void machineCsiEsc(const CsiEsc & esc)                 = 0;
+        virtual void machineDcsEsc(const DcsEsc & esc)                 = 0;
+        virtual void machineOscEsc(const OscEsc & esc)                 = 0;
 
     protected:
         ~I_Observer() = default;
@@ -44,10 +44,10 @@ private:
         DCS_PASSTHROUGH
     };
 
-    I_Observer           & _observer;
-    const Config         & _config;
-    State                  _state;
-    std::vector<uint8_t>   _escSeq;
+    I_Observer &         _observer;
+    const Config &       _config;
+    State                _state;
+    std::vector<uint8_t> _escSeq;
 
 public:
     VtStateMachine(I_Observer & observer, const Config & config);
@@ -69,7 +69,6 @@ protected:
     void dcsIgnore(utf8::Seq seq, utf8::Length length);
     void dcsIntermediate(utf8::Seq seq, utf8::Length length);
     void dcsPassthrough(utf8::Seq seq, utf8::Length length);
-
 
     void processControl(uint8_t c);
     void processEsc(const std::vector<uint8_t> & seq);

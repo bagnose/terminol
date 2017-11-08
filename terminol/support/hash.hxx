@@ -9,7 +9,7 @@
 template <class T>
 struct SDBM {
     using Type = T;
-    T operator () (T val, uint8_t next) noexcept {
+    T operator()(T val, uint8_t next) noexcept {
         return static_cast<T>(next) + (val << 6) + (val << 16) - val;
     }
 };

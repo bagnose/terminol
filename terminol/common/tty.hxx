@@ -11,40 +11,39 @@
 #include <vector>
 #include <string>
 
-class Tty final :
-    protected I_Selector::I_ReadHandler,
-    protected Uncopyable
-{
+class Tty final
+    : protected I_Selector::I_ReadHandler
+    , protected Uncopyable {
 public:
     class I_Observer {
     public:
         virtual void ttyData(const uint8_t * data, size_t size) = 0;
-        virtual void ttySync() = 0;
-        virtual void ttyReaped(int status) = 0;
+        virtual void ttySync()                                  = 0;
+        virtual void ttyReaped(int status)                      = 0;
 
     protected:
         ~I_Observer() = default;
     };
 
 private:
-    I_Observer           & _observer;
-    I_Selector           & _selector;
-    const Config         & _config;
-    pid_t                  _pid;
-    int                    _fd;
-    bool                   _dumpWrites;
-    bool                   _suspended;
+    I_Observer &   _observer;
+    I_Selector &   _selector;
+    const Config & _config;
+    pid_t          _pid;
+    int            _fd;
+    bool           _dumpWrites;
+    bool           _suspended;
 
 public:
-    using Command = std::vector<std::string>;           // XXX questionable alias
+    using Command = std::vector<std::string>; // XXX questionable alias
 
-    Tty(I_Observer        & observer,
-        I_Selector        & selector,
-        const Config      & config,
+    Tty(I_Observer &        observer,
+        I_Selector &        selector,
+        const Config &      config,
         uint16_t            rows,
         uint16_t            cols,
         const std::string & windowId,
-        const Command     & command);
+        const Command &     command);
 
     ~Tty();
 
@@ -60,12 +59,9 @@ public:
 protected:
     void close();
 
-    void openPty(uint16_t            rows,
-                 uint16_t            cols,
-                 const std::string & windowId,
-                 const Command     & command);
-    void execShell(const std::string & windowId,
-                   const Command     & command);
+    void
+         openPty(uint16_t rows, uint16_t cols, const std::string & windowId, const Command & command);
+    void execShell(const std::string & windowId, const Command & command);
 
     bool pollReap(int msec, int & status);
     int  waitReap();

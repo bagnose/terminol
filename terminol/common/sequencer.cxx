@@ -8,20 +8,16 @@
 int main(int argc, char * argv[]) {
     int count = 1;
 
-    if (argc == 2) {
-        count = unstringify<int>(argv[1]);
-    }
+    if (argc == 2) { count = unstringify<int>(argv[1]); }
 
-    const char * str =
-        "It was a dark and stormy night; the rain fell in torrents — "
-        "except at occasional intervals, when it was checked by a violent gust "
-        "of wind which swept up the streets (for it is in London that our scene lies), "
-        "rattling along the housetops, and fiercely agitating the scanty flame of the "
-        "lamps that struggled against the darkness.";
+    const char *
+        str = "It was a dark and stormy night; the rain fell in torrents — "
+              "except at occasional intervals, when it was checked by a violent gust "
+              "of wind which swept up the streets (for it is in London that our scene lies), "
+              "rattling along the housetops, and fiercely agitating the scanty flame of the "
+              "lamps that struggled against the darkness.";
 
-    for (int i = 0; i != count; ++i) {
-        std::cout << (i == 0 ? "" : " ") << str;
-    }
+    for (int i = 0; i != count; ++i) { std::cout << (i == 0 ? "" : " ") << str; }
 
     std::cout << std::endl;
 
