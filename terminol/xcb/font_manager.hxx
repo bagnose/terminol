@@ -11,6 +11,7 @@
 
 #include <set>
 #include <map>
+#include <memory>
 
 class FontManager : protected Uncopyable {
 public:

@@ -8,6 +8,7 @@
 
 #include <fstream>
 #include <unordered_map>
+#include <memory>
 
 class Parser : protected Uncopyable {
     class Handler {

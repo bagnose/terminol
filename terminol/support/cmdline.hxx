@@ -7,6 +7,8 @@
 #include <string>
 #include <map>
 #include <cstdlib>
+#include <memory>
+#include <functional>
 
 // Option, value
 
