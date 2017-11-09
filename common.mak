@@ -67,6 +67,7 @@ ifeq ($(MODE),release)
   WFLAGS   += -Wno-unused-parameter
   ifeq ($(COMPILER),gnu)
     CXXFLAGS += -Os
+    CXXFLAGS += -Wno-unused-but-set-variable
   else
     CXXFLAGS += -Oz
   endif

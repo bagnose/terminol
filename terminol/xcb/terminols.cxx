@@ -195,7 +195,7 @@ protected:
                                                    _colorSet,
                                                    _fontManager,
                                                    _command);
-            _screens.insert({screen->getWindowId(), std::move(screen)});
+            _screens.emplace(screen->getWindowId(), std::move(screen));
         }
         catch (const Exception & error) {
             ERROR("Failed to create screen: " << error.what());

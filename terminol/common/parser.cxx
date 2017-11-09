@@ -55,12 +55,12 @@ class Parser final : protected Uncopyable {
 
     template <class T>
     void registerSimpleHandler(const std::string & name, T & value) {
-        _handlers.insert({name, std::make_unique<SimpleHandler<T>>(value)});
+        _handlers.emplace(name, std::make_unique<SimpleHandler<T>>(value));
     }
 
     template <class F>
     void registerGenericHandler(const std::string & name, F func) {
-        _handlers.insert({name, std::make_unique<GenericHandler<F>>(func)});
+        _handlers.emplace(name, std::make_unique<GenericHandler<F>>(func));
     }
 
 public:

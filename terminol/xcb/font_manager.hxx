@@ -50,8 +50,7 @@ public:
         _clients.insert({client, size});
         auto iter = _fontSets.find(size);
         if (iter == _fontSets.end()) {
-            iter = _fontSets.insert({size, std::make_unique<FontSet>(_config, _basics, size)})
-                       .first;
+            iter = _fontSets.emplace(size, std::make_unique<FontSet>(_config, _basics, size)).first;
             return iter->second.get();
         }
         else {
@@ -108,7 +107,7 @@ protected:
 
         if (iter2 == _fontSets.end()) {
             iter2 = _fontSets
-                        .insert({new_size, std::make_unique<FontSet>(_config, _basics, new_size)})
+                        .emplace(new_size, std::make_unique<FontSet>(_config, _basics, new_size))
                         .first;
             client->useFontSet(iter2->second.get(), total_delta);
         }
