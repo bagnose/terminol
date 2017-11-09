@@ -4,6 +4,10 @@ INSTALLDIR      ?= ~/local/terminol
 VERBOSE         ?= false
 VERSION         ?= $(shell git --git-dir=src/.git log -1 --format='%cd.%h' --date=short | tr -d -)
 BROWSER         ?= chromium
+CLANG-C++       ?= clang++
+CLANG-AR        ?= llvm-ar
+GNU-C++         ?= g++
+GNU-AR          ?= ar
 
 SUPPORT_MODULES := libpcre
 COMMON_MODULES  := xkbcommon
@@ -44,16 +48,16 @@ ifeq ($(COMPILER),gnu)
   WFLAGS += -Wsuggest-override -Wno-virtual-move-assign
   # XXX next line not to be merged with master:
   WFLAGS += -Wno-error=unused-parameter
-  CXX := g++
-  AR  := ar
+  CXX := $(GNU-C++)
+  AR  := $(GNU-AR)
 else ifeq ($(COMPILER),clang)
   WFLAGS += -Wextra-semi -Wcomma
   CXXFLAGS += -stdlib=libc++
   LDFLAGS += -stdlib=libc++
   # XXX next line not to be merged with master:
   WFLAGS += -Wno-error=unused-parameter
-  CXX := clang++
-  AR  := llvm-ar
+  CXX := $(CLANG-C++)
+  AR  := $(CLANG-AR)
 else
   $(error Unrecognised COMPILER: $(COMPILER))
 endif
