@@ -199,7 +199,7 @@ public:
             ++iter;
         }
 
-        _timeoutRegs.insert(iter, TimeEntry(scheduled, handler));
+        _timeoutRegs.insert(iter, {scheduled, handler});
     }
 
     void removeTimeoutable(I_TimeoutHandler * handler) {
@@ -400,7 +400,7 @@ public:
             ++iter;
         }
 
-        _timeoutRegs.insert(iter, TimeEntry{scheduled, handler});
+        _timeoutRegs.insert(iter, {scheduled, handler});
     }
 
     void removeTimeoutable(I_TimeoutHandler * handler) override {
