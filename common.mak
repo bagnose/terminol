@@ -55,7 +55,8 @@ else ifeq ($(COMPILER),clang)
   CXXFLAGS += -stdlib=libc++
   LDFLAGS += -stdlib=libc++
   # XXX next line not to be merged with master:
-  WFLAGS += -Wno-error=unused-parameter
+  #WFLAGS += -Wno-error=unused-parameter
+  WFLAGS += -Wno-unused-parameter
   CXX := $(CLANG-C++)
   AR  := $(CLANG-AR)
 else
