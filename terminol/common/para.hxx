@@ -9,9 +9,9 @@
 #include <iostream>
 
 class Para final {
-    std::vector<Style>   _styles;
-    std::vector<uint8_t> _string;
-    std::vector<int32_t> _indices = {0}; // Index of each code point in _string
+    std::vector<Style>    _styles;
+    std::vector<uint8_t>  _string;
+    std::vector<uint32_t> _indices = {0}; // Index of each code point in _string
 
 public:
     Para() = default;

@@ -8,7 +8,7 @@
 Para::Para(std::vector<Style> styles, std::vector<uint8_t> string)
     : _styles(std::move(styles)), _string(std::move(string)), _indices() {
     _indices.reserve(_styles.size() + 1);
-    int32_t index = 0;
+    uint32_t index = 0;
     ASSERT(_string.size() <= std::numeric_limits<decltype(index)>::max(), );
 
     for (auto iter = _string.begin(); iter != _string.end(); /* */) {
