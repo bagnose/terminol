@@ -57,7 +57,7 @@ protected:
 
 class Dispatcher final
     : public I_Dispatcher
-    , protected I_Selector::I_ReadHandler {
+    , private I_Selector::I_ReadHandler {
 public:
     Dispatcher(I_Selector & selector, xcb_connection_t * connection)
         : _selector(selector), _connection(connection) {
@@ -81,7 +81,7 @@ public:
 
     void wait(uint8_t event_type);
 
-protected:
+private:
     void dispatch(uint8_t responseType, xcb_generic_event_t * event);
 
     // I_Selector::I_ReadHandler overrides:

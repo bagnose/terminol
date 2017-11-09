@@ -26,10 +26,10 @@
 #include <sys/select.h>
 
 class EventLoop final
-    : protected I_Selector::I_ReadHandler
-    , protected Screen::I_Observer
-    , protected I_Dispatcher::I_Observer
-    , protected Uncopyable {
+    : private Uncopyable
+    , private I_Selector::I_ReadHandler
+    , private Screen::I_Observer
+    , private I_Dispatcher::I_Observer {
     const Config & _config;
     Selector       _selector;
     Pipe           _pipe;
@@ -76,7 +76,7 @@ public:
 
     ~EventLoop() { ENFORCE(std::exchange(_singleton, nullptr) == this, ); }
 
-protected:
+private:
     static void staticSignalHandler(int sigNum) {
         ASSERT(_singleton, );
         _singleton->signalHandler(sigNum);

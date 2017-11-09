@@ -6,20 +6,17 @@
 
 #include "terminol/support/debug.hxx"
 #include "terminol/support/pattern.hxx"
+#include "terminol/support/exception.hxx"
 
 #include <unordered_map>
 #include <cstddef>
 
 // LRU cache container
 template <typename Key, typename T>
-class Cache : protected Uncopyable {
+class Cache final : private Uncopyable {
     struct Link {
-        Link * prev;
-        Link * next;
-
-        Link() noexcept : prev(this), next(this) {}
-        Link(Link && UNUSED(link)) noexcept : prev(this), next(this) {}
-        Link(const Link & UNUSED(link)) noexcept : prev(this), next(this) {}
+        Link * prev = this;
+        Link * next = this;
 
         // After this call, link->next==this
         void insert(Link & link) noexcept {
@@ -51,7 +48,7 @@ class Cache : protected Uncopyable {
         T    t;
         Link link;
 
-        explicit Entry(const T & t_) : t(t_) {}
+        explicit Entry(T && t_) : t(std::move(t_)) {}
     };
 
     static Entry & linkToEntry(Link & link) noexcept {
@@ -211,11 +208,12 @@ public:
 
     reverse_iterator rend() noexcept { return reverse_iterator(&_sentinel); }
 
-    Cache()                  = default;
+    Cache() = default;
+
     Cache(Cache &&) noexcept = default;
 
     iterator insert(const Key & key, T && t) {
-        auto pair = _map.emplace(key, Entry(t));
+        auto pair = _map.emplace(key, std::move(t));
         ASSERT(pair.second, << "Duplicate key.");
 
         auto & entry = pair.first->second;

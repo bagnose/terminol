@@ -14,7 +14,7 @@
 #include <xcb/xcb_ewmh.h>
 #include <xcb/xcb_keysyms.h>
 
-class Basics : protected Uncopyable {
+class Basics final : private Uncopyable {
     std::string _hostname;
 
     std::string         _displayName;
@@ -88,7 +88,7 @@ public:
 
     void updateRootPixmap();
 
-protected:
+private:
     xcb_atom_t   lookupAtom(const std::string & name, bool create);
     xcb_cursor_t loadNormalCursor();
     xcb_cursor_t loadInvisibleCursor();

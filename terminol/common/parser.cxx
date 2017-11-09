@@ -10,7 +10,7 @@
 #include <unordered_map>
 #include <memory>
 
-class Parser final : protected Uncopyable {
+class Parser final : private Uncopyable {
     class Handler {
     public:
         virtual ~Handler() {}

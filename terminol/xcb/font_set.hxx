@@ -10,7 +10,7 @@
 
 #include <pango/pango-font.h>
 
-class FontSet : protected Uncopyable {
+class FontSet final : private Uncopyable {
     const Config & _config;
     Basics &       _basics;
 
@@ -38,7 +38,7 @@ public:
     uint16_t getWidth() const { return _width; }
     uint16_t getHeight() const { return _height; }
 
-protected:
+private:
     PangoFontDescription *
          load(const std::string & family, int size, bool master, bool bold, bool italic);
     void unload(PangoFontDescription * desc);

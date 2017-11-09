@@ -20,7 +20,7 @@ protected:
 //
 //
 
-class Server final : protected SocketServer::I_Observer {
+class Server final : private SocketServer::I_Observer {
     I_Creator &  _creator;
     SocketServer _socket;
 
@@ -28,7 +28,7 @@ public:
     Server(I_Creator & creator, I_Selector & selector, const Config & config)
         : _creator(creator), _socket(*this, selector, config.socketPath) {}
 
-protected:
+private:
     // SocketServer::I_Observer implementation:
 
     void serverConnected(int UNUSED(id)) override {

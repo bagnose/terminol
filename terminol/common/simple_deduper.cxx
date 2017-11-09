@@ -25,7 +25,7 @@ namespace {
             auto length = utf8::leadLength(cell.seq.lead());
             for (uint8_t i = 0; i != length; ++i) { string.push_back(cell.seq.bytes[i]); }
         }
-        os.writeAll(&string.front(), 1, string.size());
+        os.writeAll(string.data(), 1, string.size());
 
 #if 0
     auto before = cells.size() * sizeof(Cell);
@@ -47,15 +47,10 @@ namespace {
         rleDecode(is, styles);
 
         for (auto & style : styles) {
-            uint8_t b[4] = {0};
-
-            is.readAll(&b[0], 1, 1);
-
-            auto length = utf8::leadLength(b[0]);
-
-            for (uint8_t i = 1; i != length; ++i) { is.readAll(&b[i], 1, 1); }
-
-            utf8::Seq seq(b[0], b[1], b[2], b[3]);
+            utf8::Seq seq;
+            is.readAll(&seq.bytes[0], 1, 1);
+            auto length = utf8::leadLength(seq.lead());
+            for (uint8_t i = 1; i != length; ++i) { is.readAll(&seq.bytes[i], 1, 1); }
             cells.push_back(Cell::utf8(seq, style));
         }
     }
@@ -211,7 +206,7 @@ void SimpleDeduper::dump(std::ostream & UNUSED(ost)) const {
 }
 
 auto SimpleDeduper::makeTag(const std::vector<uint8_t> & bytes) -> Tag {
-    auto tag = hash<SDBM<Tag>>(&bytes.front(), bytes.size());
+    auto tag = hash<SDBM<Tag>>(bytes.data(), bytes.size());
     if (tag == invalidTag()) { ++tag; }
     return tag;
 }

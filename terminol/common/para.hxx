@@ -8,15 +8,15 @@
 
 #include <iostream>
 
-class Para {
+class Para final {
     std::vector<Style>   _styles;
     std::vector<uint8_t> _string;
-    std::vector<int32_t> _indices; // Index of each code point in _string.
+    std::vector<int32_t> _indices = {0}; // Index of each code point in _string
 
 public:
-    Para();
+    Para() = default;
 
-    // Pass-by-value because we are taking a copy.
+    // Pass by value because we take a copy
     Para(std::vector<Style> styles, std::vector<uint8_t> string);
 
     const std::vector<Style> &   getStyles() const { return _styles; }

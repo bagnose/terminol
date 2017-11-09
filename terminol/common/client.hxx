@@ -7,7 +7,7 @@
 #include "terminol/support/net.hxx"
 #include "terminol/common/config.hxx"
 
-class Client final : protected SocketClient::I_Observer {
+class Client final : private SocketClient::I_Observer {
     SocketClient _socket;
     bool         _finished = false;
 
@@ -20,7 +20,7 @@ public:
 
     bool isFinished() const { return _finished; }
 
-protected:
+private:
     // SocketClient::I_Observer implementation:
 
     void clientDisconnected() override {

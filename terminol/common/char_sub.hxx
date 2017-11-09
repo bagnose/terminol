@@ -12,7 +12,7 @@
 // support different character sets, e.g. US versus UK. CharSub uses a
 // table to translate ASCII characters into UTF-8 sequences. If there is
 // no entry for the ASCII character then it remains unchanged.
-class CharSub {
+class CharSub final {
     const utf8::Seq * _seqs    = nullptr;
     size_t            _size    = 0;
     size_t            _offset  = 0;

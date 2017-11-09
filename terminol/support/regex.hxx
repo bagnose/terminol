@@ -74,7 +74,7 @@ public:
     }
 
     std::vector<Substr> matchOffsets(const std::vector<uint8_t> & text) const {
-        return common(reinterpret_cast<const char *>(&text.front()), text.size());
+        return common(reinterpret_cast<const char *>(text.data()), text.size());
     }
 
     // First element is "whole match", subsequent are "captures" (things in parentheses).
@@ -122,7 +122,7 @@ protected:
                               size,    // length of subject
                               offset,  // offset into subject
                               0,       // options
-                              &offsets.front(),
+                              offsets.data(),
                               offsets.size());
 
         if (rval < 0) {

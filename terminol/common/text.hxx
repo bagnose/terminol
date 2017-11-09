@@ -8,8 +8,8 @@
 
 #include <deque>
 
-class Text {
-    class Line {
+class Text final {
+    class Line final {
         uint32_t _index;
         uint32_t _seqnum : 31;
         uint32_t _continued : 1; // True if this line is continued on the next line?
@@ -50,13 +50,13 @@ class Text {
     I_Repository & _repository;
     ParaCache      _paraCache;
 
-    std::deque<I_Repository::Tag> _historyTags; // Paragraph history as tags.
-    uint32_t         _poppedHistoryTags;        // Incremented for every _historyTags.pop_front();
+    std::deque<I_Repository::Tag> _historyTags; // Paragraph history as tags
+    uint32_t         _poppedHistoryTags;        // Incremented for every _historyTags.pop_front()
     std::deque<Line> _historyLines;
 
-    std::deque<Para> _currentParas;       // Current paragraphs.
-    uint32_t         _poppedCurrentParas; // Incremented for every _currentParas.pop_front();
-    uint32_t         _straddlingLines;    // Number of lines that straddle history and current.
+    std::deque<Para> _currentParas;       // Current paragraphs
+    uint32_t         _poppedCurrentParas; // Incremented for every _currentParas.pop_front()
+    uint32_t         _straddlingLines;    // Number of lines that straddle history and current
     std::deque<Line> _currentLines;
 
     int16_t  _cols;
@@ -112,7 +112,7 @@ public:
 
     void dumpDetail(std::ostream & ost, bool blah);
 
-    class Match {
+    class Match final {
         friend class Text;
         bool     _valid = false;
         int32_t  _row;
@@ -160,7 +160,7 @@ public:
     void visitUnstyled(
         int32_t rowBegin, int16_t colBegin, int32_t rowEnd, int16_t colEnd, I_Visitor & visitor);
 
-protected:
+private:
     void cleanStraddling();
 };
 

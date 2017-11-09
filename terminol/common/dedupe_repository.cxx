@@ -5,8 +5,6 @@
 #include "terminol/support/rle.hxx"
 #include "terminol/support/hash.hxx"
 
-DedupeRepository::DedupeRepository() {}
-
 auto DedupeRepository::store(const Entry & entry) -> Tag {
     auto bytes = encode(entry);
 
@@ -76,8 +74,8 @@ bool DedupeRepository::match(Tag tag, const std::vector<Regex> & regexes) const 
         is.readAll(&size, sizeof size, 1);
     }
 
-    auto str  = &entry.bytes.front() + sizeof size;
-    auto str2 = reinterpret_cast<const char *>(str);
+    auto str  = entry.bytes.data() + sizeof size;
+    auto str2 = reinterpret_cast<const char *>(str); // XXX Where's the trailing nul?
 
     for (auto & regex : regexes) {
         if (regex.matchTest(str2, size)) { return true; }
@@ -123,7 +121,7 @@ std::vector<uint8_t> DedupeRepository::encode(const Entry & entry) {
     // Write the size of the string followed by the string content.
     uint32_t size = entry.string.size();
     os.writeAll(&size, sizeof size, 1);
-    os.writeAll(&entry.string.front(), 1, entry.string.size());
+    os.writeAll(entry.string.data(), 1, entry.string.size());
 
     // RLE encode the styles
     rleEncode(entry.styles, os);
@@ -139,7 +137,7 @@ auto DedupeRepository::decode(const std::vector<uint8_t> & bytes) -> Entry {
     uint32_t size;
     is.readAll(&size, sizeof size, 1);
     entry.string.resize(size);
-    is.readAll(&entry.string.front(), 1, entry.string.size());
+    is.readAll(entry.string.data(), 1, entry.string.size());
 
     // RLE decode the styles
     rleDecode(is, entry.styles);
@@ -148,5 +146,5 @@ auto DedupeRepository::decode(const std::vector<uint8_t> & bytes) -> Entry {
 }
 
 auto DedupeRepository::makeTag(const std::vector<uint8_t> & bytes) -> Tag {
-    return hash<SDBM<Tag>>(&bytes.front(), bytes.size());
+    return hash<SDBM<Tag>>(bytes.data(), bytes.size());
 }

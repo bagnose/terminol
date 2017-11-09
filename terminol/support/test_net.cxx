@@ -4,7 +4,7 @@
 #include "terminol/support/debug.hxx"
 #include "terminol/support/net.hxx"
 
-class TestServer final : protected SocketServer::I_Observer {
+class TestServer final : private SocketServer::I_Observer {
     SocketServer _socket;
     size_t       _count = 0;
 
@@ -13,7 +13,7 @@ public:
 
     size_t getCount() const { return _count; }
 
-protected:
+private:
     // SocketServer::I_Observer implementation:
 
     void serverConnected(int id) override { PRINT("Server connected: " << id); }
@@ -33,7 +33,7 @@ protected:
 //
 //
 
-class TestClient final : protected SocketClient::I_Observer {
+class TestClient final : private SocketClient::I_Observer {
     SocketClient _socket;
 
 public:
@@ -42,7 +42,7 @@ public:
         _socket.send(&byte, 1);
     }
 
-protected:
+private:
     // SocketClient::I_Observer implementation:
 
     void clientDisconnected() override { PRINT("Client disconnected"); }

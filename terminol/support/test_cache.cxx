@@ -43,8 +43,10 @@ int main() {
     test.enforce(cache.empty(), "empty cache");
     test.enforce(cache.find(11) == cache.end(), "");
 
+    test.enforce(cache.find(6) == cache.end(), "");
     cache.insert(6, "degrees of kevin bacon");
     test.enforce(cache.find(6) != cache.end(), "");
+    test.enforce(cache.at(6) == "degrees of kevin bacon", "");
     enforceKeys(cache, {6});
 
     cache.insert(42, "the meaning of life");

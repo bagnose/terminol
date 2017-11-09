@@ -15,7 +15,7 @@
 #include <mutex>
 #include <iomanip>
 
-class Buffer2 {
+class Buffer2 final {
 
     // Cursor encompasses the state associated with a VT cursor.
     struct Cursor {

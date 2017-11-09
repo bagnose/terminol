@@ -11,14 +11,13 @@
 
 #include <unordered_map>
 
-class ParaCache : private Uncopyable {
+class ParaCache final : private Uncopyable {
     I_Repository &                 _repository;
     Cache<I_Repository::Tag, Para> _cache;
     size_t                         _maxEntries;
 
 public:
-    ParaCache(I_Repository & repository, size_t maxEntries = 0);
-    ParaCache(ParaCache &&) = default;
+    explicit ParaCache(I_Repository & repository, size_t maxEntries = 0);
 
     const Para & get(I_Repository::Tag tag);
     void         setMaxEntries(size_t maxEntries);

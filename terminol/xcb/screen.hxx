@@ -21,8 +21,8 @@
 
 class Screen final
     : public Widget
-    , protected Terminal::I_Observer
-    , protected FontManager::I_Client {
+    , private Terminal::I_Observer
+    , private FontManager::I_Client {
 public:
     class I_Observer {
     public:
@@ -104,7 +104,7 @@ public:
     void clearSelection();
     void deferral();
 
-protected:
+private:
     void icccmConfigure();
 
     void pos2XY(Pos pos, int & x, int & y) const;

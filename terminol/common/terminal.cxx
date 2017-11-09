@@ -153,8 +153,8 @@ bool Terminal::keyPress(xkb_keysym_t keySym, ModifierSet modifiers) {
                 std::copy(seq, seq + l, input.begin());
             }
 
-            write(&input.front(), input.size());
-            if (_modes.get(Mode::ECHO)) { echo(&input.front(), input.size()); }
+            write(input.data(), input.size());
+            if (_modes.get(Mode::ECHO)) { echo(input.data(), input.size()); }
         }
 
         return true;

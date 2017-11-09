@@ -11,7 +11,7 @@ const Para & ParaCache::get(I_Repository::Tag tag) {
 
     if (iter == _cache.end()) {
         auto entry = _repository.retrieve(tag);
-        iter       = _cache.insert(tag, Para(entry.styles, entry.string));
+        iter       = _cache.insert(tag, Para(std::move(entry.styles), std::move(entry.string)));
         shrink();
     }
 

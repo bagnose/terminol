@@ -17,10 +17,10 @@
 #include <xkbcommon/xkbcommon.h>
 
 class Terminal final
-    : protected VtStateMachine::I_Observer
-    , protected Tty::I_Observer
-    , protected Buffer::I_Renderer
-    , protected Uncopyable {
+    : private Uncopyable
+    , private VtStateMachine::I_Observer
+    , private Tty::I_Observer
+    , private Buffer::I_Renderer {
 public:
     enum class Selection { PRIMARY, CLIPBOARD };
 

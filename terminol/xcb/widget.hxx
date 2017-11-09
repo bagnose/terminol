@@ -12,7 +12,7 @@
 
 class Widget
     : protected I_Dispatcher::I_Observer
-    , protected Uncopyable {
+    , private Uncopyable {
 protected:
     Widget(I_Dispatcher & dispatcher,
            Basics &       basics,

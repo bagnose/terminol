@@ -21,7 +21,7 @@ class DedupeRepository final : public I_Repository {
     size_t                               _totalRefs = 0;
 
 public:
-    DedupeRepository();
+    DedupeRepository() = default;
 
     Tag      store(const Entry & entry) override;
     Entry    retrieve(Tag tag) const override;

@@ -12,7 +12,7 @@
 
 // Option, value
 
-class CmdLine {
+class CmdLine final {
 public:
     class Handler {
     public:
@@ -157,7 +157,7 @@ public:
         return arguments;
     }
 
-protected:
+private:
     Handler * lookupShort(char s) {
         auto iter = _shortToHandler.find(s);
         THROW_UNLESS(iter != _shortToHandler.end(), UserError("Unknown option: -" + stringify(s)));
@@ -175,7 +175,7 @@ protected:
 //
 //
 
-class BoolHandler : public CmdLine::Handler {
+class BoolHandler final : public CmdLine::Handler {
     bool & _value;
 
 public:

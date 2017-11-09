@@ -24,7 +24,7 @@ public:
     // Callable from multiple threads
     void add(const Function & function) { _queue.add(function); }
 
-protected:
+private:
     void background() {
         while (auto function = _queue.remove()) { (*function)(); }
     }

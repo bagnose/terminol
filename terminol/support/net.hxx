@@ -18,7 +18,7 @@
 #include <sys/socket.h>
 #include <sys/un.h>
 
-class SocketServer final : protected I_Selector::I_ReadHandler {
+class SocketServer final : private I_Selector::I_ReadHandler {
 public:
     class I_Observer {
     public:
@@ -81,7 +81,7 @@ public:
         THROW_IF_SYSCALL_FAILS(::shutdown(fd, SHUT_RDWR), "");
     }
 
-protected:
+private:
     // I_Selector::I_ReadHandler implementation:
 
     void handleRead(int fd) override {
@@ -123,7 +123,7 @@ protected:
 //
 //
 
-class SocketClient final : protected I_Selector::I_WriteHandler {
+class SocketClient final : private I_Selector::I_WriteHandler {
 public:
     class I_Observer {
     public:
@@ -182,7 +182,7 @@ public:
         std::copy(data, data + size, &_queue[oldSize]);
     }
 
-protected:
+private:
     // I_Selector::I_Writer implementation:
 
     void handleWrite(int fd) override {
@@ -190,7 +190,7 @@ protected:
         ASSERT(!_queue.empty(), );
 
         ssize_t rval = THROW_IF_SYSCALL_FAILS(::send(fd,
-                                                     &_queue.front(),
+                                                     _queue.data(),
                                                      _queue.size(),
                                                      MSG_NOSIGNAL),
                                               "send()");

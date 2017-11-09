@@ -294,7 +294,7 @@ void Tty::execShell(const std::string & windowId, const Command & command) {
 
     args.push_back(nullptr);
 
-    ::execvp(args[0], const_cast<char * const *>(&args.front()));
+    ::execvp(args[0], const_cast<char * const *>(args.data()));
 
     // If we are here then the exec call failed.
     std::exit(127); // Same as ::system() for failed commands.

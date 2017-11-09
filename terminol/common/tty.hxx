@@ -12,8 +12,8 @@
 #include <string>
 
 class Tty final
-    : protected I_Selector::I_ReadHandler
-    , protected Uncopyable {
+    : private Uncopyable
+    , private I_Selector::I_ReadHandler {
 public:
     class I_Observer {
     public:
@@ -56,7 +56,7 @@ public:
     void suspend();
     void resume();
 
-protected:
+private:
     void close();
 
     void

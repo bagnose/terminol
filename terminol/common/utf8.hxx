@@ -48,7 +48,7 @@ namespace utf8 {
 
         constexpr void clear() noexcept { bytes = {{'\0', '\0', '\0', '\0'}}; }
 
-        constexpr uint8_t lead() const noexcept { return bytes[0]; }
+        constexpr uint8_t lead() const noexcept { return bytes.front(); }
 
         std::array<uint8_t, Length::LMAX> bytes = {{'\0', '\0', '\0', '\0'}};
     };
@@ -68,7 +68,7 @@ namespace utf8 {
     //
     //
 
-    class Machine {
+    class Machine final {
     public:
         enum class State { START, ACCEPT, REJECT, EXPECT3, EXPECT2, EXPECT1 };
 

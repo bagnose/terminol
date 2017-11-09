@@ -5,8 +5,6 @@
 
 #include <iomanip>
 
-Para::Para() : _styles(), _string(), _indices({0}) {}
-
 Para::Para(std::vector<Style> styles, std::vector<uint8_t> string)
     : _styles(std::move(styles)), _string(std::move(string)), _indices() {
     _indices.reserve(_styles.size() + 1);
@@ -55,7 +53,7 @@ void Para::setCell(uint32_t offset, const Cell & cell) {
         _string.resize(_string.size() + deltaLength);
     }
 
-    std::copy(&cell.seq.bytes[0], &cell.seq.bytes[0] + newLength, &_string[index]);
+    std::copy(cell.seq.bytes.data(), cell.seq.bytes.data() + newLength, &_string[index]);
 
     if (deltaLength != 0) {
         for (auto iter = _indices.begin() + offset + 1; iter != _indices.end(); ++iter) {

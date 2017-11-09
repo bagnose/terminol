@@ -31,11 +31,11 @@
 #include <sys/select.h>
 
 class EventLoop final
-    : protected I_Selector::I_ReadHandler
+    : private Uncopyable
+    , protected I_Selector::I_ReadHandler
     , protected Screen::I_Observer
     , protected I_Dispatcher::I_Observer
-    , protected I_Creator
-    , protected Uncopyable {
+    , protected I_Creator {
     const Config & _config;
     Tty::Command   _command;
     Selector       _selector;
@@ -79,7 +79,7 @@ public:
 
     ~EventLoop() { ENFORCE(std::exchange(_singleton, nullptr) == this, ); }
 
-protected:
+private:
     static void staticSignalHandler(int sigNum) {
         ASSERT(_singleton, );
         _singleton->signalHandler(sigNum);

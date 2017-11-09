@@ -11,7 +11,7 @@
 #include <vector>
 #include <cstdint>
 
-class VtStateMachine {
+class VtStateMachine final {
 public:
     class I_Observer {
     public:
@@ -54,7 +54,7 @@ public:
 
     void consume(utf8::Seq seq, utf8::Length length);
 
-protected:
+private:
     void ground(utf8::Seq seq, utf8::Length length);
     void escapeIntermediate(utf8::Seq seq, utf8::Length length);
     void escape(utf8::Seq seq, utf8::Length length);

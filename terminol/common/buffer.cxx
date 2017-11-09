@@ -243,7 +243,7 @@ void Buffer::expandSelection(Pos pos, int level) {
 
         do {
             auto & seq  = selectIter.getCell().seq;
-            auto   text = reinterpret_cast<const char *>(&seq.bytes[0]);
+            auto   text = reinterpret_cast<const char *>(seq.bytes.data());
             auto   size = static_cast<size_t>(utf8::leadLength(seq.lead()));
             if (!regex.matchTest(text, size)) { break; }
             _selectMark = selectIter.getPos();
@@ -252,7 +252,7 @@ void Buffer::expandSelection(Pos pos, int level) {
 
         do {
             auto & seq  = delimIter.getCell().seq;
-            auto   text = reinterpret_cast<const char *>(&seq.bytes[0]);
+            auto   text = reinterpret_cast<const char *>(seq.bytes.data());
             auto   size = static_cast<size_t>(utf8::leadLength(seq.lead()));
             if (!regex.matchTest(text, size)) { break; }
             delimIter.moveForward();
@@ -292,7 +292,7 @@ bool Buffer::getSelectedText(std::string & text) const {
 
                 auto & cell = cells[i.col];
                 auto   seq  = cell.seq;
-                std::copy(&seq.bytes[0],
+                std::copy(seq.bytes.data(),
                           &seq.bytes[utf8::leadLength(seq.lead())],
                           back_inserter(text));
             }
@@ -1086,10 +1086,10 @@ void Buffer::beginSearch(const std::string & pattern) {
 
         para.push_back('\0');
 
-        std::cout << &para.front() << std::endl;
+        std::cout << para.data() << std::endl;
 
         // PCRE_NOTEMPTY, PCRE_NO_UTF8_CHECK
-        allOffsets = regex.matchAllOffsets(reinterpret_cast<const char *>(&para.front()),
+        allOffsets = regex.matchAllOffsets(reinterpret_cast<const char *>(para.data()),
                                            para.size());
 
         if (!allOffsets.empty()) { break; }
@@ -1380,7 +1380,7 @@ void Buffer::dispatchFg(bool reverse, I_Renderer & renderer) const {
                     auto size = run.size();
                     run.push_back(NUL);
                     renderer
-                        .bufferDrawFg(Pos(row, col0), col1 - col0, fg0, attrs0, &run.front(), size);
+                        .bufferDrawFg(Pos(row, col0), col1 - col0, fg0, attrs0, run.data(), size);
                     run.clear();
                 }
 
@@ -1399,7 +1399,7 @@ void Buffer::dispatchFg(bool reverse, I_Renderer & renderer) const {
             // flush run
             auto size = run.size();
             run.push_back(NUL);
-            renderer.bufferDrawFg(Pos(row, col0), col1 - col0, fg0, attrs0, &run.front(), size);
+            renderer.bufferDrawFg(Pos(row, col0), col1 - col0, fg0, attrs0, run.data(), size);
             run.clear();
         }
     }
@@ -1434,7 +1434,7 @@ void Buffer::dispatchCursor(bool reverse, I_Renderer & renderer) const {
 
         auto size = run.size();
         run.push_back(NUL);
-        renderer.bufferDrawCursor(Pos(r1, c1), fg, bg, attrs, &run.front(), size, _cursor.wrapNext);
+        renderer.bufferDrawCursor(Pos(r1, c1), fg, bg, attrs, run.data(), size, _cursor.wrapNext);
     }
 }
 

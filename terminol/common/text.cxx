@@ -7,23 +7,16 @@
 #include <iomanip>
 
 Text::Text(I_Repository & repository, int16_t rows, int16_t cols, uint32_t historyLimit)
-    : //
-    _repository(repository)
+    : _repository(repository)
     , _paraCache(_repository)
-    ,
-    //
-    _historyTags()
+    , _historyTags()
     , _poppedHistoryTags(0)
     , _historyLines()
-    ,
-    //
-    _currentParas(rows)
+    , _currentParas(rows)
     , _poppedCurrentParas(0)
     , _straddlingLines(0)
     , _currentLines()
-    , // Generated below.
-    //
-    _cols(cols)
+    , _cols(cols) // Generated below
     , _historyTagLimit(historyLimit) {
     ASSERT(rows > 0 && cols > 0, );
     for (int16_t r = 0; r != rows; ++r) { _currentLines.emplace_back(r, 0, false); }
@@ -374,16 +367,8 @@ auto Text::rfind(const Regex & regex, Marker & marker, bool & ongoing) -> std::v
         --marker._index;
     }
 
-    const Para * paraPtr = nullptr;
-
-    if (marker._current) { paraPtr = &_currentParas[marker._index]; }
-    else {
-        // checkout
-        auto tag = _historyTags[marker._index];
-        paraPtr  = &_paraCache.get(tag);
-    }
-
-    auto & para = *paraPtr;
+    const Para & para = marker._current ? _currentParas[marker._index]
+                                        : _paraCache.get(_historyTags[marker._index]);
 
     if (para.getLength() == 0) { --marker._row; }
     else {

@@ -50,7 +50,7 @@
 //
 // The cost of representing the on-screen data in these two different ways
 // is the complexity of harmonising access to them.
-class Buffer {
+class Buffer final {
     // APos (Absolute-Position) is a position identifier that is able to
     // refer to historical AND active lines.
     struct APos {
@@ -442,7 +442,7 @@ public:
     void dumpActive(std::ostream & ost) const;
     void dumpSelection(std::ostream & ost) const;
 
-protected:
+private:
     void getLine(int32_t row, std::vector<Cell> & cells, bool & cont, int16_t & wrap) const;
 
     void dispatchBg(bool reverse, I_Renderer & renderer) const;

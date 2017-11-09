@@ -13,7 +13,7 @@
 #include <map>
 #include <memory>
 
-class FontManager final : protected Uncopyable {
+class FontManager final : private Uncopyable {
 public:
     class I_Client {
     public:
@@ -89,7 +89,7 @@ public:
         }
     }
 
-protected:
+private:
     void resizeClient(I_Client * client, int delta) {
         auto iter1 = _clients.find(client);
         ASSERT(iter1 != _clients.end(), );

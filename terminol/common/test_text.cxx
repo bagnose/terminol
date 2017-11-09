@@ -34,11 +34,8 @@ namespace {
 
     int32_t write(Text & text, const std::string & str, int16_t & row, int16_t & col) {
         int32_t count = 0;
-        auto    p     = str;
 
-        auto iter = str.begin();
-
-        while (iter != str.end()) {
+        for (auto iter = str.begin(); iter != str.end(); /**/) {
             ++count;
             utf8::Seq seq;
 
@@ -144,15 +141,19 @@ namespace {
         matches = text.rfind(regex, marker, ongoing);
         test.enforce(ongoing, "Ongoing (2nd line).");
         test.enforce(matches.size() == 1, "One match (2nd line).");
-        test.enforce(matches[0].row() == 1 && matches[0].col() == 1 && matches[0].length() == 1,
-                     "Match specifics (2nd line).");
+        if (matches.size() == 1) {
+            test.enforce(matches[0].row() == 1 && matches[0].col() == 1 && matches[0].length() == 1,
+                         "Match specifics (2nd line).");
+        }
 
         // 1st line
         matches = text.rfind(regex, marker, ongoing);
         test.enforce(ongoing, "Ongoing (1st line).");
         test.enforce(matches.size() == 1, "One match (1st line).");
-        test.enforce(matches[0].row() == 0 && matches[0].col() == 4 && matches[0].length() == 1,
-                     "Match specifics (1st line).");
+        if (matches.size() == 1) {
+            test.enforce(matches[0].row() == 0 && matches[0].col() == 4 && matches[0].length() == 1,
+                         "Match specifics (1st line).");
+        }
 
         // hit the end
         matches = text.rfind(regex, marker, ongoing);
