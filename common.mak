@@ -17,7 +17,7 @@ XCB_MODULES     := cairo-xcb xcb-keysyms xcb-icccm xcb-ewmh xcb-util
 ALL_MODULES     := $(SUPPORT_MODULES) $(COMMON_MODULES) $(GFX_MODULES) $(XCB_MODULES)
 
 ifeq ($(shell pkg-config $(ALL_MODULES) && echo installed),)
-  $(error Missing packages from: $(ALL_MODULES))
+  $(error $(shell pkg-config --print-errors $(ALL_MODULES)))
 endif
 
 SUPPORT_CFLAGS  := $(shell pkg-config --cflags $(SUPPORT_MODULES) | sed 's|-I/|-isystem /|')
