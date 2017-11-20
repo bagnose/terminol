@@ -348,7 +348,7 @@ void Text::dumpDetail(std::ostream & ost, bool UNUSED(blah)) {
     ost << ">>>>>" << std::endl;
 }
 
-auto Text::rfind(const Regex & regex, Marker & marker, bool & ongoing) -> std::vector<Match> {
+auto Text::rfind(const std::regex & regex, Marker & marker, bool & ongoing) -> std::vector<Match> {
     ASSERT(marker._valid, );
 
     std::vector<Match> matches;
@@ -381,25 +381,32 @@ auto Text::rfind(const Regex & regex, Marker & marker, bool & ongoing) -> std::v
     ASSERT(line.getSeqnum() == 0, << "Expected zero seqnum.");
 #endif
 
-    auto substrs = regex.matchOffsets(para.getString());
+    std::cmatch cm;
+    auto &      str = para.getString();
+    if (std::regex_match(reinterpret_cast<const char *>(str.data()),
+                         reinterpret_cast<const char *>(str.data()) + str.size(),
+                         cm,
+                         regex)) {
+        for (size_t i = 0; i != cm.size() - 1; ++i) {
+            auto & f = cm[cm.size() - i - 1];
 
-    for (auto & substr : reversed(substrs)) {
-        auto b = static_cast<uint32_t>(substr.first);
-        auto e = static_cast<uint32_t>(substr.last);
+            size_t beginCol = f.first - reinterpret_cast<const char *>(str.data());
+            size_t endCol   = f.second - reinterpret_cast<const char *>(str.data());
 
-        Match match;
-        match._valid       = true;
-        match._row         = marker._row + b / getCols();
-        match._col         = b % getCols();
-        match._current     = marker._current;
-        match._index       = marker._index;
-        match._offsetBegin = b;
-        match._offsetEnd   = e;
+            Match match;
+            match._valid       = true;
+            match._row         = marker._row + beginCol / getCols();
+            match._col         = beginCol / getCols();
+            match._current     = marker._current;
+            match._index       = marker._index;
+            match._offsetBegin = beginCol;
+            match._offsetEnd   = endCol;
 
-        matches.push_back(match);
+            matches.push_back(match);
+        }
     }
 
-    ongoing = true;
+    ongoing = true; // XXX This looks suspicious, what if we run out of history?
 
     return matches;
 }

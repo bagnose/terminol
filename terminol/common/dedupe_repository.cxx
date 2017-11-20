@@ -63,7 +63,7 @@ uint32_t DedupeRepository::length(Tag tag) const {
     return entry.length;
 }
 
-bool DedupeRepository::match(Tag tag, const std::vector<Regex> & regexes) const {
+bool DedupeRepository::match(Tag tag, const std::vector<std::regex> & regexes) const {
     std::unique_lock<std::mutex> lock(_mutex);
 
     auto &   entry = _entries.at(tag);
@@ -78,7 +78,7 @@ bool DedupeRepository::match(Tag tag, const std::vector<Regex> & regexes) const 
     auto str2 = reinterpret_cast<const char *>(str); // XXX Where's the trailing nul?
 
     for (auto & regex : regexes) {
-        if (regex.matchTest(str2, size)) { return true; }
+        if (std::regex_match(str2, str2 + size, regex)) { return true; }
     }
 
     return false;

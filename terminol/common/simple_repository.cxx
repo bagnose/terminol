@@ -29,7 +29,8 @@ uint32_t SimpleRepository::length(Tag tag) const {
     return entry.styles.size();
 }
 
-bool SimpleRepository::match(Tag UNUSED(tag), const std::vector<Regex> & UNUSED(regexes)) const {
+bool SimpleRepository::match(Tag                             UNUSED(tag),
+                             const std::vector<std::regex> & UNUSED(regexes)) const {
     return false;
 }
 

@@ -9,7 +9,7 @@ CLANG-AR        ?= llvm-ar
 GNU-C++         ?= g++
 GNU-AR          ?= ar
 
-SUPPORT_MODULES := libpcre
+SUPPORT_MODULES :=
 COMMON_MODULES  := xkbcommon
 GFX_MODULES     := pangocairo pango cairo
 XCB_MODULES     := cairo-xcb xcb-keysyms xcb-icccm xcb-ewmh xcb-util
@@ -20,8 +20,8 @@ ifeq ($(shell pkg-config $(ALL_MODULES) && echo installed),)
   $(error $(shell pkg-config --print-errors $(ALL_MODULES)))
 endif
 
-SUPPORT_CFLAGS  := $(shell pkg-config --cflags $(SUPPORT_MODULES) | sed 's|-I/|-isystem /|')
-SUPPORT_LDFLAGS := $(shell pkg-config --libs   $(SUPPORT_MODULES))
+SUPPORT_CFLAGS  :=
+SUPPORT_LDFLAGS :=
 
 COMMON_CFLAGS   := $(shell pkg-config --cflags $(SUPPORT_MODULES) $(COMMON_MODULES) | sed 's|-I/|-isystem /|')
 COMMON_LDFLAGS  := $(shell pkg-config --libs   $(SUPPORT_MODULES) $(COMMON_MODULES))
@@ -296,8 +296,6 @@ $(eval $(call EXE,TEST,terminol/support/test-support,test_support.cxx,$(SUPPORT_
 $(eval $(call EXE,TEST,terminol/support/test-net,test_net.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 
 $(eval $(call EXE,TEST,terminol/support/test-cmdline,test_cmdline.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
-
-$(eval $(call EXE,TEST,terminol/support/test-regex,test_regex.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 
 $(eval $(call EXE,TEST,terminol/support/test-stream,test_stream.cxx,$(SUPPORT_CFLAGS),terminol/support,$(SUPPORT_LDFLAGS)))
 

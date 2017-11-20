@@ -128,7 +128,7 @@ namespace {
         write(text, "hello\nworld\n", row, col);
         // text.dumpCurrent(std::cout, true);
 
-        Regex        regex("o");
+        std::regex   regex("o");
         Text::Marker marker = text.end();
         bool         ongoing;
 

@@ -20,7 +20,7 @@ public:
     Tag      store(const Entry & entry) override;
     Entry    retrieve(Tag tag) const override;
     uint32_t length(Tag tag) const override;
-    bool     match(Tag tag, const std::vector<Regex> & regexes) const override;
+    bool     match(Tag tag, const std::vector<std::regex> & regexes) const override;
     void     discard(Tag tag) override;
     void     dump(std::ostream & ost) const override;
 };

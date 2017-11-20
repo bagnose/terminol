@@ -3,7 +3,8 @@
 
 #include "terminol/common/buffer.hxx"
 #include "terminol/common/escape.hxx"
-#include "terminol/support/regex.hxx"
+
+#include <regex>
 
 Buffer::ParaIter::ParaIter(const Buffer & buffer, APos pos)
     : _buffer(buffer), _pos(pos), _cells(_buffer.getCols(), Cell::blank()) {
@@ -240,7 +241,7 @@ void Buffer::expandSelection(Pos pos, int level) {
         }
     }
     else {
-        Regex regex("[" + _config.cutChars + "]");
+        std::regex regex("[" + _config.cutChars + "]");
 
         auto selectIter = iter;
         auto delimIter  = iter;
@@ -249,7 +250,7 @@ void Buffer::expandSelection(Pos pos, int level) {
             auto & seq  = selectIter.getCell().seq;
             auto   text = reinterpret_cast<const char *>(seq.bytes.data());
             auto   size = static_cast<size_t>(utf8::leadLength(seq.lead()));
-            if (!regex.matchTest(text, size)) { break; }
+            if (!std::regex_match(text, text + size, regex)) { break; }
             _selectMark = selectIter.getPos();
             selectIter.moveBackward();
         } while (selectIter.valid());
@@ -258,7 +259,7 @@ void Buffer::expandSelection(Pos pos, int level) {
             auto & seq  = delimIter.getCell().seq;
             auto   text = reinterpret_cast<const char *>(seq.bytes.data());
             auto   size = static_cast<size_t>(utf8::leadLength(seq.lead()));
-            if (!regex.matchTest(text, size)) { break; }
+            if (!std::regex_match(text, text + size, regex)) { break; }
             delimIter.moveForward();
             _selectDelim = delimIter.getPos();
         } while (delimIter.valid());

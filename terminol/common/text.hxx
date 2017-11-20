@@ -7,6 +7,7 @@
 #include "terminol/common/para_cache.hxx"
 
 #include <deque>
+#include <regex>
 
 class Text final {
     class Line final {
@@ -128,7 +129,7 @@ public:
         uint32_t length() const { return _offsetEnd - _offsetBegin; }
     };
 
-    std::vector<Match> rfind(const Regex & regex, Marker & marker, bool & ongoing);
+    std::vector<Match> rfind(const std::regex & regex, Marker & marker, bool & ongoing);
 
     //
     //
