@@ -414,6 +414,7 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
             fixDamage(Trigger::OTHER);
             return true;
         case Action::SEARCH:
+#if 0
             if (_buffer->isSearching()) {
                 _tty.resume();
                 _buffer->endSearch();
@@ -423,6 +424,7 @@ bool Terminal::handleKeyBinding(xkb_keysym_t keySym, ModifierSet modifiers) {
                 _buffer->beginSearch("da");
             }
             fixDamage(Trigger::CLIENT); // kludgy
+#endif
             return true;
         case Action::DEBUG_GLOBAL_TAGS: _deduper.dump(std::cerr); return true;
         case Action::DEBUG_LOCAL_TAGS: _buffer->dumpTags(std::cerr); return true;
@@ -483,7 +485,7 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
     damage.clear();
 
     if (trigger == Trigger::FOCUS) {
-        if (_modes.get(Mode::SHOW_CURSOR) && !_buffer->isSearching()) {
+        if (_modes.get(Mode::SHOW_CURSOR) /* && !_buffer->isSearching() */) {
             _buffer->damageCell();
             _buffer->accumulateDamage(damage);
             _buffer->dispatch(_modes.get(Mode::REVERSE), *this);
@@ -513,10 +515,14 @@ void Terminal::draw(Trigger trigger, Region & damage, bool & scrollbar) {
 }
 
 void Terminal::write(const uint8_t * data, size_t size) {
+#if 0
     if (_buffer->isSearching()) {}
     else {
-        _tty.write(data, size);
+#endif
+    _tty.write(data, size);
+#if 0
     }
+#endif
 }
 
 void Terminal::echo(const uint8_t * data, size_t size) {

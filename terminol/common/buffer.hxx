@@ -9,7 +9,9 @@
 #include "terminol/common/deduper_interface.hxx"
 #include "terminol/common/char_sub.hxx"
 #include "terminol/support/async_invoker.hxx"
+#if 0
 #include "terminol/support/regex.hxx"
+#endif
 
 #include <deque>
 #include <vector>
@@ -223,6 +225,7 @@ class Buffer final {
     //
     //
 
+#if 0
     struct Search {
         Search(const Buffer & buffer, const std::string & pattern_)
             : iter(buffer, buffer.getRows() - 2), pattern(pattern_) {}
@@ -231,6 +234,7 @@ class Buffer final {
         std::string                             pattern;
         std::vector<std::vector<Regex::Substr>> allOffsets;
     };
+#endif
 
     //
     //
@@ -257,7 +261,9 @@ class Buffer final {
     Cursor                     _cursor;       // Current cursor.
     SavedCursor                _savedCursor;  // Saved cursor.
     CharSubArray               _charSubs;
+#if 0
     std::unique_ptr<Search>    _search;
+#endif
 
 public:
     class I_Renderer {
@@ -429,6 +435,7 @@ public:
 
     const CharSub * getCharSub(CharSet charSet) const;
 
+#if 0
     bool                isSearching() const { return _search != nullptr; }
     void                beginSearch(const std::string & pattern);
     const std::string & getSearchPattern() const;
@@ -436,6 +443,7 @@ public:
     void                nextSearch();
     void                prevSearch();
     void                endSearch();
+#endif
 
     void dumpTags(std::ostream & ost) const;
     void dumpHistory(std::ostream & ost) const;
@@ -448,7 +456,9 @@ private:
     void dispatchBg(bool reverse, I_Renderer & renderer) const;
     void dispatchFg(bool reverse, I_Renderer & renderer) const;
     void dispatchCursor(bool reverse, I_Renderer & renderer) const;
+#if 0
     void dispatchSearch(bool reverse, I_Renderer & renderer) const;
+#endif
     void resetDamage();
 
     void rebuildHistory();

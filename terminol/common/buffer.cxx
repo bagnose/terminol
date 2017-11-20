@@ -3,6 +3,7 @@
 
 #include "terminol/common/buffer.hxx"
 #include "terminol/common/escape.hxx"
+#include "terminol/support/regex.hxx"
 
 Buffer::ParaIter::ParaIter(const Buffer & buffer, APos pos)
     : _buffer(buffer), _pos(pos), _cells(_buffer.getCols(), Cell::blank()) {
@@ -132,7 +133,10 @@ Buffer::Buffer(const Config &       config,
     , _cursor()
     , _savedCursor()
     , _charSubs(charSubs)
-    , _search(nullptr) {
+#if 0
+    , _search(nullptr)
+#endif
+{
     resetMargins();
     resetTabs();
 }
@@ -1035,10 +1039,14 @@ void Buffer::dispatch(bool reverse, I_Renderer & renderer) {
     dispatchBg(reverse, renderer);
     dispatchFg(reverse, renderer);
 
+#if 0
     if (_search) { dispatchSearch(reverse, renderer); }
     else {
-        dispatchCursor(reverse, renderer);
+#endif
+    dispatchCursor(reverse, renderer);
+#if 0
     }
+#endif
 
     resetDamage();
 }
@@ -1060,6 +1068,7 @@ const CharSub * Buffer::getCharSub(CharSet charSet) const {
     return _charSubs.get(charSet);
 }
 
+#if 0
 void Buffer::beginSearch(const std::string & pattern) {
     ASSERT(!_search, );
     _search = std::make_unique<Search>(*this, pattern);
@@ -1123,6 +1132,7 @@ void Buffer::endSearch() {
     ASSERT(_search, );
     _search.reset();
 }
+#endif
 
 void Buffer::dumpTags(std::ostream & ost) const {
     std::ios::fmtflags flags = ost.flags();
@@ -1438,6 +1448,7 @@ void Buffer::dispatchCursor(bool reverse, I_Renderer & renderer) const {
     }
 }
 
+#if 0
 void Buffer::dispatchSearch(bool UNUSED(reverse), I_Renderer & renderer) const {
     auto row = getRows() - 1;
 
@@ -1451,6 +1462,7 @@ void Buffer::dispatchSearch(bool UNUSED(reverse), I_Renderer & renderer) const {
                           reinterpret_cast<const uint8_t *>(str.data()),
                           str.size());
 }
+#endif
 
 void Buffer::rebuildHistory() {
     _history.clear();
