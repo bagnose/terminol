@@ -383,9 +383,7 @@ auto Text::rfind(const Regex & regex, Marker & marker, bool & ongoing) -> std::v
 
     auto substrs = regex.matchOffsets(para.getString());
 
-    for (auto iter = substrs.rbegin(); iter != substrs.rend(); ++iter) {
-        auto & substr = *iter;
-
+    for (auto & substr : reversed(substrs)) {
         auto b = static_cast<uint32_t>(substr.first);
         auto e = static_cast<uint32_t>(substr.last);
 

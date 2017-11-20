@@ -58,4 +58,52 @@ void fun() {
 }
 */
 
+// Adapter class that presents a container in reverse.
+// Use the convenience function reversed() to instantiate.
+template <typename Container>
+class Reverser {
+    Container & _container;
+
+public:
+    explicit Reverser(Container & container) throw() : _container(container) {}
+
+    // Use 'auto' for return value deduction because the type isn't interesting.
+    auto begin() const throw() { return _container.rbegin(); }
+    auto end() const throw() { return _container.rend(); }
+};
+
+// Example usage:
+//
+// for (auto & i : reversed(container)) {
+//     // use i
+// }
+template <typename Container>
+Reverser<Container> reversed(Container & container) throw() {
+    return Reverser<Container>(container);
+}
+
+// Adapter class that presents a const container in reverse.
+// Use the convenience function reversed() to instantiate.
+template <typename Container>
+class ConstReverser {
+    const Container & _container;
+
+public:
+    explicit ConstReverser(const Container & container) throw() : _container(container) {}
+
+    // Use 'auto' for return value deduction because the type isn't interesting.
+    auto begin() const throw() { return _container.rbegin(); }
+    auto end() const throw() { return _container.rend(); }
+};
+
+// Example usage:
+//
+// for (auto & i : reversed(container)) {
+//     // use i
+// }
+template <typename Container>
+ConstReverser<Container> reversed(const Container & container) throw() {
+    return ConstReverser<Container>(container);
+}
+
 #endif // SUPPORT__PATTERN__HXX
