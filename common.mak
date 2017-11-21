@@ -141,10 +141,10 @@ ifeq ($(COMPILER),clang)
 	$(V)rc --compile $(CXX) -c $< -o $@ $(CPPFLAGS) $(CXXFLAGS) $(WFLAGS) $($(<)_CXXFLAGS)
 endif
 
-# List of directories that we defined a rule for making (to prevent redefinitions).
+# List of directories that we defined a rule for making (to prevent redefinitions)
 MKDIR_DIRS :=
 
-# Create a static library.
+# Create a static library
 # $(1) directory
 # $(2) sources
 # $(3) CXXFLAGS
@@ -183,7 +183,7 @@ else
 endif
 endef
 
-# Create an executable.
+# Create an executable
 # $(1) type (DIST|PRIV|TEST)
 # $(2) path
 # $(3) sources
