@@ -105,7 +105,7 @@ else
   $(error Unrecognised VERBOSE: $(VERBOSE))
 endif
 
-.PHONY: all info install clean
+.PHONY: all info install clean list
 
 all:
 
@@ -131,6 +131,10 @@ report-coverage:
 	genhtml --output-directory priv/coverage-report priv/coverage.trace > /dev/null 2>&1
 	$(BROWSER) priv/coverage-report/index.html
 endif
+
+# See https://stackoverflow.com/a/26339924/4168685 for more on accessing Makefile targets/dependencies
+list:
+	$(MAKE) -pRrq || true
 
 obj/%.o: src/%.cxx
 ifeq ($(VERBOSE),false)
