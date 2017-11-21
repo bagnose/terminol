@@ -12,6 +12,7 @@
 #include <sstream>
 #include <cmath>
 #include <optional>
+#include <iomanip>
 
 template <typename T>
 T clamp(T val, T min, T max) {
@@ -177,6 +178,24 @@ inline std::string humanSize(size_t bytes) {
     std::ostringstream ost;
     ost << value << UNITS[offset];
     return ost.str();
+}
+
+// Convert an unsigned number (uint8_t, uint16_t, uint32_t, uint64_t) into a hex string, e.g.:
+// - uint8_t  0x12
+// - uint16_t 0x1234
+// - uint32_t 0x1234ABCD
+// - uint64_t 0x1234ABCD1234FACE
+template <typename T>
+std::string unsigned_to_hex_string(T t) throw() {
+    static_assert(std::is_integral<T>::value, "Expected integral type");
+    static_assert(std::is_unsigned<T>::value, "Expected unsigned type");
+    return stringify("0x",
+                     std::setfill('0'),
+                     std::uppercase,
+                     std::right,
+                     std::setw(sizeof(T) * 2),
+                     std::hex,
+                     t);
 }
 
 #endif // SUPPORT__CONV__HXX

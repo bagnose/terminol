@@ -270,7 +270,7 @@ void Text::resizeReflow(int16_t rows, int16_t cols, const std::vector<Marker *> 
 void Text::dumpHistory(std::ostream & ost, bool UNUSED(decorate)) const {
     for (auto tag : _historyTags) {
         auto entry = _repository.retrieve(tag);
-        ost << tag << ": ";
+        ost << unsigned_to_hex_string(tag) << ": ";
         for (auto ch : entry.string) { ost << ch; }
         ost << std::endl;
     }
