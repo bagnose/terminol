@@ -148,14 +148,16 @@ MKDIR_DIRS :=
 # $(1) directory
 # $(2) sources
 # $(3) CXXFLAGS
-# $(4) static library (non-transitive) dependencies (directories)
+# $(4) static library direct dependencies (directories)
 define LIB
-$(1)_SRC  := $$(addprefix src/$(1)/,$(2))
-$(1)_OBJ  := $$(addprefix obj/$(1)/,$$(patsubst %.cxx,%.o,$(2)))
-$(1)_LIB  := $$(addprefix obj/,lib$$(subst /,-,$(1)).a)
-$(1)_DEP  :=
+$(1)_SRC    := $$(addprefix src/$(1)/,$(2))
+$(1)_OBJ    := $$(addprefix obj/$(1)/,$$(patsubst %.cxx,%.o,$(2)))
+$(1)_LIB    := $$(addprefix obj/,lib$$(subst /,-,$(1)).a)
+$(1)_DEP    :=
+$(1)_PASSES :=
 
 $$(foreach LIB,$(4),$$(eval $(1)_DEP += $$(LIB) $$($$(LIB)_DEP)))
+$$(foreach LIB,$(4),$$(eval $$($(1)_LIB): $$($$(LIB)_PASSES)))
 
 $$(foreach SRC,$$($(1)_SRC),$$(eval $$(SRC)_CXXFLAGS := $(3)))
 
@@ -188,7 +190,7 @@ endef
 # $(2) path
 # $(3) sources
 # $(4) CXXFLAGS
-# $(5) static library (non-transitive) dependencies (directories)
+# $(5) static library direct dependencies (directories)
 # $(6) LDFLAGS
 define EXE
 ifeq (,$$(findstring $(1),DIST PRIV TEST))
@@ -247,6 +249,7 @@ else
 endif
 
 ifeq (TEST,$(1))
+$$(foreach LIB,$(5),$$(eval $$(LIB)_PASSES += $$($(2)_EXE).pass))
 $(2)_OUT  := $$($(2)_EXE).out
 $(2)_PASS := $$($(2)_EXE).pass
 
@@ -257,11 +260,12 @@ endif
 ifeq ($(MODE),analysis)
 	$(V)touch $$@
 else
-	$(V)$$($(2)_EXE) > $$($(2)_OUT) 2>&1 && touch $$@ || (rm -f $$@ && echo "Test failed '$(2)'." && cat $$($(2)_OUT)) > /dev/stderr
+	$(V)$$($(2)_EXE) > $$($(2)_OUT) 2>&1 && touch $$@ || (rm -f $$@ ; echo "Test failed '$(2)':" ; cat $$($(2)_OUT) ; false) > /dev/stderr
 endif
 
 all: $$($(2)_PASS)
 else
+$$(foreach LIB,$(5),$$(eval $$($(2)_EXE): $$($$(LIB)_PASSES)))
 all: $$($(2)_EXE)
 endif
 
