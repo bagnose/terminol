@@ -95,4 +95,18 @@ inline std::ostream & operator<<(std::ostream & ost, const DebugDummyInserter &)
     } while (false)
 #endif
 
+// Trigger a software breakpoint:
+// - if running under a debugger (e.g. gdb) then the program will be interrupted
+//   and the debugger will resume control
+// - otherwise the program will terminate with: "Trace/breakpoint trap"
+//
+// This macro is Intel specific. An architecture-neutral implementation might look like:
+//   #include <csignal>
+//   ...
+//   std::raise(SIGTRAP);
+#if DEBUG
+#define TRAP() \
+    do { asm("int $3"); } while (false)
+#endif
+
 #endif // SUPPORT__DEBUG__HXX
