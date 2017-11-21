@@ -8,6 +8,7 @@
 
 #include <utility>
 #include <functional>
+#include <memory>
 
 // Inherit from this to be uncopyable (and unassignable).
 class Uncopyable {
@@ -105,5 +106,52 @@ template <typename Container>
 ConstReverser<Container> reversed(const Container & container) throw() {
     return ConstReverser<Container>(container);
 }
+
+// Use this type when applying the Pimpl idiom, e.g.:
+//
+// .h:
+//
+//   class Foo {
+//   public:
+//       Foo(int a, bool b) throw ();
+//       Foo(Foo &&) throw ();
+//       ~Foo() throw ();
+//
+//   private:
+//       class Private;
+//       PimplPtr<Private> _private;
+//   };
+//
+// .cc:
+//
+//   class Foo::Private {
+//       Private(int a, bool b) {}
+//   };
+//
+//   Foo::Foo(int a, bool b) : _private(a, b)
+//
+//   Foo::Foo(Foo &&) = default;
+//
+//   Foo::~Foo() = default;
+//
+// This class is superior to using std::unique_ptr in the Pimpl idiom because:
+//
+// - it provides exactly what is necessary, and nothing more
+// - its constructor forces immediate construction of the pointer,
+//   without the need to re-state the type name.
+template <typename T>
+class PimplPtr final {
+    std::unique_ptr<T> mPtr;
+
+public:
+    template <typename... Ts>
+    explicit PimplPtr(Ts &&... params) : mPtr(std::make_unique<T>(std::forward<Ts>(params)...)) {}
+
+    T * operator->() throw() { return mPtr.operator->(); }
+    T & operator*() throw() { return mPtr.operator*(); }
+
+    const T * operator->() const throw() { return mPtr.operator->(); }
+    const T & operator*() const throw() { return mPtr.operator*(); }
+};
 
 #endif // SUPPORT__PATTERN__HXX
