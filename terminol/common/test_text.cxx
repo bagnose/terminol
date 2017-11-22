@@ -164,9 +164,9 @@ namespace {
 
 int main() {
     Test test("common/text");
-    // test.run("basics", testBasics);
+    test.run("basics", testBasics);
     test.run("historical", testHistorical);
-    // test.run("straddling-para", testStraddlingPara);
+    test.run("straddling-para", testStraddlingPara);
     // test.run("rfind", testRfind);
 
     return 0;
