@@ -28,6 +28,7 @@ Build terminol (this requires pcre, xkbcommon, xcb, pango, cairo and a C++11 com
     # to see other options):
     ./configure ../terminol-debug-gnu debug gnu
     cd ../terminol-debug-gnu
+    # (edit Makefile and set any variables, refer to top of common.mak)
     make
 
 Create a configuration file (see doc/sample-config).
