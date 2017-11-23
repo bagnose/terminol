@@ -22,7 +22,8 @@ or by cloning the repository:
     git clone https://github.com/bagnose/terminol.git
     cd terminol
 
-Build terminol (this requires pcre, xkbcommon, xcb, pango, cairo and a C++11 compiler):
+Build terminol (this requires pcre, xkbcommon, xcb, pango, cairo and a C++17
+compiler, e.g. clang >=5 or GCC >=7):
 
     # Establish a debug/GCC build directory (run 'configure' without any arguments
     # to see other options):
